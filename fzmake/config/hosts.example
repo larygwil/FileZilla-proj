@@ -1,0 +1,16 @@
+# Format:
+
+# username@host
+# prefix
+# targets separated by spaces
+# subhost (optional, used by SF.net compile farm)
+
+nightlybuild@127.0.0.1
+/home/nightlybuild/buildroot
+i586-linux-gnu i586-mingw32msvc
+
+botg@cf-shell.sourceforge.net
+/home/users/b/bo/botg/nightlybuild
+i386-pc-freebsd5.4
+x86-freebsd1
+

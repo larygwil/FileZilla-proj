@@ -1,0 +1,128 @@
+#! /bin/sh
+
+. /etc/profile
+
+cd /home/nightlybuild/scripts
+
+. config
+. log.sh
+. updatecvs.sh
+. readhosts
+. buildspawn.sh
+. updatelocales.sh
+. makedist.sh
+. filter.sh
+. fixupdatecheck.sh
+
+function buildfailure()
+{
+  touch "$OUTPUTDIR/failed"
+  rm "$OUTPUTDIR/running"
+
+  logprint "Performing cleanup"
+  cd "$PREFIX"
+  rm -rf "$WORKDIR"
+
+  $SCRIPTS/clean.sh >> $LOG 2>&1
+
+  return 1
+}
+
+applypatch()
+{
+  local PATCH=$1
+  local PACKAGE=$2
+
+  logprint "Applying $PATCH to $PACKAGE"
+  cd $WORKDIR/source/$PACKAGE
+  patch -p0 -i $PATCHDIR/$PATCH -f >> $LOG 2>&1 || buildfailure || exit 1
+}
+
+applypatches()
+{
+  logprint "Applying patches"
+  cd "$PATCHDIR"
+  local PATCHES=`find . -name "*.patch"`
+  for i in $PATCHES; do
+    local PATCH=${i#./}
+    local PACKAGE=${PATCH%%/*}
+    applypatch $PATCH $PACKAGE
+  done
+}
+
+export DATE=`date "+%Y-%m-%d"`
+export OUTPUTDIR="$WWWDIR/$DATE"
+export LOG="$OUTPUTDIR/build.log"
+
+rm -rf "$OUTPUTDIR"
+mkdir -p "$OUTPUTDIR"
+
+cp -rp "$PATCHDIR" "$OUTPUTDIR"
+
+touch "$OUTPUTDIR/running"
+logprint "FileZilla 3 build log"
+logprint "---------------------\n"
+START=`date "+%Y-%m-%d %H:%M:%S"`
+logprint "Build started: $START\n"
+
+rm -rf "$WORKDIR"
+mkdir -p "$WORKDIR"
+
+updatecvs || buildfailure || exit 1
+
+logprint "Copying source"
+rm -rf "$WORKDIR/source"
+cp -r "$CVSDIR" "$WORKDIR/source"
+
+applypatches
+
+logprint "Generating configure files"
+for i in $PACKAGES; do
+  i=${i#-}
+  cd "$WORKDIR/source/$i"
+  if [ ! -e configure ]; then
+    echo "Running autogen.sh for package $i" >> $LOG
+    ./autogen.sh >> $LOG 2>&1 || buildfailure || exit 1
+  fi
+done
+
+makedist || buildfailure || exit 1
+updatelocales || buildfailure || exit 1
+
+logprint "Packaging packages for distribution"
+cd "$WORKDIR/source"
+tar -cjf $WORKDIR/packages.tar.bz2 *
+cd "$CLIENTSCRIPTS/.."
+tar -cjf $WORKDIR/clientscripts.tar.bz2 clientscripts
+
+echo "Reading hosts"
+echo "-------------"
+
+ID=1
+
+while getHost; do
+
+  echo Forking buildscript $ID
+  buildspawn $ID "$HOST" "$HOSTPREFIX" "$TARGETS" "$PACKAGES" &
+
+  ID=$(($ID+1))
+
+done
+
+
+echo Waiting for clients
+wait 
+
+logprint "Updating information for the automated update checks"
+fixupdatecheck >> $LOG 2>&1
+
+logprint "Performing cleanup"
+cd "$PREFIX"
+rm -rf "$WORKDIR"
+
+$SCRIPTS/clean.sh >> $LOG 2>&1
+
+logprint "Completed"
+
+touch "$OUTPUTDIR/successful"
+rm "$OUTPUTDIR/running"
