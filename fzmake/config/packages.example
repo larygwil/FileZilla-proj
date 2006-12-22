@@ -1,0 +1,6 @@
+# Packages prefixed by a single dash will not be tar.bz2'ed
+# Useful since fzmake links libraries statically. That way the
+# library files are not part of the binary distribution
+
+-wxWidgets
+FileZilla3
