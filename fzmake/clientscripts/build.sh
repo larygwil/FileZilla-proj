@@ -2,7 +2,6 @@
 
 export PREFIX="$1"
 export TARGET="$2"
-export PACKAGES="$3"
 
 export SCRIPTS="$PREFIX/clientscripts"
 export WORKDIR="$PREFIX/work"

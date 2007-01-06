@@ -1,0 +1,61 @@
+#! /bin/sh
+
+if [ -z "$PACKAGES_FILE" ]; then
+  PACKAGES_FILE="$CONFDIR/packages"
+fi
+
+packages_loaded=
+
+function printpackage()
+{
+  echo "Package read:"
+  echo "  Package: $PACKAGE"
+  echo "  Package flags: $PACKAGE_FLAGS"
+}
+
+function resetPackages()
+{
+  packages_loaded=
+}
+
+function getPackage()
+{
+  if [ "$packages_loaded" == "" ]; then
+    if ! exec 4<$PACKAGES_FILE; then
+      return 1
+    fi
+    packages_loaded=1
+    echo "$PACKAGES_FILE loaded"
+  fi
+  
+  export PACKAGE=
+  export PACKAGE_FLAGS=
+  
+  while read -u 4; do
+    REPLY=${REPLY##\#*}
+    if [ -z "$REPLY" ]; then
+      if ! [ -z "$PACKAGE" ]; then
+        printpackage
+	return 0
+      fi
+      continue;
+    fi
+    
+    if [ -z "$PACKAGE" ]; then
+      export PACKAGE=$REPLY;
+    elif [ -z "$PACKAGE_FLAGS" ]; then
+      export PACKAGE_FLAGS=$REPLY;
+    else
+      echo "Unexpected line: $REPLY"
+      return 1
+    fi
+  done
+
+  if ! [ -z "$PACKAGE" ]; then
+    printpackage
+    return 0
+  fi
+
+  return 1
+}
+

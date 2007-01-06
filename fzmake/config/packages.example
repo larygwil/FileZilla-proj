@@ -1,6 +1,11 @@
 # Packages prefixed by a single dash will not be tar.bz2'ed
 # Useful since fzmake links libraries statically. That way the
 # library files are not part of the binary distribution
+# The line following the name specifies the configure flags
+# that should be usd.
 
 -wxWidgets
+--enable-unicode --without-libtiff --without-libjpeg
+
 FileZilla3
+--enable-buildtype=nightly

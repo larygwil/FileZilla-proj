@@ -4,11 +4,14 @@
 
 function init()
 {
-  local dir=${0%/*}
+  local dir="`pwd`/${0%/*}"
   if [ ! -f "$dir/config" ]; then
     echo "Can't find master config. Aborting"
     exit 1
   fi
+  cd "$dir/.."
+  export PREFIX=`pwd`
+  echo "Setting prefix to $PREFIX"
   cd "$dir"
   return 0
 }
@@ -19,6 +22,7 @@ init || exit 1
 . log.sh
 . updatecvs.sh
 . readhosts
+. readpackages
 . buildspawn.sh
 . updatelocales.sh
 . makedist.sh
@@ -88,11 +92,11 @@ cp -r "$CVSDIR" "$WORKDIR/source"
 applypatches
 
 logprint "Generating configure files"
-for i in $PACKAGES; do
-  i=${i#-}
-  cd "$WORKDIR/source/$i"
+while getPackage; do
+  PACKAGE=${PACKAGE#-}
+  cd "$WORKDIR/source/$PACKAGE"
   if [ ! -e configure ]; then
-    echo "Running autogen.sh for package $i" >> $LOG
+    echo "Running autogen.sh for package $PACKAGE" >> $LOG
     ./autogen.sh >> $LOG 2>&1 || buildfailure || exit 1
   fi
 done
@@ -103,8 +107,19 @@ updatelocales || buildfailure || exit 1
 logprint "Packaging packages for distribution"
 cd "$WORKDIR/source"
 tar -cjf $WORKDIR/packages.tar.bz2 *
-cd "$CLIENTSCRIPTS/.."
-tar -cjf $WORKDIR/clientscripts.tar.bz2 clientscripts
+
+function packageClientscripts()
+{
+  cp -r "$CLIENTSCRIPTS" "$WORKDIR"
+  cp "$SCRIPTS/readpackages" "$WORKDIR/clientscripts/"
+  cp "$CONFDIR/packages" "$WORKDIR/clientscripts/"
+
+  cd "$WORKDIR"
+  tar -cjf "$WORKDIR/clientscripts.tar.bz2" --exclude='.svn' clientscripts
+}
+
+logprint "Packaging clientscripts"
+packageClientscripts
 
 echo "Reading hosts"
 echo "-------------"
@@ -114,7 +129,7 @@ ID=1
 while getHost; do
 
   echo Forking buildscript $ID
-  buildspawn $ID "$HOST" "$HOSTPREFIX" "$TARGETS" "$PACKAGES" &
+  buildspawn $ID "$HOST" "$HOSTPREFIX" "$TARGETS" &
 
   ID=$(($ID+1))
 

@@ -1,6 +1,6 @@
 #! /bin/sh
 
-HOSTS="$SCRIPTS/hosts"
+HOSTS="$CONFDIR/hosts"
 
 loaded=
 
@@ -13,7 +13,7 @@ function printhost()
   echo "  Subhost: $SUBHOST"
 }
 
-getHost()
+function getHost()
 {
   if [ "$loaded" == "" ]; then
     if ! exec 3<$HOSTS; then
