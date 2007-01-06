@@ -2,7 +2,18 @@
 
 . /etc/profile
 
-cd /home/nightlybuild/scripts
+function init()
+{
+  local dir=${0%/*}
+  if [ ! -f "$dir/config" ]; then
+    echo "Can't find master config. Aborting"
+    exit 1
+  fi
+  cd "$dir"
+  return 0
+}
+
+init || exit 1
 
 . config
 . log.sh
