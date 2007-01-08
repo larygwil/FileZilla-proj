@@ -100,6 +100,7 @@ cp -r "$CVSDIR" "$WORKDIR/source"
 applypatches
 
 logprint "Generating configure files"
+resetPackages
 while getPackage; do
   PACKAGE=${PACKAGE#-}
   cd "$WORKDIR/source/$PACKAGE"
