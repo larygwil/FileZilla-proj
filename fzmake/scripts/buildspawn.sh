@@ -63,12 +63,6 @@ function buildspawn()
     HOST=${HOST%:*}
   fi 
   
-  for i in $TARGETS; do
-    export TARGET=$i
-    mkdir -p "$OUTPUTDIR/$i"
-    touch "$OUTPUTDIR/$i/pending"
-  done
-
   logprint "$TARGETS: Uploading packages"
   filter scp -q -B -i "$KEYFILE" -P $PORT "$WORKDIR/packages.tar.bz2" "$HOST:$HOSTPREFIX" || all_failure || return 1
 

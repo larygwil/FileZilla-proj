@@ -2,7 +2,7 @@
 
 HOSTS="$CONFDIR/hosts"
 
-loaded=
+hosts_loaded=
 
 function printhost()
 {
@@ -13,13 +13,18 @@ function printhost()
   echo "  Subhost: $SUBHOST"
 }
 
+function resetHosts()
+{
+  hosts_loaded=
+}
+
 function getHost()
 {
-  if [ "$loaded" == "" ]; then
+  if [ "$hosts_loaded" == "" ]; then
     if ! exec 3<$HOSTS; then
       return 1
     fi
-    loaded=1
+    hosts_loaded=1
     echo "$HOSTS loaded"
   fi
   

@@ -80,6 +80,14 @@ logprint "---------------------\n"
 START=`date "+%Y-%m-%d %H:%M:%S"`
 logprint "Build started: $START\n"
 
+while getHost; do
+  for i in $TARGETS; do
+    mkdir -p "$OUTPUTDIR/$i"
+    touch "$OUTPUTDIR/$i/pending"
+  done
+done
+resetHosts
+
 rm -rf "$WORKDIR"
 mkdir -p "$WORKDIR"
 
@@ -121,8 +129,8 @@ function packageClientscripts()
 logprint "Packaging clientscripts"
 packageClientscripts
 
-echo "Reading hosts"
-echo "-------------"
+echo "Preparation stage complete"
+echo "--------------------------"
 
 ID=1
 
