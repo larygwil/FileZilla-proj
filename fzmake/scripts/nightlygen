@@ -6,7 +6,10 @@ function init()
 {
   local dir="`pwd`/${0%/*}"
   if [ ! -f "$dir/config" ]; then
-    echo "Can't find master config. Aborting"
+    echo "Can't find master config."
+    echo "pwd: `pwd`"
+    echo "\$0: $0"
+    echo "Aborting."
     exit 1
   fi
   cd "$dir/.."
