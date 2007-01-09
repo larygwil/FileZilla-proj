@@ -4,7 +4,11 @@
 
 function init()
 {
-  local dir="`pwd`/${0%/*}"
+  if [ -n "$0" -a "${0:0:1}" = "/" ]; then
+    local dir="${0%/*}"
+  else
+    local dir="`pwd`/${0%/*}"
+  fi
   if [ ! -f "$dir/config" ]; then
     echo "Can't find master config."
     echo "pwd: `pwd`"
