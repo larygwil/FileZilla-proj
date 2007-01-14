@@ -1,5 +1,8 @@
 #! /bin/sh
 
+export SSH="ssh -o PreferredAuthentications=publickey -o StrictHostKeyChecking=yes -q"
+export SCP="scp -o PreferredAuthentications=publickey -o StrictHostKeyChecking=yes -q -B"
+
 function failure()
 {
   touch "$OUTPUTDIR/$TARGET/failed"
@@ -43,7 +46,7 @@ function spawn_cleanup()
 
   export CLEANUP_DONE=true
   logprint "$TARGETS: Performing cleanup"
-  filter ssh -q -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf packages clientscripts work output output.tar clientscripts.tar.bz2 packages.tar.bz2;" || all_failure || return 1
+  filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf packages clientscripts work output output.tar clientscripts.tar.bz2 packages.tar.bz2;" || all_failure || return 1
 }
 
 function buildspawn()
@@ -64,16 +67,16 @@ function buildspawn()
   fi 
   
   logprint "$TARGETS: Uploading packages"
-  filter scp -q -B -i "$KEYFILE" -P $PORT "$WORKDIR/packages.tar.bz2" "$HOST:$HOSTPREFIX" || all_failure || return 1
+  filter $SCP -i "$KEYFILE" -P $PORT "$WORKDIR/packages.tar.bz2" "$HOST:$HOSTPREFIX" || all_failure || return 1
 
   logprint "$TARGETS: Uploading clientscripts"
-  filter scp -q -B -i "$KEYFILE" -P $PORT "$WORKDIR/clientscripts.tar.bz2" "$HOST:$HOSTPREFIX" || all_failure || return 1
+  filter $SCP -i "$KEYFILE" -P $PORT "$WORKDIR/clientscripts.tar.bz2" "$HOST:$HOSTPREFIX" || all_failure || return 1
 
   logprint "$TARGETS: Unpacking packages"
-  filter ssh -q -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf packages; mkdir -p packages; cd packages; tar -xjf \"$HOSTPREFIX/packages.tar.bz2\" && rm \"$HOSTPREFIX/packages.tar.bz2\";" || all_failure || return 1
+  filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf packages; mkdir -p packages; cd packages; tar -xjf \"$HOSTPREFIX/packages.tar.bz2\" && rm \"$HOSTPREFIX/packages.tar.bz2\";" || all_failure || return 1
   
   logprint "$TARGETS: Unpacking clientscripts"
-  filter ssh -q -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf clientscripts; tar -xjf clientscripts.tar.bz2;" 2>&1 || all_failure || return 1
+  filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf clientscripts; tar -xjf clientscripts.tar.bz2;" 2>&1 || all_failure || return 1
 
   logprint "$TARGETS: Building targets, check target specific logs for details"
   
@@ -91,13 +94,13 @@ function buildspawn()
     
     targetlogprint "Invoking remote build script"
     if [ -z "$SUBHOST" ]; then
-      filter ssh -q -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; clientscripts/build.sh \"$HOSTPREFIX\" \"$i\" \"$PACKAGES\"" >> $TARGETLOG || failure || continue
+      filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; clientscripts/build.sh \"$HOSTPREFIX\" \"$i\" \"$PACKAGES\"" >> $TARGETLOG || failure || continue
     else
-      filter ssh -q -i "$KEYFILE" -p $PORT "$HOST" "ssh $SUBHOST '. /etc/profile; cd $HOSTPREFIX; clientscripts/build.sh \"$HOSTPREFIX\" \"$i\" \"$PACKAGES\"'" >> $TARGETLOG || failure || continue
+      filter $SSH -i "$KEYFILE" -p $PORT "$HOST" "ssh $SUBHOST '. /etc/profile; cd $HOSTPREFIX; clientscripts/build.sh \"$HOSTPREFIX\" \"$i\" \"$PACKAGES\"'" >> $TARGETLOG || failure || continue
     fi
 
     targetlogprint "Downloading built files"
-    filter scp -q -B -i "$KEYFILE" -P $PORT "$HOST:$HOSTPREFIX/output.tar" "$WORKDIR/output-$TARGET.tar" >> $TARGETLOG || failure || continue
+    filter $SCP -i "$KEYFILE" -P $PORT "$HOST:$HOSTPREFIX/output.tar" "$WORKDIR/output-$TARGET.tar" >> $TARGETLOG || failure || continue
 
     cd "$WORKDIR"
     tar -xf "$WORKDIR/output-$TARGET.tar" >> $TARGETLOG 2>&1 || failure || continue
