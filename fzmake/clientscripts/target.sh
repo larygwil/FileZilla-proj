@@ -21,7 +21,7 @@ makepackage()
   mkdir -p "$WORKDIR/$PACKAGE"
   cd "$WORKDIR/$PACKAGE"
 
-  eval "$PREFIX/packages/$PACKAGE/configure" "'--prefix=$WORKDIR/prefix/$PACKAGE'" "'--host=$TARGET'" '--enable-static' '--disable-shared' $FLAGS || return 1
+  eval "$PREFIX/packages/$PACKAGE/configure" "'--prefix=$WORKDIR/prefix/$PACKAGE'" "'--host=$TARGET'" $FLAGS || return 1
   if [ -z "$MAKE" ]; then
     make || return 1
     make install || return 1

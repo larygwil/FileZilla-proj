@@ -5,7 +5,7 @@
 # that should be usd.
 
 -wxWidgets
---enable-unicode --without-libtiff --without-libjpeg
+--enable-unicode --without-libtiff --without-libjpeg --enable-static --disable-shared
 
 FileZilla3
 --enable-buildtype=nightly
