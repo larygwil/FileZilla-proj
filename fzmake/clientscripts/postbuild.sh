@@ -12,6 +12,10 @@ if echo "$TARGET" | grep "mingw"; then
   strip -s filezilla.exe
   echo "Making installer"
   cd "$WORKDIR/$PACKAGE/data"
+
+  # We don't need debug information for this file. Since it runs in the context of Explorer, it's pretty undebuggable anyhow.
+  strip ../src/fzshellext/.libs/libfzshellext-0.dll
+  
   makensis install.nsi
   chmod 775 FileZilla_3_setup.exe
   mv FileZilla_3_setup.exe "$OUTPUTDIR/$TARGET"
