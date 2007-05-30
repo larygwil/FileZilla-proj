@@ -1,0 +1,5 @@
+# Execute these scripts located in script/postbuildscripts/ after
+# building all targets
+
+fixupdatecheck.sh
+
