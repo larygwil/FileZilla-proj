@@ -32,13 +32,14 @@ init || exit 1
 . config
 . log.sh
 . updatecvs.sh
+. readfile.sh
 . readhosts
 . readpackages
 . buildspawn.sh
 . updatelocales.sh
 . makedist.sh
 . filter.sh
-. fixupdatecheck.sh
+. postbuild.sh
 
 function buildfailure()
 {
@@ -159,8 +160,7 @@ done
 echo Waiting for clients
 wait 
 
-logprint "Updating information for the automated update checks"
-fixupdatecheck >> $LOG 2>&1
+postbuild >> $LOG 2>&1
 
 logprint "Performing cleanup"
 cd "$PREFIX"
