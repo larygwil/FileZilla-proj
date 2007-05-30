@@ -4,6 +4,8 @@
 
 function fixupdatecheck()
 {
+  echo "Updating information for the automated update checks"
+return 1;
   LATEST="/var/www/nightlies/latest.php"
   WWWDIR="http://filezilla-project.org/nightlies"
 
@@ -36,3 +38,6 @@ function fixupdatecheck()
     done
   done
 }
+
+fixupdatecheck
+
