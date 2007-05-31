@@ -1,23 +1,23 @@
 #! /bin/sh
 
-postbuild()
+prebuild()
 {
-  [ -f "$CONFDIR/postuild" ] || return 0
+  [ -f "$CONFDIR/prebuild" ] || return 0
 
-  load_file "$CONFDIR/postbuild" || return 1
+  load_file "$CONFDIR/prebuild" || return 1
 
   while read_file; do
     
     if [ -z "$REPLY" ]; then continue; fi
 
-    local script="$SCRIPTS/postbuildscripts/$REPLY"
+    local script="$SCRIPTS/prebuildscripts/$REPLY"
 
     if ! [ -x "$script" ]; then
       echo "$script not found or not executable"
       continue
     fi
 
-    . "$script"
+    . "$script" || return 1
 
   done
 }

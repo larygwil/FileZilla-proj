@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# Postbuild script for nightlygen
+# Prebuild script for nightlygen
 
 # This function updates the locales page
 
@@ -8,8 +8,8 @@ function updatelocales()
 {
   local WWWLOCALES="/var/www/locales"
 
-  logprint "Updating locales page"
-
+  echo "Updating locales page"
+  
   cd "$WORKDIR/FileZilla3/locales"
   make >> $LOG 2>&1 || return 1
 
@@ -88,3 +88,5 @@ EOF
   chmod 775 $WWWLOCALES/stats~
   mv $WWWLOCALES/stats~ $WWWLOCALES/stats
 }
+
+updatelocales

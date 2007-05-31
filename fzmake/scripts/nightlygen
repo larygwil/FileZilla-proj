@@ -36,9 +36,9 @@ init || exit 1
 . readhosts
 . readpackages
 . buildspawn.sh
-. updatelocales.sh
 . makedist.sh
 . filter.sh
+. prebuild.sh
 . postbuild.sh
 
 function buildfailure()
@@ -123,7 +123,8 @@ while getPackage; do
 done
 
 makedist || buildfailure || exit 1
-updatelocales || buildfailure || exit 1
+
+prebuild >> $LOG 2>&1 || buildfailure || exit 1
 
 logprint "Packaging packages for distribution"
 cd "$WORKDIR/source"

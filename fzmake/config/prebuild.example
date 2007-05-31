@@ -1,0 +1,5 @@
+# Execute these scripts located in script/prebuildscripts/ before
+# building the targets
+
+updatelocales.sh
+
