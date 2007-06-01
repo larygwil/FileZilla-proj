@@ -28,6 +28,9 @@ function fixupdatecheck()
       if [ $FILE == "build.log" ]; then
         continue;
       fi
+      if [ ${FILE: -4} == ".zip" ]; then
+        continue;
+      fi
 
       cat "$LATEST" | grep -v "$TARGET" | grep -v "?>" > "$LATEST.new"
       echo "\$nightlies['$TARGET'] = array();" >> $LATEST.new

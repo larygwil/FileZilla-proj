@@ -18,7 +18,7 @@ read_file()
     fi
 
     if ! [ -z "$1" ]; then
-      export $1=$REPLY
+      export $1="$REPLY"
     fi
 
     return 0

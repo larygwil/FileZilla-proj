@@ -2,7 +2,7 @@
 
 postbuild()
 {
-  [ -f "$CONFDIR/postuild" ] || return 0
+  [ -f "$CONFDIR/postbuild" ] || return 0
 
   load_file "$CONFDIR/postbuild" || return 1
 
