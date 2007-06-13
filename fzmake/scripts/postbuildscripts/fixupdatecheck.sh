@@ -6,8 +6,8 @@ function fixupdatecheck()
 {
   echo "Updating information for the automated update checks"
   
-  LATEST="/var/www/nightlies/latest.php"
-  WWWDIR="http://filezilla-project.org/nightlies"
+  local LATEST="/var/www/nightlies/latest.php"
+  local WWWDIR="http://filezilla-project.org/nightlies"
 
   cd "$OUTPUTDIR"
   for TARGET in *; do
