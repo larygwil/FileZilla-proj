@@ -13,10 +13,10 @@ function init()
   else
     local dir="`pwd`/${0%/*}"
   fi
-  if [ ! -f "$dir/config" ]; then
+  if [ ! -f "$dir/../config/config" ]; then
     echo "Can't find master config."
-    echo "pwd: `pwd`"
-    echo "\$0: $0"
+    echo "  pwd: `pwd`"
+    echo "  \$0: $0"
     echo "Aborting."
     exit 1
   fi
@@ -29,7 +29,7 @@ function init()
 
 init || exit 1
 
-. config
+. ../config/config
 . log.sh
 . updatecvs.sh
 . readfile.sh

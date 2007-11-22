@@ -11,5 +11,5 @@ export KEYFILE="$CONFDIR/key"
 export CVSDIR="$PREFIX/../cvs"
 export PATCHDIR="$PREFIX/../patches"
 
-export WWWDIR="/var/www/nightlies2"
+export WWWDIR="/var/www/nightlies"
 
