@@ -44,7 +44,7 @@ init || exit 1
 function buildfailure()
 {
   touch "$OUTPUTDIR/failed"
-  rm "$OUTPUTDIR/running"
+  [ -f "$OUTPUTDIR/running" ] && rm "$OUTPUTDIR/running"
 
   logprint "Performing cleanup"
   cd "$PREFIX"
@@ -82,7 +82,7 @@ export OUTPUTDIR="$WWWDIR/$DATE"
 export LOG="$OUTPUTDIR/build.log"
 
 rm -rf "$OUTPUTDIR"
-mkdir -p "$OUTPUTDIR"
+mkdir -p "$OUTPUTDIR" || echo "Could not create output directory" >&1 && buildfailure || exit 1
 
 cp -rp "$PATCHDIR" "$OUTPUTDIR"
 
