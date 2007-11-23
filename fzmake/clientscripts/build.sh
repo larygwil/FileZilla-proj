@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 export PREFIX="$1"
 export TARGET="$2"
@@ -10,28 +10,39 @@ export OUTPUTDIR="$PREFIX/output"
 echo "Clientscript forked"
 echo "Making sure environment is sane"
 
+safe_prepend()
+{
+  local VAR=$1
+  local VALUE=$2
+  local OLD
+
+  eval OLD=\$$VAR:
+  while [ ! -z "$OLD" ]; do
+
+    FIRST=${OLD%%:*}
+    if [ "$FIRST" = "$VALUE" ]; then
+      return
+    fi
+
+    OLD=${OLD#*:}
+  done 
+
+  eval export $VAR=$VALUE\${$VAR:+:}\$$VAR
+}
+
 # Adding $TARGET's prefix
 if [ ! -z "$HOME" ]; then
   if [ -d "$HOME/prefix-$TARGET" ]; then
-    if [ -z "$PATH" ]; then
-      export PATH="$HOME/prefix-$TARGET/bin"
-    else
-      export PATH="$HOME/prefix-$TARGET/bin:$PATH"
+    safe_prepend PATH "$HOME/prefix-$TARGET/bin"
+    safe_prepend CPPFLAGS "-I$HOME/prefix-$TARGET/include"
+    safe_prepend LDFLAGS "-L$HOME/prefix-$TARGET/lib"
+    safe_prepend LD_LIBRARY_PATH "$HOME/prefix-$TARGET/lib"
+
+    if [ -f "$HOME/prefix-$TARGET/CFLAGS" ]; then
+      safe_prepend CFLAGS "`cat \"$HOME/prefix-$TARGET/CFLAGS\"`"
     fi
-    if [ -z "$CPPFLAGS" ]; then
-      export CPPFLAGS="-I$HOME/prefix-$TARGET/include"
-    else
-      export CPPFLAGS="-I$HOME/prefix-$TARGET/include $CPPFLAGS"
-    fi
-    if [ -z "$LDFLAGS" ]; then
-      export LDFLAGS="-L$HOME/prefix-$TARGET/lib"
-    else
-      export LDFLAGS="-L$HOME/prefix-$TARGET/lib $LDFLAGS"
-    fi
-    if [ -z "$LD_LIBRARY_PATH" ]; then
-      export LD_LIBRARY_PATH="$HOME/prefix-$TARGET/lib"
-    else
-      export LD_LIBRARY_PATH="$HOME/prefix-$TARGET/lib:$LD_LIBRARY_PATH"
+    if [ -f "$HOME/prefix-$TARGET/CXXFLAGS" ]; then
+      safe_prepend CXXFLAGS "`cat \"$HOME/prefix-$TARGET/CXXFLAGS\"`"
     fi
   fi
 fi
