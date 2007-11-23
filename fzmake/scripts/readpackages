@@ -16,6 +16,10 @@ function printpackage()
 function resetPackages()
 {
   packages_loaded=
+  if ! [ -f "$PACKAGES_FILE" ]; then
+    logprint "Package file does not exist"
+    return 1
+  fi
 }
 
 function getPackage()

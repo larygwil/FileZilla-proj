@@ -67,6 +67,10 @@ applypatch()
 
 applypatches()
 {
+  if ! [ -d "$PATCHDIR" ]; then
+    logprint "Patchdir does not exist"
+    return;
+  fi
   logprint "Applying patches"
   cd "$PATCHDIR"
   local PATCHES=`find . -name "*.patch"`
@@ -82,16 +86,19 @@ export OUTPUTDIR="$WWWDIR/$DATE"
 export LOG="$OUTPUTDIR/build.log"
 
 rm -rf "$OUTPUTDIR"
-mkdir -p "$OUTPUTDIR" || echo "Could not create output directory" >&1 && buildfailure || exit 1
+mkdir -p "$OUTPUTDIR" || buildfailure || exit 1
 
-cp -rp "$PATCHDIR" "$OUTPUTDIR"
+if [ -d "$PATCHDIR" ]; then
+  cp -rp "$PATCHDIR" "$OUTPUTDIR"
+fi
 
 touch "$OUTPUTDIR/running"
 logprint "FileZilla 3 build log"
 logprint "---------------------\n"
 START=`date "+%Y-%m-%d %H:%M:%S"`
-logprint "Build started: $START\n"
 
+logprint "Build started: $START\n"
+resetHosts || buildfailure || exit 1
 while getHost; do
   for i in $TARGETS; do
     mkdir -p "$OUTPUTDIR/$i"
@@ -112,7 +119,7 @@ cp -r "$CVSDIR" "$WORKDIR/source"
 applypatches
 
 logprint "Generating configure files"
-resetPackages
+resetPackages || buildfailure || exit 1
 while getPackage; do
   PACKAGE=${PACKAGE#-}
   cd "$WORKDIR/source/$PACKAGE"

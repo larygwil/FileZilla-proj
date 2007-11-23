@@ -13,14 +13,15 @@ function updatelocales()
   cd "$WORKDIR/FileZilla3/locales"
   make >> $LOG 2>&1 || return 1
 
-  logprint "Copying locales"
+  echo "Copying locales"
 
   # Copy pot template
-  cp filezilla.pot $WWWLOCALES/filezilla.pot
+  cp filezilla.pot $WWWLOCALES/filezilla.pot || return 1
   chmod 775 $WWWLOCALES/filezilla.pot
 
   rm -f $WWWLOCALES/stats~
-  
+
+  local total=
   for i in *.po.new; do
   
     FILE=${i%%.*}
@@ -51,6 +52,11 @@ EOF
     TR=$[`echo $RES | sed -e 's/^[^0-9]*\([0-9]\+\)[^0-9]\+\([0-9]\+\)[^0-9]\+\([0-9]\+\)[^0-9]\+/\1/'` - 1]
     FZ=$[`echo $RES | sed -e 's/^[^0-9]*\([0-9]\+\)[^0-9]\+\([0-9]\+\)[^0-9]\+\([0-9]\+\)[^0-9]\+/\2/'` - 1]
     UT=$[`echo $RES | sed -e 's/^[^0-9]*\([0-9]\+\)[^0-9]\+\([0-9]\+\)[^0-9]\+\([0-9]\+\)[^0-9]\+/\3/'` - 1]
+
+    if [ -z "$total" ]; then
+      total=$((TR+FZ+UT))
+      echo "$total" >> $WWWLOCALES/stats~
+    fi
 
     rm $i~
 

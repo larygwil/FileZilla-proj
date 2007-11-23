@@ -16,6 +16,10 @@ function printhost()
 function resetHosts()
 {
   hosts_loaded=
+  if ! [ -f "$HOSTS" ]; then
+    logprint "Hosts file does not exist"
+    return 1
+  fi
 }
 
 function getHost()
