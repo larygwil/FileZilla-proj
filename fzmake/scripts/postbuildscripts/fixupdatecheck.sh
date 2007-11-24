@@ -32,7 +32,12 @@ function fixupdatecheck()
         continue;
       fi
 
-      cat "$LATEST" | grep -v "$TARGET" | grep -v "?>" > "$LATEST.new"
+      if ! [ -f "$LATEST" ]; then
+        echo '<?php' > $LATEST.new
+        echo "\$nightlies = array();" >> $LATEST.new
+      else
+        cat "$LATEST" | grep -v "$TARGET" | grep -v "?>" > "$LATEST.new"
+      fi
       echo "\$nightlies['$TARGET'] = array();" >> $LATEST.new
       echo "\$nightlies['$TARGET']['date'] = '$DATE';" >> $LATEST.new
       echo "\$nightlies['$TARGET']['file'] = '$WWWDIR/$DATE/$TARGET/$FILE';" >> $LATEST.new
