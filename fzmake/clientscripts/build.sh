@@ -2,6 +2,7 @@
 
 export PREFIX="$1"
 export TARGET="$2"
+CHROOTED="$3"
 
 export SCRIPTS="$PREFIX/clientscripts"
 export WORKDIR="$PREFIX/work"
@@ -30,9 +31,25 @@ safe_prepend()
   eval export $VAR=$VALUE\${$VAR:+:}\$$VAR
 }
 
+if ! [ -d "$PREFIX" ]; then
+  echo "\$PREFIX does not exist, check config/hosts"
+  exit 1
+fi
+
 # Adding $TARGET's prefix
 if [ ! -z "$HOME" ]; then
   if [ -d "$HOME/prefix-$TARGET" ]; then
+
+    echo "Found target specific prefix: \$HOME/prefix-$TARGET"
+
+    if [ -f "$HOME/prefix-$TARGET/SCHROOT" ]; then
+      if [ -z "$CHROOTED" ]; then
+        echo "Changing root directory"
+        schroot -c "`cat \"$HOME/prefix-$TARGET/SCHROOT\"`" $0 "$PREFIX" "$TARGET" 1
+        echo "Returned from chroot"
+        exit $?
+      fi
+    fi
     safe_prepend PATH "$HOME/prefix-$TARGET/bin"
     safe_prepend CPPFLAGS "-I$HOME/prefix-$TARGET/include"
     safe_prepend LDFLAGS "-L$HOME/prefix-$TARGET/lib"
