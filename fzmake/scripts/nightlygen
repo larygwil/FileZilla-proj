@@ -1,10 +1,29 @@
-#! /bin/sh
+#! /bin/bash
 
 . /etc/profile
 
 if [ -e "$HOME/.profile" ]; then
   . "$HOME/.profile"
 fi
+
+CONFDIR=
+
+while [ -n "$1" ]; do
+  case $1 in
+    -[cC])
+      if [ -z "$2" ]; then
+        echo "-c expects a configuration dir as argument"
+        exit 1
+      fi
+      CONFDIR=$2
+      shift 2
+    ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
+    ;;
+  esac
+done
 
 function init()
 {
@@ -13,10 +32,18 @@ function init()
   else
     local dir="`pwd`/${0%/*}"
   fi
-  if [ ! -f "$dir/../config/config" ]; then
+  if [ -z "$CONFDIR" ]; then
+    CONFDIR=$dir/../config
+  else
+    if [ "${CONFDIR:0:1}" != "/" ]; then
+      CONFDIR="`pwd`/$CONFDIR"
+    fi
+  fi
+  if [ ! -f "$CONFDIR/config" ]; then
     echo "Can't find master config."
     echo "  pwd: `pwd`"
     echo "  \$0: $0"
+    echo "  Configuration directory: $CONFDIR"
     echo "Aborting."
     exit 1
   fi
@@ -29,7 +56,7 @@ function init()
 
 init || exit 1
 
-. ../config/config
+. "$CONFDIR/config"
 . log.sh
 . updatecvs.sh
 . readfile.sh
