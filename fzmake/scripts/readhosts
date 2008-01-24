@@ -10,7 +10,7 @@ function printhost()
   echo "  Host: $HOST"
   echo "  Hostprefix: $HOSTPREFIX"
   echo "  Target: $TARGETS"
-  echo "  Subhost: $SUBHOST"
+  [ -z "$SUBHOST" ] || echo "  Subhost: $SUBHOST"
 }
 
 function resetHosts()
