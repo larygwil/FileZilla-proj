@@ -12,26 +12,16 @@
    height="90"
    id="svg2300"
    sodipodi:version="0.32"
-   inkscape:version="0.45"
+   inkscape:version="0.45.1"
    version="1.0"
-   sodipodi:docname="remotetreeview2.svg"
-   sodipodi:docbase="/home/lukisuser/Desktop/mounted storage/bfiles 2007/Projects/Filezilla Toolbar/svg_icons/toolbar_general"
+   sodipodi:docname="queueview.svg"
+   sodipodi:docbase="C:\dev\svn\artwork\icons\blukis"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   sodipodi:modified="true">
+   inkscape:export-filename="C:\dev\svn\artwork\icons\blukis\queueview.png"
+   inkscape:export-xdpi="32"
+   inkscape:export-ydpi="32">
   <defs
      id="defs2302">
-    <filter
-       inkscape:collect="always"
-       x="-0.28947372"
-       width="1.5789474"
-       y="-0.28947372"
-       height="1.5789474"
-       id="filter5024">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="2.6236794"
-         id="feGaussianBlur5026" />
-    </filter>
     <filter
        inkscape:collect="always"
        x="-0.13355782"
@@ -64,18 +54,6 @@
          d="M 126.71477,349.26711 C 126.57493,344.03097 123.35546,341.9854 119.24316,341.1145 C 115.09248,340.23547 113.2887,337.35328 113.63137,330.87602 L 108.87749,333.79028 L 109.00187,349.4002 L 126.71477,349.26711 z "
          style="fill:none;fill-opacity:0.75;fill-rule:evenodd;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
     </clipPath>
-    <filter
-       inkscape:collect="always"
-       x="-0.10598437"
-       width="1.2119687"
-       y="-0.14111567"
-       height="1.2822313"
-       id="filter5875">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="2.8416194"
-         id="feGaussianBlur5877" />
-    </filter>
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath5889">
@@ -161,7 +139,7 @@
     </g>
     <g
        id="g4600"
-       transform="matrix(1.3331593,0,0,1.3331203,-134.87867,-374.82116)"
+       transform="matrix(1.3510343,0,0,1.3357923,-136.91087,-375.65468)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="42.661098"
        inkscape:export-ydpi="42.661098">
@@ -189,7 +167,7 @@
     </g>
     <g
        id="g4627"
-       transform="matrix(1.3331593,0,0,1.3331203,-140.3629,-403.05987)"
+       transform="matrix(1.3510407,0,0,1.3352898,-142.5355,-403.60693)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="42.661098"
        inkscape:export-ydpi="42.661098">
@@ -217,7 +195,7 @@
     </g>
     <g
        id="g4637"
-       transform="matrix(1.3331593,0,0,1.3331203,-146.10452,-431.19303)"
+       transform="matrix(1.351042,0,0,1.3359501,-148.16414,-431.95706)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="42.661098"
        inkscape:export-ydpi="42.661098">
@@ -245,7 +223,7 @@
     </g>
     <g
        id="g4661"
-       transform="matrix(1.3331593,0,0,1.3331203,-95.39685,-442.2377)"
+       transform="matrix(1.3509211,0,0,1.3362514,-97.524411,-443.307)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="42.661098"
        inkscape:export-ydpi="42.661098">
@@ -273,7 +251,7 @@
     </g>
     <g
        id="g4671"
-       transform="matrix(1.3331593,0,0,1.3331203,-89.693015,-414.39926)"
+       transform="matrix(1.3506631,0,0,1.3361186,-91.864727,-415.13817)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="42.661098"
        inkscape:export-ydpi="42.661098">
@@ -301,7 +279,7 @@
     </g>
     <g
        id="g4681"
-       transform="matrix(1.3331593,0,0,1.3331203,-84.094925,-386.2661)"
+       transform="matrix(1.3509407,0,0,1.3365645,-86.273363,-387.16684)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="42.661098"
        inkscape:export-ydpi="42.661098">

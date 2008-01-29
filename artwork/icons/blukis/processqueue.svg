@@ -12,12 +12,14 @@
    height="90"
    id="svg2300"
    sodipodi:version="0.32"
-   inkscape:version="0.45"
+   inkscape:version="0.45.1"
    version="1.0"
-   sodipodi:docname="cancel.svg"
-   sodipodi:docbase="/home/lukisuser/Desktop/mounted storage/bfiles 2007/Projects/Filezilla Toolbar/svg_icons/toolbar_general"
+   sodipodi:docname="processqueue.svg"
+   sodipodi:docbase="C:\dev\svn\artwork\icons\blukis"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   sodipodi:modified="true">
+   inkscape:export-filename="C:\dev\svn\artwork\icons\blukis\processqueue.png"
+   inkscape:export-xdpi="32"
+   inkscape:export-ydpi="32">
   <defs
      id="defs2302">
     <filter
@@ -44,58 +46,6 @@
          stdDeviation="1.8398438"
          id="feGaussianBlur5065" />
     </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.18947363"
-       width="1.3789473"
-       y="-0.18947374"
-       height="1.3789475"
-       id="filter3996">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="3.2195359"
-         id="feGaussianBlur3998" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       id="filter5228">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="1.7657895"
-         id="feGaussianBlur5230" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       id="filter4358">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="1.085128"
-         id="feGaussianBlur4360" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.14799408"
-       width="1.2959882"
-       y="-0.14674803"
-       height="1.2934961"
-       id="filter3789">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="2.0150475"
-         id="feGaussianBlur3791" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.28947372"
-       width="1.5789474"
-       y="-0.28947372"
-       height="1.5789474"
-       id="filter5024">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="2.6236794"
-         id="feGaussianBlur5026" />
-    </filter>
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath3642">
@@ -116,18 +66,6 @@
          d="M 126.71477,349.26711 C 126.57493,344.03097 123.35546,341.9854 119.24316,341.1145 C 115.09248,340.23547 113.2887,337.35328 113.63137,330.87602 L 108.87749,333.79028 L 109.00187,349.4002 L 126.71477,349.26711 z "
          style="fill:none;fill-opacity:0.75;fill-rule:evenodd;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
     </clipPath>
-    <filter
-       inkscape:collect="always"
-       x="-0.10598437"
-       width="1.2119687"
-       y="-0.14111567"
-       height="1.2822313"
-       id="filter5875">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="2.8416194"
-         id="feGaussianBlur5877" />
-    </filter>
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath5889">
@@ -153,7 +91,7 @@
      inkscape:pageshadow="2"
      inkscape:zoom="4.7"
      inkscape:cx="45"
-     inkscape:cy="46.268591"
+     inkscape:cy="42.468829"
      inkscape:document-units="in"
      inkscape:current-layer="layer1"
      width="1in"
@@ -190,7 +128,7 @@
      id="layer1">
     <g
        id="g4968"
-       transform="matrix(1.3321488,0,0,1.3322889,-140.35143,-402.64742)"
+       transform="matrix(1.345477,0,0,1.3357967,-141.81305,-403.77857)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="63.907196"
        inkscape:export-ydpi="63.907196">
@@ -218,7 +156,7 @@
     </g>
     <g
        id="g4978"
-       transform="matrix(1.3321488,0,0,1.3322889,-146.08871,-430.76303)"
+       transform="matrix(1.3511172,0,0,1.3356678,-148.17401,-431.85879)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="63.907196"
        inkscape:export-ydpi="63.907196">
@@ -246,7 +184,7 @@
     </g>
     <g
        id="g4988"
-       transform="matrix(1.3321488,0,0,1.3322889,-95.419463,-441.80081)"
+       transform="matrix(1.3508677,0,0,1.3319154,-97.516454,-441.80235)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="63.907196"
        inkscape:export-ydpi="63.907196">
@@ -274,7 +212,7 @@
     </g>
     <g
        id="g4998"
-       transform="matrix(1.3321488,0,0,1.3322889,-89.719951,-413.97974)"
+       transform="matrix(1.3508677,0,0,1.3355445,-91.891454,-414.94123)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="63.907196"
        inkscape:export-ydpi="63.907196">
@@ -302,7 +240,7 @@
     </g>
     <g
        id="g5008"
-       transform="matrix(1.3321488,0,0,1.3322889,-84.126104,-385.86412)"
+       transform="matrix(1.3508677,0,0,1.3355436,-86.266456,-386.81714)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="63.907196"
        inkscape:export-ydpi="63.907196">
@@ -330,7 +268,7 @@
     </g>
     <g
        id="g4958"
-       transform="matrix(1.3321488,0,0,1.3322889,-134.87136,-374.4263)"
+       transform="matrix(1.3524381,0,0,1.3354022,-137.09636,-375.51837)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\g3820-a.png"
        inkscape:export-xdpi="63.907196"
        inkscape:export-ydpi="63.907196">
