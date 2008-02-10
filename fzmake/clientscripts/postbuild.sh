@@ -38,7 +38,7 @@ if echo "$TARGET" | grep "mingw"; then
   sh makezip.sh "$WORKDIR/prefix/$PACKAGE" || return 1
   mv FileZilla.zip "$OUTPUTDIR/$TARGET/FileZilla.zip"
   
-elif [ \( "$TARGET" = "i686-apple-darwin8" -o "$TARGET" = "powerpc-apple-darwin8" \) -a "$PACKAGE" = "FileZilla3" ]; then
+elif [ \( "$TARGET" = "i686-apple-darwin9" -o "$TARGET" = "powerpc-apple-darwin9" \) -a "$PACKAGE" = "FileZilla3" ]; then
   cd "$WORKDIR/$PACKAGE"
   strip FileZilla.app/Contents/MacOS/filezilla
   strip FileZilla.app/Contents/MacOS/fzsftp
