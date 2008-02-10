@@ -40,8 +40,8 @@ if echo "$TARGET" | grep "mingw"; then
   
 elif [ \( "$TARGET" = "i686-apple-darwin9" -o "$TARGET" = "powerpc-apple-darwin9" \) -a "$PACKAGE" = "FileZilla3" ]; then
   cd "$WORKDIR/$PACKAGE"
-  strip FileZilla.app/Contents/MacOS/filezilla
-  strip FileZilla.app/Contents/MacOS/fzsftp
+  strip -S -x FileZilla.app/Contents/MacOS/filezilla
+  strip -S -x FileZilla.app/Contents/MacOS/fzsftp
   tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.app.tar.bz2" FileZilla.app
 else
   cd "$WORKDIR/prefix"
