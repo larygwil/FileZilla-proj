@@ -11,6 +11,7 @@ if echo "$TARGET" | grep "mingw"; then
   cd "$WORKDIR/$PACKAGE/src/interface"
   strip -s filezilla.exe
   cd "$WORKDIR/$PACKAGE/src/putty"
+  strip -s fzputtygen.exe
   strip -s fzsftp.exe
   echo "Making installer"
   cd "$WORKDIR/$PACKAGE/data"
@@ -41,10 +42,14 @@ if echo "$TARGET" | grep "mingw"; then
 elif [ \( "$TARGET" = "i686-apple-darwin9" -o "$TARGET" = "powerpc-apple-darwin9" \) -a "$PACKAGE" = "FileZilla3" ]; then
   cd "$WORKDIR/$PACKAGE"
   strip -S -x FileZilla.app/Contents/MacOS/filezilla
+  strip -S -x FileZilla.app/Contents/MacOS/fzputtygen
   strip -S -x FileZilla.app/Contents/MacOS/fzsftp
   tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.app.tar.bz2" FileZilla.app
 else
   cd "$WORKDIR/prefix"
+  strip -g "$PACKAGE/bin/filezilla"
+  strip -g "$PACKAGE/bin/fzsftp"
+  strip -g "$PACKAGE/bin/fzputtygen"
   tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.tar.bz2" $PACKAGE
   bzip2 -t "$OUTPUTDIR/$TARGET/$PACKAGE.tar.bz2" || return 1
 fi
