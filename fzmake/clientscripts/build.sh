@@ -55,6 +55,10 @@ if [ ! -z "$HOME" ]; then
     safe_prepend LDFLAGS "-L$HOME/prefix-$TARGET/lib"
     safe_prepend LD_LIBRARY_PATH "$HOME/prefix-$TARGET/lib"
 
+    if [ -x "$HOME/prefix-$TARGET/profile" ]; then
+      . "$HOME/prefix-$TARGET/profile"
+    fi
+
     if [ -f "$HOME/prefix-$TARGET/CFLAGS" ]; then
       safe_prepend CFLAGS "`cat \"$HOME/prefix-$TARGET/CFLAGS\"`"
     fi
