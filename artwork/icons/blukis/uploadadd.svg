@@ -12,12 +12,14 @@
    height="90"
    id="svg2300"
    sodipodi:version="0.32"
-   inkscape:version="0.45"
+   inkscape:version="0.45.1"
    version="1.0"
-   sodipodi:docname="downloadadd.svg"
-   sodipodi:docbase="/home/lukisuser/Desktop/mounted storage/bfiles 2007/Projects/Filezilla Toolbar/svg_icons/toolbar_quicktransfer"
+   sodipodi:docname="uploadadd.svg"
+   sodipodi:docbase="C:\projects\Filezilla_art\icons\blukis"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   sodipodi:modified="true">
+   inkscape:export-filename="C:\temp\fz-temp\48x48\uploadadd.png"
+   inkscape:export-xdpi="48"
+   inkscape:export-ydpi="48">
   <defs
      id="defs2302">
     <filter
@@ -44,30 +46,6 @@
          stdDeviation="2.3014391"
          id="feGaussianBlur4376" />
     </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.106322"
-       width="1.212644"
-       y="-0.10401263"
-       height="1.2080253"
-       id="filter4372">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="1.5588356"
-         id="feGaussianBlur4374" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.31549016"
-       width="1.6309803"
-       y="-0.31549016"
-       height="1.6309803"
-       id="filter4488">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="1.5436176"
-         id="feGaussianBlur4490" />
-    </filter>
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath3642">
@@ -88,18 +66,6 @@
          d="M 126.71477,349.26711 C 126.57493,344.03097 123.35546,341.9854 119.24316,341.1145 C 115.09248,340.23547 113.2887,337.35328 113.63137,330.87602 L 108.87749,333.79028 L 109.00187,349.4002 L 126.71477,349.26711 z "
          style="fill:none;fill-opacity:0.75;fill-rule:evenodd;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
     </clipPath>
-    <filter
-       inkscape:collect="always"
-       x="-0.10598437"
-       width="1.2119687"
-       y="-0.14111567"
-       height="1.2822313"
-       id="filter5875">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="2.8416194"
-         id="feGaussianBlur5877" />
-    </filter>
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath5889">
@@ -123,9 +89,9 @@
      objecttolerance="10"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="4.7"
+     inkscape:zoom="4.3777778"
      inkscape:cx="45"
-     inkscape:cy="46.268591"
+     inkscape:cy="45"
      inkscape:document-units="in"
      inkscape:current-layer="layer1"
      width="1in"
@@ -138,11 +104,11 @@
      gridanglez="0.33333333in"
      grid_units="in"
      gridempspacing="8"
-     inkscape:window-width="910"
-     inkscape:window-height="626"
-     inkscape:window-x="342"
-     inkscape:window-y="294"
-     inkscape:grid-bbox="true"
+     inkscape:window-width="748"
+     inkscape:window-height="579"
+     inkscape:window-x="522"
+     inkscape:window-y="9"
+     inkscape:grid-bbox="false"
      inkscape:grid-points="false"
      gridoriginx="0in" />
   <metadata
@@ -162,7 +128,7 @@
      id="layer1">
     <g
        id="g3357"
-       transform="matrix(1.3331593,0,0,1.3331203,-240.46188,-197.73567)"
+       transform="matrix(1.3331593,0,0,1.3331203,-240.69031,-197.73567)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
        inkscape:export-xdpi="42.661114"
        inkscape:export-ydpi="42.661114">

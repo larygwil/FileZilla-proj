@@ -12,12 +12,14 @@
    height="90"
    id="svg2300"
    sodipodi:version="0.32"
-   inkscape:version="0.45"
+   inkscape:version="0.45.1"
    version="1.0"
-   sodipodi:docname="processqueue.svg"
-   sodipodi:docbase="/home/lukisuser/Desktop/mounted storage/bfiles 2007/Projects/Filezilla Toolbar/svg_icons/toolbar_general"
+   sodipodi:docname="help.svg"
+   sodipodi:docbase="C:\projects\Filezilla_art\icons\blukis"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   sodipodi:modified="true">
+   inkscape:export-filename="C:\projects\Filezilla\src\interface\resources\blukis\32x32\help.png"
+   inkscape:export-xdpi="32"
+   inkscape:export-ydpi="32">
   <defs
      id="defs2302">
     <filter
@@ -44,82 +46,6 @@
          stdDeviation="1.5436176"
          id="feGaussianBlur4490" />
     </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.13355782"
-       width="1.2671156"
-       y="-0.28361919"
-       height="1.5672384"
-       id="filter4593">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="1.1833806"
-         id="feGaussianBlur4595" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.21026786"
-       width="1.4205357"
-       y="-0.065598886"
-       height="1.1311978"
-       id="filter5063">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="1.8398438"
-         id="feGaussianBlur5065" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.18947363"
-       width="1.3789473"
-       y="-0.18947374"
-       height="1.3789475"
-       id="filter3996">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="3.2195359"
-         id="feGaussianBlur3998" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       id="filter5228">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="1.7657895"
-         id="feGaussianBlur5230" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       id="filter4358">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="1.085128"
-         id="feGaussianBlur4360" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.14799408"
-       width="1.2959882"
-       y="-0.14674803"
-       height="1.2934961"
-       id="filter3789">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="2.0150475"
-         id="feGaussianBlur3791" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.28947372"
-       width="1.5789474"
-       y="-0.28947372"
-       height="1.5789474"
-       id="filter5024">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="2.6236794"
-         id="feGaussianBlur5026" />
-    </filter>
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath3642">
@@ -140,18 +66,6 @@
          d="M 126.71477,349.26711 C 126.57493,344.03097 123.35546,341.9854 119.24316,341.1145 C 115.09248,340.23547 113.2887,337.35328 113.63137,330.87602 L 108.87749,333.79028 L 109.00187,349.4002 L 126.71477,349.26711 z "
          style="fill:none;fill-opacity:0.75;fill-rule:evenodd;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
     </clipPath>
-    <filter
-       inkscape:collect="always"
-       x="-0.10598437"
-       width="1.2119687"
-       y="-0.14111567"
-       height="1.2822313"
-       id="filter5875">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="2.8416194"
-         id="feGaussianBlur5877" />
-    </filter>
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath5889">
@@ -177,7 +91,7 @@
      inkscape:pageshadow="2"
      inkscape:zoom="4.7"
      inkscape:cx="45"
-     inkscape:cy="46.268591"
+     inkscape:cy="45.241604"
      inkscape:document-units="in"
      inkscape:current-layer="layer1"
      width="1in"
@@ -214,9 +128,9 @@
      id="layer1">
     <path
        style="fill:#fbef95;fill-opacity:1;fill-rule:evenodd;stroke:#847a32;stroke-width:1.68714845;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 34.481721,33.935921 L 18.10457,33.410957 C 18.10457,14.903058 30.330269,5.9860204 45.619992,5.9688752 C 60.832051,5.95183 71.61292,17.503576 71.576075,27.313699 C 70.770921,40.809547 63.873203,44.460931 52.015766,48.579833 L 52.005317,60.398316 L 37.122452,60.398316 L 37.115503,44.249753 C 41.611896,35.450195 54.163351,37.788198 54.138392,29.553218 C 54.290234,24.037122 50.769797,17.983078 46.06262,18.084724 C 39.135643,18.358247 34.481721,25.212516 34.481721,33.935921 z "
+       d="M 34.481721,33.935921 L 18.10457,33.410957 C 18.10457,14.903058 30.330269,5.9860204 45.619992,5.9688752 C 60.832051,5.95183 72.08581,17.716715 72.001607,27.526465 C 71.882109,41.448218 61.320012,46.163059 52.015766,50.494727 L 52.005317,60.398316 L 37.122452,60.398316 L 37.115503,44.249753 C 41.611896,35.450195 54.163351,37.788198 54.138392,29.553218 C 54.290234,24.037122 50.769797,17.983078 46.06262,18.084724 C 39.135643,18.358247 34.481721,25.212516 34.481721,33.935921 z "
        id="path4295"
-       sodipodi:nodetypes="ccscccccccc"
+       sodipodi:nodetypes="ccssccccccc"
        inkscape:export-filename="C:\briantemp\filezilla-toolbar\path4496.png"
        inkscape:export-xdpi="42.666725"
        inkscape:export-ydpi="42.666725" />
