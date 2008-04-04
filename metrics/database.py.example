@@ -1,0 +1,6 @@
+#! /usr/bin/python
+
+host=somehost
+database=somedatabase
+user=someuser
+password=somepass
