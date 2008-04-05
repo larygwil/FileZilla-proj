@@ -11,7 +11,7 @@ db = MySQLdb.connect(db=database.database, user=database.user, passwd=database.p
 
 typedata = [ {'type': 'text',   'name': 'header', 'extensions': ['.h']},
              {'type': 'text',   'name': 'source', 'extensions': ['.cpp', '.c', '.rc', '.rc2'], 'files': ['version.rc.in']},
-             {'type': 'text',   'name': 'other',  'extensions': ['.sh', '.example', '.desktop', '.am', '.m4', '', '.htm', '.html', '.man', '.xrc', '.xml', '.vcproj', '.in', '.kdevelop', '.sln', '.txt', '.def', '.plist', '.nsi'], 'files': ['configure.in', 'autogen.sh']},
+             {'type': 'text',   'name': 'other',  'extensions': ['.ini', '.sh', '.example', '.desktop', '.am', '.m4', '', '.htm', '.html', '.man', '.xrc', '.xml', '.vcproj', '.in', '.kdevelop', '.sln', '.txt', '.def', '.plist', '.nsi'], 'files': ['configure.in', 'autogen.sh']},
              {'type': 'binary', 'name': 'binary', 'extensions': ['.png', '.ico', '.dll', '.xpm', '.icns', '.wav']}
            ]
 

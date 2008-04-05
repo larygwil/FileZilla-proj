@@ -3,7 +3,7 @@
 import pysvn
 import metrics
 
-source_directory="/home/codesquid/metrics/FileZilla3"
+source_directory="/home/metrics/metrics/FileZilla3"
 
 client = pysvn.Client()
 
