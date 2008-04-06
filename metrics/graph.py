@@ -38,8 +38,8 @@ def create_graph(file, title, label_y, mode, data):
                '--start', str(timestamp - 1)
              ]
 
-      for line in data:
-        args.append('DS:' + line[1] + ':GAUGE:9999999:U:U')
+      for i, line in enumerate(data):
+        args.append('DS:source' + str(i) + ':GAUGE:9999999:U:U')
 
       args.append('RRA:AVERAGE:0.1:22:2200200')
       rrdtool.create(*args)
@@ -50,7 +50,10 @@ def create_graph(file, title, label_y, mode, data):
 
       s = str(timestamp)
       for i in range(1, len(data) + 1):
-        s += ':%d' % row[i]
+        if row[i] == None:
+	  s += ':U'
+	else:
+          s += ':%d' % row[i]
       rrdtool.update('../tmp/tmp.rrd', s)
       prev = timestamp
   
@@ -65,11 +68,21 @@ def create_graph(file, title, label_y, mode, data):
           '--vertical-label', label_y,
           '--title', title,
           '--lower-limit', '0']
-  i = 0
-  for line in data:
-    args.append('DEF:' + line[1] + '=../tmp/tmp.rrd:' + line[1] + ':AVERAGE')
-    args.append('LINE:' + line[1] + colors[i] +':' + line[0])
-    i += 1
+
+  for i, line in enumerate(data):
+
+    flags = line[2:]
+    args.append('DEF:source' + str(i) + '=../tmp/tmp.rrd:source' + str(i) + ':AVERAGE')
+
+    if 'area' in flags:
+      graph = 'AREA:'
+    else:
+      graph = 'LINE:'
+    graph += 'source' + str(i) + colors[i] +':' + line[0]
+
+    if 'stack' in flags:
+      graph += ':STACK'
+    args.append(graph)
 
   rrdtool.graph(*args)
 
@@ -80,7 +93,15 @@ data = [ ('Source files', 'count_source'), ('Header files', 'count_header'), ('O
 create_graph('/var/www/code/test2.png', 'Number of files', '# Files', 'normal', data)
 
 data = [ ('Source files', 'size_source'), ('Header files', 'size_header'), ('Other text files', 'size_other'), ('Binary files', 'size_binary') ]
-create_graph('/var/www/code/test3.png', 'Filesize', 'Size', 'normal', data)
+create_graph('/var/www/code/test3.png', 'Total filesize', 'Size', 'normal', data)
+
+data = [ ('Source files', 'size_source', 'area'), ('Header files', 'size_header', 'stack', 'area'), ('Other text files', 'size_other', 'stack', 'area'), ('Binary files', 'size_binary', 'stack', 'area') ]
+create_graph('/var/www/code/test4.png', 'Total filesize (additive)', 'Size', 'normal', data)
+
+
+
+data = [ ('Source files', 'size_source / count_source'), ('Header files', 'size_header / count_header'), ('Other text files', 'size_other / count_other'), ('Binary files', 'size_binary / count_binary') ]
+create_graph('/var/www/code/test5.png', 'Average filesize', 'Size', 'normal', data)
 
 db.close()
 
