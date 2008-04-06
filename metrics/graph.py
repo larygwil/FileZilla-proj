@@ -61,7 +61,7 @@ def create_graph(file, title, label_y, mode, data):
 
   args = [file,
           '--imgformat', 'PNG',
-          '--width', '540',
+          '--width', '520',
           '--height', '250',
           '--start', "%d" % starttime,
 #         '--end', "-1",
@@ -93,15 +93,16 @@ data = [ ('Source files', 'count_source'), ('Header files', 'count_header'), ('O
 create_graph('/var/www/code/test2.png', 'Number of files', '# Files', 'normal', data)
 
 data = [ ('Source files', 'size_source'), ('Header files', 'size_header'), ('Other text files', 'size_other'), ('Binary files', 'size_binary') ]
-create_graph('/var/www/code/test3.png', 'Total filesize', 'Size', 'normal', data)
+create_graph('/var/www/code/test3.png', 'Total filesize', 'Size (bytes)', 'normal', data)
 
 data = [ ('Source files', 'size_source', 'area'), ('Header files', 'size_header', 'stack', 'area'), ('Other text files', 'size_other', 'stack', 'area'), ('Binary files', 'size_binary', 'stack', 'area') ]
-create_graph('/var/www/code/test4.png', 'Total filesize (additive)', 'Size', 'normal', data)
-
-
+create_graph('/var/www/code/test4.png', 'Total filesize (additive)', 'Size (bytes)', 'normal', data)
 
 data = [ ('Source files', 'size_source / count_source'), ('Header files', 'size_header / count_header'), ('Other text files', 'size_other / count_other'), ('Binary files', 'size_binary / count_binary') ]
-create_graph('/var/www/code/test5.png', 'Average filesize', 'Size', 'normal', data)
+create_graph('/var/www/code/test5.png', 'Average filesize', 'Size (bytes)', 'normal', data)
+
+data = [ ('Source files', 'loc_source / count_source'), ('Header files', 'loc_header / count_header'), ('Other text files', 'loc_other / count_other') ]
+create_graph('/var/www/code/test6.png', 'Average lines of code per file', 'LOC', 'normal', data)
 
 db.close()
 
