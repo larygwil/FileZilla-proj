@@ -2,17 +2,32 @@
 
 import pysvn
 import metrics
+import database
+import MySQLdb
 
-source_directory="/home/metrics/metrics/FileZilla3"
+svn_directory="/home/metrics/metrics/svn/"
 
-client = pysvn.Client()
+db = MySQLdb.connect(db=database.database, user=database.user, passwd=database.password)
 
-current_revision = client.info(source_directory).revision.number
-logs = client.log(source_directory, revision_start=pysvn.Revision(pysvn.opt_revision_kind.number, current_revision), revision_end=pysvn.Revision(pysvn.opt_revision_kind.head))
+# Function to go through all revisions
+def traverse(repository, subdir):
+  client = pysvn.Client()
 
-for log in logs:
-  revision = log['revision'].number
-  print "Getting metrics for revision", log['revision'].number
-  client.update(source_directory, revision=pysvn.Revision(pysvn.opt_revision_kind.number, revision))
-  metrics.calc(source_directory, revision, log['date'])
+  source_directory = svn_directory + subdir 
 
+  current_revision = client.info(source_directory).revision.number
+  logs = client.log(source_directory, revision_start=pysvn.Revision(pysvn.opt_revision_kind.number, current_revision), revision_end=pysvn.Revision(pysvn.opt_revision_kind.head))
+
+  for log in logs:
+    revision = log['revision'].number
+    print "Getting metrics for revision", log['revision'].number
+    client.update(source_directory, revision=pysvn.Revision(pysvn.opt_revision_kind.number, revision))
+    metrics.calc(repository, source_directory, revision, log['date'])
+
+cursor = db.cursor()
+cursor.execute("SELECT `id`, `svndir` FROM `repository`")
+for row in cursor.fetchall():
+  traverse(*row)
+
+cursor.close()
+db.close()

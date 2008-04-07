@@ -16,7 +16,7 @@ def create_graph(file, title, label_y, mode, data):
   query = 'SELECT revisions.date'
   for line in data:
     query += ', metrics.'+ line[1]
-  query += ' FROM metrics, revisions WHERE metrics.revision = revisions.revision'
+  query += ' FROM metrics, revisions WHERE revisions.repository = 0 AND metrics.revision = revisions.revision'
   
   cursor = db.cursor()
   cursor.execute(query)

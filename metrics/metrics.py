@@ -21,7 +21,7 @@ def update_data(data, fullpath):
   if data['type'] == 'text':
     data['lines'] += len(open(fullpath).readlines())
 
-def calc(source_directory, revision, timestamp):
+def calc(repository, source_directory, revision, timestamp):
   for data in typedata:
     data['count'] = 0;
     data['lines'] = 0;
@@ -58,7 +58,7 @@ def calc(source_directory, revision, timestamp):
   #  else:
   #    print 'Files: %d, size: %d, matches %s%s' % (data['count'], data['size'], data['extensions'], data['files'])
 
-  query='INSERT INTO metrics (revision'
+  query='INSERT INTO metrics (repository, revision'
   for data in typedata:
     name = data['name']
     if data['type'] == 'text':
@@ -66,7 +66,7 @@ def calc(source_directory, revision, timestamp):
     query += ", size_" + name
     query += ", count_" + name
 
-  query += ') VALUES (%d' % revision
+  query += ') VALUES (%d, %d' % (repository, revision)
 
   for data in typedata:
     if data['type'] == 'text':
@@ -80,9 +80,8 @@ def calc(source_directory, revision, timestamp):
   datestr = d.strftime('%Y%m%d%H%M%S')
 
   cursor = db.cursor()
-  cursor.execute("DELETE FROM metrics WHERE revision=%d" % revision)
-  cursor.execute("DELETE FROM revisions WHERE revision=%d" % revision)
-  cursor.execute("INSERT INTO revisions VALUES (%d, %s)" % (revision, datestr))
+  cursor.execute("DELETE FROM revisions WHERE revision=%d" % revision) # same revision deleted from `metrics` due to foreign key constraint
+  cursor.execute("INSERT INTO revisions VALUES (%d, %d, %s)" % (repository, revision, datestr))
   cursor.execute(query)
   cursor.close()
   db.commit()
