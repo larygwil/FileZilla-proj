@@ -27,6 +27,7 @@ def traverse(repository, subdir):
 cursor = db.cursor()
 cursor.execute("SELECT `id`, `svndir` FROM `repository`")
 for row in cursor.fetchall():
+  metrics.init_types(row[0])
   traverse(*row)
 
 cursor.close()

@@ -16,28 +16,72 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `extensions`
+--
+
+DROP TABLE IF EXISTS `extensions`;
+CREATE TABLE `extensions` (
+  `filetype` smallint(5) unsigned NOT NULL,
+  `extension` varchar(10) NOT NULL,
+  KEY `filetype` (`filetype`),
+  CONSTRAINT `extensions_ibfk_1` FOREIGN KEY (`filetype`) REFERENCES `filetypes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Table structure for table `filenames`
+--
+
+DROP TABLE IF EXISTS `filenames`;
+CREATE TABLE `filenames` (
+  `filetype` smallint(5) unsigned NOT NULL,
+  `filename` varchar(30) NOT NULL,
+  KEY `filetype` (`filetype`),
+  CONSTRAINT `filenames_ibfk_1` FOREIGN KEY (`filetype`) REFERENCES `filetypes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Table structure for table `filetypes`
+--
+
+DROP TABLE IF EXISTS `filetypes`;
+CREATE TABLE `filetypes` (
+  `id` smallint(5) unsigned NOT NULL auto_increment,
+  `name` varchar(20) NOT NULL,
+  `subdir` varchar(40) default NULL,
+  `text` tinyint(1) NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
 -- Table structure for table `metrics`
 --
 
 DROP TABLE IF EXISTS `metrics`;
 CREATE TABLE `metrics` (
   `repository` tinyint(3) unsigned NOT NULL,
+  `filetype` smallint(5) unsigned NOT NULL,
   `revision` mediumint(8) unsigned NOT NULL,
-  `loc_header` mediumint(8) unsigned NOT NULL,
-  `loc_source` mediumint(8) unsigned NOT NULL,
-  `loc_other` mediumint(8) unsigned NOT NULL,
-  `size_header` int(10) unsigned NOT NULL,
-  `size_source` int(10) unsigned NOT NULL,
-  `size_other` int(10) unsigned NOT NULL,
-  `size_binary` int(10) unsigned NOT NULL,
-  `count_header` smallint(5) unsigned NOT NULL,
-  `count_source` smallint(5) unsigned NOT NULL,
-  `count_other` smallint(5) unsigned NOT NULL,
-  `count_binary` smallint(5) unsigned NOT NULL,
-  PRIMARY KEY  (`repository`,`revision`),
-  KEY `repository` (`repository`),
-  KEY `revision` (`revision`),
-  CONSTRAINT `metrics_ibfk_1` FOREIGN KEY (`repository`, `revision`) REFERENCES `revisions` (`repository`, `revision`) ON DELETE CASCADE ON UPDATE CASCADE
+  `count` smallint(5) unsigned NOT NULL,
+  `size` int(10) unsigned NOT NULL,
+  `lines` mediumint(8) unsigned default NULL,
+  KEY `repository_2` (`repository`,`filetype`),
+  KEY `repository` (`repository`,`revision`),
+  CONSTRAINT `metrics_ibfk_1` FOREIGN KEY (`repository`, `filetype`) REFERENCES `repo_type_assoc` (`repository`, `type`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `metrics_ibfk_2` FOREIGN KEY (`repository`, `revision`) REFERENCES `revisions` (`repository`, `revision`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Table structure for table `repo_type_assoc`
+--
+
+DROP TABLE IF EXISTS `repo_type_assoc`;
+CREATE TABLE `repo_type_assoc` (
+  `repository` tinyint(3) unsigned NOT NULL,
+  `type` smallint(5) unsigned NOT NULL,
+  KEY `repository` (`repository`,`type`),
+  KEY `type` (`type`),
+  CONSTRAINT `repo_type_assoc_ibfk_2` FOREIGN KEY (`type`) REFERENCES `filetypes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `repo_type_assoc_ibfk_1` FOREIGN KEY (`repository`) REFERENCES `repository` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -78,4 +122,4 @@ CREATE TABLE `revisions` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2008-04-07 15:24:03
+-- Dump completed on 2008-04-08 12:02:12
