@@ -5,6 +5,9 @@ export SCP="scp -o PreferredAuthentications=publickey -o StrictHostKeyChecking=y
 
 function failure()
 {
+  ENDSECONDS=`date '+%s'`
+  local span=$((ENDSECONDS - STARTSECONDS))
+  echo "Build time: $span seconds" >> "$TARGETLOG"
   touch "$OUTPUTDIR/$TARGET/failed"
   rm -f "$OUTPUTDIR/$TARGET/running"
   rm -f "$OUTPUTDIR/$TARGET/pending"
@@ -87,6 +90,7 @@ function buildspawn()
     targetlogprint "---------------------\n"
     targetlogprint "Target: $TARGET";
     START=`date "+%Y-%m-%d %H:%M:%S"`
+    export STARTSECONDS=`date '+%s'`
     targetlogprint "Build started: $START\n"
     
     touch "$OUTPUTDIR/$i/running"
@@ -121,6 +125,10 @@ function buildspawn()
     rm "$OUTPUTDIR/$i/running"
 
     targetlogprint "Build successful"
+
+    ENDSECONDS=`date '+%s'`
+    local span=$((ENDSECONDS - STARTSECONDS))
+    echo "Build time: $span seconds" >> "$TARGETLOG"
 
   done
 
