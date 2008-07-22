@@ -33,12 +33,6 @@ def init_types(repository):
 
   cursor.close()
 
-#typedata = [ {'type': 'text',   'name': 'header', 'extensions': ['.h']},
-#             {'type': 'text',   'name': 'source', 'extensions': ['.cpp', '.c', '.rc', '.rc2'], 'files': ['version.rc.in']},
-#             {'type': 'text',   'name': 'other',  'extensions': ['.ini', '.sh', '.example', '.desktop', '.am', '.m4', '', '.htm', '.html', '.man', '.xrc', '.xml', '.vcproj', '.in', '.kdevelop', '.sln', '.txt', '.def', '.plist', '.nsi'], 'files': ['configure.in', 'autogen.sh']},
-#             {'type': 'binary', 'name': 'binary', 'extensions': ['.png', '.ico', '.dll', '.xpm', '.icns', '.wav']}
-#           ]
-
 def update_data(data, fullpath):
   data['count'] += 1
   data['size'] += os.path.getsize(fullpath)
@@ -87,8 +81,8 @@ def calc(repository, source_directory, revision, timestamp):
   d = datetime.datetime.fromtimestamp(timestamp)
   datestr = d.strftime('%Y%m%d%H%M%S')
 
-  cursor.execute("DELETE FROM revisions WHERE revision=%d" % revision) # same revision deleted from `metrics` due to foreign key constraint
-  cursor.execute("INSERT INTO revisions VALUES (%d, %d, %s)" % (repository, revision, datestr))
+  cursor.execute("DELETE FROM `revisions` WHERE `revision`=%d" % revision) # same revision deleted from `metrics` due to foreign key constraint
+  cursor.execute("INSERT INTO `revisions` VALUES (%d, %d, %s)" % (repository, revision, datestr))
 
   for data in typedata:
    query='INSERT INTO `metrics` VALUES (%d, %d, %d, %d, %d, ' % (repository, data['index'], revision, data['count'], data['size'])

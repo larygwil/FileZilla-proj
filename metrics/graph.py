@@ -6,103 +6,163 @@ import sys
 import time
 import rrdtool
 
+imagedir = '/var/www/code/'
+
 import database
 db = MySQLdb.connect(db=database.database, user=database.user, passwd=database.password)
 
 colors = [ '#009933', '#003399', '#993300', '#bbbb00' ]
 
-def create_graph(file, title, label_y, mode, data):
- 
-  query = 'SELECT revisions.date'
-  for line in data:
-    query += ', metrics.'+ line[1]
-  query += ' FROM metrics, revisions WHERE revisions.repository = 0 AND metrics.revision = revisions.revision'
-  
+def get_lines(graph):
+
   cursor = db.cursor()
-  cursor.execute(query)
+  cursor.execute('SELECT `id`, `stack`, `area`, `name` FROM `lines` WHERE `graph` = %d' % graph)
   
+  return cursor.fetchall()
+
+def get_columns(line):
+
+  cursor = db.cursor()
+  cursor.execute('SELECT `type`, `column`, `operator` FROM `line_columns` WHERE `line` = %d ORDER BY `id` ASC' % line)
+
+  return cursor.fetchall()
+
+def get_type_name(type):
+
+  cursor = db.cursor()
+  cursor.execute('SELECT `name` FROM `filetypes` WHERE `id` = %d' % type)
+
+  return cursor.fetchall()[0]
+
+def create_graph(graph):
+
+  repository = graph[1]
+
+  cursor = db.cursor()
+  cursor.execute('SELECT `date` FROM `revisions` WHERE `repository` = %d' % repository)
+  dates = [ date for (date, ) in cursor.fetchall() ]
+
+  metrics = {}
+
+  lines = get_lines(graph[0])
+
+  if len(lines) == 0:
+    print 'No line definitions found for graph %d' % graph[0]
+    return
+
+  for i, line in enumerate(lines):
+    line_id = line[0]
+
+    columns = get_columns(line_id)
+
+    # Calculation stack
+    tmp = {}
+    stackdepth = 0
+
+    for j, op in enumerate(columns):
+
+      if op[2] == '/':
+
+        for k, v in enumerate(tmp[stackdepth - 2]):
+	  if tmp[stackdepth - 1][k] == 0:
+	    tmp[stackdepth-2][k] = 0
+	  else:
+            tmp[stackdepth - 2][k] = v / tmp[stackdepth - 1][k]
+	stackdepth = stackdepth - 1
+
+      else:
+        line_type = op[0]
+        column = op[1]
+        if column == 0:
+          columnname = 'count'
+        elif column == 1:
+          columnname = 'size'
+        else:
+          columnname = 'lines'
+
+        cursor.execute('SELECT `%s` FROM `metrics` WHERE `repository` = %d AND `filetype` = %d' % (columnname, repository, line_type))
+
+        tmp[stackdepth] = [ metric for (metric, ) in cursor.fetchall() ]
+        stackdepth = stackdepth + 1
+
+	if line[3] == None:
+	  line = line[:-1] + get_type_name(line_type)
+	  lines = lines[:i] + (line,) + lines[i+1:]
+
+    if stackdepth != 1:
+      print 'Invalid line definition, nonzero stackdepth for graph %d' % graph[0]
+      return
+
+    metrics[i] = tmp[0]
+
   initialised = False
   prev=0
   starttime=0
-  while True:
-    row = cursor.fetchone()
-    if row == None:
-      break;
-    
-    
+  for dateindex, date in enumerate(dates):
   
-    timestamp = int(time.mktime(time.strptime(str(row[0]), '%Y-%m-%d %H:%M:%S')))
+    timestamp = int(time.mktime(time.strptime(str(date), '%Y-%m-%d %H:%M:%S')))
   
     if not initialised:
       args = [ '/home/metrics/tmp/tmp.rrd', 
                '--start', str(timestamp - 1)
              ]
 
-      for i, line in enumerate(data):
+      for i in range(0, len(metrics)):
         args.append('DS:source' + str(i) + ':GAUGE:9999999:U:U')
 
       args.append('RRA:AVERAGE:0.1:22:2200200')
       rrdtool.create(*args)
       initialised = True
-      starttime=timestamp
+      starttime = timestamp
   
     if prev != timestamp:
 
       s = str(timestamp)
-      for i in range(1, len(data) + 1):
-        if row[i] == None:
+      for i in range(0, len(metrics)):
+        if metrics[i][dateindex] == None:
 	  s += ':U'
 	else:
-          s += ':%d' % row[i]
+          s += ':%d' % metrics[i][dateindex]
       rrdtool.update('../tmp/tmp.rrd', s)
       prev = timestamp
-  
-  cursor.close()
-
+ 
+  file = imagedir + 'test%d.png' % graph[0]
   args = [file,
           '--imgformat', 'PNG',
           '--width', '520',
           '--height', '250',
           '--start', "%d" % starttime,
 #         '--end', "-1",
-          '--vertical-label', label_y,
-          '--title', title,
+          '--vertical-label', graph[3],
+          '--title', graph[2],
           '--lower-limit', '0']
 
-  for i, line in enumerate(data):
+  for i, line in enumerate(lines):
+    name = line[3]
 
-    flags = line[2:]
+    #flags = line[2:]
     args.append('DEF:source' + str(i) + '=../tmp/tmp.rrd:source' + str(i) + ':AVERAGE')
 
-    if 'area' in flags:
-      graph = 'AREA:'
+    if line[2] == 1:
+      graph_def = 'AREA:'
     else:
-      graph = 'LINE:'
-    graph += 'source' + str(i) + colors[i] +':' + line[0]
+      graph_def = 'LINE:'
+    graph_def += 'source' + str(i) + colors[i] + ':' + name
 
-    if 'stack' in flags:
-      graph += ':STACK'
-    args.append(graph)
+    if line[1] == 1:
+      graph_def += ':STACK'
+    args.append(graph_def)
 
   rrdtool.graph(*args)
 
-data = [ ('Source lines', 'loc_source'), ('Header lines', 'loc_header'), ('Other text files', 'loc_other') ]
-create_graph('/var/www/code/test.png', 'Lines of code', 'LOC', 'normal', data)
+cursor = db.cursor()
+cursor.execute('SELECT `id`, `repository`, `title`, `y_axis` FROM `graphs`')
 
-data = [ ('Source files', 'count_source'), ('Header files', 'count_header'), ('Other text files', 'count_other'), ('Binary files', 'count_binary') ]
-create_graph('/var/www/code/test2.png', 'Number of files', '# Files', 'normal', data)
+graphs = cursor.fetchall()
 
-data = [ ('Source files', 'size_source'), ('Header files', 'size_header'), ('Other text files', 'size_other'), ('Binary files', 'size_binary') ]
-create_graph('/var/www/code/test3.png', 'Total filesize', 'Size (bytes)', 'normal', data)
+for graph in graphs:
 
-data = [ ('Source files', 'size_source', 'area'), ('Header files', 'size_header', 'stack', 'area'), ('Other text files', 'size_other', 'stack', 'area'), ('Binary files', 'size_binary', 'stack', 'area') ]
-create_graph('/var/www/code/test4.png', 'Total filesize (additive)', 'Size (bytes)', 'normal', data)
-
-data = [ ('Source files', 'size_source / count_source'), ('Header files', 'size_header / count_header'), ('Other text files', 'size_other / count_other'), ('Binary files', 'size_binary / count_binary') ]
-create_graph('/var/www/code/test5.png', 'Average filesize', 'Size (bytes)', 'normal', data)
-
-data = [ ('Source files', 'loc_source / count_source'), ('Header files', 'loc_header / count_header'), ('Other text files', 'loc_other / count_other') ]
-create_graph('/var/www/code/test6.png', 'Average lines of code per file', 'LOC', 'normal', data)
+  create_graph(graph)
 
 db.close()
 

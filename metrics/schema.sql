@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: code_metrics
 -- ------------------------------------------------------
--- Server version	5.0.32-Debian_7etch5-log
+-- Server version	5.0.32-Debian_7etch6-log
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -53,6 +53,55 @@ CREATE TABLE `filetypes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
+-- Table structure for table `graphs`
+--
+
+DROP TABLE IF EXISTS `graphs`;
+CREATE TABLE `graphs` (
+  `id` smallint(5) unsigned NOT NULL auto_increment,
+  `repository` tinyint(3) unsigned NOT NULL,
+  `title` varchar(30) NOT NULL,
+  `y_axis` varchar(20) NOT NULL,
+  PRIMARY KEY  (`id`),
+  KEY `repository` (`repository`),
+  CONSTRAINT `graphs_ibfk_1` FOREIGN KEY (`repository`) REFERENCES `repository` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Table structure for table `line_columns`
+--
+
+DROP TABLE IF EXISTS `line_columns`;
+CREATE TABLE `line_columns` (
+  `id` smallint(5) unsigned NOT NULL auto_increment,
+  `line` smallint(5) unsigned NOT NULL,
+  `type` smallint(5) unsigned default NULL,
+  `column` tinyint(3) unsigned default NULL,
+  `operator` char(1) default NULL,
+  PRIMARY KEY  (`id`),
+  KEY `line` (`line`),
+  KEY `type` (`type`),
+  CONSTRAINT `line_columns_ibfk_1` FOREIGN KEY (`line`) REFERENCES `lines` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `line_columns_ibfk_2` FOREIGN KEY (`type`) REFERENCES `filetypes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Table structure for table `lines`
+--
+
+DROP TABLE IF EXISTS `lines`;
+CREATE TABLE `lines` (
+  `id` smallint(5) unsigned NOT NULL auto_increment,
+  `graph` smallint(5) unsigned NOT NULL,
+  `stack` tinyint(1) NOT NULL default '0' COMMENT 'Stacked on top of previous line in same graph',
+  `area` tinyint(1) NOT NULL default '0' COMMENT 'Area style',
+  `name` varchar(25) default NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `graph` (`graph`),
+  CONSTRAINT `lines_ibfk_1` FOREIGN KEY (`graph`) REFERENCES `graphs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
 -- Table structure for table `metrics`
 --
 
@@ -80,8 +129,8 @@ CREATE TABLE `repo_type_assoc` (
   `type` smallint(5) unsigned NOT NULL,
   KEY `repository` (`repository`,`type`),
   KEY `type` (`type`),
-  CONSTRAINT `repo_type_assoc_ibfk_2` FOREIGN KEY (`type`) REFERENCES `filetypes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `repo_type_assoc_ibfk_1` FOREIGN KEY (`repository`) REFERENCES `repository` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `repo_type_assoc_ibfk_1` FOREIGN KEY (`repository`) REFERENCES `repository` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `repo_type_assoc_ibfk_2` FOREIGN KEY (`type`) REFERENCES `filetypes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -122,4 +171,4 @@ CREATE TABLE `revisions` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2008-04-08 12:02:12
+-- Dump completed on 2008-07-22 12:40:06
