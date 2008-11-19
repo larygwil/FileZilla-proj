@@ -19,6 +19,7 @@ function updatecvs()
     if [ -d "CVS" ]; then
       cvs -q -z3 update -dP >> $LOG 2>&1 || return 1
     elif [ -d ".svn" ]; then
+      svn update >> $LOG 2>&1 && continue
       svn update >> $LOG 2>&1 || return 1
     else
       logprint "Unknown repository type for package $PACKAGE"
