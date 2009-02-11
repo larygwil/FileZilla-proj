@@ -8,6 +8,9 @@ fi
 
 CONFDIR=
 
+STRIP=true
+UPDATE=true
+
 while [ -n "$1" ]; do
   case $1 in
     -[cC])
@@ -17,6 +20,38 @@ while [ -n "$1" ]; do
       fi
       CONFDIR=$2
       shift 2
+    ;;
+    --nostrip)
+      STRIP=false
+      shift 1
+    ;;
+    --strip=false)
+      STRIP=false
+      shift 1
+    ;;
+    --strip=true)
+      STRIP=true
+      shift 1
+    ;;
+    --strip=*)
+      echo "Invalid argument to --strip"
+      exit 1
+    ;;
+    --noupdate)
+      UPDATE=false
+      shift 1
+    ;;
+    --update=false)
+      UPDATE=false
+      shift 1
+    ;;
+    --update=true)
+      UPDATE=true
+      shift 1
+    ;;
+    --update=*)
+      echo "Invalid argument to --update"
+      exit 1
     ;;
     *)
       echo "Unknown option: $1"
@@ -67,6 +102,10 @@ init || exit 1
 . filter.sh
 . prebuild.sh
 . postbuild.sh
+
+echo "#! /bin/sh" > "$PREFIX/clientscripts/parameters"
+chmod +x "$PREFIX/clientscripts/parameters"
+echo "export STRIP=$STRIP" >> "$PREFIX/clientscripts/parameters"
 
 function buildfailure()
 {
@@ -137,7 +176,9 @@ resetHosts
 rm -rf "$WORKDIR"
 mkdir -p "$WORKDIR"
 
-updatecvs || buildfailure || exit 1
+if [ "$UPDATE" = "true" ]; then
+  updatecvs || buildfailure || exit 1
+fi
 
 logprint "Copying source"
 rm -rf "$WORKDIR/source"

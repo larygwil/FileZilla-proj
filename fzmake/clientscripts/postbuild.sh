@@ -7,17 +7,21 @@ PACKAGE=$2
 
 mkdir -p "$OUTPUTDIR/$TARGET"
 
+if [ "$STRIP" = "false" ]; then
+  echo "Binaries will not be stripped"
+fi
+
 if echo "$TARGET" | grep "mingw"; then
   cd "$WORKDIR/$PACKAGE/src/interface"
-  strip -s filezilla.exe
+  [ "$STRIP" = "true" ] && strip -s filezilla.exe
   cd "$WORKDIR/$PACKAGE/src/putty"
-  strip -s fzputtygen.exe
-  strip -s fzsftp.exe
+  [ "$STRIP" = "true" ] && strip -s fzputtygen.exe
+  [ "$STRIP" = "true" ] && strip -s fzsftp.exe
   echo "Making installer"
   cd "$WORKDIR/$PACKAGE/data"
 
   # We don't need debug information for this file. Since it runs in the context of Explorer, it's pretty undebuggable anyhow.
-  strip ../src/fzshellext/.libs/libfzshellext-0.dll
+  [ "$STRIP" = "true" ] && strip ../src/fzshellext/.libs/libfzshellext-0.dll
 
   # Convert slashes into backslashes or makensis will complain
   cat install.nsi | sed '/define top_srcdir/s/\//\\/g' > install.nsi2
@@ -41,15 +45,15 @@ if echo "$TARGET" | grep "mingw"; then
   
 elif [ \( "$TARGET" = "i686-apple-darwin9" -o "$TARGET" = "powerpc-apple-darwin9" \) -a "$PACKAGE" = "FileZilla3" ]; then
   cd "$WORKDIR/$PACKAGE"
-  strip -S -x FileZilla.app/Contents/MacOS/filezilla
-  strip -S -x FileZilla.app/Contents/MacOS/fzputtygen
-  strip -S -x FileZilla.app/Contents/MacOS/fzsftp
+  [ "$STRIP" = "true" ] && strip -S -x FileZilla.app/Contents/MacOS/filezilla
+  [ "$STRIP" = "true" ] && strip -S -x FileZilla.app/Contents/MacOS/fzputtygen
+  [ "$STRIP" = "true" ] && strip -S -x FileZilla.app/Contents/MacOS/fzsftp
   tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.app.tar.bz2" FileZilla.app
 else
   cd "$WORKDIR/prefix"
-  strip -g "$PACKAGE/bin/filezilla"
-  strip -g "$PACKAGE/bin/fzsftp"
-  strip -g "$PACKAGE/bin/fzputtygen"
+  [ "$STRIP" = "true" ] && strip -g "$PACKAGE/bin/filezilla"
+  [ "$STRIP" = "true" ] && strip -g "$PACKAGE/bin/fzsftp"
+  [ "$STRIP" = "true" ] && strip -g "$PACKAGE/bin/fzputtygen"
   tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.tar.bz2" $PACKAGE
   bzip2 -t "$OUTPUTDIR/$TARGET/$PACKAGE.tar.bz2" || return 1
 fi

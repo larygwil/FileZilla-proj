@@ -11,6 +11,8 @@ export OUTPUTDIR="$PREFIX/output"
 echo "Clientscript forked"
 echo "Making sure environment is sane"
 
+. "$SCRIPTS/parameters"
+
 safe_prepend()
 {
   local VAR=$1
@@ -50,6 +52,7 @@ if [ ! -z "$HOME" ]; then
         exit $?
       fi
     fi
+#   export CXXFLAGS="-O0 -g3 -ggdb"
     safe_prepend PATH "$HOME/prefix-$TARGET/bin"
     safe_prepend CPPFLAGS "-I$HOME/prefix-$TARGET/include"
     safe_prepend LDFLAGS "-L$HOME/prefix-$TARGET/lib"
