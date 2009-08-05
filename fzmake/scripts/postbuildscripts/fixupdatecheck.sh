@@ -32,6 +32,9 @@ function fixupdatecheck()
         continue;
       fi
 
+      SUM=`sha512sum "$FILE"`
+      SUM=${SUM% *}
+
       if ! [ -f "$LATEST" ]; then
         echo '<?php' > $LATEST.new
         echo "\$nightlies = array();" >> $LATEST.new
@@ -41,6 +44,7 @@ function fixupdatecheck()
       echo "\$nightlies['$TARGET'] = array();" >> $LATEST.new
       echo "\$nightlies['$TARGET']['date'] = '$DATE';" >> $LATEST.new
       echo "\$nightlies['$TARGET']['file'] = '$WWWDIR/$DATE/$TARGET/$FILE';" >> $LATEST.new
+      echo "\$nightlies['$TARGET']['sha512'] = '$SUM';" >> $LATEST.new
       echo "?>" >> $LATEST.new
       mv $LATEST.new $LATEST
     done
