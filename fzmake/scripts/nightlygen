@@ -154,6 +154,8 @@ export LOG="$OUTPUTDIR/build.log"
 rm -rf "$OUTPUTDIR"
 mkdir -p "$OUTPUTDIR" || buildfailure || exit 1
 
+ln -snf "$OUTPUTDIR" "$WWWDIR/latest"
+
 if [ -d "$PATCHDIR" ]; then
   cp -rp "$PATCHDIR" "$OUTPUTDIR"
 fi
