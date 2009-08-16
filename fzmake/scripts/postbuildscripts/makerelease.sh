@@ -59,7 +59,7 @@ makerelease()
 
   cd ${RELEASEDIR}
 
-  sha512sum * > "FileZilla_${version}.sha512"
+  sha512sum --binary * > "FileZilla_${version}.sha512"
 }
 
 makerelease
