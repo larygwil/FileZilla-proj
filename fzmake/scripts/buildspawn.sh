@@ -49,7 +49,7 @@ function spawn_cleanup()
 
   export CLEANUP_DONE=true
   logprint "$TARGETS: Performing cleanup"
-  filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf packages clientscripts work output output.tar clientscripts.tar.bz2 packages.tar.bz2;" || all_failure || return 1
+  filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf clientscripts work output output.tar clientscripts.tar.bz2;" || all_failure || return 1
 }
 
 function buildspawn()
@@ -70,14 +70,11 @@ function buildspawn()
   fi 
   
   logprint "$TARGETS: Uploading packages"
-  filter $SCP -i "$KEYFILE" -P $PORT "$WORKDIR/packages.tar.bz2" "$HOST:$HOSTPREFIX" || all_failure || return 1
+  filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; mkdir -p "$HOSTPREFIX/packages"; cd $HOSTPREFIX/packages && rsync -a --delete \"$UPDATESERVER\" ." 2>&1 || all_failure || return 1
 
   logprint "$TARGETS: Uploading clientscripts"
   filter $SCP -i "$KEYFILE" -P $PORT "$WORKDIR/clientscripts.tar.bz2" "$HOST:$HOSTPREFIX" || all_failure || return 1
 
-  logprint "$TARGETS: Unpacking packages"
-  filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf packages; mkdir -p packages; cd packages; tar -xjf \"$HOSTPREFIX/packages.tar.bz2\" && rm \"$HOSTPREFIX/packages.tar.bz2\";" || all_failure || return 1
-  
   logprint "$TARGETS: Unpacking clientscripts"
   filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf clientscripts; tar -xjf clientscripts.tar.bz2;" 2>&1 || all_failure || return 1
 

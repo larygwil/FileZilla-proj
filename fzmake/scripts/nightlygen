@@ -107,14 +107,20 @@ echo "#! /bin/sh" > "$PREFIX/clientscripts/parameters"
 chmod +x "$PREFIX/clientscripts/parameters"
 echo "export STRIP=$STRIP" >> "$PREFIX/clientscripts/parameters"
 
+function clean_files()
+{
+  rm -rf "$WORKDIR/FileZil3"
+  rm -rf "$WORKDIR/clientscripts"
+  rm -f "$WORKDIR/clientscripts.tar.bz2"
+}
+
 function buildfailure()
 {
   touch "$OUTPUTDIR/failed"
   [ -f "$OUTPUTDIR/running" ] && rm "$OUTPUTDIR/running"
 
   logprint "Performing cleanup"
-  cd "$PREFIX"
-  rm -rf "$WORKDIR"
+  clean_files
 
   $SCRIPTS/clean.sh >> $LOG 2>&1
 
@@ -175,16 +181,16 @@ while getHost; do
 done
 resetHosts
 
-rm -rf "$WORKDIR"
-mkdir -p "$WORKDIR"
+mkdir -p "$WORKDIR" || buildfailure || exit 1
+clean_files
 
 if [ "$UPDATE" = "true" ]; then
   updatecvs || buildfailure || exit 1
 fi
 
 logprint "Copying source"
-rm -rf "$WORKDIR/source"
-cp -r "$CVSDIR" "$WORKDIR/source"
+mkdir -p "$WORKDIR/source"
+rsync -av --delete --exclude .svn/ "$CVSDIR/" "$WORKDIR/source/" || buildfailure || exit 1
 
 applypatches
 
@@ -202,10 +208,6 @@ done
 makedist || buildfailure || exit 1
 
 prebuild >> $LOG 2>&1 || buildfailure || exit 1
-
-logprint "Packaging packages for distribution"
-cd "$WORKDIR/source"
-tar -cjf $WORKDIR/packages.tar.bz2 *
 
 function packageClientscripts()
 {
@@ -241,8 +243,7 @@ wait
 postbuild >> $LOG 2>&1
 
 logprint "Performing cleanup"
-cd "$PREFIX"
-rm -rf "$WORKDIR"
+clean_files
 
 $SCRIPTS/clean.sh >> $LOG 2>&1
 
