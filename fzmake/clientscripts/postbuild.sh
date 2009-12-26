@@ -40,7 +40,7 @@ if echo "$TARGET" | grep "mingw"; then
   chmod 775 FileZilla_3_setup.exe
   mv FileZilla_3_setup.exe "$OUTPUTDIR/$TARGET"
 
-  sh makezip.sh "$WORKDIR/prefix/$PACKAGE" || return 1
+  sh makezip.sh "$WORKDIR/prefix/$PACKAGE" || exit 1
   mv FileZilla.zip "$OUTPUTDIR/$TARGET/FileZilla.zip"
   
 elif [ \( "$TARGET" = "i686-apple-darwin9" -o "$TARGET" = "powerpc-apple-darwin9" \) -a "$PACKAGE" = "FileZilla3" ]; then
@@ -55,6 +55,6 @@ else
   [ "$STRIP" = "true" ] && strip -g "$PACKAGE/bin/fzsftp"
   [ "$STRIP" = "true" ] && strip -g "$PACKAGE/bin/fzputtygen"
   tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.tar.bz2" $PACKAGE
-  bzip2 -t "$OUTPUTDIR/$TARGET/$PACKAGE.tar.bz2" || return 1
+  bzip2 -t "$OUTPUTDIR/$TARGET/$PACKAGE.tar.bz2" || exit 1
 fi
 
