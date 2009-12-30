@@ -109,7 +109,7 @@ echo "export STRIP=$STRIP" >> "$PREFIX/clientscripts/parameters"
 
 function clean_files()
 {
-  rm -rf "$WORKDIR/FileZil3"
+  rm -rf "$WORKDIR/FileZilla3"
   rm -rf "$WORKDIR/clientscripts"
   rm -f "$WORKDIR/clientscripts.tar.bz2"
 }
