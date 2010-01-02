@@ -42,19 +42,31 @@ if echo "$TARGET" | grep "mingw"; then
 
   sh makezip.sh "$WORKDIR/prefix/$PACKAGE" || exit 1
   mv FileZilla.zip "$OUTPUTDIR/$TARGET/FileZilla.zip"
+
+  cd "$OUTPUTDIR/$TARGET" || exit 1
+  sha512sum --binary "FileZilla_3_setup.exe" > "FileZilla_3_setup.exe.sha512" || exit 1
+  sha512sum --binary "FileZilla.zip" > "FileZilla.zip.sha512" || exit 1
   
 elif [ \( "$TARGET" = "i686-apple-darwin9" -o "$TARGET" = "powerpc-apple-darwin9" \) -a "$PACKAGE" = "FileZilla3" ]; then
+
   cd "$WORKDIR/$PACKAGE"
   [ "$STRIP" = "true" ] && strip -S -x FileZilla.app/Contents/MacOS/filezilla
   [ "$STRIP" = "true" ] && strip -S -x FileZilla.app/Contents/MacOS/fzputtygen
   [ "$STRIP" = "true" ] && strip -S -x FileZilla.app/Contents/MacOS/fzsftp
   tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.app.tar.bz2" FileZilla.app
+
+  cd "$OUTPUTDIR/$TARGET" || exit 1
+  sha512sum --binary "$PACKAGE.app.tar.bz2" > "$PACKAGE.app.tar.bz2.sha512" || exit 1
+
 else
+
   cd "$WORKDIR/prefix"
   [ "$STRIP" = "true" ] && strip -g "$PACKAGE/bin/filezilla"
   [ "$STRIP" = "true" ] && strip -g "$PACKAGE/bin/fzsftp"
   [ "$STRIP" = "true" ] && strip -g "$PACKAGE/bin/fzputtygen"
-  tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.tar.bz2" $PACKAGE
-  bzip2 -t "$OUTPUTDIR/$TARGET/$PACKAGE.tar.bz2" || exit 1
+  tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.tar.bz2" $PACKAGE || exit 1
+  cd "$OUTPUTDIR/$TARGET" || exit 1
+  sha512sum --binary "$PACKAGE.tar.bz2" > "$PACKAGE.tar.bz2.sha512" || exit 1
+
 fi
 

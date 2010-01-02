@@ -37,6 +37,10 @@ makerelease()
     for i in FileZilla*; do
       local ext=${i#*.}
 
+      if [ "$ext" = "sha512" ]; then
+        continue
+      fi
+
       locale platform=
       case "$TARGET" in
         i586-mingw32msvc)
