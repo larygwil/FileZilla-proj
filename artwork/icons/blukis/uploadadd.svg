@@ -1,34 +1,43 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
+
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:cc="http://creativecommons.org/ns#"
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="90"
-   height="90"
+   width="48"
+   height="48"
    id="svg2300"
    sodipodi:version="0.32"
-   inkscape:version="0.45.1"
+   inkscape:version="0.47 r22583"
    version="1.0"
    sodipodi:docname="uploadadd.svg"
-   sodipodi:docbase="C:\projects\Filezilla_art\icons\blukis"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="C:\temp\fz-temp\48x48\uploadadd.png"
-   inkscape:export-xdpi="48"
-   inkscape:export-ydpi="48">
+   sodipodi:modified="true"
+   inkscape:export-filename="S:\bfiles 2009\Projects\FileZilla_icons\blukis-ico-2.0a\toolbar-context_menus\16x16\uploadadd.png"
+   inkscape:export-xdpi="30"
+   inkscape:export-ydpi="30">
   <defs
      id="defs2302">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 45 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="90 : 45 : 1"
+       inkscape:persp3d-origin="45 : 30 : 1"
+       id="perspective34" />
     <filter
        inkscape:collect="always"
-       x="-0.16906982"
-       width="1.3381396"
+       x="-0.16906983"
+       width="1.3381397"
        y="-0.16777724"
        height="1.3355545"
-       id="filter4463">
+       id="filter4463"
+       color-interpolation-filters="sRGB">
       <feGaussianBlur
          inkscape:collect="always"
          stdDeviation="1.7144737"
@@ -37,10 +46,11 @@
     <filter
        inkscape:collect="always"
        x="-0.11727078"
-       width="1.2345416"
-       y="-0.18028409"
+       width="1.2345417"
+       y="-0.18028408"
        height="1.3605682"
-       id="filter4374">
+       id="filter4374"
+       color-interpolation-filters="sRGB">
       <feGaussianBlur
          inkscape:collect="always"
          stdDeviation="2.3014391"
@@ -50,7 +60,7 @@
        clipPathUnits="userSpaceOnUse"
        id="clipPath3642">
       <rect
-         style="opacity:1;fill:#f300a2;fill-opacity:0.32098766;stroke:none;stroke-width:7;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         style="fill:#f300a2;fill-opacity:0.32098766;stroke:none"
          id="rect3609"
          width="32.243084"
          height="58.073177"
@@ -63,8 +73,8 @@
       <path
          sodipodi:nodetypes="cscccc"
          id="path4787"
-         d="M 126.71477,349.26711 C 126.57493,344.03097 123.35546,341.9854 119.24316,341.1145 C 115.09248,340.23547 113.2887,337.35328 113.63137,330.87602 L 108.87749,333.79028 L 109.00187,349.4002 L 126.71477,349.26711 z "
-         style="fill:none;fill-opacity:0.75;fill-rule:evenodd;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+         d="m 126.71477,349.26711 c -0.13984,-5.23614 -3.35931,-7.28171 -7.47161,-8.15261 -4.15068,-0.87903 -5.95446,-3.76122 -5.61179,-10.23848 l -4.75388,2.91426 0.12438,15.60992 17.7129,-0.13309 z"
+         style="fill:none;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
     </clipPath>
     <clipPath
        clipPathUnits="userSpaceOnUse"
@@ -75,9 +85,36 @@
          inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
          sodipodi:nodetypes="ccccccc"
          id="path5891"
-         d="M 114.86786,215.1799 L 114.87924,255.83988 L 161.06423,255.83941 L 161.03798,217.74476 L 151.00543,209.88842 L 114.89037,209.86763 L 114.86786,215.1799 z "
-         style="fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#ee4747;stroke-width:0.27000001;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+         d="m 114.86786,215.1799 0.0114,40.65998 46.18499,-4.7e-4 -0.0263,-38.09465 -10.03255,-7.85634 -36.11506,-0.0208 -0.0225,5.31227 z"
+         style="fill:none;stroke:#ee4747;stroke-width:0.27000001;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
     </clipPath>
+    <inkscape:perspective
+       id="perspective2851"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3650"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <filter
+       inkscape:collect="always"
+       x="-0.11727078"
+       width="1.2345417"
+       y="-0.18028408"
+       height="1.3605682"
+       id="filter4374-1"
+       color-interpolation-filters="sRGB">
+      <feGaussianBlur
+         inkscape:collect="always"
+         stdDeviation="2.3014391"
+         id="feGaussianBlur4376-7" />
+    </filter>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -89,28 +126,43 @@
      objecttolerance="10"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="4.3777778"
-     inkscape:cx="45"
-     inkscape:cy="45"
-     inkscape:document-units="in"
+     inkscape:zoom="11.875"
+     inkscape:cx="24"
+     inkscape:cy="24"
+     inkscape:document-units="px"
      inkscape:current-layer="layer1"
      width="1in"
      height="1in"
      units="in"
-     gridspacingx="0.0625in"
-     gridspacingy="0.0625in"
      showgrid="true"
      gridanglex="0.33333333in"
      gridanglez="0.33333333in"
      grid_units="in"
-     gridempspacing="8"
-     inkscape:window-width="748"
-     inkscape:window-height="579"
-     inkscape:window-x="522"
-     inkscape:window-y="9"
-     inkscape:grid-bbox="false"
+     inkscape:window-width="959"
+     inkscape:window-height="822"
+     inkscape:window-x="353"
+     inkscape:window-y="151"
+     inkscape:grid-bbox="true"
      inkscape:grid-points="false"
-     gridoriginx="0in" />
+     inkscape:snap-grids="false"
+     inkscape:window-maximized="0">
+    <inkscape:grid
+       id="GridFromPre046Settings"
+       type="xygrid"
+       originx="0px"
+       originy="0px"
+       spacingx="1px"
+       spacingy="1px"
+       color="#0000ff"
+       empcolor="#0000ff"
+       opacity="0.2"
+       empopacity="0.4"
+       empspacing="3"
+       units="px"
+       visible="true"
+       enabled="true"
+       snapvisiblegridlinesonly="true" />
+  </sodipodi:namedview>
   <metadata
      id="metadata2305">
     <rdf:RDF>
@@ -119,16 +171,18 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(0,-42)">
     <g
        id="g3357"
-       transform="matrix(1.3331593,0,0,1.3331203,-240.69031,-197.73567)"
+       transform="matrix(0.71096516,0,0,0.71094436,-128.23675,-63.44756)"
        inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
        inkscape:export-xdpi="42.661114"
        inkscape:export-ydpi="42.661114">
@@ -138,16 +192,16 @@
          inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
          sodipodi:nodetypes="cccccccccc"
          id="path3349"
-         d="M 190.17677,194.4881 L 196.04778,208.22772 L 221.34093,197.23323 L 225.58535,207.05758 L 238.04262,181.33899 L 213.56686,174.38062 L 211.39277,173.76254 L 212.20937,175.86069 L 215.19868,183.54134 L 190.17677,194.4881 z "
-         style="opacity:1;fill:#96bd85;fill-opacity:1;fill-rule:evenodd;stroke:#598247;stroke-width:1.22411811;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+         d="m 190.17677,194.4881 5.87101,13.73962 25.29315,-10.99449 4.24442,9.82435 12.45727,-25.71859 -24.47576,-6.95837 -2.17409,-0.61808 0.8166,2.09815 2.98931,7.68065 -25.02191,10.94676 z"
+         style="fill:#85a7bd;fill-opacity:1;fill-rule:evenodd;stroke:#476b82;stroke-width:1.40655926000000010;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
       <path
          transform="translate(-10.961236,47.051281)"
          inkscape:export-ydpi="63.991669"
          inkscape:export-xdpi="63.991669"
          inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
-         d="M 227.59375,131.5 L 229.09375,135.34375 C 229.72366,136.92297 228.992,138.7176 227.4375,139.40625 L 205.28125,149.09375 L 208.65625,157.03125 L 231.0625,147.28125 C 231.83324,146.94927 232.70433,146.93729 233.4839,147.24794 C 234.26348,147.5586 234.88758,148.16641 235.21875,148.9375 L 236.71875,152.40625 L 244.53125,136.28125 L 227.59375,131.5 z "
+         d="m 227.59375,131.5 1.5,3.84375 a 3.1619988,3.1619988 0 0 1 -1.65625,4.0625 l -22.15625,9.6875 3.375,7.9375 22.40625,-9.75 a 3.1619988,3.1619988 0 0 1 4.15625,1.65625 l 1.5,3.46875 7.8125,-16.125 -16.9375,-4.78125 z"
          id="path3351"
-         style="opacity:1;fill:#68a151;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1.22411811;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;filter:url(#filter4374)"
+         style="fill:#5182a1;fill-opacity:1;fill-rule:evenodd;stroke:none;filter:url(#filter4374)"
          inkscape:original="M 222.34375 126.71875 L 223.15625 128.8125 L 226.15625 136.5 L 201.125 147.4375 L 207 161.1875 L 232.3125 150.1875 L 236.53125 160 L 249 134.28125 L 224.53125 127.34375 L 222.34375 126.71875 z "
          inkscape:radius="-3.1616826"
          sodipodi:type="inkscape:offset" />
@@ -157,34 +211,34 @@
          inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
          sodipodi:nodetypes="cccc"
          id="path3353"
-         d="M 214.78187,176.72182 L 217.78672,181.53203 L 235.08357,182.5974 L 214.78187,176.72182 z "
-         style="fill:#d4efd0;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+         d="m 214.78187,176.72182 3.00485,4.81021 17.29685,1.06537 -20.3017,-5.87558 z"
+         style="fill:#d0e3ef;fill-opacity:1;fill-rule:evenodd;stroke:none" />
       <path
          inkscape:export-ydpi="63.991669"
          inkscape:export-xdpi="63.991669"
          inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
          sodipodi:nodetypes="cccccc"
          id="path3355"
-         d="M 214.20567,185.72992 L 193.24078,195.10934 L 193.24078,195.10934 L 195.731,197.35826 L 214.00038,187.40121 L 214.20567,185.72992 z "
-         style="fill:#d4efd0;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+         d="m 214.20567,185.72992 -20.96489,9.37942 0,0 2.49022,2.24892 18.26938,-9.95705 0.20529,-1.67129 z"
+         style="fill:#d0e3ef;fill-opacity:1;fill-rule:evenodd;stroke:none" />
     </g>
     <g
        id="g4470"
-       transform="matrix(1.3331593,0,0,1.3331203,-255.02135,-134.90188)">
+       transform="matrix(0.71096516,0,0,0.71094436,-136.00123,-29.938709)">
       <path
          inkscape:export-ydpi="42.661114"
          inkscape:export-xdpi="42.661114"
          inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
          id="path3329"
-         d="M 203.90625,105.34375 L 203.90625,113.8125 L 195.5,113.8125 L 195.5,122.1875 L 203.90625,122.1875 L 203.90625,130.65625 L 212.28125,130.65625 L 212.28125,122.1875 L 220.65625,122.1875 L 220.65625,113.8125 L 212.28125,113.8125 L 212.28125,105.34375 L 203.90625,105.34375 z "
-         style="fill:#6d6d6d;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:9.09200001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1" />
+         d="m 203.90625,105.34375 0,8.46875 -8.40625,0 0,8.375 8.40625,0 0,8.46875 8.375,0 0,-8.46875 8.375,0 0,-8.375 -8.375,0 0,-8.46875 -8.375,0 z"
+         style="fill:#6d6d6d;fill-opacity:1;fill-rule:evenodd;stroke:none" />
       <path
          inkscape:export-ydpi="42.661114"
          inkscape:export-xdpi="42.661114"
          inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
-         d="M 206.34375,107.625 L 206.34375,113.65625 C 206.34067,115.00117 205.25117,116.09067 203.90625,116.09375 L 197.9375,116.09375 L 197.9375,119.59375 L 203.90625,119.59375 C 205.25117,119.59683 206.34067,120.68633 206.34375,122.03125 L 206.34375,128.0625 L 209.875,128.0625 L 209.875,122.03125 C 209.87808,120.68633 210.96758,119.59683 212.3125,119.59375 L 218.21875,119.59375 L 218.21875,116.09375 L 212.3125,116.09375 C 210.96758,116.09067 209.87808,115.00117 209.875,113.65625 L 209.875,107.625 L 206.34375,107.625 z "
+         d="m 206.34375,107.625 0,6.03125 a 2.4431066,2.4431066 0 0 1 -2.4375,2.4375 l -5.96875,0 0,3.5 5.96875,0 a 2.4431066,2.4431066 0 0 1 2.4375,2.4375 l 0,6.03125 3.53125,0 0,-6.03125 a 2.4431066,2.4431066 0 0 1 2.4375,-2.4375 l 5.90625,0 0,-3.5 -5.90625,0 a 2.4431066,2.4431066 0 0 1 -2.4375,-2.4375 l 0,-6.03125 -3.53125,0 z"
          id="path4383"
-         style="fill:#2d2d2d;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:9.09200001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;filter:url(#filter4463)"
+         style="fill:#2d2d2d;fill-opacity:1;fill-rule:evenodd;stroke:none;filter:url(#filter4463)"
          inkscape:original="M 203.90625 105.1875 L 203.90625 113.65625 L 195.5 113.65625 L 195.5 122.03125 L 203.90625 122.03125 L 203.90625 130.5 L 212.3125 130.5 L 212.3125 122.03125 L 220.65625 122.03125 L 220.65625 113.65625 L 212.3125 113.65625 L 212.3125 105.1875 L 203.90625 105.1875 z "
          inkscape:radius="-2.4428623"
          sodipodi:type="inkscape:offset" />
@@ -194,24 +248,66 @@
          inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
          sodipodi:nodetypes="cccc"
          id="path3339"
-         d="M 204.97927,122.4324 L 204.77203,129.85764 L 206.54394,128.43058 L 204.97927,122.4324 z "
-         style="fill:#adadad;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+         d="m 204.97927,122.4324 -0.20724,7.42524 1.77191,-1.42706 -1.56467,-5.99818 z"
+         style="fill:#adadad;fill-opacity:1;fill-rule:evenodd;stroke:none" />
       <path
          inkscape:export-ydpi="42.661114"
          inkscape:export-xdpi="42.661114"
          inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
          sodipodi:nodetypes="ccccc"
          id="path3337"
-         d="M 213.84565,114.7947 L 219.68995,114.75071 L 219.72604,117.64294 L 214.4958,117.65386 L 213.84565,114.7947 z "
-         style="fill:#adadad;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+         d="m 213.84565,114.7947 5.8443,-0.044 0.0361,2.89223 -5.23024,0.0109 -0.65015,-2.85916 z"
+         style="fill:#adadad;fill-opacity:1;fill-rule:evenodd;stroke:none" />
       <path
          inkscape:export-ydpi="42.661114"
          inkscape:export-xdpi="42.661114"
          inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
          sodipodi:nodetypes="ccccccc"
          id="path3335"
-         d="M 205.11441,114.92879 L 196.62408,114.78964 L 196.67332,117.70853 L 206.95306,117.69658 L 206.92169,106.15328 L 205.10307,106.14938 L 205.11441,114.92879 z "
-         style="fill:#adadad;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+         d="m 205.11441,114.92879 -8.49033,-0.13915 0.0492,2.91889 10.27974,-0.0119 -0.0314,-11.5433 -1.81862,-0.004 0.0113,8.77941 z"
+         style="fill:#adadad;fill-opacity:1;fill-rule:evenodd;stroke:none" />
+    </g>
+    <g
+       id="g3357-4"
+       transform="matrix(0.71096516,0,0,0.71094436,-170.29692,-73.215676)"
+       inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
+       inkscape:export-xdpi="42.661114"
+       inkscape:export-ydpi="42.661114">
+      <path
+         inkscape:export-ydpi="63.991669"
+         inkscape:export-xdpi="63.991669"
+         inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
+         sodipodi:nodetypes="cccccccccc"
+         id="path3349-0"
+         d="m 190.17677,194.4881 5.87101,13.73962 25.29315,-10.99449 4.24442,9.82435 12.45727,-25.71859 -24.47576,-6.95837 -2.17409,-0.61808 0.8166,2.09815 2.98931,7.68065 -25.02191,10.94676 z"
+         style="fill:#96bd85;fill-opacity:1;fill-rule:evenodd;stroke:#598247;stroke-width:1.40655923;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+      <path
+         transform="translate(-10.961236,47.051281)"
+         inkscape:export-ydpi="63.991669"
+         inkscape:export-xdpi="63.991669"
+         inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
+         d="m 227.59375,131.5 1.5,3.84375 a 3.1619988,3.1619988 0 0 1 -1.65625,4.0625 l -22.15625,9.6875 3.375,7.9375 22.40625,-9.75 a 3.1619988,3.1619988 0 0 1 4.15625,1.65625 l 1.5,3.46875 7.8125,-16.125 -16.9375,-4.78125 z"
+         id="path3351-9"
+         style="fill:#68a151;fill-opacity:1;fill-rule:evenodd;stroke:none;filter:url(#filter4374-1)"
+         inkscape:original="M 222.34375 126.71875 L 223.15625 128.8125 L 226.15625 136.5 L 201.125 147.4375 L 207 161.1875 L 232.3125 150.1875 L 236.53125 160 L 249 134.28125 L 224.53125 127.34375 L 222.34375 126.71875 z "
+         inkscape:radius="-3.1616826"
+         sodipodi:type="inkscape:offset" />
+      <path
+         inkscape:export-ydpi="63.991669"
+         inkscape:export-xdpi="63.991669"
+         inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
+         sodipodi:nodetypes="cccc"
+         id="path3353-4"
+         d="m 214.78187,176.72182 3.00485,4.81021 17.29685,1.06537 -20.3017,-5.87558 z"
+         style="fill:#d4efd0;fill-opacity:1;fill-rule:evenodd;stroke:none" />
+      <path
+         inkscape:export-ydpi="63.991669"
+         inkscape:export-xdpi="63.991669"
+         inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
+         sodipodi:nodetypes="cccccc"
+         id="path3355-8"
+         d="m 214.20567,185.72992 -20.96489,9.37942 0,0 2.49022,2.24892 18.26938,-9.95705 0.20529,-1.67129 z"
+         style="fill:#d4efd0;fill-opacity:1;fill-rule:evenodd;stroke:none" />
     </g>
   </g>
 </svg>

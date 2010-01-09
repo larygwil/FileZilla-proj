@@ -1,32 +1,43 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
+
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:cc="http://creativecommons.org/ns#"
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="90"
-   height="90"
+   width="48"
+   height="48"
    id="svg2300"
    sodipodi:version="0.32"
-   inkscape:version="0.45"
+   inkscape:version="0.47 r22583"
    version="1.0"
-   sodipodi:docname="folderclosed.svg"
-   sodipodi:docbase="/home/lukisuser/Desktop/mounted storage/bfiles 2007/Projects/Filezilla Toolbar/svg_icons/toolbar_other_generic"
+   sodipodi:docname="folder.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   sodipodi:modified="true">
+   sodipodi:modified="true"
+   inkscape:export-filename="48x48\folder.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <defs
      id="defs2302">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 45 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="90 : 45 : 1"
+       inkscape:persp3d-origin="45 : 30 : 1"
+       id="perspective22" />
     <filter
        inkscape:collect="always"
        x="-0.16478315"
-       width="1.3295663"
+       width="1.3295664"
        y="-0.2666283"
        height="1.5332566"
-       id="filter6334">
+       id="filter6334"
+       color-interpolation-filters="sRGB">
       <feGaussianBlur
          inkscape:collect="always"
          stdDeviation="3.4363168"
@@ -34,39 +45,16 @@
     </filter>
     <filter
        inkscape:collect="always"
-       x="-0.14363951"
+       x="-0.1436395"
        width="1.287279"
        y="-0.30415052"
        height="1.608301"
-       id="filter6288">
+       id="filter6288"
+       color-interpolation-filters="sRGB">
       <feGaussianBlur
          inkscape:collect="always"
          stdDeviation="1.1910301"
          id="feGaussianBlur6290" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.13430887"
-       width="1.2686177"
-       y="-0.28121623"
-       height="1.5624325"
-       id="filter6088">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="1.1927304"
-         id="feGaussianBlur6090" />
-    </filter>
-    <filter
-       inkscape:collect="always"
-       x="-0.10598437"
-       width="1.2119687"
-       y="-0.14111567"
-       height="1.2822313"
-       id="filter5875">
-      <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="2.8416194"
-         id="feGaussianBlur5877" />
     </filter>
     <clipPath
        clipPathUnits="userSpaceOnUse"
@@ -77,9 +65,16 @@
          inkscape:export-filename="C:\bfiles\Projects\FileZilla toolbar\path6567.png"
          sodipodi:nodetypes="ccccccc"
          id="path5891"
-         d="M 114.86786,215.1799 L 114.87924,255.83988 L 161.06423,255.83941 L 161.03798,217.74476 L 151.00543,209.88842 L 114.89037,209.86763 L 114.86786,215.1799 z "
-         style="fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#ee4747;stroke-width:0.27000001;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+         d="m 114.86786,215.1799 0.0114,40.65998 46.18499,-4.7e-4 -0.0263,-38.09465 -10.03255,-7.85634 -36.11506,-0.0208 -0.0225,5.31227 z"
+         style="fill:none;stroke:#ee4747;stroke-width:0.27000001;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
     </clipPath>
+    <inkscape:perspective
+       id="perspective3627"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -91,25 +86,41 @@
      objecttolerance="10"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="4.7"
-     inkscape:cx="45"
-     inkscape:cy="45"
-     inkscape:document-units="in"
+     inkscape:zoom="11.25"
+     inkscape:cx="24"
+     inkscape:cy="24"
+     inkscape:document-units="px"
      inkscape:current-layer="layer1"
      width="1in"
      height="1in"
      units="in"
-     gridspacingx="0.0625in"
-     gridspacingy="0.0625in"
      showgrid="true"
      gridanglex="0.33333333in"
      gridanglez="0.33333333in"
      grid_units="in"
-     gridempspacing="8"
-     inkscape:window-width="910"
-     inkscape:window-height="626"
+     inkscape:window-width="1105"
+     inkscape:window-height="792"
      inkscape:window-x="346"
-     inkscape:window-y="304" />
+     inkscape:window-y="138"
+     inkscape:snap-grids="false"
+     inkscape:window-maximized="0">
+    <inkscape:grid
+       id="GridFromPre046Settings"
+       type="xygrid"
+       originx="0px"
+       originy="0px"
+       spacingx="1px"
+       spacingy="1px"
+       color="#0000ff"
+       empcolor="#0000ff"
+       opacity="0.2"
+       empopacity="0.4"
+       empspacing="3"
+       units="px"
+       visible="true"
+       enabled="true"
+       snapvisiblegridlinesonly="true" />
+  </sodipodi:namedview>
   <metadata
      id="metadata2305">
     <rdf:RDF>
@@ -118,56 +129,106 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(0,-42)">
     <path
        sodipodi:nodetypes="ccccccccc"
-       style="fill:#d7ca67;fill-opacity:1;fill-rule:evenodd;stroke:#aba263;stroke-width:1.912485;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 32.013544,12.298373 L 18.708412,23.755225 L 11.343798,72.267582 L 83.314359,72.257645 L 88.946724,31.022072 L 81.660997,23.53148 L 59.212125,23.53148 L 49.574019,12.298373 L 32.013544,12.298373 z "
+       style="fill:#d1c352;fill-opacity:1;fill-rule:evenodd;stroke:#958f51;stroke-width:1.02031350000000010;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 17.079272,48.54607 -7.0983072,6.112247 -3.9290321,25.881412 38.3963983,-0.0052 3.004875,-21.999238 -3.886945,-3.996241 -11.976507,0 -5.141943,-5.992879 -9.368539,0 z"
        id="path6354"
        inkscape:export-filename="path10-a.png"
        inkscape:export-xdpi="60.000381"
        inkscape:export-ydpi="60.000381" />
     <rect
-       style="opacity:1;fill:#b7aa3b;fill-opacity:1;stroke:none;stroke-width:1.52999997;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;filter:url(#filter6334)"
+       style="fill:#a89b2f;fill-opacity:1;stroke:none;filter:url(#filter6334)"
        id="rect6356"
        width="41.707138"
        height="25.776085"
        x="300.00497"
        y="304.46506"
-       transform="matrix(1.314387,0,0,1.3714965,-369.40933,-387.3042)"
+       transform="matrix(0.70122736,0,0,0.73169536,-197.08042,-164.64247)"
        inkscape:export-filename="path10-a.png"
        inkscape:export-xdpi="60.000381"
        inkscape:export-ydpi="60.000381" />
     <path
        sodipodi:nodetypes="ccccccc"
        id="path6358"
-       d="M 1.1790723,40.554954 L 10.714893,72.0114 L 83.168508,72.0114 L 73.991255,40.42707 L 67.442896,34.911108 L 1.0816341,34.911108 L 1.1790723,40.554954 z "
-       style="fill:#f7ea89;fill-opacity:1;fill-rule:evenodd;stroke:#aba263;stroke-width:1.912485;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 0.62903678,63.620996 5.08737412,16.782059 38.6541081,0 -4.896078,-16.850285 -3.493559,-2.942773 -35.40382865,0 0.0519833,3.010999 z"
+       style="fill:#f7ea89;fill-opacity:1;fill-rule:evenodd;stroke:#958f51;stroke-width:1.02031350000000010;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        inkscape:export-filename="path10-a.png"
        inkscape:export-xdpi="60.000381"
        inkscape:export-ydpi="60.000381" />
     <path
-       style="fill:#fffddf;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="M 55.26406,38.256657 L 5.1533526,38.22502 L 11.248785,49.100072 L 52.841242,42.629695 L 55.26406,38.256657 z "
+       style="fill:#fffddf;fill-opacity:1;fill-rule:evenodd;stroke:none"
+       d="m 29.483456,63.012418 -27.0008016,-0.01222 3.2843591,4.201854 22.4109725,-2.499995 1.30547,-1.689636 z"
        id="path6360"
        sodipodi:nodetypes="ccccc"
        inkscape:export-filename="path10-a.png"
        inkscape:export-xdpi="60.000381"
        inkscape:export-ydpi="60.000381" />
     <path
-       transform="matrix(3.6709329,0,0.8351573,2.7292876,-681.3955,-878.36554)"
+       transform="matrix(1.958448,0,0.44555763,1.4560789,-363.52548,-426.62441)"
        sodipodi:nodetypes="cccssc"
        id="path6362"
-       d="M 113.17477,346.33916 L 128.34219,346.44683 L 128.0093,339.10313 C 127.35722,338.38287 126.07157,338.66056 124.53649,338.70214 C 119.78433,338.82819 119.83187,342.79817 114.31464,343.32746 C 112.63423,343.48867 112.49951,346.06211 113.17477,346.33916 z "
-       style="fill:#d5c443;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;filter:url(#filter6288)"
+       d="m 113.17477,346.33916 15.16742,0.10767 -0.33289,-7.3437 c -0.65208,-0.72026 -1.93773,-0.44257 -3.47281,-0.40099 -4.75216,0.12605 -4.70462,4.09603 -10.22185,4.62532 -1.68041,0.16121 -1.81513,2.73465 -1.13987,3.0117 z"
+       style="fill:#d5c443;fill-opacity:1;fill-rule:evenodd;stroke:none;filter:url(#filter6288)"
        inkscape:export-filename="path10-a.png"
        inkscape:export-xdpi="60.000381"
        inkscape:export-ydpi="60.000381" />
+    <g
+       id="g2872"
+       transform="translate(-53.333333,-3.2888889)">
+      <path
+         sodipodi:nodetypes="ccccccccc"
+         style="fill:#d7ca67;fill-opacity:1;fill-rule:evenodd;stroke:#aba263;stroke-width:1.0203135;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         d="m 17.079272,48.54607 -7.0983072,6.112247 -3.9290321,25.881412 38.3963983,-0.0052 3.004875,-21.999238 -3.886945,-3.996241 -11.976507,0 -5.141943,-5.992879 -9.368539,0 z"
+         id="path2862"
+         inkscape:export-filename="path10-a.png"
+         inkscape:export-xdpi="60.000381"
+         inkscape:export-ydpi="60.000381" />
+      <rect
+         style="fill:#b7aa3b;fill-opacity:1;stroke:none;filter:url(#filter6334)"
+         id="rect2864"
+         width="41.707138"
+         height="25.776085"
+         x="300.00497"
+         y="304.46506"
+         transform="matrix(0.70122736,0,0,0.73169536,-197.08042,-164.64247)"
+         inkscape:export-filename="path10-a.png"
+         inkscape:export-xdpi="60.000381"
+         inkscape:export-ydpi="60.000381" />
+      <path
+         sodipodi:nodetypes="ccccccc"
+         id="path2866"
+         d="m 0.62903678,63.620996 5.08737412,16.782059 38.6541081,0 -4.896078,-16.850285 -3.493559,-2.942773 -35.40382865,0 0.0519833,3.010999 z"
+         style="fill:#f7ea89;fill-opacity:1;fill-rule:evenodd;stroke:#aba263;stroke-width:1.0203135;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         inkscape:export-filename="path10-a.png"
+         inkscape:export-xdpi="60.000381"
+         inkscape:export-ydpi="60.000381" />
+      <path
+         style="fill:#fffddf;fill-opacity:1;fill-rule:evenodd;stroke:none"
+         d="m 29.483456,62.394851 -26.734135,-0.01688 3.251922,5.801855 22.189636,-3.451954 1.292577,-2.333024 z"
+         id="path2868"
+         sodipodi:nodetypes="ccccc"
+         inkscape:export-filename="path10-a.png"
+         inkscape:export-xdpi="60.000381"
+         inkscape:export-ydpi="60.000381" />
+      <path
+         transform="matrix(1.958448,0,0.44555763,1.4560789,-363.52548,-426.62441)"
+         sodipodi:nodetypes="cccssc"
+         id="path2870"
+         d="m 113.17477,346.33916 15.16742,0.10767 -0.33289,-7.3437 c -0.65208,-0.72026 -1.93773,-0.44257 -3.47281,-0.40099 -4.75216,0.12605 -4.70462,4.09603 -10.22185,4.62532 -1.68041,0.16121 -1.81513,2.73465 -1.13987,3.0117 z"
+         style="fill:#d5c443;fill-opacity:1;fill-rule:evenodd;stroke:none;filter:url(#filter6288)"
+         inkscape:export-filename="path10-a.png"
+         inkscape:export-xdpi="60.000381"
+         inkscape:export-ydpi="60.000381" />
+    </g>
   </g>
 </svg>
