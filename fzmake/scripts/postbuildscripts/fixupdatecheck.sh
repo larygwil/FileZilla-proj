@@ -31,6 +31,9 @@ function fixupdatecheck()
       if [ ${FILE: -4} == ".zip" ]; then
         continue;
       fi
+      if [ ${FILE: -7} == ".sha512" ]; then
+        continue;
+      fi
 
       SUM=`sha512sum "$FILE"`
       SUM=${SUM% *}

@@ -35,9 +35,10 @@ makerelease()
 
     cd "$OUTPUTDIR/$TARGET"
     for i in FileZilla*; do
-      local ext=${i#*.}
+      local lext=${i#*.}
+      local sext=${i##*.}
 
-      if [ "$ext" = "sha512" ]; then
+      if [ "$sext" = "sha512" ]; then
         continue
       fi
 
@@ -45,7 +46,7 @@ makerelease()
       case "$TARGET" in
         i586-mingw32msvc)
           platform=win32
-	  if [ "$ext" = "exe" ]; then
+	  if [ "$lext" = "exe" ]; then
 	    platform="${platform}-setup"
 	  fi
           ;;
@@ -54,7 +55,7 @@ makerelease()
           ;;
       esac
 
-      local name="FileZilla_${version}_${platform}.$ext"
+      local name="FileZilla_${version}_${platform}.$lext"
       echo $name
 
       cp "$i" "${RELEASEDIR}/${name}"
