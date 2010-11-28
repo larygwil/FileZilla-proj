@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 - Tim Kosse <tim.kosse@filezilla-project.org
+ * Copyright (C) 2010 - Tim Kosse <tim.kosse@filezilla-project.org>
  *
  * This file is licensed under the terms and conditions of the GNU General
  * Public License version 2 or later.
