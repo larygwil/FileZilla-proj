@@ -1,0 +1,29 @@
+===========================
+  check_po_file.py - NEWS
+===========================
+
+This file contains a list of changes for each released version of
+check_po_file.py.
+
+
+0.8.0 (2010-12-05)
+==================
+
+New features:
+
+- Recognize and handle byte order mark (BOM)
+- Base script exit code on errors occurred/findings
+- Add option to show a summary (-s/--summary)
+
+Bugfixes:
+
+- Process files in sorted order (by path); try to ignore duplicate paths
+- Small output improvements
+
+
+0.7.1 (2010-08-16)
+==================
+
+New features:
+
+- Initial release

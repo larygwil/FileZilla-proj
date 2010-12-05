@@ -30,9 +30,9 @@
 #
 # #############################################################################
 #
-# Version: 0.7.1
+# Version: 0.8.0
 # Author:  Peter Körner <18427@gmx.net>
-# Date:    2010-08-16T22:34+02:00
+# Date:    2010-12-05T14:30+01:00
 #
 # Check PO files' translation strings for mismatched format string specifiers,
 #  escape sequences etc.
@@ -47,11 +47,13 @@
 #
 
 import codecs
+import collections
 import getopt
+import math
 import re
 import sys
 
-version = (0, 7, 1, "")
+version = (0, 8, 0, "")
 
 
 # Available checks
@@ -65,8 +67,6 @@ version = (0, 7, 1, "")
 #     and translation) or "search" (only search the translation for items)
 #   * an item name which is displayed in the output
 #   * a setting if the check shall be enabled by default
-#   * a list of current items (for internal use)
-#   * a list of expected items if the type is "match" (for internal use)
 available_checks = {
         "f" : {"description" : "Find mismatched format specifiers (%<arbitrary character>)",
                "description_short" : "mismatched format specifiers (%<arbitrary character>)",
@@ -75,9 +75,7 @@ available_checks = {
                "item_name" : {"singular" : "format specifier",
                               "plural" : "format specifiers",
                               "unknown" : "format specifier(s)"},
-               "default_enabled" : True,
-               "found" : [],
-               "expected" : []},
+               "default_enabled" : True},
         # Leaving out \' and \" to avoid having too many (bogus) matches ...
         "e" : {"description" : r"Find mismatched escape sequences (\n, \r, \t, \\)",
                "description_short" : r"mismatched escape sequences (\n, \r, \t, \\)",
@@ -86,9 +84,7 @@ available_checks = {
                "item_name" : {"singular" : "escape sequence",
                               "plural" : "escape sequences",
                               "unknown" : "escape sequence(s)"},
-               "default_enabled" : False,
-               "found" : [],
-               "expected" : []},
+               "default_enabled" : False},
         # <ellipsis>: \u2026; don't use non-ASCII characters in help output
         "i" : {"description" : "Find mismatched trailing ellipses (..., <ellipsis>",
                "description_short" : "mismatched trailing ellipses (..., <ellipsis>)",
@@ -100,9 +96,7 @@ available_checks = {
                "item_name" : {"singular" : "trailing ellipsis",
                               "plural" : "trailing ellipses",
                               "unknown" : "trailing ellipsis/ellipses"},
-               "default_enabled" : False,
-               "found" : [],
-               "expected" : []},
+               "default_enabled" : False},
         "w" : {"description" : "Find mismatched leading/trailing whitespace (space, tab)",
                "description_short" : "mismatched leading/trailing whitespace (space, tab)",
                "type" : "match",
@@ -110,9 +104,7 @@ available_checks = {
                "item_name" : {"singular" : "occurrence of leading/trailing whitespace",
                               "plural" : "occurrences of leading/trailing whitespace",
                               "unknown" : "occurrence(s) of leading/trailing whitespace"},
-               "default_enabled" : False,
-               "found" : [],
-               "expected" : []},
+               "default_enabled" : False},
         "a" : {"description" : "Find mismatched keyboard accelerators (&<non-&/whitespace character>)",
                "description_short" : "mismatched keyboard accelerators (&<non-&/whitespace character>)",
                "type" : "match_count",
@@ -120,9 +112,7 @@ available_checks = {
                "item_name" : {"singular" : "keyboard accelerator",
                               "plural" : "keyboard accelerators",
                               "unknown" : "keyboard accelerator(s)"},
-               "default_enabled" : False,
-               "found" : [],
-               "expected" : []},
+               "default_enabled" : False},
         "s" : {"description" : "Find double spaces",
                "description_short" : "double spaces",
                "type" : "search",
@@ -130,8 +120,7 @@ available_checks = {
                "item_name" : {"singular" : "double space",
                               "plural" : "double spaces",
                               "unknown" : "double space(s)"},
-               "default_enabled" : True,
-               "found" : []},
+               "default_enabled" : True},
         "l" : {"description" : "Find space-linebreak escape sequence combinations ( <\\n or \\r>)",
                "description_short" : "space-linebreak escape sequence combinations ( <\\n or \\r>)",
                "type" : "search",
@@ -139,8 +128,7 @@ available_checks = {
                "item_name" : {"singular" : "space-linebreak escape sequence combination",
                               "plural" : "space-linebreak escape sequence combinations",
                               "unknown" : "space-linebreak escape sequence combination(s)"},
-               "default_enabled" : True,
-               "found" : []},
+               "default_enabled" : True},
         "t" : {"description" : "Find tab characters",
                "description_short" : "tab characters",
                "type" : "search",
@@ -148,8 +136,7 @@ available_checks = {
                "item_name" : {"singular" : "tab character",
                               "plural" : "tab characters",
                               "unknown" : "tab character(s)"},
-               "default_enabled" : False,
-               "found" : []}
+               "default_enabled" : False}
 }
 
 
@@ -176,6 +163,7 @@ Arguments:
   PO file(s) to check (file encoding: UTF-8)
 
 File checking options:
+  Enabling/disabling checks:
   -a, --all-checks          Perform all checks
   -e XYZ, --enable=XYZ      Perform only checks X, Y, Z
   -d XYZ, --disable=XYZ     Perform all checks except X, Y, Z
@@ -193,6 +181,10 @@ File checking options:
                         check["description_short"])
 
     help_text += """
+  Miscellaneous options:
+  -b, --ignore-bom          Do not abort checking if a BOM was found
+  -s, --summary             Show summary
+
 General options:
   -h, --help                Display this help text
   -v, --version             Display version information"""
@@ -219,7 +211,7 @@ def print_enc(text, encoding):
             False)
 
 
-def print_finding(check, path, string_pair, message):
+def print_finding(check, path, message, string_pair, items_found, items_expected=None):
     """Print a finding (i.e. translation entry + items found, ...).
 
     Depending on the type of the check, print various pieces of information,
@@ -232,26 +224,168 @@ def print_finding(check, path, string_pair, message):
         print_enc(u"\n%s: -- Potential mismatch: %s - expected [%s], got [%s]\n" % (
                   path,
                   message,
-                  u", ".join([u"\"%s\"" % x for x in check["expected"]]),
-                  u", ".join([u"\"%s\"" % x for x in check["found"]])), encoding)
+                  u", ".join([u"\"%s\"" % x for x in items_expected]),
+                  u", ".join([u"\"%s\"" % x for x in items_found])), encoding)
     elif check["type"] == "match_count":
         print_enc(u"\n%s: -- Potential mismatch: %s - expected %d, got %d\n" % (
                   path,
                   message,
-                  len(check["expected"]),
-                  len(check["found"])), encoding)
+                  len(items_expected),
+                  len(items_found)), encoding)
     else:
         print_enc(u"\n%s: -- %s: [%s]\n" % (
                   path,
                   message,
-                  u", ".join([u"\"%s\"" % x for x in check["found"]])), encoding)
+                  u", ".join([u"\"%s\"" % x for x in items_found])), encoding)
 
     # Print original string and the translation which has been checked
     print_enc(u"%s:%d: %s\n" % (path, string_pair[0][0], string_pair[0][1]), encoding)
     print_enc(u"%s:%d: %s\n" % (path, string_pair[1][0], string_pair[1][1]), encoding)
 
 
-def check_for_mismatch(check):
+def print_summary(available_checks, check_ids, data, lines_between_headers):
+    """Print a summary of data gathered while processing the PO file(s).
+
+    available_checks must contain all available checks' data, check_ids the IDs
+    of checks executed. data has to be a dictionary with file paths as keys and
+    dictionaries - which contain check IDs and "sum" as keys and the number of
+    findings for the respective check/the sum of all findings as values - as
+    values. If a file does not have finding numbers (got skipped, ...), None
+    may be supplied instead of a dictionary containing the number of findings.
+    The column headers are inserted between every block of
+    lines_between_headers rows in the findings table (0 to disable intermediate
+    headers).
+    """
+
+    def generate_header_line(check_ids, widths):
+        """Generate a line of column headers."""
+
+        line = []
+        line.append("#")
+        # Add one space of padding after the path
+        line.append(" " * widths["path"] + " ")
+
+        for check_id in sorted(check_ids):
+            line.append(check_id.rjust(widths["findings"]))
+
+        line.append("sum".rjust(widths["sum"]))
+
+        return " ".join(line)
+
+    def generate_path_line(path, check_ids, data, widths):
+        """Generate a line of output for a specific path."""
+
+        line = []
+        findings = data[path]
+
+        line.append("#")
+        # Add one space of padding after the path
+        line.append(path.rjust(widths["path"]) + " ")
+
+        if findings is not None:
+            for check_id in sorted(check_ids):
+                current_findings = findings[check_id]
+                if current_findings > 0:
+                    line.append(str(current_findings).rjust(widths["findings"]))
+                else:
+                    line.append("-".rjust(widths["findings"]))
+
+            line.append(str(findings["sum"]).rjust(widths["sum"]))
+        else:
+            for check_id in check_ids:
+                line.append("X".rjust(widths["findings"]))
+            line.append("X".rjust(widths["sum"]))
+            line.append(" (skipped)")
+
+        return " ".join(line)
+
+
+    # Calculate total number of findings for each check as well as the sum for
+    #  all checks; use a dictionary structured like the data dictionary to be
+    #  able to use generate_path_line() later on
+    total_findings = {"sum" : collections.defaultdict(int)}
+    for findings in data.values():
+        if findings is not None:
+            for check_id in check_ids:
+                total_findings["sum"][check_id] += findings[check_id]
+            total_findings["sum"]["sum"] += findings["sum"]
+
+
+    # Get column widths;
+    #  sum column needs to be at least three characters wide (for the heading);
+    #  also add some padding
+    widths = {"path" : 1, "findings" : 1, "sum" : 5}
+    for path in data.keys():
+        widths["path"] = max(widths["path"], len(path))
+
+    for check_id in check_ids:
+        number_width = int(math.log10(max(1, total_findings["sum"][check_id]))) + 1
+        widths["findings"] = max(widths["findings"], number_width)
+
+    number_width = int(math.log10(max(1, total_findings["sum"]["sum"]))) + 1
+    widths["sum"] = max(widths["sum"], number_width)
+
+
+    # Get and calculate numbers of files processed/checked/skipped
+    file_count = {}
+    file_count["total"] = len(data.keys())
+    file_count["skipped"] = len(filter(lambda x: x is None, data.values()))
+    file_count["checked"] = file_count["total"] - file_count["skipped"]
+
+
+    # Summary heading
+    print "\n# Summary"
+    print "# ======="
+    print "#"
+
+
+    # Findings table heading
+    print "# Findings per check and file"
+    print "# ---------------------------"
+
+    # Column headers, file paths and actual numbers;
+    #  insert an empty line and column headers every lines_between_headers
+    #  printed lines; make sure the first one is printed even if
+    #  lines_between_headers == 0, i.e. intermediate headers are disabled
+    if lines_between_headers == 0:
+        lines_between_headers = len(data.keys())
+    for line_number, path in enumerate(sorted(data.keys())):
+        if (line_number % lines_between_headers) == 0:
+            print "#"
+            print generate_header_line(check_ids, widths)
+            print "#"
+        print generate_path_line(path, check_ids, data, widths)
+    print "#"
+    # Only display totals line if more than one file has been checked
+    if len(data.keys()) > 1:
+        print generate_header_line(check_ids, widths)
+        print "#"
+        print generate_path_line("sum", check_ids, total_findings, widths)
+        print "#"
+
+
+    # Legend
+    print "# Legend:"
+    for check_id in sorted(check_ids):
+        print "#  %s: %s" % (check_id, available_checks[check_id]["description_short"])
+    print "#"
+
+    # Note on reliability
+    print "# Note: All of the above numbers/findings may include false"
+    print "#       positives/negatives."
+    print "#"
+    print "#"
+
+    # Number of files processed/checked/skipped
+    print "# Files processed"
+    print "# ---------------"
+    print "#"
+    print "# Processed %d file(s) (checked %d, skipped %d)" % (
+            file_count["total"], file_count["checked"], file_count["skipped"])
+    print "#"
+
+
+def check_for_mismatch(check, items_found, items_expected):
     """Check two item lists for mismatches.
 
     Return the result and a message describing the mismatch.
@@ -260,28 +394,35 @@ def check_for_mismatch(check):
     mismatch_found = False
     message = ""
 
-    if len(check["expected"]) > len(check["found"]):
+    if len(items_expected) > len(items_found):
         message = u"too few %s" % check["item_name"]["plural"]
         mismatch_found = True
-    elif len(check["expected"]) < len(check["found"]):
+    elif len(items_expected) < len(items_found):
         message = u"too many %s" % check["item_name"]["plural"]
         mismatch_found = True
     # Don't check for exact matches if not needed
-    elif check["type"] != "match_count" and check["expected"] != check["found"]:
+    elif check["type"] != "match_count" and items_expected != items_found:
         message = u"unexpected %s" % check["item_name"]["unknown"]
         mismatch_found = True
 
     return mismatch_found, message
 
 
-def check_file(path, checks):
+def check_file(path, checks, ignore_bom):
     """Execute checks on the non-fuzzy, non-obsolete entries of the file.
 
-    Returns True if the file could be parsed, False otherwise.
-    This function does not return the number of mismatches etc. found (or if
-    any were found at all) - this is on purpose: not all findings are real
-    mismatches and existing ones could be missed due to simplifications made
-    regarding the items to be extracted/checked.
+    Returns a tuple;
+    first element: True if an error occured (file could not be parsed and
+    processed, ...) or anything mismatching etc. has been found, False
+    otherwise (note that the checks may find too much or too little due to
+    simplifications made);
+    second element: dictionary with number of findings per check and a sum over
+    all executed checks if no error occurred, None otherwise (same note
+    applies).
+
+    Ignores an existing byte order mark (and displays a warning) if ignore_bom
+    is True, displays an error message and exits otherwise. Also exits when the
+    file could not be read.
     """
 
     # Get the PO file's lines
@@ -292,6 +433,22 @@ def check_file(path, checks):
     else:
         lines = f.read().splitlines()
         f.close()
+
+
+    # Search for byte order mark and handle it appropriately, depending on if
+    #  it's to be ignored or not
+    if lines[0].startswith(codecs.BOM_UTF8.decode("utf-8")):
+        if ignore_bom:
+            print "\n%s: W  Warning: Byte order mark (BOM) found." % path
+            print "%s:    Please save the .po file UTF-8 encoded, without BOM." % path
+            print "%s:    Ignoring the BOM for now (called with -b)." % path
+            lines[0] = lines[0][1:]
+        else:
+            print "\n%s: E  Error: Byte order mark (BOM) found." % path
+            print "%s:    Please save the .po file UTF-8 encoded, without BOM." % path
+            print "%s:    To temporarily ignore the BOM, call this script with -b." % path
+            print "%s:    Skipping this file." % path
+            return True, None
 
 
     # Add line numbers and remove empty lines
@@ -438,9 +595,9 @@ def check_file(path, checks):
 
         # Has the error state been reached?
         if state == 10:
-            print_enc(u"%s: -- Parsing error. Invalid PO file?\n" % path, encoding)
+            print_enc(u"\n%s: E  Parsing error. Invalid PO file?\n" % path, encoding)
             print_enc(u"%s:%d: %s\n" % (path, line_number, line), encoding)
-            return False
+            return True, None
 
 
     # Remove first entry if it's empty
@@ -452,15 +609,24 @@ def check_file(path, checks):
         entries.append(current_entry[:])
 
 
+    # Any findings?
+    found_something = False
+
+    number_of_findings = collections.defaultdict(int)
+
     # Perform tests, extracting items from the strings etc.
     for entry in entries:
         # Skip string if the msgid is empty (check stripped version)
         if len(entry[0][2]) < 1:
             continue
 
+        # Dictionary for collecting the expected items; keys: check IDs,
+        #  values: lists of expected items per check
+        items_expected = {}
+
         # Extract specifiers, escape sequences, ... from first string ...
-        for check in checks["match*"]:
-            check["expected"] = check["regex"].findall(entry[0][2])
+        for check_id, check in checks["match*"]:
+            items_expected[check_id] = check["regex"].findall(entry[0][2])
 
         # ... and check if all of them are existing in the other strings
         for line_number, translation, translation_stripped in entry[1:]:
@@ -470,25 +636,35 @@ def check_file(path, checks):
 
             # Extract specifiers, escape sequences, ... from translation, check
             #  for mismatches and output them if needed
-            for check in checks["match*"]:
-                check["found"] = check["regex"].findall(translation_stripped)
-                mismatch_found, message = check_for_mismatch(check)
+            for check_id, check in checks["match*"]:
+                items_found = check["regex"].findall(translation_stripped)
+                mismatch_found, message = check_for_mismatch(check,
+                                                             items_found,
+                                                             items_expected[check_id])
                 if mismatch_found:
+                    found_something = True
+                    number_of_findings[check_id] += 1
                     print_finding(check,
                                   path,
+                                  message,
                                   (entry[0][0:2], [line_number, translation]),
-                                  message)
+                                  items_found,
+                                  items_expected[check_id])
 
             # Search for additional items of interest and output them if found
-            for check in checks["search"]:
-                check["found"] = check["regex"].findall(translation_stripped)
-                if len(check["found"]) > 0:
+            for check_id, check in checks["search"]:
+                items_found = check["regex"].findall(translation_stripped)
+                if len(items_found) > 0:
+                    found_something = True
+                    number_of_findings[check_id] += 1
                     print_finding(check,
                                   path,
+                                  "Found " + check["item_name"]["unknown"],
                                   (entry[0][0:2], [line_number, translation]),
-                                  "Found " + check["item_name"]["unknown"])
+                                  items_found)
 
-    return True
+    number_of_findings["sum"] = sum(number_of_findings.values())
+    return found_something, number_of_findings
 
 
 if __name__ == "__main__":
@@ -497,18 +673,24 @@ if __name__ == "__main__":
 
     # Short and long command line options
     # ":" means "requires argument"
-    short_options =  "hvae:d:"
-    long_options = ["help", "version", "all-checks", "enable=", "disable="]
+    short_options =  "hvae:d:bs"
+    long_options = ["help", "version", "all-checks", "enable=", "disable=", "ignore-bom", "summary"]
 
     # Parse command line
     try:
         (options, arguments) = getopt.gnu_getopt(sys.argv[1:], short_options, long_options)
     except getopt.GetoptError, e:
-        exit_with_error("Error:" + str(e), True)
+        exit_with_error("Error: " + str(e), True)
 
     # Sets of IDs of the enabled/disabled checks
     enabled_check_ids = set()
     disabled_check_ids = set()
+
+    # Ignore byte order mark?
+    ignore_bom = False
+
+    # Show summary?
+    show_summary = False
 
     # Process specified options
     check_options_specified = set()
@@ -528,6 +710,10 @@ if __name__ == "__main__":
         elif option in ("-d", "--disable"):
             disabled_check_ids.update(list(value))
             check_options_specified.add("d")
+        elif option in ("-b", "--ignore-bom"):
+            ignore_bom = True
+        elif option in ("-s", "--summary"):
+            show_summary = True
 
 
     # Still not exited -> files shall be processed ...
@@ -561,17 +747,15 @@ if __name__ == "__main__":
     if len(enabled_check_ids) < 1:
         exit_with_error("Error: no checks to be processed", True)
 
-    # Done collecting enabled checks - enabled_checks now contains the IDs of
-    #  ((the checks enabled by default | those enabled on the command line) - the
-    #  ones disabled).
-    #  Now create a dictionary containing two lists of checks - one for
-    #  "match"-like checks, one for "search" checks. The actual checks are
-    #  sorted by their IDs to generate a "stable" output, i.e. perform them in
-    #  the same order every time the script is executed (apart from checks
+    # Done collecting enabled checks' IDs into enabled_checks_ids.
+    #  Now create a dictionary containing two lists of checks and their IDs -
+    #  one for "match"-like checks, one for "search" checks. The actual checks
+    #  are sorted by their IDs to generate a "stable" output, i.e. perform them
+    #  in the same order every time the script is executed (apart from checks
     #  being enabled/disabled and thus their output being added/removed).
-    enabled_checks_all = [available_checks[x] for x in sorted(enabled_check_ids)]
-    enabled_checks = {"match*" : [x for x in enabled_checks_all if x["type"] in ("match", "match_count")],
-                      "search" : [x for x in enabled_checks_all if x["type"] == "search"]}
+    enabled_checks_all = [(x, available_checks[x]) for x in sorted(enabled_check_ids)]
+    enabled_checks = {"match*" : [x for x in enabled_checks_all if x[1]["type"] in ("match", "match_count")],
+                      "search" : [x for x in enabled_checks_all if x[1]["type"] == "search"]}
 
 
     # Print the encoding and enabled checks
@@ -582,8 +766,19 @@ if __name__ == "__main__":
         print "#  %s: %s" % (check_id, available_checks[check_id]["description_short"])
     print "#"
 
-    # Check files specified as arguments
-    for path in arguments:
-        check_file(path, enabled_checks)
+    # Was there any error or have any mismatches/... been found?
+    problems_found = False
 
-    sys.exit(0)
+    summary_data = {}
+
+    # Check (unique) files specified as arguments
+    paths = sorted(list(set(arguments)))
+    for path in paths:
+        new_problems, file_summary_data = check_file(path, enabled_checks, ignore_bom)
+        problems_found = new_problems or problems_found
+        summary_data[path] = file_summary_data
+
+    if show_summary:
+        print_summary(available_checks, enabled_check_ids, summary_data, 10)
+
+    sys.exit(1 if problems_found else 0)

@@ -1,0 +1,267 @@
+=============================
+  check_po_file.py - README
+=============================
+
+This script checks PO files for (common) errors.
+Some checks are FileZilla-specific.
+
+
+Usage
+=====
+
+To check one or more PO files using the default checks, execute the script giving
+the file name(s) as arguments::
+
+  $ # Check de.po with default checks
+  $ ./check_po_file.py de.po
+  [...]
+
+You can also enable all checks (add -a) or selectively enable (-e) or disable
+(-d) only specific checks. -e and -d take the checks to enable/disable as a
+list of characters::
+
+  $ # Only check (-e) for mismatched trailing ellipses (i) and tab characters (t)
+  $ ./check_po_file.py -eit de.po
+  [...]
+
+Call the script with -h to get a listing of options and available checks. Also
+have a look at the checks' descriptions below.
+
+
+Notes
+=====
+
+The checked PO files are assumed to be formatted correctly (msgfmt should be
+able to compile them) and encoded in UTF-8. This also means that they must not
+contain a byte order mark (BOM). In case a BOM is found, the respective file is
+skipped; you can tell the script to temporarily ignore the BOM using a command
+line option (-b).
+
+Also note that the script uses some simplifications and *it is neither
+guaranteed that all errors are caught nor that there are no false positives*.
+
+
+Exit codes
+==========
+
+The following exit codes are used::
+
+  0  No errors/findings or help/version information requested
+  1  One or more file(s) could not be read
+     and/or one or more file(s) were skipped due to parsing error or BOM found
+     and/or one or more error(s) were found by the enabled checks
+     and/or another error occured (wrong check IDs specified, ...)
+
+Make sure to read the second note above if you want to base decisions on these
+exit codes.
+
+
+Available (types of) checks
+===========================
+
+Each check belongs to one of the following three types, influencing how
+interesting items (e.g. format specifiers) found in the checked strings are
+handled.
+
+
+Types of checks
+---------------
+
+Check for mismatch of items (1):
+  Extracts the items from both original string and translations and compares
+  the items themselves as well as their order for all (original string,
+  translated string) pairs.
+
+Check for mismatch in number of items (2):
+  Extracts the items from both original string and translations and compares
+  the number of items found for all (original string, translated string) pairs.
+
+Search for items (3):
+  Searches the translations for specific items.
+
+Note: (1) and (2) only use the singular form of the original string - its
+plural form is ignored. (3) does not use the original string at all.
+
+
+Currently available (partially FileZilla-specific) checks
+---------------------------------------------------------
+
+For a short list see the script's help output.
+
+In the following list of descriptions, the character in square brackets is the
+respective check's ID which can be used with the -e or -d options; "Default"
+specifies if the check is enabled by default.
+
+
+[a] mismatched keyboard accelerators (&<non-&/whitespace character>)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type:    Check for mismatch in number of items
+:Default: No
+
+Checks if there is the same number of keyboard accelerators in both original
+string and translation. All combinations of ampersand (&) and
+non-ampersand/non-whitespace character are counted as a keyboard accelerator
+item.
+
+Mismatches should be fixed.
+
+Example::
+
+ de.po: -- Potential mismatch: too few keyboard accelerators - expected 1, got 0
+ de.po:227: msgid "&Account:"
+ de.po:228: msgstr "Konto:"
+
+
+[e] mismatched escape sequences (\\n, \\r, \\t, \\\\)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. Note: Backslashes in the above heading and the following paragraph are
+   escaped to get proper reStructuredText markup (e.g. \\n actually means \n in
+   context of this README).
+
+:Type:    Check for mismatch of items
+:Default: No
+
+Compares the escape sequences found in the original string (only \\n, \\r, \\t
+and \\\\ are searched for) with the ones from the translation (taking item
+order into account).
+
+Mismatches in general should be fixed; if the original string does not contain
+any linebreak escape sequences, but the translation does, this mismatch must be
+fixed.
+
+Example::
+
+ de.po: -- Potential mismatch: too few escape sequences - expected ["\n"], got []
+ de.po:5326: msgid "Please enter raw FTP command.\nUsing raw ftp commands will clear the directory cache."
+ de.po:5329: msgstr "Bitte geben Sie einen FTP-Befehl ein. Die Benutzung eigener FTP-Befehle leert den Verzeichniscache."
+
+
+[f] mismatched format specifiers (%<arbitrary character>)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type:    Check for mismatch of items
+:Default: Yes
+
+Compares the format specifiers from the original string with the ones found in
+the translation (item order is taken into account). All combinations of percent
+character (%) and an arbitrary following character are interpreted as format
+specifier by this check.
+
+Mismatches must be fixed with the exception of "format specifiers" which are
+actually not interpreted as such (see below for an example).
+Note: A (missing) c-format flag (e.g. "#, c-format") is no definitive indicator
+if a string actually is a format string or not. [1]_
+
+Example (must be fixed)::
+
+ de.po: -- Potential mismatch: unexpected format specifier(s) - expected ["%d", "%s"], got ["%s", "%d"]
+ de.po:68: msgid "%d file. Total size: %s"
+ de.po:70: msgstr[0] "%s Datei. Gesamtgröße: %d"
+
+Example (allowed)::
+
+ de.po: -- Potential mismatch: unexpected format specifier(s) - expected ["%Y", "%m", "%d"], got ["%d", "%m", "%Y"]
+ de.po:1076: msgid "(example: %Y-%m-%d)"
+ de.po:1077: msgstr "(Beispiel: %d.%m.%Y)"
+
+
+[i] mismatched trailing ellipses (..., <ellipsis>)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type:    Check for mismatch in number of items
+:Default: No
+
+Checks that a translation contains a trailing ellipsis if the original string
+does contain one. Both three dots ("...") or an ellipsis character ("…") may be
+used, even if the original string uses the three-dots variant.
+
+Mismatches should be fixed.
+
+Example::
+
+ de.po: -- Potential mismatch: too few trailing ellipses - expected 1, got 0
+ de.po:441: msgid "&Download..."
+ de.po:442: msgstr "&Herunterladen"
+
+
+[l] space-linebreak escape sequence combinations ( <\\n or \\r>)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. Note: Backslashes in the above heading and the following paragraph are
+   escaped to get proper reStructuredText markup (e.g. \\n actually means \n in
+   context of this README).
+
+:Type:    Search for items
+:Default: Yes
+
+Searches the translations for combinations of a space character and a linebreak
+escape sequence (\\n, \\r).
+
+Any findings must be fixed, for example by removing the space character (if
+applicable).
+
+Example::
+
+ de.po: -- Found space-linebreak escape sequence combination(s): [" \n"]
+ de.po:3232: msgid "Enter the port on which the server listens.\nThe default for FTP is 21, the default for SFTP is 22."
+ de.po:3235: msgstr "Geben Sie die Portnummer des Servers an. \nDer Standardport für FTP ist 21, der Standardport für SFTP ist 22."
+
+
+[s] double spaces
+~~~~~~~~~~~~~~~~~
+
+:Type:    Search for items
+:Default: Yes
+
+Finds double (and also triple, ...) spaces in the translations.
+
+Any occurrence of double spaces must be fixed (only single spaces are allowed).
+
+Example::
+
+ de.po: -- Found double space(s): ["  "]
+ de.po:1068: msgid "(At least 7 days)"
+ de.po:1069: msgstr "(Mindestens  7 Tage)"
+
+
+[t] tab characters
+~~~~~~~~~~~~~~~~~~
+
+:Type:    Search for items
+:Default: No
+
+Searches the translations for tab characters.
+
+Any tab characters found must be removed.
+
+Example::
+
+ de.po: -- Found tab character(s): ["    "]
+ de.po:1297: msgid "About FileZilla"
+ de.po:1298: msgstr "Über        FileZilla"
+
+
+[w] mismatched leading/trailing whitespace (space, tab)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type:    Check for mismatch of items
+:Default: No
+
+Checks that the translation does only contain leading or trailing whitespace if
+the original string does so, too.
+
+Any mismatches must be fixed.
+
+Example::
+
+ de.po: -- Potential mismatch: too many occurrences of leading/trailing whitespace - expected [], got [" "]
+ de.po:1325: msgid "Action to perform:"
+ de.po:1326: msgstr "Durchzuführende Aktion: "
+
+
+References
+==========
+
+.. [1] http://www.gnu.org/software/gettext/manual/gettext.html#c_002dformat-Flag
