@@ -4,13 +4,13 @@
 #  echo "REPLY: $REPLY"
 #done
 
-function logprint()
+logprint()
 {
   echo -e $*
   echo -e $* >> $LOG
 }
 
-function targetlogprint()
+targetlogprint()
 {
   echo -e "$TARGET: $*"
   echo -e $* >> $TARGETLOG

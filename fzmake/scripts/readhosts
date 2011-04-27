@@ -4,7 +4,7 @@ HOSTS="$CONFDIR/hosts"
 
 hosts_loaded=
 
-function printhost()
+printhost()
 {
   echo "Host read:"
   echo "  Host: $HOST"
@@ -13,7 +13,7 @@ function printhost()
   [ -z "$SUBHOST" ] || echo "  Subhost: $SUBHOST"
 }
 
-function resetHosts()
+resetHosts()
 {
   hosts_loaded=
   if ! [ -f "$HOSTS" ]; then
@@ -22,7 +22,7 @@ function resetHosts()
   fi
 }
 
-function getHost()
+getHost()
 {
   if [ "$hosts_loaded" == "" ]; then
     if ! exec 3<$HOSTS; then
@@ -31,12 +31,12 @@ function getHost()
     hosts_loaded=1
     echo "$HOSTS loaded"
   fi
-  
+
   export HOST=
   export HOSTPREFIX=
   export TARGETS=
   export SUBHOST=
-  
+
   while read -u 3; do
     REPLY=${REPLY##\#*}
     if [ -z "$REPLY" ]; then

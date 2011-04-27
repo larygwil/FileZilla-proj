@@ -4,7 +4,7 @@
 
 # This function updates the locales page
 
-function updatelocales()
+updatelocales()
 {
   local WWWLOCALES="/var/www/locales"
 
