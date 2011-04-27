@@ -71,6 +71,10 @@ if [ ! -z "$HOME" ]; then
   fi
 fi
 
+echo "CPPFLAGS: $CPPFLAGS"
+echo "CFLAGS: $CFLAGS"
+echo "CXXFLAGS: $CXXFLAGS"
+
 rm -rf "$OUTPUTDIR"
 mkdir "$OUTPUTDIR"
 
