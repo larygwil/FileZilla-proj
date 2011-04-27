@@ -14,7 +14,7 @@ makerelease()
   echo "Creating release files"
 
   exec 4<"$CONFIGUREIN" || return 1
-  read -u 4 version || return 1
+  read <&4 -r version || return 1
 
   version="${version#*, }"
   version="${version%,*}"

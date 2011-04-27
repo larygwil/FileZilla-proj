@@ -1,6 +1,6 @@
 #! /bin/sh
 
-function updatecvs()
+updatecvs()
 {
   logprint "Updating CVS and SVN repositories"
   logprint "---------------------------------"

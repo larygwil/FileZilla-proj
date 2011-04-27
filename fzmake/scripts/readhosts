@@ -24,7 +24,7 @@ resetHosts()
 
 getHost()
 {
-  if [ "$hosts_loaded" == "" ]; then
+  if [ "$hosts_loaded" = "" ]; then
     if ! exec 3<$HOSTS; then
       return 1
     fi
@@ -37,7 +37,7 @@ getHost()
   export TARGETS=
   export SUBHOST=
 
-  while read -u 3; do
+  while <&3 read -r REPLY; do
     REPLY=${REPLY##\#*}
     if [ -z "$REPLY" ]; then
       if ! [ -z "$TARGETS" ]; then

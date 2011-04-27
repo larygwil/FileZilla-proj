@@ -12,7 +12,7 @@ load_file()
 
 read_file()
 {
-  while read -u3; do
+  while <&3 read -r REPLY; do
     if [ "${REPLY:0:1}" = "#" ]; then
       continue
     fi

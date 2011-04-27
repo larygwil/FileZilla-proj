@@ -60,7 +60,7 @@ while [ -n "$1" ]; do
   esac
 done
 
-function init()
+init()
 {
   if [ -n "$0" -a "${0:0:1}" = "/" ]; then
     local dir="${0%/*}"
@@ -107,14 +107,14 @@ echo "#! /bin/sh" > "$PREFIX/clientscripts/parameters"
 chmod +x "$PREFIX/clientscripts/parameters"
 echo "export STRIP=$STRIP" >> "$PREFIX/clientscripts/parameters"
 
-function clean_files()
+clean_files()
 {
   rm -rf "$WORKDIR/FileZilla3"
   rm -rf "$WORKDIR/clientscripts"
   rm -f "$WORKDIR/clientscripts.tar.bz2"
 }
 
-function buildfailure()
+buildfailure()
 {
   touch "$OUTPUTDIR/failed"
   [ -f "$OUTPUTDIR/running" ] && rm "$OUTPUTDIR/running"
@@ -209,7 +209,7 @@ makedist || buildfailure || exit 1
 
 prebuild >> $LOG 2>&1 || buildfailure || exit 1
 
-function packageClientscripts()
+packageClientscripts()
 {
   cp -r "$CLIENTSCRIPTS" "$WORKDIR"
   cp "$SCRIPTS/readpackages" "$WORKDIR/clientscripts/"

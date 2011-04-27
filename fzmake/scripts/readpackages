@@ -24,7 +24,7 @@ resetPackages()
 
 getPackage()
 {
-  if [ "$packages_loaded" == "" ]; then
+  if [ "$packages_loaded" = "" ]; then
     if ! exec 4<$PACKAGES_FILE; then
       return 1
     fi
@@ -35,7 +35,7 @@ getPackage()
   export PACKAGE=
   export PACKAGE_FLAGS=
 
-  while read -u 4; do
+  while <&4 read -r REPLY; do
     REPLY=${REPLY##\#*}
     if [ -z "$REPLY" ]; then
       if ! [ -z "$PACKAGE" ]; then

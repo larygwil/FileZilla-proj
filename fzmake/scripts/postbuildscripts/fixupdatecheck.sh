@@ -2,7 +2,7 @@
 
 # This script updates the nightly information for the updatecheck script.
 
-function fixupdatecheck()
+fixupdatecheck()
 {
   echo "Updating information for the automated update checks"
   
@@ -22,16 +22,16 @@ function fixupdatecheck()
     
     cd "$OUTPUTDIR/$TARGET"
     for FILE in *; do
-      if [ $FILE == "successful" ]; then
+      if [ $FILE = "successful" ]; then
         continue;
       fi
-      if [ $FILE == "build.log" ]; then
+      if [ $FILE = "build.log" ]; then
         continue;
       fi
-      if [ ${FILE: -4} == ".zip" ]; then
+      if [ ${FILE: -4} = ".zip" ]; then
         continue;
       fi
-      if [ ${FILE: -7} == ".sha512" ]; then
+      if [ ${FILE: -7} = ".sha512" ]; then
         continue;
       fi
 

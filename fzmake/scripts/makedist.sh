@@ -1,6 +1,6 @@
 #! /bin/sh
 
-function makedist()
+makedist()
 {
   logprint "Creating source distribution"
   logprint "Configuring FileZilla 3 package"

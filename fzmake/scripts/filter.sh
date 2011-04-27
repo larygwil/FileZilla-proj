@@ -1,16 +1,16 @@
 #! /bin/sh
 
-function dofilter()
+dofilter()
 {
   PREFIX="$HOSTPREFIX"
   PREFIX=`echo "$PREFIX" | sed -e 's/\\//\\\\\\//g'`
 
-  while read -s -u 0; do
+  while read -s -r REPLY; do
     echo "$REPLY" | sed "s/$PREFIX/\$PREFIX/g"
   done
 }
 
-function filter()
+filter()
 {
   "$@" 2>&1 | dofilter
   return ${PIPESTATUS[0]}

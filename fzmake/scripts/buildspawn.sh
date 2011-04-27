@@ -3,7 +3,7 @@
 export SSH="ssh -o PreferredAuthentications=publickey -o StrictHostKeyChecking=yes -o BatchMode=yes -q"
 export SCP="scp -o PreferredAuthentications=publickey -o StrictHostKeyChecking=yes -o BatchMode=yes -q -B"
 
-function failure()
+failure()
 {
   ENDSECONDS=`date '+%s'`
   local span=$((ENDSECONDS - STARTSECONDS))
@@ -16,7 +16,7 @@ function failure()
   return 1
 }
 
-function all_failure()
+all_failure()
 {
   logprint "$TARGETS: Failed"
   for TARGET in $TARGETS; do
@@ -41,7 +41,7 @@ function all_failure()
   return 1
 }
 
-function spawn_cleanup()
+spawn_cleanup()
 {
   if [ "$CLEANUP_DONE" = "true" ]; then
     return 1;
@@ -52,7 +52,7 @@ function spawn_cleanup()
   filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf clientscripts work output output.tar clientscripts.tar.bz2;" || all_failure || return 1
 }
 
-function buildspawn()
+buildspawn()
 {
   ID=$1
   HOST=$2
