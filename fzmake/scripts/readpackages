@@ -46,9 +46,9 @@ getPackage()
     fi
 
     if [ -z "$PACKAGE" ]; then
-      export PACKAGE=$REPLY;
+      export PACKAGE="$REPLY"
     elif [ -z "$PACKAGE_FLAGS" ]; then
-      export PACKAGE_FLAGS=$REPLY;
+      export PACKAGE_FLAGS="$REPLY"
     else
       echo "Unexpected line: $REPLY"
       return 1

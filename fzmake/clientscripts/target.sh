@@ -31,7 +31,7 @@ makepackage()
   fi
 
   if [ -z "$NOINST" ]; then
-    echo "Running postbuild script"  
+    echo "Running postbuild script"
     $SCRIPTS/postbuild.sh "$TARGET" "$PACKAGE" || return 1
   fi
 }

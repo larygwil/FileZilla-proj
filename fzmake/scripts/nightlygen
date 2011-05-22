@@ -8,7 +8,7 @@ fi
 
 CONFDIR=
 
-STRIP=true
+STRIP=
 UPDATE=true
 
 while [ -n "$1" ]; do
@@ -30,7 +30,6 @@ while [ -n "$1" ]; do
       shift 1
     ;;
     --strip=true)
-      STRIP=true
       shift 1
     ;;
     --strip=*)
