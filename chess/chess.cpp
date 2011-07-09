@@ -17,6 +17,7 @@ Ideas for optimizations:
 */
 
 #include "chess.hpp"
+#include "detect_check.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -25,7 +26,11 @@ Ideas for optimizations:
 #include <string>
 #include <assert.h>
 
-#include <windows.h>
+#if _MSC_VER
+  #include "windows.hpp"
+#else
+  #include "unix.hpp"
+#endif
 
 #ifdef USE_STATISTICS
 namespace statistics {
@@ -52,7 +57,7 @@ statistics::type stats = {0};
 	} \
 	break; \
 } while( true );
-#undef ASSERT
+//#undef ASSERT
 #ifndef ASSERT
 #define ASSERT(x)
 #endif
@@ -118,196 +123,6 @@ void init_board_from_pieces( position& p )
 	}
 }
 
-// Returns false on multiple, further check testing is skipped
-bool detect_check_knight( position const& p, color::type c, int column, int row, int cx, int cy, check_info& check )
-{
-	column += cx;
-	if( column < 0 || column > 7 ) {
-		return true;
-	}
-
-	row += cy;
-	if( row < 0 || row > 7 ) {
-		return true;
-	}
-
-	int pi = p.board[column][row];
-	if( pi == pieces::nil ) {
-		return true;
-	}
-
-	if( c != (pi >> 4) ) {
-		return true;
-	}
-
-	pi &= 0x0f;
-
-	if( pi == pieces::knight1 || pi == pieces::knight2 ) {
-		if( check.check ) {
-			check.multiple = true;
-			return false;
-		}
-		check.check = true;
-		check.piece = pi;
-	}
-	else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
-		piece const& pp = p.pieces[c][pi];
-		if( pp.special ) {
-			unsigned short pknight = promotions::knight << (2 * (pi - pieces::pawn1) );
-			if( (p.promotions[c] & pknight) == pknight ) {
-				if( check.check ) {
-					check.multiple = true;
-					return false;
-				}
-				check.check = true;
-				check.piece = pi;
-			}
-		}
-	}
-
-	return true;
-}
-
-#define SET_CHECK_RET_ON_MULTIPLE(check, pi) { if( check.check ) { check.multiple = true; return; } check.check = true; check.piece = pi; }
-void detect_check( position const& p, color::type c, check_info& check, int king_col, int king_row )
-{
-	check.check = false;
-	check.multiple = false;
-	check.knight = false;
-
-	// Check diagonals
-	int col, row;
-	for( int cx = -1; cx <= 1; cx += 2 ) {
-		for( int cy = -1; cy <= 1; cy += 2 ) {
-			for( col = king_col + cx, row = king_row + cy;
-				   col >= 0 && col < 8 && row >= 0 && row < 8; col += cx, row += cy ) {
-				
-				unsigned char index = p.board[col][row];
-				if( index == pieces::nil ) {
-					continue;
-				}
-
-				unsigned char piece_color = (index >> 4) & 0x1;
-				if( piece_color == c )
-					break; // Own pieces do not check.
-
-				unsigned char pi = index & 0x0f;
-
-				if( pi == pieces::queen || pi == pieces::bishop1 || pi == pieces::bishop2 ) {
-					SET_CHECK_RET_ON_MULTIPLE( check, pi );
-				}
-				else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
-					// Check for promoted queens
-					piece const& pp = p.pieces[1 - c][pi];
-					if( pp.special ) {
-						unsigned short promoted = p.promotions[1 - c] >> ((pi - pieces::pawn1) * 2);
-						if( promoted == promotions::queen || promoted == promotions::bishop ) {
-							SET_CHECK_RET_ON_MULTIPLE( check, pi )
-						}
-					}
-					else if( c && king_row == (row + 1) ) {
-						// The pawn itself giving chess
-						SET_CHECK_RET_ON_MULTIPLE( check, pi )
-					}
-					else if( !c && row == (king_row + 1) ) {
-						// The pawn itself giving chess
-						SET_CHECK_RET_ON_MULTIPLE( check, pi )
-					}
-				}
-
-				break;
-			}
-		}
-	}
-
-	// Horizontals
-	for( int cx = -1; cx <= 1; cx += 2 ) {
-		for( col = king_col + cx;
-			col >= 0 && col < 8; col += cx )
-		{
-			unsigned char index = p.board[col][king_row];
-			if( index == pieces::nil ) {
-				continue;
-			}
-
-			unsigned char piece_color = (index >> 4) & 0x1;
-			if( piece_color == c )
-				break; // Own pieces do not check.
-
-			unsigned char pi = index & 0x0f;
-
-			if( pi == pieces::queen || pi == pieces::rook1 || pi == pieces::rook2 ) {
-				SET_CHECK_RET_ON_MULTIPLE( check, pi )
-			}
-			else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
-				// Check for promoted queen and rooks
-				piece const& pp = p.pieces[1 - c][pi];
-				if( pp.special ) {
-					unsigned short promoted = p.promotions[1 - c] >> ((pi - pieces::pawn1) * 2);
-					if( promoted == promotions::queen || promoted == promotions::rook ) {
-						SET_CHECK_RET_ON_MULTIPLE( check, pi )
-					}
-				}
-			}
-
-			break;
-		}
-	}
-
-	// Verticals
-	for( int cy = -1; cy <= 1; cy += 2 ) {
-		for( row = king_row + cy;
-			row >= 0 && row < 8; row += cy )
-		{
-			unsigned char index = p.board[king_col][row];
-			if( index == pieces::nil ) {
-				continue;
-			}
-
-			unsigned char piece_color = (index >> 4) & 0x1;
-			if( piece_color == c )
-				break; // Own pieces do not check.
-
-			unsigned char pi = index & 0x0f;
-			
-			if( pi == pieces::queen || pi == pieces::rook1 || pi == pieces::rook2 ) {
-				SET_CHECK_RET_ON_MULTIPLE( check, pi )
-			}
-			else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
-				// Check for promoted queen and rooks
-				piece const& pp = p.pieces[1 - c][pi];
-				if( pp.special ) {
-					unsigned short promoted = p.promotions[1 - c] >> ((pi - pieces::pawn1) * 2);
-					if( promoted == promotions::queen || promoted == promotions::rook ) {
-						SET_CHECK_RET_ON_MULTIPLE( check, pi )
-					}
-				}
-			}
-
-			break;
-		}
-	}
-
-	if( !detect_check_knight( p, static_cast<color::type>(1-c), king_col, king_row, 1, 2, check ) ) return;
-	if( !detect_check_knight( p, static_cast<color::type>(1-c), king_col, king_row, 2, 1, check ) ) return;
-	if( !detect_check_knight( p, static_cast<color::type>(1-c), king_col, king_row, 2, -1, check ) ) return;
-	if( !detect_check_knight( p, static_cast<color::type>(1-c), king_col, king_row, 1, -2, check ) ) return;
-	if( !detect_check_knight( p, static_cast<color::type>(1-c), king_col, king_row, -1, -2, check ) ) return;
-	if( !detect_check_knight( p, static_cast<color::type>(1-c), king_col, king_row, -2, -1, check ) ) return;
-	if( !detect_check_knight( p, static_cast<color::type>(1-c), king_col, king_row, -2, 1, check ) ) return;
-	if( !detect_check_knight( p, static_cast<color::type>(1-c), king_col, king_row, -1, 2, check ) ) return;
-}
-
-
-void detect_check( position const& p, color::type c, check_info& check )
-{
-	unsigned char column = p.pieces[c][pieces::king].column;
-	unsigned char row = p.pieces[c][pieces::king].row;
-
-	return detect_check( p, c, check, column, row );
-}
-
-
 int evaluate_side( color::type c, position const& p, check_info const& check )
 {
 	int result = 0;
@@ -347,9 +162,17 @@ int evaluate_side( color::type c, position const& p, check_info const& check )
 	return result;
 }
 
-int evaluate( color::type c, position const& p, check_info const& check )
+int evaluate( color::type c, position const& p, check_info const& check, int depth )
 {
 	int result = evaluate_side( c, p, check ) - evaluate_side( static_cast<color::type>(1-c), p, check );
+
+	result *= 100;
+	if( result > 0 ) {
+		result += depth;
+	}
+	else {
+		result -= depth;
+	}
 
 	return result;
 }
@@ -375,9 +198,9 @@ bool apply_move( position& p, move const& m, color::type c )
 				ASSERT( p.pieces[c][pieces::rook2].alive );
 				pp.special = 1;
 				pp.column = 6;
-				p.board[m.target_col][m.target_row] = pieces::rook2 | (c << 4);
+				p.board[6][m.target_row] = pieces::king | (c << 4);
 				p.board[7][m.target_row] = pieces::nil;
-				p.board[5][m.target_row] = pieces::rook2;
+				p.board[5][m.target_row] = pieces::rook2 | (c << 4);
 				p.pieces[c][pieces::rook2].column = 5;
 				p.pieces[c][pieces::rook1].special = 0;
 				p.pieces[c][pieces::rook2].special = 0;
@@ -388,9 +211,9 @@ bool apply_move( position& p, move const& m, color::type c )
 				// Queenside
 				pp.special = 1;
 				pp.column = 2;
-				p.board[m.target_col][m.target_row] = pieces::rook1 | (c << 4);
+				p.board[2][m.target_row] = pieces::king | (c << 4);
 				p.board[0][m.target_row] = pieces::nil;
-				p.board[3][m.target_row] = pieces::rook1;
+				p.board[3][m.target_row] = pieces::rook1 | (c << 4);
 				p.pieces[c][pieces::rook1].column = 3;
 				p.pieces[c][pieces::rook1].special = 0;
 				p.pieces[c][pieces::rook2].special = 0;
@@ -818,8 +641,8 @@ void calc_moves_pawns( position const& p, color::type c, std::vector<move>& move
 	}
 }
 
-struct {
-	bool operator()( move const& lhs, move& rhs ) const {
+struct MoveSort {
+	bool operator()( move const& lhs, move const& rhs ) const {
 		return lhs.priority > rhs.priority;
 	}
 } moveSort;
@@ -859,7 +682,7 @@ int step( int depth, position const& p_old, move const& m, color::type c, int al
 #ifdef USE_STATISTICS
 		++stats.evaluated_leaves;
 #endif
-		return evaluate( c, p, check );
+		return evaluate( c, p, check, depth );
 	}
 
 #ifdef USE_STATISTICS
@@ -912,8 +735,8 @@ bool calc( position& p, color::type c, move& m )
 {
 	int depth = MAX_DEPTH;
 
-	int alpha = result::loss - MAX_DEPTH - 1;
-	int beta = result::win + MAX_DEPTH + 1;
+	int alpha = result::loss * 100;
+	int beta = result::win * 100;
 
 	check_info check;
 	detect_check( p, c, check );
@@ -963,10 +786,10 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 
 	if( m.piece == pieces::king ) {
 		if( m.target_col == 6 && p.pieces[c][m.piece].column == 4 ) {
-			return "   0-0";
+			return "   O-O  ";
 		}
 		else if( m.target_col == 2 && p.pieces[c][m.piece].column == 4 ) {
-			return " 0-0-0";
+			return " O-O-O  ";
 		}
 	}
 
@@ -1016,6 +839,7 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 			else {
 				ret += ' ';
 			}
+			break;
 		default:
 			break;
 	}
@@ -1027,7 +851,7 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 		ret += 'x';
 	}
 	else if( m.piece >= pieces::pawn1 && m.piece <= pieces::pawn8 
-		&& p.pieces[c][m.piece].column != m.target_col )
+		&& p.pieces[c][m.piece].column != m.target_col && !p.pieces[c][m.piece].special )
 	{
 		// Must be en-passant
 		ret += 'x';
@@ -1073,13 +897,15 @@ bool validate_move( position const& p, move const& m, color::type c )
 
 int main()
 {
+	console_init();
+
 	std::cout << "  Octochess" << std::endl;
 	std::cout << "  ---------" << std::endl;
 	std::cout << std::endl;
 
 	srand(123);
 
-	ULONGLONG start = GetTickCount64();
+	unsigned long long start = get_time();
 	position p;
 
 	init_board(p);
@@ -1088,17 +914,16 @@ int main()
 	color::type c = color::white;
 	move m = {0};
 	while( calc( p, c, m ) ) {
-		
 		if( c == color::white ) {
-			std::cout << std::setw(3) << i << ". ";
+			std::cout << std::setw(3) << i << ".";
 		}
 		
-		std::cout << std::setw(8) << move_to_string(p, c, m);
+		std::cout << " " << move_to_string(p, c, m);
 
 		if( c == color::black ) {
 			++i;
 			check_info check = {0};
-			int i = evaluate( color::white, p, check );
+			int i = evaluate( color::white, p, check, 0 );
 			//std::cout << "  ; Evaluation: " << i << " centipawns";
 			std::cout << std::endl;
 		}
@@ -1107,13 +932,12 @@ int main()
 			std::cerr << std::endl << "NOT A VALID MOVE" << std::endl;
 			exit(1);
 		}
-
 		apply_move( p, m, c );
 
 		c = static_cast<color::type>(1-c);
 	}
 
-	ULONGLONG stop = GetTickCount64();
+	unsigned long long stop = get_time();
 
 	std::cerr << std::endl << "Runtime: " << stop - start << " ms " << std::endl;
 

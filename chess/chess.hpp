@@ -32,6 +32,7 @@ enum type {
 };
 }
 
+namespace {
 short piece_values[] = {
 	100, 100, 100, 100, 100, 100, 100, 100,
 	0, // Can't be captured
@@ -47,12 +48,13 @@ short promotion_values[] = {
 	310,
 	300
 };
+}
 
 namespace special_values {
 enum type
 {
 	knight_at_border = 25,
-	castled = 25
+	castled = 50
 };
 }
 
@@ -85,11 +87,11 @@ struct position
 	// 2 bit for every pawn.
 	unsigned short promotions[2];
 
+	unsigned char can_en_passant; // Piece of last-moved player that can be en-passanted
+
 	// board[column][row] as piece indexes in lower 4 bits, color in 5th bit.
 	// nil if square is empty.
 	unsigned char board[8][8];
-
-	unsigned char can_en_passant; // Piece of last-moved player that can be en-passanted
 };
 
 
@@ -128,6 +130,10 @@ struct check_info {
 	//   Elif knight is set: King has to move or Knight has to be captured
 	//   Else: Move king, capture piece or block line of sight
 	// Else: Normal move possible
+
+	bool operator==( check_info const& rhs ) const {
+		return check == rhs.check && multiple == rhs.multiple && knight == rhs.knight && piece == rhs.piece;
+	}
 };
 
 int const MAX_DEPTH = 7;
