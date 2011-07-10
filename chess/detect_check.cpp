@@ -52,26 +52,82 @@ bool detect_check_knight( position const& p, color::type c, int column, int row,
 	return true;
 }
 
-void detect_check_knights( position const& p, color::type c, check_info& check, int king_col, int king_row )
-{
-	if( !detect_check_knight( p, c, king_col, king_row, 1, 2, check ) ) return;
-	if( !detect_check_knight( p, c, king_col, king_row, 2, 1, check ) ) return;
-	if( !detect_check_knight( p, c, king_col, king_row, 2, -1, check ) ) return;
-	if( !detect_check_knight( p, c, king_col, king_row, 1, -2, check ) ) return;
-	if( !detect_check_knight( p, c, king_col, king_row, -1, -2, check ) ) return;
-	if( !detect_check_knight( p, c, king_col, king_row, -2, -1, check ) ) return;
-	if( !detect_check_knight( p, c, king_col, king_row, -2, 1, check ) ) return;
-	if( !detect_check_knight( p, c, king_col, king_row, -1, 2, check ) ) return;
+void detect_check_knight( position const& p, color::type c, check_info& check, int king_col, int king_row, piece const& pp, unsigned char pi ) {
+	signed char cx = king_col - pp.column;
+	if( !cx ) {
+		return;
+	}
+
+	signed char cy = king_row - pp.row;
+	if( !cy ) {
+		return;
+	}
+
+	signed sum;
+	if( cx > 0 ) {
+		sum = cx;
+	}
+	else {
+		sum = -cx;
+	}
+	if( cy > 0 ) {
+		sum += cy;
+	}
+	else {
+		sum -= cy;
+	}
+	if( sum == 3 ) {
+		if( check.check ) {
+			check.multiple = true;
+		}
+		else {
+			check.check = true;
+			check.piece = pi;
+		}
+	}
 }
 
-#if 1
+void detect_check_knights( position const& p, color::type c, check_info& check, int king_col, int king_row )
+{
+	{
+		piece const& pp = p.pieces[1-c][pieces::knight1];
+		if( pp.alive ) {
+			detect_check_knight( p, c, check, king_col, king_row, pp, pieces::knight1 );
+		}
+	}
+	{
+		piece const& pp = p.pieces[1-c][pieces::knight2];
+		if( pp.alive ) {
+			detect_check_knight( p, c, check, king_col, king_row, pp, pieces::knight2 );
+		}
+	}
+	for( unsigned char pi = pieces::pawn1; pi < pieces::pawn8; ++pi ) {
+		piece const& pp = p.pieces[1-c][pieces::knight2];
+		if( !pp.alive || ! pp.special ) {
+			continue;
+		}
+		unsigned short promoted = (p.promotions[1-c] >> (2 * (pi - pieces::pawn1) ) ) & 0x03;
+		if( promoted == promotions::knight ) {
+			detect_check_knight( p, c, check, king_col, king_row, pp, pieces::knight2 );
+		}
+	}
+//	if( !detect_check_knight( p, c, king_col, king_row, 1, 2, check ) ) return;
+//	if( !detect_check_knight( p, c, king_col, king_row, 2, 1, check ) ) return;
+//	if( !detect_check_knight( p, c, king_col, king_row, 2, -1, check ) ) return;
+//	if( !detect_check_knight( p, c, king_col, king_row, 1, -2, check ) ) return;
+//	if( !detect_check_knight( p, c, king_col, king_row, -1, -2, check ) ) return;
+//	if( !detect_check_knight( p, c, king_col, king_row, -2, -1, check ) ) return;
+//	if( !detect_check_knight( p, c, king_col, king_row, -2, 1, check ) ) return;
+//	if( !detect_check_knight( p, c, king_col, king_row, -1, 2, check ) ) return;
+}
+
+#if 0
 //#define SET_CHECK_RET_ON_MULTIPLE(check, pi) { if( check.check ) { check.multiple = true; return; } check.check = true; check.piece = pi; }
 #define SET_CHECK_RET_ON_MULTIPLE(check, pi) { check.check = true; return; }
 void detect_check( position const& p, color::type c, check_info& check, unsigned char king_col, unsigned char king_row )
 {
 	check.check = false;
 	check.multiple = false;
-	check.knight = false;
 	check.piece = pieces::pawn1;
 
 	// Check diagonals
@@ -397,7 +453,6 @@ void detect_check( position const& p, color::type c, check_info& check, unsigned
 {
 	check.check = false;
 	check.multiple = false;
-	check.knight = false;
 	check.piece = pieces::pawn1;
 
 	detect_check_from_pawns( p, c, check, king_col, king_row );

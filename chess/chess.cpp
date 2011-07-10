@@ -32,6 +32,9 @@ Ideas for optimizations:
   #include "unix.hpp"
 #endif
 
+#include <unordered_map>
+#include <map>
+
 #ifdef USE_STATISTICS
 namespace statistics {
 struct type {
@@ -51,16 +54,57 @@ statistics::type stats = {0};
 
 #define ASSERT(x) do{ \
 	if( !(x) ) { \
-	std::cerr << "Assertion failed: " << #x << std::endl; \
+	std::cerr << "Assertion failed (" << __FILE__ << ":" << __LINE__ << "): " << #x << std::endl; \
 	for(;;){}\
 		abort(); \
 	} \
 	break; \
 } while( true );
-//#undef ASSERT
+#undef ASSERT
 #ifndef ASSERT
 #define ASSERT(x)
 #endif
+
+struct hash_getter
+{
+unsigned long long operator()( position_base const& p ) const
+{
+	unsigned long long hash = 0;
+
+	char const* c = reinterpret_cast<char const*>(&p);
+	char const* end = c + sizeof( position_base );
+	for( ; c != end; ++c ) {
+		hash += *c;
+		hash += (hash << 10);
+		hash ^= (hash >> 6);
+	}
+	hash += (hash << 3);
+	hash ^= (hash >> 11);
+	hash += (hash << 15);
+
+//	hash = *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]));
+//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 8);
+//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 16);
+//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 24);
+//	hash ^= p.promotions[0];
+//	hash ^= p.promotions[1];
+
+	return hash;
+}
+};
+
+struct step_data {
+	int evaluation;
+	bool terminal;
+	check_info check;
+	move best_move;
+	int remaining_depth;
+	int alpha;
+	int beta;
+};
+
+typedef std::unordered_map<position_base, step_data, hash_getter> data_maps;
+data_maps data_map[2];
 
 void init_board( position& p )
 {
@@ -164,17 +208,19 @@ int evaluate_side( color::type c, position const& p, check_info const& check )
 
 int evaluate( color::type c, position const& p, check_info const& check, int depth )
 {
-	int result = evaluate_side( c, p, check ) - evaluate_side( static_cast<color::type>(1-c), p, check );
+	int value = evaluate_side( c, p, check ) - evaluate_side( static_cast<color::type>(1-c), p, check );
 
-	result *= 100;
-	if( result > 0 ) {
-		result += depth;
-	}
-	else {
-		result -= depth;
-	}
+	value *= 100;
 
-	return result;
+//	if( value > 0 ) {
+//		value += depth;
+//	}
+//	else {
+//		value -= depth;
+//	}
+
+	ASSERT( value > result::loss && value < result::win );
+	return value;
 }
 
 
@@ -286,7 +332,7 @@ bool apply_move( position& p, move const& m, color::type c )
 }
 
 // Adds the move if it does not result in a check
-void add_if_legal( position const& p, color::type c, std::vector<move>& moves, check_info& check, unsigned char pi, unsigned char new_col, unsigned char new_row, unsigned char priority = 0 )
+void add_if_legal( position const& p, color::type c, std::vector<move>& moves, unsigned char pi, unsigned char new_col, unsigned char new_row, unsigned char priority = 0 )
 {
 	position p2 = p;
 	move m;
@@ -303,7 +349,7 @@ void add_if_legal( position const& p, color::type c, std::vector<move>& moves, c
 		return;
 	}
 
-	m.priority = priority | (rand() % 0x0f);
+	m.priority = priority | ((rand() % 0x0e)+1);
 
 	moves.push_back(m);
 }
@@ -345,7 +391,7 @@ void calc_moves_king( position const& p, color::type c, std::vector<move>& moves
 		priority |= priorities::capture;
 	}
 
-	add_if_legal( p, c, moves, check, pieces::king, new_col, new_row, priority );
+	add_if_legal( p, c, moves, pieces::king, new_col, new_row, priority );
 }
 
 void calc_moves_king( position const& p, color::type c, std::vector<move>& moves, check_info& check )
@@ -371,7 +417,7 @@ void calc_moves_king( position const& p, color::type c, std::vector<move>& moves
 			check_info check2;
 			detect_check( p, c, check2, 3, pp.row );
 			if( !check2.check ) {
-				add_if_legal( p, c, moves, check, pieces::king, 2, pp.row, priorities::castle );
+				add_if_legal( p, c, moves, pieces::king, 2, pp.row, priorities::castle );
 			}
 		}
 	}
@@ -381,7 +427,7 @@ void calc_moves_king( position const& p, color::type c, std::vector<move>& moves
 			check_info check2;
 			detect_check( p, c, check2, 5, pp.row );
 			if( !check2.check ) {
-				add_if_legal( p, c, moves, check, pieces::king, 6, pp.row, priorities::castle );
+				add_if_legal( p, c, moves, pieces::king, 6, pp.row, priorities::castle );
 			}
 		}
 	}
@@ -400,11 +446,11 @@ void calc_moves_queen( position const& p, color::type c, std::vector<move>& move
 			for( x = pp.column + cx, y = pp.row + cy; x >= 0 && x <= 7 && y >= 0 && y <= 7; x += cx, y += cy ) {
 				unsigned char target = p.board[x][y];
 				if( target == pieces::nil ) {
-					add_if_legal( p, c, moves, check, pi, x, y, 0 );
+					add_if_legal( p, c, moves, pi, x, y, 0 );
 				}
 				else {
 					if( (target >> 4) != c ) {
-						add_if_legal( p, c, moves, check, pi, x, y, priorities::capture );
+						add_if_legal( p, c, moves, pi, x, y, priorities::capture );
 					}
 					break;
 				}
@@ -430,11 +476,11 @@ void calc_moves_bishop( position const& p, color::type c, std::vector<move>& mov
 			for( x = pp.column + cx, y = pp.row + cy; x >= 0 && x <= 7 && y >= 0 && y <= 7; x += cx, y += cy ) {
 				unsigned char target = p.board[x][y];
 				if( target == pieces::nil ) {
-					add_if_legal( p, c, moves, check, pi, x, y, 0 );
+					add_if_legal( p, c, moves, pi, x, y, 0 );
 				}
 				else {
 					if( (target >> 4) != c ) {
-						add_if_legal( p, c, moves, check, pi, x, y, priorities::capture );
+						add_if_legal( p, c, moves, pi, x, y, priorities::capture );
 					}
 					break;
 				}
@@ -467,11 +513,11 @@ void calc_moves_rook( position const& p, color::type c, std::vector<move>& moves
 		for( int x = pp.column + cx; x >= 0 && x <= 7; x += cx ) {
 			unsigned char target = p.board[x][pp.row];
 			if( target == pieces::nil ) {
-				add_if_legal( p, c, moves, check, pi, x, pp.row, 0 );
+				add_if_legal( p, c, moves, pi, x, pp.row, 0 );
 			}
 			else {
 				if( (target >> 4) != c ) {
-					add_if_legal( p, c, moves, check, pi, x, pp.row, priorities::capture );
+					add_if_legal( p, c, moves, pi, x, pp.row, priorities::capture );
 				}
 				break;
 			}
@@ -481,11 +527,11 @@ void calc_moves_rook( position const& p, color::type c, std::vector<move>& moves
 		for( int y = pp.row + cy; y >= 0 && y <= 7; y += cy ) {
 			unsigned char target = p.board[pp.column][y];
 			if( target == pieces::nil ) {
-				add_if_legal( p, c, moves, check, pi, pp.column, y, 0 );
+				add_if_legal( p, c, moves, pi, pp.column, y, 0 );
 			}
 			else {
 				if( (target >> 4) != c ) {
-					add_if_legal( p, c, moves, check, pi, pp.column, y, priorities::capture );
+					add_if_legal( p, c, moves, pi, pp.column, y, priorities::capture );
 				}
 				break;
 			}
@@ -535,7 +581,7 @@ void calc_moves_knight( position const& p, color::type c, std::vector<move>& mov
 		priority = priorities::capture;
 	}
 
-	add_if_legal( p, c, moves, check, pi, new_column, new_row, priority );
+	add_if_legal( p, c, moves, pi, new_column, new_row, priority );
 }
 
 
@@ -578,13 +624,13 @@ void calc_diagonal_pawn_move( position const& p, color::type c, std::vector<move
 			if( ep.column == new_col && ep.row == pp.row ) {
 
 				// Capture en-passant
-				add_if_legal( p, c, moves, check, pi, new_col, new_row, priorities::capture );
+				add_if_legal( p, c, moves, pi, new_col, new_row, priorities::capture );
 			}
 		}
 	}
 	else if( (target >> 4) != c ) {
 		// Capture!
-		add_if_legal( p, c, moves, check, pi, new_col, new_row, priorities::capture );
+		add_if_legal( p, c, moves, pi, new_col, new_row, priorities::capture );
 	}
 }
 
@@ -608,7 +654,7 @@ void calc_moves_pawns( position const& p, color::type c, std::vector<move>& move
 
 				if( target == pieces::nil ) {
 
-					add_if_legal( p, c, moves, check, pi, pp.column, new_row );
+					add_if_legal( p, c, moves, pi, pp.column, new_row );
 
 					if( pp.row == ( (c == color::white) ? 1 : 6) ) {
 						// Moving two rows from starting row
@@ -616,7 +662,7 @@ void calc_moves_pawns( position const& p, color::type c, std::vector<move>& move
 
 						unsigned char target = p.board[pp.column][new_row];
 						if( target == pieces::nil ) {
-							add_if_legal( p, c, moves, check, pi, pp.column, new_row );
+							add_if_legal( p, c, moves, pi, pp.column, new_row );
 						}
 					}
 				}
@@ -664,121 +710,6 @@ void calculate_moves( position const& p, color::type c, std::vector<move>& moves
 	std::sort( moves.begin(), moves.end(), moveSort );
 }
 
-
-int step( int depth, position const& p_old, move const& m, color::type c, int alpha, int beta )
-{
-	position p = p_old;
-	bool captured = apply_move( p, m, static_cast<color::type>(1-c) );
-
-	check_info check;
-	detect_check( p, c, check );
-
-#if USE_QUIESCENCE == 1
-	if( depth <= 0 && !captured && !check.check )
-#else
-	if( depth <= 0 && !check.check )
-#endif
-	{
-#ifdef USE_STATISTICS
-		++stats.evaluated_leaves;
-#endif
-		return evaluate( c, p, check, depth );
-	}
-
-#ifdef USE_STATISTICS
-	++stats.evaluated_intermediate;
-#endif
-
-	std::vector<move> moves;
-	calculate_moves( p, c, moves, check );
-
-	if( moves.empty() ) {
-		if( check.check ) {
-			return result::loss - depth;
-		}
-		else {
-			return result::draw;
-		}
-	}
-
-	// Be quiesent, don't decrease search depth after capture.
-	// TODO: Maybe add a ply even?
-#if USE_QUIESCENCE == 2
-	if( !captured )
-#endif
-	{
-		--depth;
-	}
-
-	// Exploit fact that std::vector can be treated like an array
-	std::size_t count = moves.size();
-#ifdef USE_CUTOFF
-	if( depth < (CUTOFF_DEPTH) && count > CUTOFF_AMOUNT ) {
-		count = CUTOFF_AMOUNT;
-	}
-#endif
-	
-	move* mbegin = &moves[0];
-	move* mend = mbegin + count;
-	for( ; mbegin != mend; ++mbegin ) { // Optimize this, compiler!
-		int value = -step( depth, p, *mbegin, static_cast<color::type>(1-c), -beta, -alpha );
-		if( value > alpha )
-			alpha = value;
-		if( alpha >= beta )
-			break;
-	}
-
-	return alpha;
-}
-
-bool calc( position& p, color::type c, move& m )
-{
-	int depth = MAX_DEPTH;
-
-	int alpha = result::loss * 100;
-	int beta = result::win * 100;
-
-	check_info check;
-	detect_check( p, c, check );
-
-	//std::cout << " " << (check.check ? '1' : '0');
-	std::vector<move> moves;
-	calculate_moves( p, c, moves, check );
-
-	if( moves.empty() ) {
-		if( check.check ) {
-			if( c == color::white ) {
-				std::cout << "BLACK WINS" << std::endl;
-			}
-			else {
-				std::cout << std::endl << "WHITE WINS" << std::endl;
-			}
-			return false;
-		}
-		else {
-			if( c == color::black ) {
-				std::cout << std::endl;
-			}
-			std::cout << "DRAW" << std::endl;
-			return false;
-		}
-	}
-
-	// Exploit fact that std::vector can be treated like an array
-	std::size_t const count = moves.size();
-	
-	move* mbegin = &moves[0];
-	move* mend = mbegin + count;
-	for( ; mbegin != mend; ++mbegin ) { // Optimize this, compiler!
-		int value = -step( depth - 1, p, *mbegin, static_cast<color::type>(1-c), -beta, -alpha );
-		if( value > alpha ) {
-			m = *mbegin;
-			alpha = value;
-		}
-	}
-
-	return true;
-}
 
 std::string move_to_string( position const& p, color::type c, move const& m )
 {
@@ -850,7 +781,7 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 	if( p.board[m.target_col][m.target_row] != pieces::nil ) {
 		ret += 'x';
 	}
-	else if( m.piece >= pieces::pawn1 && m.piece <= pieces::pawn8 
+	else if( m.piece >= pieces::pawn1 && m.piece <= pieces::pawn8
 		&& p.pieces[c][m.piece].column != m.target_col && !p.pieces[c][m.piece].special )
 	{
 		// Must be en-passant
@@ -878,6 +809,254 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 	return ret;
 }
 
+
+int step( int depth, int const max_depth, position p, move const& m, color::type c, int alpha, int beta )
+{
+	bool captured = apply_move( p, m, static_cast<color::type>(1-c) );
+
+#if USE_QUIESCENCE
+	int limit;
+	if( captured ) {
+		limit = max_depth + USE_QUIESCENCE;
+	}
+	else {
+		limit = max_depth;
+	}
+#else
+	int const limit = max_depth;
+#endif
+
+#if USE_TRANSPOSITION
+	move old_best;
+	data_maps::const_iterator it = data_map[c].end();//find( p );
+	check_info check;
+	if( it != data_map[c].end() ) {
+		if( it->second.terminal ) {
+			if( it->second.evaluation == result::draw ) {
+				return result::draw;
+			}
+			else {
+				return result::loss + depth;
+			}
+		}
+//		else if( it->second.evaluation > result::win_threshold && alpha <= it->second.alpha && beta >= it->second.beta ) {
+//			return std::max( alpha, it->second.evaluation );
+//		}
+//		else if( (limit - depth) <= (result::loss - it->second.evaluation) && it->second.evaluation < result::loss_threshold ) {//&& alpha <= it->second.alpha && beta >= it->second.beta ) {
+//			return std::max( alpha, it->second.evaluation );
+//		}
+//		else if( (limit - depth) <= it->second.remaining_depth && alpha <= it->second.alpha && beta >= it->second.beta ) {
+//			return std::max( alpha, it->second.evaluation );
+//		}
+		old_best = it->second.best_move;
+		check = it->second.check;
+	}
+	else {
+		old_best.priority = 0;
+		detect_check( p, c, check );
+	}
+#else
+	check_info check;
+	detect_check( p, c, check );
+#endif
+
+#if USE_QUIESCENCE
+	if( depth >= limit && !check.check )
+#else
+	if( depth >= max_depth && !check.check )
+#endif
+	{
+#ifdef USE_STATISTICS
+		++stats.evaluated_leaves;
+#endif
+		return evaluate( c, p, check, depth );
+	}
+
+#ifdef USE_STATISTICS
+	++stats.evaluated_intermediate;
+#endif
+
+	std::vector<move> moves;
+	calculate_moves( p, c, moves, check );
+
+#if USE_TRANSPOSITION
+	step_data d = {0};
+	d.check = check;
+	d.beta = beta;
+	d.alpha = alpha;
+	d.remaining_depth = limit - depth;
+#endif
+
+	if( moves.empty() ) {
+#if USE_TRANSPOSITION
+		ASSERT( !old_best.priority );
+#endif
+		if( check.check ) {
+#if USE_TRANSPOSITION
+			d.terminal = true;
+			d.evaluation = result::loss + limit - depth + 1;
+			data_map[c][p] = d;
+#endif
+			return result::loss + depth;
+		}
+		else {
+#if USE_TRANSPOSITION
+			d.terminal = true;
+			d.evaluation = result::draw;
+			data_map[c][p] = d;
+#endif
+			return result::draw;
+		}
+	}
+#if USE_TRANSPOSITION
+	else {
+		d.terminal = false;
+	}
+#endif
+
+	// Be quiesent, don't decrease search depth after capture.
+	// TODO: Maybe add a ply even?
+#if USE_QUIESCENCE == 2
+	if( !captured )
+#endif
+	{
+		++depth;
+	}
+
+	// Exploit fact that std::vector can be treated like an array
+	std::size_t count = moves.size();
+#ifdef USE_CUTOFF
+	if( depth < (CUTOFF_DEPTH) && count > CUTOFF_AMOUNT ) {
+		count = CUTOFF_AMOUNT;
+	}
+#endif
+
+	int best_value = result::loss;
+
+#if USE_TRANSPOSITION
+	if( old_best.priority ) {
+		int value = -step( depth, max_depth, p, old_best, static_cast<color::type>(1-c), -beta, -alpha );
+		if( value > best_value ) {
+			best_value = value;
+			d.best_move = old_best;
+
+			if( value > alpha ) {
+				alpha = value;
+			}
+		}
+	}
+#endif
+
+	move* mbegin = &moves[0];
+	move* mend = mbegin + count;
+	for( ; mbegin != mend; ++mbegin ) { // Optimize this, compiler!
+		int value = -step( depth, max_depth, p, *mbegin, static_cast<color::type>(1-c), -beta, -alpha );
+		if( value > best_value ) {
+			best_value = value;
+
+#if USE_TRANSPOSITION
+			d.best_move = *mbegin;
+#endif
+
+			if( value > alpha ) {
+				alpha = value;
+			}
+		}
+		if( alpha >= beta )
+			break;
+	}
+
+#if USE_TRANSPOSITION
+	d.evaluation = best_value;
+	data_map[c][p] = d;
+#endif
+	return alpha;
+}
+
+
+
+bool calc( position& p, color::type c, move& m, int& res )
+{
+	check_info check;
+	detect_check( p, c, check );
+
+	//std::cout << " " << (check.check ? '1' : '0');
+	std::vector<move> moves;
+	calculate_moves( p, c, moves, check );
+
+	if( moves.empty() ) {
+		if( check.check ) {
+			if( c == color::white ) {
+				std::cerr << "BLACK WINS" << std::endl;
+				res = result::loss;
+			}
+			else {
+				std::cerr << std::endl << "WHITE WINS" << std::endl;
+				res = result::win;
+			}
+			return false;
+		}
+		else {
+			if( c == color::black ) {
+				std::cout << std::endl;
+			}
+			std::cerr << "DRAW" << std::endl;
+			res = result::draw;
+			return false;
+		}
+	}
+
+	// Exploit fact that std::vector can be treated like an array
+	std::size_t const count = moves.size();
+
+	{
+		std::cerr << "Possible moves:";
+		move* mbegin = &moves[0];
+		move* mend = mbegin + count;
+		for( ; mbegin != mend; ++mbegin ) { // Optimize this, compiler!
+			std::cerr << " " << move_to_string( p, c, *mbegin );
+		}
+		std::cerr << std::endl;
+	}
+
+#if USE_TRANSPOSITION
+	data_map[0].clear();
+	data_map[1].clear();
+
+	for( int i = 5; i <= MAX_DEPTH; ++i )
+	{
+		int max_depth = i;
+#else
+	{
+		int max_depth = MAX_DEPTH;
+#endif
+
+		int alpha = result::loss;
+		int beta = result::win;
+
+		move* mbegin = &moves[0];
+		move* mend = mbegin + count;
+		for( ; mbegin != mend; ++mbegin ) { // Optimize this, compiler!
+			int value = -step( 1, max_depth, p, *mbegin, static_cast<color::type>(1-c), -beta, -alpha );
+			if( max_depth == MAX_DEPTH ) {
+				std::cerr << value << " " << move_to_string( p, c, *mbegin ) << std::endl;
+			}
+
+			if( value > alpha ) {
+				m = *mbegin;
+				alpha = value;
+			}
+		}
+		if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
+			std::cerr << "Early break at " << i << std::endl;
+			break;
+		}
+	}
+
+	return true;
+}
+
+
 bool validate_move( position const& p, move const& m, color::type c )
 {
 	check_info check;
@@ -895,16 +1074,8 @@ bool validate_move( position const& p, move const& m, color::type c )
 	return false;
 }
 
-int main()
-{
-	console_init();
 
-	std::cout << "  Octochess" << std::endl;
-	std::cout << "  ---------" << std::endl;
-	std::cout << std::endl;
-
-	srand(123);
-
+void auto_play() {
 	unsigned long long start = get_time();
 	position p;
 
@@ -913,7 +1084,8 @@ int main()
 	int i = 1;
 	color::type c = color::white;
 	move m = {0};
-	while( calc( p, c, m ) ) {
+	int res = 0;
+	while( calc( p, c, m, res ) ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
 		}
@@ -954,6 +1126,132 @@ int main()
 		}
 	}
 #endif
-
-	return 0;
 }
+
+
+void parse_move( position& p, color::type& c, std::string const& line ) {
+	if( line.size() < 4 || line.size() > 5 ) {
+		std::cout << "Error (unknown command): " << line << std::endl;
+		return;
+	}
+
+	if( line[0] < 'a' || line[0] > 'h') {
+		std::cout << "Error (unknown command): " << line << std::endl;
+		return;
+	}
+	if( line[1] < '1' || line[1] > '8') {
+		std::cout << "Error (unknown command): " << line << std::endl;
+		return;
+	}
+	if( line[2] < 'a' || line[2] > 'h') {
+		std::cout << "Error (unknown command): " << line << std::endl;
+		return;
+	}
+	if( line[3] < '1' || line[3] > '8') {
+		std::cout << "Error (unknown command): " << line << std::endl;
+		return;
+	}
+
+	if( line.size() == 5 && line[4] != 'q' ) {
+		std::cout << "Illegal move (not promoting to queen is disallowed due to lazy developer): " << line << std::endl;
+		return;
+	}
+
+	int col = line[0] - 'a';
+	int row = line[1] - '1';
+
+	unsigned char pi = p.board[col][row];
+	if( pi == pieces::nil ) {
+		std::cout << "Illegal move (no piece in source square): " << line << std::endl;
+		return;
+	}
+	if( (pi >> 4) != c ) {
+		std::cout << "Illegal move (piece in source square of wrong color): " << line << std::endl;
+		return;
+	}
+	pi &= 0xf;
+
+	move m;
+	m.piece = pi;
+	m.priority = 0;
+	m.target_col = line[2] - 'a';
+	m.target_row = line[3] - '1';
+
+	if( !validate_move( p, m, c ) ) {
+		std::cout << "Illegal move: " << line << std::endl;
+		return;
+	}
+
+	apply_move( p, m, c );
+	c = static_cast<color::type>( 1 - c );
+}
+
+void xboard()
+{
+	position p;
+
+	init_board(p);
+
+	std::string line;
+	std::getline( std::cin, line );
+	if( line != "xboard" ) {
+		std::cerr << "First command needs to be xboard!" << std::endl;
+		exit(1);
+	}
+	std::cout << std::endl;
+
+	color::type c = color::white;
+
+	while( true ) {
+		std::getline( std::cin, line );
+		if( line == "force" ) {
+			// Ignore
+		}
+		else if( line == "go" ) {
+			// Do a step
+			move m;
+			int res = 0;
+			if( calc( p, c, m, res ) ) {
+
+				std::cout << "move " << move_to_string( p, c, m ) << std::endl;
+
+				apply_move( p, m, c );
+
+				c = static_cast<color::type>( 1 - c );
+			}
+			else {
+				if( res == result::win ) {
+					std::cout << "1-0 (White wins)" << std::endl;
+				}
+				else if( res == result::loss ) {
+					std::cout << "0-1 (Black wins)" << std::endl;
+				}
+				else {
+					std::cout << "1/2-1/2 (Draw)" << std::endl;
+				}
+			}
+		}
+		else {
+			parse_move( p, c, line );
+		}
+	}
+}
+
+int main( int argc, char *argv[] )
+{
+	console_init();
+
+	std::cerr << "  Octochess" << std::endl;
+	std::cerr << "  ---------" << std::endl;
+	std::cerr << std::endl;
+
+	srand(1234);
+
+	if( argc >= 2 && !strcmp(argv[1], "--xboard" ) ) {
+		xboard();
+	}
+	else {
+		auto_play();
+	}
+}
+

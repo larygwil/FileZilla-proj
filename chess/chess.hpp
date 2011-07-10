@@ -1,6 +1,8 @@
 #ifndef __CHECK_H__
 #define __CHECK_H__
 
+#include <string.h>
+
 namespace pieces {
 enum type {
 	pawn1,
@@ -79,7 +81,7 @@ struct piece
 	unsigned char special : 1;
 };
 
-struct position
+struct position_base
 {
 	// [color][piece]
 	piece pieces[2][16];
@@ -89,6 +91,36 @@ struct position
 
 	unsigned char can_en_passant; // Piece of last-moved player that can be en-passanted
 
+	bool operator==( position_base const& rhs ) const {
+		return !memcmp(pieces, rhs.pieces, sizeof(pieces) ) &&
+				promotions[0] == rhs.promotions[0] &&
+				promotions[1] == rhs.promotions[1] &&
+				can_en_passant == rhs.can_en_passant;
+	}
+	bool operator<( position_base const& rhs ) const {
+		int cmp = memcmp(&pieces, &rhs.pieces, 32 * sizeof(piece) );
+		if( cmp ) {
+			return cmp < 0;
+		}
+		if( promotions[0] < rhs.promotions[0] ) {
+			return true;
+		}
+		if( promotions[0] > rhs.promotions[0] ) {
+			return false;
+		}
+		if( promotions[1] < rhs.promotions[1] ) {
+			return true;
+		}
+		if( promotions[1] > rhs.promotions[1] ) {
+			return false;
+		}
+		return can_en_passant < rhs.can_en_passant;
+	}
+};
+
+
+struct position : public position_base
+{
 	// board[column][row] as piece indexes in lower 4 bits, color in 5th bit.
 	// nil if square is empty.
 	unsigned char board[8][8];
@@ -108,8 +140,10 @@ struct move
 namespace result {
 enum type {
 	win = 1000000,
+	win_threshold = win - 100,
 	draw = 0,
 	loss = -1000000,
+	loss_threshold = loss + 100
 };
 }
 
@@ -123,7 +157,6 @@ enum type {
 struct check_info {
 	unsigned char check : 1;
 	unsigned char multiple : 1; // If this is set, multiple pieces are checking
-	unsigned char knight : 1; // If this is set, a knight is checking. Undefined if check and multiple is set
 	unsigned char piece : 4; // Index of a piece giving check. Undefined if multiple is set
 	// If check set:
 	//   If multiple set: King has to move.
@@ -132,11 +165,11 @@ struct check_info {
 	// Else: Normal move possible
 
 	bool operator==( check_info const& rhs ) const {
-		return check == rhs.check && multiple == rhs.multiple && knight == rhs.knight && piece == rhs.piece;
+		return check == rhs.check && multiple == rhs.multiple && piece == rhs.piece;
 	}
 };
 
-int const MAX_DEPTH = 7;
+int const MAX_DEPTH = 8;
 int const CUTOFF_DEPTH = 7;//MAX_DEPTH / 2;
 int const CUTOFF_AMOUNT = 10; //shannon/3
 
@@ -145,7 +178,9 @@ int const CUTOFF_AMOUNT = 10; //shannon/3
 
 // 1: Only at depth 0
 // 2: Every capture
-//#define USE_QUIESCENCE 1
+#define USE_QUIESCENCE 1
 #define USE_STATISTICS
+
+#define USE_TRANSPOSITION 1
 
 #endif
