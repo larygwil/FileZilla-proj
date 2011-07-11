@@ -1009,15 +1009,15 @@ bool calc( position& p, color::type c, move& m, int& res )
 	// Exploit fact that std::vector can be treated like an array
 	std::size_t const count = moves.size();
 
-	{
-		std::cerr << "Possible moves:";
-		move* mbegin = &moves[0];
-		move* mend = mbegin + count;
-		for( ; mbegin != mend; ++mbegin ) { // Optimize this, compiler!
-			std::cerr << " " << move_to_string( p, c, *mbegin );
-		}
-		std::cerr << std::endl;
-	}
+//	{
+//		std::cerr << "Possible moves:";
+//		move* mbegin = &moves[0];
+//		move* mend = mbegin + count;
+//		for( ; mbegin != mend; ++mbegin ) { // Optimize this, compiler!
+//			std::cerr << " " << move_to_string( p, c, *mbegin );
+//		}
+//		std::cerr << std::endl;
+//	}
 
 #if USE_TRANSPOSITION
 	data_map[0].clear();
@@ -1038,9 +1038,6 @@ bool calc( position& p, color::type c, move& m, int& res )
 		move* mend = mbegin + count;
 		for( ; mbegin != mend; ++mbegin ) { // Optimize this, compiler!
 			int value = -step( 1, max_depth, p, *mbegin, static_cast<color::type>(1-c), -beta, -alpha );
-			if( max_depth == MAX_DEPTH ) {
-				std::cerr << value << " " << move_to_string( p, c, *mbegin ) << std::endl;
-			}
 
 			if( value > alpha ) {
 				m = *mbegin;

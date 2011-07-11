@@ -178,7 +178,7 @@ int const CUTOFF_AMOUNT = 10; //shannon/3
 
 // 1: Only at depth 0
 // 2: Every capture
-#define USE_QUIESCENCE 1
+//#define USE_QUIESCENCE 1
 #define USE_STATISTICS
 
 #define USE_TRANSPOSITION 1
