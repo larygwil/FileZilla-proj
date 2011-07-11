@@ -35,7 +35,7 @@ enum type {
 }
 
 namespace {
-short piece_values[] = {
+short const piece_values[] = {
 	100, 100, 100, 100, 100, 100, 100, 100,
 	0, // Can't be captured
 	900,
@@ -44,7 +44,7 @@ short piece_values[] = {
 	300, 300
 };
 
-short promotion_values[] = {
+short const promotion_values[] = {
 	900,
 	500,
 	310,
