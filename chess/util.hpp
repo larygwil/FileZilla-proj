@@ -15,4 +15,10 @@ void init_board( position& p );
 
 bool apply_move( position& p, move const& m, color::type c );
 
+
+void init_random( int seed );
+
+// Gets pseudo-random number within the lowerst 6 bits
+unsigned char get_random_6bit();
+
 #endif

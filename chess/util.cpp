@@ -8,14 +8,14 @@
 
 bool validate_move( position const& p, move const& m, color::type c )
 {
-	check_info check;
-	detect_check( p, c, check );
+	check_map check;
+	calc_check_map( p, c, check );
 
-	std::vector<move> moves;
+	possible_moves moves;
 	calculate_moves( p, c, moves, check );
 
-	for( std::vector<move>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-		if( it->piece == m.piece && it->target_col == m.target_col && it->target_row == m.target_row ) {
+	for( possible_moves::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+		if( it->m.piece == m.piece && it->m.target_col == m.target_col && it->m.target_row == m.target_row ) {
 			return true;
 		}
 	}
@@ -68,7 +68,6 @@ void parse_move( position& p, color::type& c, std::string const& line )
 
 	move m;
 	m.piece = pi;
-	m.priority = 0;
 	m.target_col = line[2] - 'a';
 	m.target_row = line[3] - '1';
 
@@ -246,6 +245,9 @@ bool apply_move( position& p, move const& m, color::type c )
 
 	piece& pp = p.pieces[c][m.piece];
 
+	if( !pp.alive ) {
+		std::cerr << m.piece << " " << m.target_col << " " << m.target_row << std::endl;
+	}
 	ASSERT( pp.alive );
 
 	p.board[pp.column][pp.row] = pieces::nil;
@@ -347,3 +349,24 @@ bool apply_move( position& p, move const& m, color::type c )
 	return ret;
 }
 
+
+unsigned char random_6bit[4096];
+unsigned int random_6bit_pos = 0;
+
+void init_random( int seed )
+{
+	srand( seed );
+
+	for( unsigned int i = 0; i < sizeof(random_6bit); ++i ) {
+		random_6bit[i] = rand() & 0x3f;
+	}
+}
+
+
+unsigned char get_random_6bit()
+{
+	if( ++random_6bit_pos == sizeof(random_6bit) ) {
+		random_6bit_pos = 0;
+	}
+	return random_6bit[random_6bit_pos];
+}

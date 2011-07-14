@@ -34,40 +34,6 @@ enum type {
 };
 }
 
-namespace {
-short const piece_values[] = {
-	100, 100, 100, 100, 100, 100, 100, 100,
-	0, // Can't be captured
-	900,
-	500, 500,
-	310, 310,
-	300, 300
-};
-
-short const promotion_values[] = {
-	900,
-	500,
-	310,
-	300
-};
-}
-
-namespace special_values {
-enum type
-{
-	knight_at_border = 25,
-	castled = 50
-};
-}
-
-namespace priorities
-{
-enum type {
-	capture = 0x20,
-	castle = 0x10
-};
-}
-
 struct piece
 {
 	unsigned char alive : 1;
@@ -133,7 +99,9 @@ struct move
 	unsigned char target_col : 3;
 	unsigned char target_row : 3;
 
-	unsigned char priority; // Left 4 bits importance, right 4 bits random shuffling
+	bool operator!=( move const& rhs ) const {
+		return piece != rhs.piece || target_col != rhs.target_col || target_row != rhs.target_row;
+	}
 };
 
 
@@ -154,32 +122,8 @@ enum type {
 };
 }
 
-struct check_info {
-	unsigned char check : 1;
-	unsigned char multiple : 1; // If this is set, multiple pieces are checking
-	unsigned char piece : 4; // Index of a piece giving check. Undefined if multiple is set
-	// If check set:
-	//   If multiple set: King has to move.
-	//   Elif knight is set: King has to move or Knight has to be captured
-	//   Else: Move king, capture piece or block line of sight
-	// Else: Normal move possible
-
-	bool operator==( check_info const& rhs ) const {
-		return check == rhs.check && multiple == rhs.multiple && piece == rhs.piece;
-	}
-};
-
-int const MAX_DEPTH = 8;
-int const CUTOFF_DEPTH = 7;//MAX_DEPTH / 2;
-int const CUTOFF_AMOUNT = 10; //shannon/3
-
-// Features to use
-//#define USE_CUTOFF
-
-// 1: Only at depth 0
-// 2: Every capture
-//#define USE_QUIESCENCE 1
-#define USE_STATISTICS
+#define USE_QUIESCENCE 1
+#define USE_STATISTICS 1
 
 #define USE_TRANSPOSITION 1
 

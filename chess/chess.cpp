@@ -5,19 +5,17 @@ Octochess
 Copyright (C) 2011 Tim "codesquid" Kosse
 http://filezilla-project.org/
 
-Distributed under the terms and conditions of the GNU General Public License v2+.
+Distributed under the terms and conditions of the GNU General Public License v3.
 
+If you want to purchase a copy of Octochess under a different license, please
+contact tim.kosse@filezilla-project.org for details.
 
-
-Ideas for optimizations:
-- Factor depths into evaluation. Save evaluation different depths -> prefer the earlier position
-- Transposition tables
-- Iterative deepening
 
 */
 
 #include "chess.hpp"
 #include "calc.hpp"
+#include "eval.hpp"
 #include "util.hpp"
 #include "platform.hpp"
 #include "statistics.hpp"
@@ -35,7 +33,7 @@ void auto_play()
 	int i = 1;
 	color::type c = color::white;
 	move m = {0};
-	int res = 0;
+	int res;
 	while( calc( p, c, m, res ) ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
@@ -45,9 +43,6 @@ void auto_play()
 
 		if( c == color::black ) {
 			++i;
-			//check_info check = {0};
-			//int i = evaluate( color::white, p, check, 0 );
-			//std::cout << "  ; Evaluation: " << i << " centipawns";
 			std::cout << std::endl;
 		}
 
@@ -56,6 +51,8 @@ void auto_play()
 			exit(1);
 		}
 		apply_move( p, m, c );
+		int ev = evaluate( color::white, p );
+		std::cout << "  ; Evaluation: " << ev << " centipawns";
 
 		c = static_cast<color::type>(1-c);
 	}
@@ -93,7 +90,7 @@ void xboard()
 		else if( line == "go" ) {
 			// Do a step
 			move m;
-			int res = 0;
+			int res;
 			if( calc( p, c, m, res ) ) {
 
 				std::cout << "move " << move_to_string( p, c, m ) << std::endl;
@@ -101,9 +98,8 @@ void xboard()
 				apply_move( p, m, c );
 
 				{
-					check_info check = {0};
-					int i = evaluate( c, p, check, 0 );
-					std::cerr << "  ; Evaluation: " << i << " centipawns, forecast at " << res << std::endl;
+					int i = evaluate( c, p );
+					std::cerr << "  ; Current evaluation " << i << " centipawns, forecast " << res << std::endl;
 				}
 
 				c = static_cast<color::type>( 1 - c );
@@ -130,11 +126,11 @@ int main( int argc, char *argv[] )
 {
 	console_init();
 
+	init_random( 1234 );
+
 	std::cerr << "  Octochess" << std::endl;
 	std::cerr << "  ---------" << std::endl;
 	std::cerr << std::endl;
-
-	srand(1234);
 
 	if( argc >= 2 && !strcmp(argv[1], "--xboard" ) ) {
 		xboard();
