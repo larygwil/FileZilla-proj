@@ -314,11 +314,31 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\calc.cpp"
+				>
+			</File>
+			<File
 				RelativePath="chess.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\detect_check.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\eval.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\statistics.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\util.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\windows.cpp"
 				>
 			</File>
 		</Filter>
@@ -328,6 +348,14 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\assert.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\calc.hpp"
+				>
+			</File>
+			<File
 				RelativePath=".\chess.hpp"
 				>
 			</File>
@@ -336,7 +364,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\eval.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\platform.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\statistics.hpp"
+				>
+			</File>
+			<File
 				RelativePath=".\unix.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\util.hpp"
 				>
 			</File>
 			<File

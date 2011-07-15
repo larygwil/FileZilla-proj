@@ -524,10 +524,6 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 		return current_evaluation;
 	}
 
-#ifdef USE_STATISTICS
-	++stats.evaluated_intermediate;
-#endif
-
 	int best_value = result::loss;
 
 	step_data d;
@@ -555,6 +551,9 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 				alpha = value;
 			}
 			if( alpha >= beta ) {
+#ifdef USE_STATISTICS
+				++stats.evaluated_intermediate;
+#endif
 				d.evaluation = alpha;
 				return alpha;
 			}
@@ -575,6 +574,9 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 			d.evaluation = result::loss;
 			data_map[c][p] = d;
 #endif
+#ifdef USE_STATISTICS
+			++stats.evaluated_leaves;
+#endif
 			return result::loss + depth;
 		}
 		else {
@@ -582,6 +584,9 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 			d.terminal = true;
 			d.evaluation = result::draw;
 			data_map[c][p] = d;
+#ifdef USE_STATISTICS
+			++stats.evaluated_leaves;
+#endif
 #endif
 			return result::draw;
 		}
@@ -598,6 +603,11 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 #endif
 		return current_evaluation;
 	}
+
+	
+#ifdef USE_STATISTICS
+	++stats.evaluated_intermediate;
+#endif
 
 	// Be quiesent, don't decrease search depth after capture.
 	// TODO: Maybe add a ply even?
