@@ -23,23 +23,23 @@ unsigned long long operator()( position_base const& p ) const
 {
 	unsigned long long hash = 0;
 
-	char const* c = reinterpret_cast<char const*>(&p);
-	char const* end = c + sizeof( position_base );
-	for( ; c != end; ++c ) {
-		hash += *c;
-		hash += (hash << 10);
-		hash ^= (hash >> 6);
-	}
-	hash += (hash << 3);
-	hash ^= (hash >> 11);
-	hash += (hash << 15);
+//	char const* c = reinterpret_cast<char const*>(&p);
+//	char const* end = c + sizeof( position_base );
+//	for( ; c != end; ++c ) {
+//		hash += *c;
+//		hash += (hash << 10);
+//		hash ^= (hash >> 6);
+//	}
+//	hash += (hash << 3);
+//	hash ^= (hash >> 11);
+//	hash += (hash << 15);
 
-//	hash = *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]));
-//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 8);
-//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 16);
-//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 24);
-//	hash ^= p.promotions[0];
-//	hash ^= p.promotions[1];
+	hash = *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]));
+	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 8);
+	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 16);
+	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 24);
+	hash ^= p.promotions[0];
+	hash ^= p.promotions[1];
 
 	return hash;
 }
@@ -89,7 +89,7 @@ void add_if_legal( position const& p, color::type c, possible_moves& moves, chec
 
 	apply_move( mi.new_pos, mi.m, c );
 
-	mi.evaluation = (evaluate( c, mi.new_pos ) << 6) | get_random_6bit();
+	mi.evaluation = (evaluate( mi.new_pos, c ) << 6) | get_random_6bit();
 
 	moves.push_back(mi);
 }
@@ -110,7 +110,7 @@ void add_if_legal_king( position const& p, color::type c, possible_moves& moves,
 		return;
 	}
 
-	mi.evaluation = (evaluate( c, mi.new_pos ) << 6) | get_random_6bit();
+	mi.evaluation = (evaluate( mi.new_pos, c ) << 6) | get_random_6bit();
 
 	moves.push_back(mi);
 }
@@ -432,7 +432,7 @@ void calc_moves_pawns( position const& p, color::type c, possible_moves& moves, 
 				else if( promoted == promotions::bishop ) {
 					calc_moves_bishop( p, c, moves, check, static_cast<pieces::type>(pi), pp );
 				}
-				else {//if( promoted == promotions::queen ) {
+				else {//if( promoted == promotions::knight ) {
 					calc_moves_knight( p, c, moves, check, static_cast<pieces::type>(pi), pp );
 				}
 			}
@@ -500,7 +500,7 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 			}
 		}
 		if( (limit - depth) <= it->second.remaining_depth && alpha >= it->second.alpha && beta <= it->second.beta ) {
-			return it->second.evaluation;
+			return std::max(alpha, it->second.evaluation);
 		}
 		got_old_best = true;
 		old_best = it->second.best_move;

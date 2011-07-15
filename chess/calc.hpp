@@ -6,8 +6,6 @@
 
 #include <vector>
 
-int evaluate( color::type c, position const& p );
-
 bool calc( position& p, color::type c, move& m, int& res );
 
 struct move_info {

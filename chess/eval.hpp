@@ -3,7 +3,7 @@
 
 #include "chess.hpp"
 
-int evaluate( color::type c, position const& p );
+int evaluate( position const& p, color::type c );
 
 
 #endif

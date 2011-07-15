@@ -44,6 +44,7 @@ void auto_play()
 		if( c == color::black ) {
 			++i;
 			std::cout << std::endl;
+			break;
 		}
 
 		if( !validate_move( p, m, c ) ) {
@@ -51,8 +52,8 @@ void auto_play()
 			exit(1);
 		}
 		apply_move( p, m, c );
-		int ev = evaluate( color::white, p );
-		std::cout << "  ; Evaluation: " << ev << " centipawns";
+		int ev = evaluate( p, color::white );
+		std::cout << "  ; Evaluation (for white): " << ev << " centipawns";
 
 		c = static_cast<color::type>(1-c);
 	}
@@ -98,7 +99,7 @@ void xboard()
 				apply_move( p, m, c );
 
 				{
-					int i = evaluate( c, p );
+					int i = evaluate( p, c );
 					std::cerr << "  ; Current evaluation " << i << " centipawns, forecast " << res << std::endl;
 				}
 

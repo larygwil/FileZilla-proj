@@ -57,7 +57,7 @@ unsigned char const pawn_values[2][8][8] =
 }
 
 
-int evaluate_side( color::type c, position const& p )
+int evaluate_side( position const& p, color::type c )
 {
 	unsigned int result = 0;
 
@@ -101,9 +101,9 @@ int evaluate_side( color::type c, position const& p )
 	return result;
 }
 
-int evaluate( color::type c, position const& p )
+int evaluate( position const& p, color::type c )
 {
-	int value = evaluate_side( c, p ) - evaluate_side( static_cast<color::type>(1-c), p );
+	int value = evaluate_side( p, c ) - evaluate_side( p, static_cast<color::type>(1-c) );
 
 	ASSERT( value > result::loss && value < result::win );
 
