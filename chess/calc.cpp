@@ -609,15 +609,8 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 	++stats.evaluated_intermediate;
 #endif
 
-	// Be quiesent, don't decrease search depth after capture.
-	// TODO: Maybe add a ply even?
-#if USE_QUIESCENCE == 2
-	if( !captured )
-#endif
-	{
-		++depth;
-	}
-
+	++depth;
+	
 	for( possible_moves::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
 		int value = -step( depth, max_depth, it->new_pos, -it->evaluation, it->captured, static_cast<color::type>(1-c), -beta, -alpha );
 		if( value > best_value ) {
@@ -700,7 +693,7 @@ bool calc( position& p, color::type c, move& m, int& res )
 		old_sorted.insert( std::make_pair( it - moves.begin(), *it ) );
 	}
 
-	int start = get_time();
+	unsigned long long start = get_time();
 
 	for( int max_depth = 1; max_depth <= MAX_DEPTH; max_depth += 2 )
 	{
@@ -716,11 +709,13 @@ bool calc( position& p, color::type c, move& m, int& res )
 
 		int i;
 		sorted_moves::const_iterator it;
+		bool abort = false;
 		for( i = 0, it = old_sorted.begin(); it != old_sorted.end(); ++it, ++i ) {
 
-			int now = get_time();
+			unsigned long long now = get_time();
 			if( (now - start) > 30000 ) {
 				std::cerr << "Aborting search due to time limit at depth " << max_depth << " with " << i << " of " << count << " moves evaluated." << std::endl;
+				abort = true;
 				break;
 			}
 
@@ -746,9 +741,16 @@ bool calc( position& p, color::type c, move& m, int& res )
 		if( !sorted.empty() ) {
 			sorted.swap( old_sorted );
 		}
+		if( abort ) {
+			break;
+		}
 	}
 
 	m = old_sorted.begin()->second.m;
+
+	unsigned long long stop = get_time();
+	print_stats( start, stop );
+	reset_stats();
 
 	return true;
 }

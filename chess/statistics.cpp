@@ -21,4 +21,9 @@ void print_stats( unsigned long long start, unsigned long long stop )
 	}
 }
 
+void reset_stats()
+{
+	memset( &stats, 0, sizeof(statistics::type) );
+}
+
 #endif
