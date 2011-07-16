@@ -82,7 +82,7 @@ int evaluate_side( position const& p, color::type c )
 	}
 
 	for( int i = 0; i < 2; ++i ) {
-		piece const& pp = p.pieces[c][pieces::knight1 + 1];
+		piece const& pp = p.pieces[c][pieces::knight1 + i];
 		if( pp.alive ) {
 			if( pp.column == 0 || pp.column == 7 ) {
 				result -= special_values::knight_at_border;
@@ -108,4 +108,96 @@ int evaluate( position const& p, color::type c )
 	ASSERT( value > result::loss && value < result::win );
 
 	return value;
+}
+
+namespace {
+void subtract_target( position const& p, color::type c, int& eval, int target, int col, int row )
+{
+	if( target >= pieces::pawn1 && target <= pieces::pawn8 ) {
+		piece const& pp = p.pieces[1-c][target];
+		if( pp.special ) {
+			unsigned short promoted = (p.promotions[1-c] >> ( 2 * (target - pieces::pawn1) ) ) & 0x03;
+			// Not implemented in evaluate
+//			if( promoted == promotions::knight ) {
+//				if( !col || col == 7 ) {
+//					eval -= special_values::knight_at_border;
+//				}
+//				if( !row || row == 7 ) {
+//					eval -= special_values::knight_at_border;
+//				}
+//			}
+			eval += promotion_values[ promoted ];
+		}
+		else {
+			eval += pawn_values[1-c][col][row];
+		}
+	}
+	else if( target == pieces::knight1 || target == pieces::knight2 ) {
+		if( !col || col == 7 ) {
+			eval -= special_values::knight_at_border;
+		}
+		if( !row || row == 7 ) {
+			eval -= special_values::knight_at_border;
+		}
+		eval += piece_values[ target ];
+	}
+	else {
+		eval += piece_values[ target ];
+	}
+}
+}
+
+int evaluate_move( position const& p, color::type c, int current_evaluation, move const& m )
+{
+	int target = p.board[m.target_col][m.target_row];
+	if( target != pieces::nil ) {
+		target &= 0x0f;
+		subtract_target( p, c, current_evaluation, target, m.target_col, m.target_row );
+	}
+
+	if( m.piece >= pieces::pawn1 && m.piece <= pieces::pawn8 ) {
+		piece const& pp = p.pieces[c][m.piece];
+		if( pp.special ) {
+			// Nothing changes
+		}
+		else {
+			if( m.target_col != pp.column && target == pieces::nil ) {
+				// Was en-passant
+				current_evaluation += pawn_values[1-c][m.target_col][pp.row];
+				current_evaluation -= pawn_values[c][pp.column][pp.row];
+				current_evaluation += pawn_values[c][m.target_col][m.target_row];
+			}
+			else if( m.target_row == 0 || m.target_row == 7 ) {
+				current_evaluation -= pawn_values[c][pp.column][pp.row];
+				current_evaluation += promotion_values[promotions::queen];
+			}
+			else {
+				current_evaluation -= pawn_values[c][pp.column][pp.row];
+				current_evaluation += pawn_values[c][m.target_col][m.target_row];
+			}
+		}
+	}
+	else if( m.piece == pieces::knight1 || m.piece == pieces::knight2 ) {
+		piece const& pp = p.pieces[c][m.piece];
+		if( !m.target_col || m.target_col == 7 ) {
+			current_evaluation -= special_values::knight_at_border;
+		}
+		else if( pp.column == 0 || pp.column == 7 ) {
+			current_evaluation += special_values::knight_at_border;
+		}
+		if( !m.target_row || m.target_row == 7 ) {
+			current_evaluation -= special_values::knight_at_border;
+		}
+		else if( pp.row == 0 || pp.row == 7 ) {
+			current_evaluation += special_values::knight_at_border;
+		}
+	}
+	else if( m.piece == pieces::king ) {
+		piece const& pp = p.pieces[c][m.piece];
+		if( (pp.column == m.target_col + 2) || (pp.column + 2 == m.target_col) ) {
+			current_evaluation += special_values::castled;
+		}
+	}
+
+	return current_evaluation;
 }

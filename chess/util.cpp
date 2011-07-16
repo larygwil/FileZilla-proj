@@ -1,8 +1,9 @@
 #include "chess.hpp"
 #include "assert.hpp"
-#include "util.hpp"
-#include "detect_check.hpp"
 #include "calc.hpp"
+#include "detect_check.hpp"
+#include "eval.hpp"
+#include "util.hpp"
 
 #include <iostream>
 
@@ -13,7 +14,8 @@ bool validate_move( position const& p, move const& m, color::type c )
 
 	move_info moves[200];
 	move_info* pm = moves;
-	calculate_moves( p, c, pm, check );
+	int ev = evaluate( p, c );
+	calculate_moves( p, c, ev, pm, check );
 
 	for( move_info* it = moves; it != pm; ++it ) {
 		if( it->m.piece == m.piece && it->m.target_col == m.target_col && it->m.target_row == m.target_row ) {

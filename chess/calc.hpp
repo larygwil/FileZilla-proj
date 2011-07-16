@@ -8,9 +8,7 @@ bool calc( position& p, color::type c, move& m, int& res );
 
 struct move_info {
 	move m;
-	position new_pos;
 	int evaluation;
-	bool captured;
 };
 
 struct step_data {
@@ -23,6 +21,6 @@ struct step_data {
 	int beta;
 };
 
-void calculate_moves( position const& p, color::type c, move_info*& moves, check_map const& check );
+void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check );
 
 #endif
