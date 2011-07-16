@@ -496,18 +496,18 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 				return result::draw;
 			}
 		}
-		else if( d.evaluation < result::loss_threshold ) {
-#if USE_STATISTICS
-			++stats.transposition_table_cutoffs;
-#endif
-			return d.evaluation + depth;
-		}
-		else if( d.evaluation > result::win_threshold ) {
-#if USE_STATISTICS
-			++stats.transposition_table_cutoffs;
-#endif
-			return d.evaluation - depth;
-		}
+//		else if( d.evaluation < result::loss_threshold ) {
+//#if USE_STATISTICS
+//			++stats.transposition_table_cutoffs;
+//#endif
+//			return result::loss + depth + 1;
+//		}
+//		else if( d.evaluation > result::win_threshold ) {
+//#if USE_STATISTICS
+//			++stats.transposition_table_cutoffs;
+//#endif
+//			return result::win - depth - 1;
+//		}
 		else if( (limit - depth) <= d.remaining_depth && alpha >= d.alpha && beta <= d.beta ) {
 #if USE_STATISTICS
 			++stats.transposition_table_cutoffs;
