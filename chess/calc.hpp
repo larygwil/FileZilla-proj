@@ -4,8 +4,6 @@
 #include "chess.hpp"
 #include "detect_check.hpp"
 
-#include <vector>
-
 bool calc( position& p, color::type c, move& m, int& res );
 
 struct move_info {
@@ -14,8 +12,7 @@ struct move_info {
 	int evaluation;
 	bool captured;
 };
-typedef std::vector<move_info> possible_moves;
 
-void calculate_moves( position const& p, color::type c, possible_moves& moves, check_map const& check );
+void calculate_moves( position const& p, color::type c, move_info*& moves, check_map const& check );
 
 #endif

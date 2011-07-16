@@ -11,10 +11,11 @@ bool validate_move( position const& p, move const& m, color::type c )
 	check_map check;
 	calc_check_map( p, c, check );
 
-	possible_moves moves;
-	calculate_moves( p, c, moves, check );
+	move_info moves[200];
+	move_info* pm = moves;
+	calculate_moves( p, c, pm, check );
 
-	for( possible_moves::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+	for( move_info* it = moves; it != pm; ++it ) {
 		if( it->m.piece == m.piece && it->m.target_col == m.target_col && it->m.target_row == m.target_row ) {
 			return true;
 		}

@@ -44,7 +44,6 @@ void auto_play()
 		if( c == color::black ) {
 			++i;
 			std::cout << std::endl;
-			break;
 		}
 
 		if( !validate_move( p, m, c ) ) {

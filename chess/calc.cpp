@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <map>
 
-int const MAX_DEPTH = 9;
+int const MAX_DEPTH = 7;
 
 struct hash_getter
 {
@@ -59,7 +59,7 @@ typedef std::unordered_map<position_base, step_data, hash_getter> data_maps;
 data_maps data_map[2];
 
 // Adds the move if it does not result in a check
-void add_if_legal( position const& p, color::type c, possible_moves& moves, check_map const& check, unsigned char const& pi, unsigned char const& new_col, unsigned char const& new_row )
+void add_if_legal( position const& p, color::type c, move_info*& moves, check_map const& check, unsigned char const& pi, unsigned char const& new_col, unsigned char const& new_row )
 {
 	piece const& pp = p.pieces[c][pi];
 	unsigned char const& cv_old = check.board[pp.column][pp.row];
@@ -91,11 +91,11 @@ void add_if_legal( position const& p, color::type c, possible_moves& moves, chec
 
 	mi.evaluation = (evaluate( mi.new_pos, c ) << 6) | get_random_6bit();
 
-	moves.push_back(mi);
+	*(moves++) = mi;
 }
 
 
-void add_if_legal_king( position const& p, color::type c, possible_moves& moves, unsigned char new_col, unsigned char new_row )
+void add_if_legal_king( position const& p, color::type c, move_info*& moves, unsigned char new_col, unsigned char new_row )
 {
 	move_info mi;
 	mi.new_pos = p;
@@ -112,11 +112,11 @@ void add_if_legal_king( position const& p, color::type c, possible_moves& moves,
 
 	mi.evaluation = (evaluate( mi.new_pos, c ) << 6) | get_random_6bit();
 
-	moves.push_back(mi);
+	*(moves++) = mi;
 }
 
 
-void calc_moves_king( position const& p, color::type c, possible_moves& moves, check_map const& check, signed char cx, signed char cy )
+void calc_moves_king( position const& p, color::type c, move_info*& moves, check_map const& check, signed char cx, signed char cy )
 {
 	piece const& pp = p.pieces[c][pieces::king];
 	if( cx < 0 && pp.column < 1 ) {
@@ -153,7 +153,7 @@ void calc_moves_king( position const& p, color::type c, possible_moves& moves, c
 	add_if_legal_king( p, c, moves, new_col, new_row );
 }
 
-void calc_moves_king( position const& p, color::type c, possible_moves& moves, check_map const& check )
+void calc_moves_king( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	piece const& pp = p.pieces[c][pieces::king];
 
@@ -189,7 +189,7 @@ void calc_moves_king( position const& p, color::type c, possible_moves& moves, c
 }
 
 
-void calc_moves_queen( position const& p, color::type c, possible_moves& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_queen( position const& p, color::type c, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
 {
 	for( int cx = -1; cx <= 1; ++cx ) {
 		for( int cy = -1; cy <= 1; ++cy ) {
@@ -215,7 +215,7 @@ void calc_moves_queen( position const& p, color::type c, possible_moves& moves, 
 }
 
 
-void calc_moves_queen( position const& p, color::type c, possible_moves& moves, check_map const& check )
+void calc_moves_queen( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	piece const& pp = p.pieces[c][pieces::queen];
 	if( pp.alive ) {
@@ -223,7 +223,7 @@ void calc_moves_queen( position const& p, color::type c, possible_moves& moves, 
 	}
 }
 
-void calc_moves_bishop( position const& p, color::type c, possible_moves& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_bishop( position const& p, color::type c, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
 {
 	for( int cx = -1; cx <= 1; cx += 2 ) {
 		for( int cy = -1; cy <= 1; cy += 2 ) {
@@ -245,7 +245,7 @@ void calc_moves_bishop( position const& p, color::type c, possible_moves& moves,
 }
 
 
-void calc_moves_bishops( position const& p, color::type c, possible_moves& moves, check_map const& check )
+void calc_moves_bishops( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	{
 		piece const& pp = p.pieces[c][pieces::bishop1];
@@ -262,7 +262,7 @@ void calc_moves_bishops( position const& p, color::type c, possible_moves& moves
 }
 
 
-void calc_moves_rook( position const& p, color::type c, possible_moves& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_rook( position const& p, color::type c, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
 {
 	for( int cx = -1; cx <= 1; cx += 2 ) {
 		for( int x = pp.column + cx; x >= 0 && x <= 7; x += cx ) {
@@ -295,7 +295,7 @@ void calc_moves_rook( position const& p, color::type c, possible_moves& moves, c
 }
 
 
-void calc_moves_rooks( position const& p, color::type c, possible_moves& moves, check_map const& check )
+void calc_moves_rooks( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	{
 		piece const& pp = p.pieces[c][pieces::rook1];
@@ -312,7 +312,7 @@ void calc_moves_rooks( position const& p, color::type c, possible_moves& moves, 
 }
 
 
-void calc_moves_knight( position const& p, color::type c, possible_moves& moves, check_map const& check, pieces::type pi, piece const& pp, int cx, int cy )
+void calc_moves_knight( position const& p, color::type c, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp, int cx, int cy )
 {
 	int new_column = cx + pp.column;
 
@@ -336,7 +336,7 @@ void calc_moves_knight( position const& p, color::type c, possible_moves& moves,
 }
 
 
-void calc_moves_knight( position const& p, color::type c, possible_moves& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_knight( position const& p, color::type c, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
 {
 	calc_moves_knight( p, c, moves, check, pi, pp, 2, 1 );
 	calc_moves_knight( p, c, moves, check, pi, pp, 2, -1 );
@@ -349,7 +349,7 @@ void calc_moves_knight( position const& p, color::type c, possible_moves& moves,
 }
 
 
-void calc_moves_knights( position const& p, color::type c, possible_moves& moves, check_map const& check )
+void calc_moves_knights( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	{
 		piece const& pp = p.pieces[c][pieces::knight1];
@@ -365,7 +365,7 @@ void calc_moves_knights( position const& p, color::type c, possible_moves& moves
 	}
 }
 
-void calc_diagonal_pawn_move( position const& p, color::type c, possible_moves& moves, check_map const& check, unsigned int pi, piece const& pp, unsigned char new_col, unsigned char new_row )
+void calc_diagonal_pawn_move( position const& p, color::type c, move_info*& moves, check_map const& check, unsigned int pi, piece const& pp, unsigned char new_col, unsigned char new_row )
 {
 	unsigned char target = p.board[new_col][new_row];
 	if( target == pieces::nil ) {
@@ -387,7 +387,7 @@ void calc_diagonal_pawn_move( position const& p, color::type c, possible_moves& 
 	}
 }
 
-void calc_moves_pawns( position const& p, color::type c, possible_moves& moves, check_map const& check )
+void calc_moves_pawns( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	for( unsigned int pi = pieces::pawn1; pi <= pieces::pawn8; ++pi ) {
 		piece const& pp = p.pieces[c][pi];
@@ -446,9 +446,9 @@ struct MoveSort {
 	}
 } moveSort;
 
-void calculate_moves( position const& p, color::type c, possible_moves& moves, check_map const& check )
+void calculate_moves( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	moves.reserve(30); // Average branching factor. TODO: Analyze performance impact of various reservations
+	move_info* start = moves;
 
 	calc_moves_king( p, c, moves, check );
 
@@ -461,9 +461,11 @@ void calculate_moves( position const& p, color::type c, possible_moves& moves, c
 		calc_moves_knights( p, c, moves, check );
 	}
 
-	std::sort( moves.begin(), moves.end(), moveSort );
-	for( possible_moves::iterator it = moves.begin(); it != moves.end(); ++it ) {
-		it->evaluation >>= 6;
+	std::sort( start, moves, moveSort );
+
+	while( start != moves ) {
+		start->evaluation >>= 6;
+		++start;
 	}
 }
 
@@ -499,8 +501,14 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 				return result::draw;
 			}
 		}
-		if( (limit - depth) <= it->second.remaining_depth && alpha >= it->second.alpha && beta <= it->second.beta ) {
-			return std::max(alpha, it->second.evaluation);
+		else if( it->second.evaluation < result::loss_threshold ) {
+			return it->second.evaluation + depth;
+		}
+		else if( it->second.evaluation > result::win_threshold ) {
+			return it->second.evaluation - depth;
+		}
+		else if( (limit - depth) <= it->second.remaining_depth && alpha >= it->second.alpha && beta <= it->second.beta ) {
+			return it->second.evaluation;
 		}
 		got_old_best = true;
 		old_best = it->second.best_move;
@@ -561,10 +569,11 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 	}
 
 
-	possible_moves moves;
-	calculate_moves( p, c, moves, check );
+	move_info moves[200];
+	move_info* pm = moves;
+	calculate_moves( p, c, pm, check );
 
-	if( moves.empty() ) {
+	if( pm == moves ) {
 #if USE_TRANSPOSITION
 		ASSERT( !got_old_best || it->second.terminal );
 #endif
@@ -611,7 +620,7 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 
 	++depth;
 	
-	for( possible_moves::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+	for( move_info const* it  = moves; it != pm; ++it ) {
 		int value = -step( depth, max_depth, it->new_pos, -it->evaluation, it->captured, static_cast<color::type>(1-c), -beta, -alpha );
 		if( value > best_value ) {
 			best_value = value;
@@ -643,11 +652,11 @@ bool calc( position& p, color::type c, move& m, int& res )
 	check_map check;
 	calc_check_map( p, c, check );
 
-	//std::cout << " " << (check.check ? '1' : '0');
-	possible_moves moves;
-	calculate_moves( p, c, moves, check );
+	move_info moves[200];
+	move_info* pm = moves;
+	calculate_moves( p, c, pm, check );
 
-	if( moves.empty() ) {
+	if( moves == pm ) {
 		if( check.check ) {
 			if( c == color::white ) {
 				std::cerr << "BLACK WINS" << std::endl;
@@ -679,7 +688,7 @@ bool calc( position& p, color::type c, move& m, int& res )
 //		std::cerr << std::endl;
 //	}
 
-	int const& count = moves.size();
+	int const& count = pm - moves;
 
 #if USE_TRANSPOSITION
 	data_map[0].clear();
@@ -689,8 +698,8 @@ bool calc( position& p, color::type c, move& m, int& res )
 	// we can abort processing at high depths early if needed.
 	typedef std::multimap<int, move_info> sorted_moves;
 	sorted_moves old_sorted;
-	for( possible_moves::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-		old_sorted.insert( std::make_pair( it - moves.begin(), *it ) );
+	for( move_info const* it  = moves; it != pm; ++it ) {
+		old_sorted.insert( std::make_pair( it - moves, *it ) );
 	}
 
 	unsigned long long start = get_time();
@@ -730,11 +739,11 @@ bool calc( position& p, color::type c, move& m, int& res )
 
 		res = alpha;
 #if USE_TRANSPOSITION
-		if( alpha <= result::loss_threshold || alpha >= result::win_threshold ) {
+		if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
 			if( max_depth < MAX_DEPTH ) {
 				std::cerr << "Early break at " << max_depth << std::endl;
 			}
-			break;
+			abort = true;
 		}
 #endif
 
