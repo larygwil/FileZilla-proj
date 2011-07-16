@@ -2,6 +2,7 @@
 #include "assert.hpp"
 #include "calc.hpp"
 #include "detect_check.hpp"
+#include "hash.hpp"
 #include "eval.hpp"
 #include "util.hpp"
 #include "platform.hpp"
@@ -9,54 +10,41 @@
 
 #include <algorithm>
 #include <iostream>
-#include <vector>
 #include <string>
-
-#include <unordered_map>
 #include <map>
 
-int const MAX_DEPTH = 7;
+int const MAX_DEPTH = 9;
 
-struct hash_getter
-{
-unsigned long long operator()( position_base const& p ) const
-{
+unsigned long long hash_position( position_base const& p, color::type c ) {
 	unsigned long long hash = 0;
 
-//	char const* c = reinterpret_cast<char const*>(&p);
-//	char const* end = c + sizeof( position_base );
-//	for( ; c != end; ++c ) {
-//		hash += *c;
-//		hash += (hash << 10);
-//		hash ^= (hash >> 6);
-//	}
-//	hash += (hash << 3);
-//	hash ^= (hash >> 11);
-//	hash += (hash << 15);
+	char const* it = reinterpret_cast<char const*>(&p);
+	char const* end = it + sizeof( position_base );
+	for( ; it != end; ++it ) {
+		hash += *it;
+		hash += (hash << 10);
+		hash ^= (hash >> 6);
+	}
+	hash += (hash << 3);
+	hash ^= (hash >> 11);
+	hash += (hash << 15);
 
-	hash = *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]));
-	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 8);
-	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 16);
-	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 24);
-	hash ^= p.promotions[0];
-	hash ^= p.promotions[1];
+//	hash = *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]));
+//	hash >>= 8;
+//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 8);
+//	hash >>= 8;
+//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 16);
+//	hash >>= 8;
+//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 24);
+//	hash ^= p.promotions[0] << 13;
+//	hash ^= p.promotions[1];
+
+	if( c ) {
+		hash = ~hash;
+	}
 
 	return hash;
 }
-};
-
-struct step_data {
-	int evaluation;
-	bool terminal;
-	check_map check;
-	move_info best_move;
-	int remaining_depth;
-	int alpha;
-	int beta;
-};
-
-typedef std::unordered_map<position_base, step_data, hash_getter> data_maps;
-data_maps data_map[2];
 
 // Adds the move if it does not result in a check
 void add_if_legal( position const& p, color::type c, move_info*& moves, check_map const& check, unsigned char const& pi, unsigned char const& new_col, unsigned char const& new_row )
@@ -484,46 +472,44 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 	int const limit = max_depth;
 #endif
 
-	bool got_old_best = false;
-	move_info old_best;
+	unsigned long long hash = hash_position( p, c );
 
-	data_maps::iterator it = data_map[c].find( p );
-	check_map check;
-	if( it != data_map[c].end() ) {
-		if( it->second.terminal ) {
-			if( it->second.evaluation == result::loss ) {
+	bool got_old_best = false;
+	step_data d;
+
+	if( hash && lookup( hash, reinterpret_cast<unsigned char * const>(&d) ) ) {
+		if( d.terminal ) {
+			if( d.evaluation == result::loss ) {
 				return result::loss + depth;
 			}
-			else if( it->second.evaluation == result::win ) {
+			else if( d.evaluation == result::win ) {
 				return result::win - depth;
 			}
 			else {
 				return result::draw;
 			}
 		}
-		else if( it->second.evaluation < result::loss_threshold ) {
-			return it->second.evaluation + depth;
+		else if( d.evaluation < result::loss_threshold ) {
+			return d.evaluation + depth;
 		}
-		else if( it->second.evaluation > result::win_threshold ) {
-			return it->second.evaluation - depth;
+		else if( d.evaluation > result::win_threshold ) {
+			return d.evaluation - depth;
 		}
-		else if( (limit - depth) <= it->second.remaining_depth && alpha >= it->second.alpha && beta <= it->second.beta ) {
-			return it->second.evaluation;
+		else if( (limit - depth) <= d.remaining_depth && alpha >= d.alpha && beta <= d.beta ) {
+			return d.evaluation	;
 		}
-		got_old_best = true;
-		old_best = it->second.best_move;
+		//got_old_best = true;
 
 		// TODO: Does this have to be cached?
-		check = it->second.check;
 	}
 	else {
-		calc_check_map( p, c, check );
+		calc_check_map( p, c, d.check );
 	}
 
 #if USE_QUIESCENCE
-	if( depth >= limit && !check.check )
+	if( depth >= limit && !d.check.check )
 #else
-	if( depth >= max_depth && !check.check )
+	if( depth >= max_depth && !d.check.check )
 #endif
 	{
 #ifdef USE_STATISTICS
@@ -534,8 +520,6 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 
 	int best_value = result::loss;
 
-	step_data d;
-	d.check = check;
 	d.beta = beta;
 	d.alpha = alpha;
 	d.remaining_depth = limit - depth;
@@ -549,9 +533,8 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 			return current_evaluation;
 		}
 
-		int value = -step( depth + 1, max_depth, old_best.new_pos, -old_best.evaluation, old_best.captured, static_cast<color::type>(1-c), -beta, -alpha );
+		int value = -step( depth + 1, max_depth, d.best_move.new_pos, -d.best_move.evaluation, d.best_move.captured, static_cast<color::type>(1-c), -beta, -alpha );
 		if( value > best_value ) {
-			d.best_move = old_best;
 
 			best_value = value;
 
@@ -563,6 +546,7 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 				++stats.evaluated_intermediate;
 #endif
 				d.evaluation = alpha;
+				store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 				return alpha;
 			}
 		}
@@ -571,17 +555,17 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 
 	move_info moves[200];
 	move_info* pm = moves;
-	calculate_moves( p, c, pm, check );
+	calculate_moves( p, c, pm, d.check );
 
 	if( pm == moves ) {
 #if USE_TRANSPOSITION
-		ASSERT( !got_old_best || it->second.terminal );
+		ASSERT( !got_old_best || d.terminal );
 #endif
-		if( check.check ) {
+		if( d.check.check ) {
 #if USE_TRANSPOSITION
 			d.terminal = true;
 			d.evaluation = result::loss;
-			data_map[c][p] = d;
+			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 #endif
 #ifdef USE_STATISTICS
 			++stats.evaluated_leaves;
@@ -592,7 +576,7 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 #if USE_TRANSPOSITION
 			d.terminal = true;
 			d.evaluation = result::draw;
-			data_map[c][p] = d;
+			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 #ifdef USE_STATISTICS
 			++stats.evaluated_leaves;
 #endif
@@ -620,6 +604,8 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 
 	++depth;
 	
+	d.best_move = *moves;
+
 	for( move_info const* it  = moves; it != pm; ++it ) {
 		int value = -step( depth, max_depth, it->new_pos, -it->evaluation, it->captured, static_cast<color::type>(1-c), -beta, -alpha );
 		if( value > best_value ) {
@@ -639,7 +625,7 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 
 #if USE_TRANSPOSITION
 	d.evaluation = alpha;
-	data_map[c][p] = d;
+	store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 #endif
 
 	return alpha;
@@ -691,9 +677,6 @@ bool calc( position& p, color::type c, move& m, int& res )
 	int const& count = pm - moves;
 
 #if USE_TRANSPOSITION
-	data_map[0].clear();
-	data_map[1].clear();
-
 	// Go through them sorted by previous evaluation. This way, if on time pressure,
 	// we can abort processing at high depths early if needed.
 	typedef std::multimap<int, move_info> sorted_moves;

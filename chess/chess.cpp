@@ -16,6 +16,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "chess.hpp"
 #include "calc.hpp"
 #include "eval.hpp"
+#include "hash.hpp"
 #include "util.hpp"
 #include "platform.hpp"
 #include "statistics.hpp"
@@ -25,6 +26,7 @@ contact tim.kosse@filezilla-project.org for details.
 
 void auto_play()
 {
+	init_hash( 2048+1024, sizeof(step_data) );
 	unsigned long long start = get_time();
 	position p;
 
@@ -68,6 +70,8 @@ void auto_play()
 
 void xboard()
 {
+	bool hash_initialized = false;
+
 	position p;
 
 	init_board(p);
@@ -88,6 +92,10 @@ void xboard()
 			// Ignore
 		}
 		else if( line == "go" ) {
+			if( !hash_initialized ) {
+				init_hash( 2048+1024, sizeof(step_data) );
+				hash_initialized = true;
+			}
 			// Do a step
 			move m;
 			int res;

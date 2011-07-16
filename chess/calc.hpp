@@ -13,6 +13,16 @@ struct move_info {
 	bool captured;
 };
 
+struct step_data {
+	int evaluation;
+	bool terminal;
+	check_map check;
+	move_info best_move;
+	int remaining_depth;
+	int alpha;
+	int beta;
+};
+
 void calculate_moves( position const& p, color::type c, move_info*& moves, check_map const& check );
 
 #endif

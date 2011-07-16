@@ -4,7 +4,7 @@ CXXFLAGS = -O3 -g -pipe -march=core2 -std=gnu++0x -Wall -flto
 %.o: %.cpp *.hpp
 	g++ $(CXXFLAGS) -c -o $@ $<
 
-chess: chess.o detect_check.o calc.o util.o statistics.o unix.o eval.o
+chess: chess.o detect_check.o calc.o util.o statistics.o unix.o eval.o hash.o
 	g++ $(CXXFLAGS) -o $@ $^
 
 

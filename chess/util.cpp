@@ -247,7 +247,7 @@ bool apply_move( position& p, move const& m, color::type c )
 	piece& pp = p.pieces[c][m.piece];
 
 	if( !pp.alive ) {
-		std::cerr << m.piece << " " << m.target_col << " " << m.target_row << std::endl;
+		std::cerr << "FAIL, moving dead piece!" << (int)m.piece << " " << (int)m.target_col << " " << (int)m.target_row << std::endl;
 	}
 	ASSERT( pp.alive );
 
