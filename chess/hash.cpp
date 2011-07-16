@@ -1,4 +1,5 @@
 #include "hash.hpp"
+#include "statistics.hpp"
 
 #include <string.h>
 
@@ -41,19 +42,47 @@ void store( hash_key key, unsigned char const* const data )
 {
 	// todo: locking
 	unsigned long long const offset = (key % blockCount_) * blockSize_;
-	memcpy( data_ + offset, &key, sizeof( hash_key) );
 
+#if USE_STATISTICS
+	hash_key old = *reinterpret_cast<hash_key*>( data_ + offset );
+	if( old ) {
+		if( old != key ) {
+			++stats.transposition_table_collisions;
+		}
+	}
+	else {
+		++stats.transposition_table_num_entries;
+	}
+#endif
+
+	*reinterpret_cast<hash_key*>( data_ + offset ) = key;
 	memcpy( data_ + offset + sizeof( hash_key ), data, itemSize_ );
 }
 
 bool lookup( hash_key key, unsigned char *const data )
 {
 	unsigned long long const offset = (key % blockCount_) * blockSize_;
-	if( memcmp( &key, data_ + offset, sizeof( hash_key ) ) ) {
+
+	hash_key const old = *reinterpret_cast<hash_key*>( data_ + offset );
+
+	if( old != key ) {
+#if USE_STATISTICS
+		++stats.transposition_table_misses;
+#endif
 		return false;
 	}
+#if USE_STATISTICS
+	else {
+		++stats.transposition_table_hits;
+	}
+#endif
 
 	memcpy( data, data_ + offset + sizeof( hash_key ), itemSize_ );
 
 	return true;
+}
+
+unsigned long long max_hash_entry_count()
+{
+	return blockCount_;
 }

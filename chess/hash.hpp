@@ -20,4 +20,6 @@ void free_hash();
 
 void clearData();
 
+unsigned long long max_hash_entry_count();
+
 #endif //__HASH_H__

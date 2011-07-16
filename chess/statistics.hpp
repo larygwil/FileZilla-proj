@@ -1,6 +1,8 @@
 #ifndef __STATISTICS_H__
 #define __STATISTICS_H__
 
+#define USE_STATISTICS 1
+
 #include "chess.hpp"
 
 #ifdef USE_STATISTICS
@@ -11,6 +13,10 @@ struct type {
 #if USE_QUIESCENCE
 	unsigned long long quiescence_moves;
 #endif
+	unsigned long long transposition_table_hits;
+	unsigned long long transposition_table_misses;
+	unsigned long long transposition_table_collisions;
+	unsigned long long transposition_table_num_entries;
 };
 }
 
