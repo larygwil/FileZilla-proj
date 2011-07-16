@@ -478,25 +478,43 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 	if( hash && lookup( hash, reinterpret_cast<unsigned char * const>(&d) ) ) {
 		if( d.terminal ) {
 			if( d.evaluation == result::loss ) {
+#if USE_STATISTICS
+				++stats.transposition_table_cutoffs;
+#endif
 				return result::loss + depth;
 			}
 			else if( d.evaluation == result::win ) {
+#if USE_STATISTICS
+				++stats.transposition_table_cutoffs;
+#endif
 				return result::win - depth;
 			}
 			else {
+#if USE_STATISTICS
+				++stats.transposition_table_cutoffs;
+#endif
 				return result::draw;
 			}
 		}
 		else if( d.evaluation < result::loss_threshold ) {
+#if USE_STATISTICS
+			++stats.transposition_table_cutoffs;
+#endif
 			return d.evaluation + depth;
 		}
 		else if( d.evaluation > result::win_threshold ) {
+#if USE_STATISTICS
+			++stats.transposition_table_cutoffs;
+#endif
 			return d.evaluation - depth;
 		}
 		else if( (limit - depth) <= d.remaining_depth && alpha >= d.alpha && beta <= d.beta ) {
+#if USE_STATISTICS
+			++stats.transposition_table_cutoffs;
+#endif
 			return d.evaluation	;
 		}
-		//got_old_best = true;
+		got_old_best = true;
 
 		// TODO: Does this have to be cached?
 	}
@@ -558,37 +576,29 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 	calculate_moves( p, c, current_evaluation, pm, d.check );
 
 	if( pm == moves ) {
-#if USE_TRANSPOSITION
 		ASSERT( !got_old_best || d.terminal );
-#endif
 		if( d.check.check ) {
-#if USE_TRANSPOSITION
 			d.terminal = true;
 			d.evaluation = result::loss;
 			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
-#endif
 #ifdef USE_STATISTICS
 			++stats.evaluated_leaves;
 #endif
 			return result::loss + depth;
 		}
 		else {
-#if USE_TRANSPOSITION
 			d.terminal = true;
 			d.evaluation = result::draw;
 			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 #ifdef USE_STATISTICS
 			++stats.evaluated_leaves;
 #endif
-#endif
 			return result::draw;
 		}
 	}
-#if USE_TRANSPOSITION
 	else {
 		d.terminal = false;
 	}
-#endif
 
 	if( depth >= limit ) {
 #ifdef USE_STATISTICS
@@ -613,9 +623,7 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 		if( value > best_value ) {
 			best_value = value;
 
-#if USE_TRANSPOSITION
 			d.best_move = *it;
-#endif
 
 			if( value > alpha ) {
 				alpha = value;
@@ -625,10 +633,8 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 			break;
 	}
 
-#if USE_TRANSPOSITION
 	d.evaluation = alpha;
 	store( hash, reinterpret_cast<unsigned char const* const>(&d) );
-#endif
 
 	return alpha;
 }
@@ -679,7 +685,6 @@ bool calc( position& p, color::type c, move& m, int& res )
 
 	int const& count = pm - moves;
 
-#if USE_TRANSPOSITION
 	// Go through them sorted by previous evaluation. This way, if on time pressure,
 	// we can abort processing at high depths early if needed.
 	typedef std::multimap<int, move_info> sorted_moves;
@@ -692,11 +697,6 @@ bool calc( position& p, color::type c, move& m, int& res )
 
 	for( int max_depth = 1; max_depth <= MAX_DEPTH; max_depth += 2 )
 	{
-#else
-	{
-		int max_depth = MAX_DEPTH;
-#endif
-
 		int alpha = result::loss;
 		int beta = result::win;
 
@@ -726,14 +726,12 @@ bool calc( position& p, color::type c, move& m, int& res )
 		}
 
 		res = alpha;
-#if USE_TRANSPOSITION
 		if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
 			if( max_depth < MAX_DEPTH ) {
 				std::cerr << "Early break at " << max_depth << std::endl;
 			}
 			abort = true;
 		}
-#endif
 
 		if( !sorted.empty() ) {
 			sorted.swap( old_sorted );

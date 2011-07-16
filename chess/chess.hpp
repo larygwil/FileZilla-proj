@@ -124,6 +124,4 @@ enum type {
 
 #define USE_QUIESCENCE 1
 
-#define USE_TRANSPOSITION 1
-
 #endif
