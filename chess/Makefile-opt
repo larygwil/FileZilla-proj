@@ -1,0 +1,22 @@
+CXXFLAGS = -O3 -g -pipe -march=core2 -std=gnu++0x -Wall -flto -fwhole-program
+#CXXFLAGS = -O0 -g -pipe -std=gnu++0x
+
+#%.o: %.cpp *.hpp
+#	g++ $(CXXFLAGS) -c -o $@ $<
+
+#chess: chess.o detect_check.o calc.o util.o statistics.o unix.o eval.o hash.o
+#	g++ $(CXXFLAGS) -o $@ $^
+
+chess-gen: *.cpp *.hpp
+	g++ $(CXXFLAGS) -fprofile-generate -o $@ chess.cpp detect_check.cpp calc.cpp util.cpp statistics.cpp unix.cpp eval.cpp hash.cpp
+	./chess-gen --moves 1
+	rm -f chess-gen *.o
+
+chess-use: chess-gen
+	g++ $(CXXFLAGS) -fprofile-use -o $@ chess.cpp detect_check.cpp calc.cpp util.cpp statistics.cpp unix.cpp eval.cpp hash.cpp
+
+.PHONY: chess-gen
+
+clean:
+	rm -f chess
+	rm -f *.o

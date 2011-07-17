@@ -23,9 +23,29 @@ contact tim.kosse@filezilla-project.org for details.
 
 #include <iostream>
 #include <iomanip>
+#include <stdlib.h>
 
-void auto_play()
+void auto_play( int argc, char const* argv[] )
 {
+	int max_moves = 0;
+
+	{
+		int i = 1;
+		while( i < argc ) {
+			if( !strcmp(argv[i], "--moves" ) ) {
+				if( ++i == argc ) {
+					std::cerr << "Missing argument to --moves" << std::endl;
+					exit(1);
+				}
+				max_moves = atoi(argv[i++]);
+			}
+			else {
+				std::cerr << "Unknown argument" << std::endl;
+				exit(1);
+			}
+		}
+	}
+
 	init_hash( 2048+1024, sizeof(step_data) );
 	unsigned long long start = get_time();
 	position p;
@@ -46,6 +66,9 @@ void auto_play()
 		if( c == color::black ) {
 			++i;
 			std::cout << std::endl;
+			if( max_moves && i >= max_moves ) {
+				break;
+			}
 		}
 
 		if( !validate_move( p, m, c ) ) {
@@ -130,7 +153,7 @@ void xboard()
 	}
 }
 
-int main( int argc, char *argv[] )
+int main( int argc, char const* argv[] )
 {
 	console_init();
 
@@ -144,7 +167,7 @@ int main( int argc, char *argv[] )
 		xboard();
 	}
 	else {
-		auto_play();
+		auto_play( argc, argv );
 	}
 }
 
