@@ -518,14 +518,14 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 
 		// TODO: Does this have to be cached?
 	}
-	else {
-		calc_check_map( p, c, d.check );
-	}
+
+	check_map check;
+	calc_check_map( p, c, check );
 
 #if USE_QUIESCENCE
-	if( depth >= limit && !d.check.check )
+	if( depth >= limit && !check.check )
 #else
-	if( depth >= max_depth && !d.check.check )
+	if( depth >= max_depth && !check.check )
 #endif
 	{
 #ifdef USE_STATISTICS
@@ -573,11 +573,11 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 
 	move_info moves[200];
 	move_info* pm = moves;
-	calculate_moves( p, c, current_evaluation, pm, d.check );
+	calculate_moves( p, c, current_evaluation, pm, check );
 
 	if( pm == moves ) {
 		ASSERT( !got_old_best || d.terminal );
-		if( d.check.check ) {
+		if( check.check ) {
 			d.terminal = true;
 			d.evaluation = result::loss;
 			store( hash, reinterpret_cast<unsigned char const* const>(&d) );

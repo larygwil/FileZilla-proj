@@ -14,7 +14,6 @@ struct move_info {
 struct step_data {
 	int evaluation;
 	bool terminal;
-	check_map check;
 	move_info best_move;
 	short remaining_depth;
 	int alpha;
