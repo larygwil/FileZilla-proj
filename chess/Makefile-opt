@@ -1,4 +1,4 @@
-CXXFLAGS = -O3 -g -pipe -march=core2 -std=gnu++0x -Wall -flto -fwhole-program
+CXXFLAGS = -O3 -g -pipe -march=corei7 -std=gnu++0x -Wall -flto -fwhole-program -pthread
 #CXXFLAGS = -O0 -g -pipe -std=gnu++0x
 
 #%.o: %.cpp *.hpp
@@ -13,7 +13,7 @@ chess-gen: *.cpp *.hpp
 	rm -f chess-gen *.o
 
 chess-use: chess-gen
-	g++ $(CXXFLAGS) -fprofile-use -o $@ chess.cpp detect_check.cpp calc.cpp util.cpp statistics.cpp unix.cpp eval.cpp hash.cpp zobrist.cpp
+	g++ $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ chess.cpp detect_check.cpp calc.cpp util.cpp statistics.cpp unix.cpp eval.cpp hash.cpp zobrist.cpp
 
 .PHONY: chess-gen
 

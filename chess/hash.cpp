@@ -1,14 +1,19 @@
 #include "hash.hpp"
 #include "statistics.hpp"
+#include "platform.hpp"
 
 #include <string.h>
 
 namespace {
-hash_key size_ = 0;
-hash_key itemSize_ = 0;
-hash_key blockSize_ = 0; // >= itemSize, may be larger than itemSize_ to pad
-hash_key blockCount_;
-unsigned char* data_ = 0;
+static hash_key size_ = 0;
+static hash_key itemSize_ = 0;
+static hash_key blockSize_ = 0; // >= itemSize, may be larger than itemSize_ to pad
+static hash_key blockCount_= 0;
+static hash_key lockBlockSize_ = 0;
+static unsigned char* data_ = 0;
+
+#define RWLOCKS 70000
+static rwlock rwl[RWLOCKS];
 }
 
 void init_hash( unsigned int max_size, unsigned int itemSize )
@@ -21,9 +26,15 @@ void init_hash( unsigned int max_size, unsigned int itemSize )
 	blockCount_ = size_ / blockSize_;
 	size_ = blockCount_ * blockSize_;
 
+	lockBlockSize_ = (size_ + (size_ % RWLOCKS) ) / RWLOCKS;
+
 	delete [] data_;
 	data_ = new unsigned char[size_];
 	memset( data_, 0, size_ );
+
+	for( int i = 0; i < RWLOCKS; ++i ) {
+		init_rw_lock( rwl[i] );
+	}
 }
 
 
@@ -40,8 +51,9 @@ void clear_data()
 
 void store( hash_key key, unsigned char const* const data )
 {
-	// todo: locking
 	unsigned long long const offset = (key % blockCount_) * blockSize_;
+
+	scoped_exclusive_lock l(rwl[ offset / lockBlockSize_ ]);
 
 #if USE_STATISTICS
 	hash_key old = *reinterpret_cast<hash_key*>( data_ + offset );
@@ -62,6 +74,8 @@ void store( hash_key key, unsigned char const* const data )
 bool lookup( hash_key key, unsigned char *const data )
 {
 	unsigned long long const offset = (key % blockCount_) * blockSize_;
+
+	scoped_shared_lock l(rwl[ offset / lockBlockSize_ ]);
 
 	hash_key const old = *reinterpret_cast<hash_key*>( data_ + offset );
 

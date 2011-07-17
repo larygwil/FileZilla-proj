@@ -5,6 +5,7 @@
 #include "eval.hpp"
 #include "util.hpp"
 #include "random.hpp"
+#include "platform.hpp"
 
 #include <iostream>
 
@@ -355,12 +356,14 @@ bool apply_move( position& p, move const& m, color::type c )
 
 
 namespace {
+static mutex m;
 static unsigned int random_unsigned_long_long_pos = 0;
 static unsigned int random_unsigned_char = 0;
 }
 
 void init_random( int seed )
 {
+	init_mutex( m );
 	random_unsigned_char = seed;
 	random_unsigned_long_long_pos = (seed + 0xf00) & sizeof(precomputed_random_data);
 }
@@ -368,6 +371,8 @@ void init_random( int seed )
 
 unsigned char get_random_unsigned_char()
 {
+	return 0;
+	scoped_lock l( m ) ;
 	if( ++random_unsigned_char == sizeof(precomputed_random_data) ) {
 		random_unsigned_char = 0;
 	}
@@ -375,6 +380,7 @@ unsigned char get_random_unsigned_char()
 }
 
 unsigned long long get_random_unsigned_long_long() {
+	scoped_lock l( m ) ;
 	random_unsigned_long_long_pos += sizeof( unsigned long long );
 
 	if( random_unsigned_long_long_pos >= (sizeof(precomputed_random_data) - 8) ) {

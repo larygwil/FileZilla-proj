@@ -334,7 +334,52 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 
 				// Capture en-passant
 
-				// TODO: Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
+				// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
+				piece const& kp = p.pieces[c][pieces::king];
+				if( kp.row == pp.row ) {
+					signed char cx = static_cast<signed char>(pp.column) - kp.column;
+					if( cx > 0 ) {
+						cx = 1;
+					}
+					else {
+						cx = -1;
+					}
+					for( signed char col = pp.column + cx; col < 8 && col>= 0; col += cx ) {
+						if( col == new_col ) {
+							continue;
+						}
+						unsigned char t = p.board[col][pp.row];
+						if( t == pieces::nil ) {
+							continue;
+						}
+						if( ( t >> 4) == c ) {
+							// Own piece
+							break;
+						}
+						t &= 0x0f;
+						if( t == pieces::queen || t == pieces::rook1 || t == pieces::rook2 ) {
+							// Not a legal move unfortunately
+							std::cerr << "ENPASSANT SPECIAL" << std::endl;
+							return;
+						}
+						else if( t >= pieces::pawn1 && t <= pieces::pawn8 ) {
+							piece const& pawn = p.pieces[1-c][t];
+							if( !pawn.special ) {
+								// Harmless pawn
+							}
+
+							unsigned short promoted = (p.promotions[1-c] >> (2 * (t - pieces::pawn1) ) ) & 0x03;
+							if( promoted == promotions::queen || promoted == promotions::rook ) {
+								// Not a legal move unfortunately
+								std::cerr << "ENPASSANT SPECIAL" << std::endl;
+								return;
+							}
+						}
+
+						// Harmless piece
+						break;
+					}
+				}
 				add_if_legal( p, c, current_evaluation, moves, check, pi, new_col, new_row );
 			}
 		}
@@ -445,7 +490,7 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 	step_data d;
 
 	if( hash && lookup( hash, reinterpret_cast<unsigned char * const>(&d) ) ) {
-		if( d.terminal ) {
+		if( d.remaining_depth == -127 ) {
 			if( d.evaluation == result::loss ) {
 #if USE_STATISTICS
 				++stats.transposition_table_cutoffs;
@@ -546,9 +591,9 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 	calculate_moves( p, c, current_evaluation, pm, check );
 
 	if( pm == moves ) {
-		ASSERT( !got_old_best || d.terminal );
+		ASSERT( !got_old_best || d.remaining_depth == -127 );
 		if( check.check ) {
-			d.terminal = true;
+			d.remaining_depth = -127;
 			d.evaluation = result::loss;
 			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 #ifdef USE_STATISTICS
@@ -557,7 +602,7 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 			return result::loss + depth;
 		}
 		else {
-			d.terminal = true;
+			d.remaining_depth = -127;
 			d.evaluation = result::draw;
 			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 #ifdef USE_STATISTICS
@@ -565,9 +610,6 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 #endif
 			return result::draw;
 		}
-	}
-	else {
-		d.terminal = false;
 	}
 
 	if( depth >= limit ) {
@@ -611,6 +653,68 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 }
 
 
+class processing_thread : public thread
+{
+public:
+	processing_thread( mutex& mtx, condition& cond )
+		: mutex_(mtx), cond_(cond), finished_()
+	{
+	}
+
+	// Call locked
+	bool finished() {
+		return finished_;
+	}
+
+	// Call locked
+	short result() {
+		return result_;
+	}
+
+	void process( position const& p, color::type c, move_info const& m, short max_depth, short alpha, short beta )
+	{
+		p_ = p;
+		c_ = c;
+		m_ = m;
+		max_depth_ = max_depth;
+		alpha_ = alpha;
+		beta_ = beta;
+		finished_ = false;
+
+		spawn();
+	}
+
+	move_info get_move() const { return m_; }
+
+	virtual void onRun();
+private:
+	mutex& mutex_;
+	condition& cond_;
+
+	position p_;
+	color::type c_;
+	move_info m_;
+	short max_depth_;
+	short alpha_;
+	short beta_;
+
+	bool finished_;
+	short result_;
+};
+
+
+void processing_thread::onRun()
+{
+	position new_pos = p_;
+	bool captured = apply_move( new_pos, m_.m, c_ );
+	unsigned long long hash = get_zobrist_hash( new_pos, static_cast<color::type>(1-c_) );
+	short value = -step( 1, max_depth_, new_pos, hash, -m_.evaluation, captured, static_cast<color::type>(1-c_), -beta_, -alpha_ );
+
+	scoped_lock l( mutex_ );
+	result_ = value;
+	finished_ = true;
+	cond_.signal( l );
+}
 
 bool calc( position& p, color::type c, move& m, int& res )
 {
@@ -654,8 +758,6 @@ bool calc( position& p, color::type c, move& m, int& res )
 //		std::cerr << std::endl;
 //	}
 
-	int const& count = pm - moves;
-
 	// Go through them sorted by previous evaluation. This way, if on time pressure,
 	// we can abort processing at high depths early if needed.
 	typedef std::multimap<short, move_info> sorted_moves;
@@ -666,6 +768,17 @@ bool calc( position& p, color::type c, move& m, int& res )
 
 	unsigned long long start = get_time();
 
+	mutex mtx;
+	init_mutex( mtx );
+
+	condition cond;
+
+	std::vector<processing_thread*> threads;
+	int thread_count = 6;
+	for( int t = 0; t < thread_count; ++t ) {
+		threads.push_back( new processing_thread( mtx, cond ) );
+	}
+
 	for( int max_depth = 1; max_depth <= MAX_DEPTH; max_depth += 2 )
 	{
 		short alpha = result::loss;
@@ -673,28 +786,71 @@ bool calc( position& p, color::type c, move& m, int& res )
 
 		sorted_moves sorted;
 
-		int i;
-		sorted_moves::const_iterator it;
-		bool abort = false;
-		for( i = 0, it = old_sorted.begin(); it != old_sorted.end(); ++it, ++i ) {
+		sorted_moves::const_iterator it = old_sorted.begin();
+		int evaluated = 0;
 
+		bool abort = false;
+		bool done = false;
+		while( !done ) {
 			unsigned long long now = get_time();
 			if( (now - start) > 30000 ) {
-				std::cerr << "Aborting search due to time limit at depth " << max_depth << " with " << i << " of " << count << " moves evaluated." << std::endl;
+				std::cerr << "Triggering search abort due to time limit at depth " << max_depth << std::endl;
 				abort = true;
 				break;
 			}
 
-			position new_pos = p;
-			bool captured = apply_move( new_pos, it->second.m, c );
-			unsigned long long hash = get_zobrist_hash( new_pos, static_cast<color::type>(1-c) );
-			short value = -step( 1, max_depth, new_pos, hash, -it->second.evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+			while( it != old_sorted.end() && !abort ) {
+				int t;
+				for( t = 0; t < thread_count; ++t ) {
+					if( threads[t]->spawned() ) {
+						continue;
+					}
 
-			if( value > alpha ) {
-				alpha = value;
+					threads[t]->process( p, c, it->second, max_depth, alpha, beta );
+
+					// First one is run on its own to get a somewhat sane lower bound for others to work with.
+					if( it++ == old_sorted.begin() ) {
+						goto break2;
+					}
+					break;
+				}
+
+				if( t == thread_count ) {
+					break;
+				}
+			}
+break2:
+
+			scoped_lock l( mtx );
+			cond.wait( l );
+
+			bool all_idle = true;
+			for( int t = 0; t < thread_count; ++t ) {
+				if( !threads[t]->spawned() ) {
+					continue;
+				}
+
+				if( !threads[t]->finished() ) {
+					all_idle = false;
+					continue;
+				}
+
+				threads[t]->join();
+				int value = threads[t]->result();
+				++evaluated;
+				if( value > alpha ) {
+					alpha = value;
+				}
+
+				sorted.insert( std::make_pair( -value, threads[t]->get_move() ) );
 			}
 
-			sorted.insert( std::make_pair( -value, it->second ) );
+			if( it == old_sorted.end() && all_idle ) {
+				done = true;
+			}
+		}
+		if( abort ) {
+			std::cerr << "Aborted with " << evaluated << " moves evaluated at current depth" << std::endl;
 		}
 
 		res = alpha;
