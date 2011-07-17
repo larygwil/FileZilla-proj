@@ -354,26 +354,24 @@ bool apply_move( position& p, move const& m, color::type c )
 }
 
 
-unsigned char random_6bit[sizeof(precomputed_random_data)];
-unsigned int random_6bit_pos = 0;
-unsigned int random_unsigned_long_long_pos = 0;
+namespace {
+static unsigned int random_unsigned_long_long_pos = 0;
+static unsigned int random_unsigned_char = 0;
+}
 
 void init_random( int seed )
 {
-	for( unsigned int i = 0; i < sizeof(random_6bit); ++i ) {
-		random_6bit[i] = precomputed_random_data[i] & 0x3f;
-	}
-	random_6bit_pos = seed;
+	random_unsigned_char = seed;
 	random_unsigned_long_long_pos = (seed + 0xf00) & sizeof(precomputed_random_data);
 }
 
 
-unsigned char get_random_6bit()
+unsigned char get_random_unsigned_char()
 {
-	if( ++random_6bit_pos == sizeof(random_6bit) ) {
-		random_6bit_pos = 0;
+	if( ++random_unsigned_char == sizeof(precomputed_random_data) ) {
+		random_unsigned_char = 0;
 	}
-	return random_6bit[random_6bit_pos];
+	return precomputed_random_data[random_unsigned_char];
 }
 
 unsigned long long get_random_unsigned_long_long() {

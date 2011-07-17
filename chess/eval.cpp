@@ -57,9 +57,9 @@ unsigned char const pawn_values[2][8][8] =
 }
 
 
-int evaluate_side( position const& p, color::type c )
+short evaluate_side( position const& p, color::type c )
 {
-	unsigned int result = 0;
+	short result = 0;
 
 	// To start: Count material in centipawns
 	for( unsigned int i = 0; i < 16; ++i) {
@@ -101,7 +101,7 @@ int evaluate_side( position const& p, color::type c )
 	return result;
 }
 
-int evaluate( position const& p, color::type c )
+short evaluate( position const& p, color::type c )
 {
 	int value = evaluate_side( p, c ) - evaluate_side( p, static_cast<color::type>(1-c) );
 
@@ -111,7 +111,7 @@ int evaluate( position const& p, color::type c )
 }
 
 namespace {
-static void subtract_target( position const& p, color::type c, int& eval, int target, int col, int row )
+static void subtract_target( position const& p, color::type c, short& eval, int target, int col, int row )
 {
 	if( target >= pieces::pawn1 && target <= pieces::pawn8 ) {
 		piece const& pp = p.pieces[1-c][target];
@@ -147,7 +147,7 @@ static void subtract_target( position const& p, color::type c, int& eval, int ta
 }
 }
 
-int evaluate_move( position const& p, color::type c, int current_evaluation, move const& m )
+short evaluate_move( position const& p, color::type c, short current_evaluation, move const& m )
 {
 	int target = p.board[m.target_col][m.target_row];
 	if( target != pieces::nil ) {

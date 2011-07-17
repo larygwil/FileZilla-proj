@@ -16,37 +16,6 @@
 
 int const MAX_DEPTH = 9;
 
-unsigned long long hash_position( position_base const& p, color::type c ) {
-	unsigned long long hash = 0;
-
-	char const* it = reinterpret_cast<char const*>(&p);
-	char const* end = it + sizeof( position_base );
-	for( ; it != end; ++it ) {
-		hash += *it;
-		hash += (hash << 10);
-		hash ^= (hash >> 6);
-	}
-	hash += (hash << 3);
-	hash ^= (hash >> 11);
-	hash += (hash << 15);
-
-//	hash = *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]));
-//	hash >>= 8;
-//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 8);
-//	hash >>= 8;
-//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 16);
-//	hash >>= 8;
-//	hash ^= *reinterpret_cast<const unsigned long long*>(reinterpret_cast<const char*>(&p.pieces[0][0]) + 24);
-//	hash ^= p.promotions[0] << 13;
-//	hash ^= p.promotions[1];
-
-	if( c ) {
-		hash = ~hash;
-	}
-
-	return hash;
-}
-
 // Adds the move if it does not result in a check
 void add_if_legal( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, unsigned char const& pi, unsigned char const& new_col, unsigned char const& new_row )
 {
@@ -75,7 +44,8 @@ void add_if_legal( position const& p, color::type c, int const current_evaluatio
 	mi.m.target_col = new_col;
 	mi.m.target_row = new_row;
 
-	mi.evaluation = (evaluate_move( p, c, current_evaluation, mi.m ) << 6) | get_random_6bit();
+	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m );
+	mi.random = get_random_unsigned_char();
 
 	*(moves++) = mi;
 }
@@ -97,7 +67,8 @@ void add_if_legal_king( position const& p, color::type c, int const /*current_ev
 		return;
 	}
 
-	mi.evaluation = (evaluate( new_pos, c ) << 6) | get_random_6bit();
+	mi.evaluation = evaluate( new_pos, c );
+	mi.random = get_random_unsigned_char();
 
 	*(moves++) = mi;
 }
@@ -429,7 +400,14 @@ void calc_moves_pawns( position const& p, color::type c, int const current_evalu
 
 struct MoveSort {
 	bool operator()( move_info const& lhs, move_info const& rhs ) const {
-		return lhs.evaluation > rhs.evaluation;
+		if( lhs.evaluation > rhs.evaluation ) {
+			return true;
+		}
+		if( lhs.evaluation < rhs.evaluation ) {
+			return false;
+		}
+
+		return lhs.random > rhs.random;
 	}
 } moveSort;
 
@@ -449,23 +427,15 @@ void calculate_moves( position const& p, color::type c, int const current_evalua
 	}
 
 	std::sort( start, moves, moveSort );
-
-	while( start != moves ) {
-		start->evaluation >>= 6;
-		++start;
-	}
 }
 
 
-int step( int depth, int const max_depth, position const& p, unsigned long long hash, int current_evaluation, bool captured, color::type c, int alpha, int beta )
+short step( int depth, int const max_depth, position const& p, unsigned long long hash, int current_evaluation, bool captured, color::type c, short alpha, short beta )
 {
 #if USE_QUIESCENCE
-	int limit;
-	if( captured ) {
-		limit = max_depth + USE_QUIESCENCE;
-	}
-	else {
-		limit = max_depth;
+	int limit = max_depth;
+	if( depth >= max_depth && captured ) {
+		limit = max_depth + 1;
 	}
 #else
 	int const limit = max_depth;
@@ -533,7 +503,7 @@ int step( int depth, int const max_depth, position const& p, unsigned long long 
 		return current_evaluation;
 	}
 
-	int best_value = result::loss;
+	short best_value = result::loss;
 
 	d.beta = beta;
 	d.alpha = alpha;
@@ -551,7 +521,7 @@ int step( int depth, int const max_depth, position const& p, unsigned long long 
 		position new_pos = p;
 		bool captured = apply_move( new_pos, d.best_move.m, c );
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move.m );
-		int value = -step( depth + 1, max_depth, new_pos, new_hash, -d.best_move.evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+		short value = -step( depth + 1, max_depth, new_pos, new_hash, -d.best_move.evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
 		if( value > best_value ) {
 
 			best_value = value;
@@ -688,7 +658,7 @@ bool calc( position& p, color::type c, move& m, int& res )
 
 	// Go through them sorted by previous evaluation. This way, if on time pressure,
 	// we can abort processing at high depths early if needed.
-	typedef std::multimap<int, move_info> sorted_moves;
+	typedef std::multimap<short, move_info> sorted_moves;
 	sorted_moves old_sorted;
 	for( move_info const* it  = moves; it != pm; ++it ) {
 		old_sorted.insert( std::make_pair( it - moves, *it ) );
@@ -698,8 +668,8 @@ bool calc( position& p, color::type c, move& m, int& res )
 
 	for( int max_depth = 1; max_depth <= MAX_DEPTH; max_depth += 2 )
 	{
-		int alpha = result::loss;
-		int beta = result::win;
+		short alpha = result::loss;
+		short beta = result::win;
 
 		sorted_moves sorted;
 
@@ -718,7 +688,7 @@ bool calc( position& p, color::type c, move& m, int& res )
 			position new_pos = p;
 			bool captured = apply_move( new_pos, it->second.m, c );
 			unsigned long long hash = get_zobrist_hash( new_pos, static_cast<color::type>(1-c) );
-			int value = -step( 1, max_depth, new_pos, hash, -it->second.evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+			short value = -step( 1, max_depth, new_pos, hash, -it->second.evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
 
 			if( value > alpha ) {
 				alpha = value;
