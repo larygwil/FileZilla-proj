@@ -56,32 +56,6 @@ struct position_base
 	unsigned short promotions[2];
 
 	unsigned char can_en_passant; // Piece of last-moved player that can be en-passanted
-
-	bool operator==( position_base const& rhs ) const {
-		return !memcmp(pieces, rhs.pieces, sizeof(pieces) ) &&
-				promotions[0] == rhs.promotions[0] &&
-				promotions[1] == rhs.promotions[1] &&
-				can_en_passant == rhs.can_en_passant;
-	}
-	bool operator<( position_base const& rhs ) const {
-		int cmp = memcmp(&pieces, &rhs.pieces, 32 * sizeof(piece) );
-		if( cmp ) {
-			return cmp < 0;
-		}
-		if( promotions[0] < rhs.promotions[0] ) {
-			return true;
-		}
-		if( promotions[0] > rhs.promotions[0] ) {
-			return false;
-		}
-		if( promotions[1] < rhs.promotions[1] ) {
-			return true;
-		}
-		if( promotions[1] > rhs.promotions[1] ) {
-			return false;
-		}
-		return can_en_passant < rhs.can_en_passant;
-	}
 };
 
 

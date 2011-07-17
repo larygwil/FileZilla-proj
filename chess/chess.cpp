@@ -20,6 +20,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "util.hpp"
 #include "platform.hpp"
 #include "statistics.hpp"
+#include "zobrist.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -66,7 +67,7 @@ void auto_play( int argc, char const* argv[] )
 		if( c == color::black ) {
 			++i;
 			std::cout << std::endl;
-			if( max_moves && i >= max_moves ) {
+			if( max_moves && i > max_moves ) {
 				break;
 			}
 		}
@@ -158,6 +159,7 @@ int main( int argc, char const* argv[] )
 	console_init();
 
 	init_random( 1234 );
+	init_zobrist_tables();
 
 	std::cerr << "  Octochess" << std::endl;
 	std::cerr << "  ---------" << std::endl;

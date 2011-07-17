@@ -7,6 +7,7 @@
 #include "util.hpp"
 #include "platform.hpp"
 #include "statistics.hpp"
+#include "zobrist.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -456,7 +457,7 @@ void calculate_moves( position const& p, color::type c, int const current_evalua
 }
 
 
-int step( int depth, int const max_depth, position const& p, int current_evaluation, bool captured, color::type c, int alpha, int beta )
+int step( int depth, int const max_depth, position const& p, unsigned long long hash, int current_evaluation, bool captured, color::type c, int alpha, int beta )
 {
 #if USE_QUIESCENCE
 	int limit;
@@ -469,8 +470,6 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 #else
 	int const limit = max_depth;
 #endif
-
-	unsigned long long hash = hash_position( p, c );
 
 	bool got_old_best = false;
 	step_data d;
@@ -551,7 +550,8 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 
 		position new_pos = p;
 		bool captured = apply_move( new_pos, d.best_move.m, c );
-		int value = -step( depth + 1, max_depth, new_pos, -d.best_move.evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+		unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move.m );
+		int value = -step( depth + 1, max_depth, new_pos, new_hash, -d.best_move.evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
 		if( value > best_value ) {
 
 			best_value = value;
@@ -619,7 +619,8 @@ int step( int depth, int const max_depth, position const& p, int current_evaluat
 	for( move_info const* it  = moves; it != pm; ++it ) {
 		position new_pos = p;
 		bool captured = apply_move( new_pos, it->m, c );
-		int value = -step( depth, max_depth, new_pos, -it->evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
+		int value = -step( depth, max_depth, new_pos, new_hash, -it->evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
 		if( value > best_value ) {
 			best_value = value;
 
@@ -716,7 +717,8 @@ bool calc( position& p, color::type c, move& m, int& res )
 
 			position new_pos = p;
 			bool captured = apply_move( new_pos, it->second.m, c );
-			int value = -step( 1, max_depth, new_pos, -it->second.evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+			unsigned long long hash = get_zobrist_hash( new_pos, static_cast<color::type>(1-c) );
+			int value = -step( 1, max_depth, new_pos, hash, -it->second.evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
 
 			if( value > alpha ) {
 				alpha = value;

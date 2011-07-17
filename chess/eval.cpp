@@ -111,7 +111,7 @@ int evaluate( position const& p, color::type c )
 }
 
 namespace {
-void subtract_target( position const& p, color::type c, int& eval, int target, int col, int row )
+static void subtract_target( position const& p, color::type c, int& eval, int target, int col, int row )
 {
 	if( target >= pieces::pawn1 && target <= pieces::pawn8 ) {
 		piece const& pp = p.pieces[1-c][target];
