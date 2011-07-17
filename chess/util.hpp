@@ -21,4 +21,6 @@ void init_random( int seed );
 // Gets pseudo-random number within the lowerst 6 bits
 unsigned char get_random_6bit();
 
+unsigned long long get_random_unsigned_long_long();
+
 #endif

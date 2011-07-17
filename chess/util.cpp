@@ -4,6 +4,7 @@
 #include "detect_check.hpp"
 #include "eval.hpp"
 #include "util.hpp"
+#include "random.hpp"
 
 #include <iostream>
 
@@ -353,16 +354,17 @@ bool apply_move( position& p, move const& m, color::type c )
 }
 
 
-unsigned char random_6bit[4096];
+unsigned char random_6bit[sizeof(precomputed_random_data)];
 unsigned int random_6bit_pos = 0;
+unsigned int random_unsigned_long_long_pos = 0;
 
 void init_random( int seed )
 {
-	srand( seed );
-
 	for( unsigned int i = 0; i < sizeof(random_6bit); ++i ) {
-		random_6bit[i] = rand() & 0x3f;
+		random_6bit[i] = precomputed_random_data[i] & 0x3f;
 	}
+	random_6bit_pos = seed;
+	random_unsigned_long_long_pos = (seed + 0xf00) & sizeof(precomputed_random_data);
 }
 
 
@@ -372,4 +374,14 @@ unsigned char get_random_6bit()
 		random_6bit_pos = 0;
 	}
 	return random_6bit[random_6bit_pos];
+}
+
+unsigned long long get_random_unsigned_long_long() {
+	random_unsigned_long_long_pos += sizeof( unsigned long long );
+
+	if( random_unsigned_long_long_pos >= (sizeof(precomputed_random_data) - 8) ) {
+		random_unsigned_long_long_pos = 0;
+	}
+
+	return *reinterpret_cast<unsigned long long*>(precomputed_random_data + random_unsigned_long_long_pos);
 }
