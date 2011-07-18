@@ -363,7 +363,6 @@ static unsigned int random_unsigned_char = 0;
 
 void init_random( int seed )
 {
-	init_mutex( m );
 	random_unsigned_char = seed;
 	random_unsigned_long_long_pos = (seed + 0xf00) & sizeof(precomputed_random_data);
 }
@@ -373,7 +372,7 @@ unsigned char get_random_unsigned_char()
 {
 	return 0;
 	scoped_lock l( m ) ;
-	if( ++random_unsigned_char == sizeof(precomputed_random_data) ) {
+	if( ++random_unsigned_char >= sizeof(precomputed_random_data) ) {
 		random_unsigned_char = 0;
 	}
 	return precomputed_random_data[random_unsigned_char];

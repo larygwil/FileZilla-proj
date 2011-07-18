@@ -769,7 +769,6 @@ bool calc( position& p, color::type c, move& m, int& res )
 	unsigned long long start = get_time();
 
 	mutex mtx;
-	init_mutex( mtx );
 
 	condition cond;
 

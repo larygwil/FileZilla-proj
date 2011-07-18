@@ -7,7 +7,18 @@ unsigned long long get_time();
 void console_init();
 
 typedef pthread_rwlock_t rwlock;
-typedef pthread_mutex_t mutex;
+
+class condition;
+class mutex {
+public:
+	mutex();
+	~mutex();
+
+private:
+	friend class scoped_lock;
+	friend class condition;
+	pthread_mutex_t m_;
+};
 
 class scoped_lock
 {
@@ -56,8 +67,6 @@ private:
 };
 
 void init_rw_lock( rwlock& l );
-void init_mutex( mutex& m );
-
 
 class thread {
 public:

@@ -2,6 +2,7 @@
 
 #include <sys/time.h>
 #include <stdio.h>
+#include <errno.h>
 
 unsigned long long get_time()
 {
@@ -20,11 +21,6 @@ void console_init()
 void init_rw_lock( rwlock& l )
 {
 	pthread_rwlock_init( &l, 0 );
-}
-
-void init_mutex( mutex& m )
-{
-	pthread_mutex_init( &m, 0 );
 }
 
 scoped_shared_lock::scoped_shared_lock( rwlock& l )
@@ -67,7 +63,11 @@ void condition::wait( scoped_lock& l )
 		signalled_ = false;
 		return;
 	}
-	pthread_cond_wait( &cond_, &l.m_ );
+	int res;
+	do {
+		res = pthread_cond_wait( &cond_, &l.m_.m_ );
+	}
+	while( res == EINTR );
 	signalled_ = false;
 }
 
@@ -119,15 +119,25 @@ void thread::join()
 scoped_lock::scoped_lock( mutex& m )
 	: m_(m)
 {
-	pthread_mutex_lock( &m );
+	pthread_mutex_lock( &m.m_ );
 }
 
 scoped_lock::~scoped_lock()
 {
-	pthread_mutex_unlock( &m_ );
+	pthread_mutex_unlock( &m_.m_ );
 }
 
 bool thread::spawned()
 {
 	return t_;
+}
+
+mutex::mutex()
+{
+	pthread_mutex_init( &m_, 0 );
+}
+
+mutex::~mutex()
+{
+	pthread_mutex_destroy( &m_ );
 }
