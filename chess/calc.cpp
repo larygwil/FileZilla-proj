@@ -560,9 +560,10 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 		}
 
 		position new_pos = p;
-		bool captured = apply_move( new_pos, d.best_move.m, c );
-		unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move.m );
-		short value = -step( depth + 1, max_depth, new_pos, new_hash, -d.best_move.evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+		bool captured = apply_move( new_pos, d.best_move, c );
+		unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move );
+		short new_eval = evaluate_move( p, c, current_evaluation, d.best_move );
+		short value = -step( depth + 1, max_depth, new_pos, new_hash, -new_eval, captured, static_cast<color::type>(1-c), -beta, -alpha );
 		if( value > best_value ) {
 
 			best_value = value;
@@ -622,7 +623,7 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 
 	++depth;
 	
-	d.best_move = *moves;
+	d.best_move = moves->m;
 
 	for( move_info const* it  = moves; it != pm; ++it ) {
 		position new_pos = p;
@@ -632,7 +633,7 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 		if( value > best_value ) {
 			best_value = value;
 
-			d.best_move = *it;
+			d.best_move = it->m;
 
 			if( value > alpha ) {
 				alpha = value;

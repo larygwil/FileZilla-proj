@@ -15,7 +15,7 @@ struct move_info {
 struct step_data {
 	short evaluation;
 	char remaining_depth; // -127 on terminal position
-	move_info best_move;
+	move best_move;
 	short alpha;
 	short beta;
 };
