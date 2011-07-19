@@ -30,7 +30,7 @@ struct check_map
 };
 void calc_check_map( position const& p, color::type c, check_map& map );
 
-bool detect_check( position const& p, color::type c, unsigned char king_col, unsigned char king_row );
+bool detect_check( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row );
 bool detect_check( position const& p, color::type c );
 
 #endif

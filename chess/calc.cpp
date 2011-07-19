@@ -51,23 +51,19 @@ void add_if_legal( position const& p, color::type c, int const current_evaluatio
 }
 
 
-void add_if_legal_king( position const& p, color::type c, int const /*current_evaluation*/,  move_info*& moves, unsigned char new_col, unsigned char new_row )
+void add_if_legal_king( position const& p, color::type c, int const current_evaluation,  move_info*& moves, unsigned char new_col, unsigned char new_row )
 {
+	piece const& kp = p.pieces[c][pieces::king];
+	if( detect_check( p, c, new_col, new_row, kp.column, kp.row ) ) {
+		return;
+	}
+
 	move_info mi;
-
-
 	mi.m.piece = pieces::king;
 	mi.m.target_col = new_col;
 	mi.m.target_row = new_row;
 
-	position new_pos = p;
-	apply_move( new_pos, mi.m, c );
-
-	if( detect_check( new_pos, c ) ) {
-		return;
-	}
-
-	mi.evaluation = evaluate( new_pos, c );
+	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m );
 	mi.random = get_random_unsigned_char();
 
 	*(moves++) = mi;
@@ -131,7 +127,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 	// Queenside castling
 	if( p.pieces[c][pieces::rook1].special ) {
 		if( p.board[1][pp.row] == pieces::nil && p.board[2][pp.row] == pieces::nil && p.board[3][pp.row] == pieces::nil ) {
-			if( !detect_check( p, c, 3, pp.row ) ) {
+			if( !detect_check( p, c, 3, pp.row, 3, pp.row ) ) {
 				add_if_legal_king( p, c, current_evaluation, moves, 2, pp.row );
 			}
 		}
@@ -139,7 +135,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 	// Kingside castling
 	if( p.pieces[c][pieces::rook2].special ) {
 		if( p.board[5][pp.row] == pieces::nil && p.board[6][pp.row] == pieces::nil ) {
-			if( !detect_check( p, c, 5, pp.row ) ) {
+			if( !detect_check( p, c, 5, pp.row, 5, pp.row ) ) {
 				add_if_legal_king( p, c, current_evaluation, moves, 6, pp.row );
 			}
 		}
