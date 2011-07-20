@@ -231,7 +231,7 @@ bool detect_check_from_bishops( position const& p, color::type c, unsigned char 
 	{
 		piece const& pp = p.pieces[1-c][pieces::bishop1];
 		if( pp.alive ) {
-			if( detect_check_from_bishop( p, c, king_col, king_row, pp, ignore_row, ignore_col ) ) {
+			if( detect_check_from_bishop( p, c, king_col, king_row, pp, ignore_col, ignore_row ) ) {
 				return true;
 			}
 		}
