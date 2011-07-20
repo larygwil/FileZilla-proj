@@ -17,6 +17,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "calc.hpp"
 #include "eval.hpp"
 #include "hash.hpp"
+#include "moves.hpp"
 #include "util.hpp"
 #include "platform.hpp"
 #include "statistics.hpp"

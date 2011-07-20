@@ -3,6 +3,7 @@
 #include "calc.hpp"
 #include "detect_check.hpp"
 #include "eval.hpp"
+#include "moves.hpp"
 #include "util.hpp"
 #include "random.hpp"
 #include "platform.hpp"
