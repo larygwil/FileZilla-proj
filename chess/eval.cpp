@@ -3,28 +3,10 @@
 
 #include <iostream>
 
-namespace {
-short const piece_values[] = {
-	100, 100, 100, 100, 100, 100, 100, 100,
-	0, // Can't be captured
-	900,
-	500, 500,
-	310, 310,
-	300, 300
-};
-
-short const promotion_values[] = {
-	900,
-	500,
-	310,
-	300
-};
-}
-
 namespace special_values {
 enum type
 {
-	knight_at_border = 20,
+	double_bishop = 25,
 	castled = 25
 };
 }
@@ -33,27 +15,120 @@ namespace {
 unsigned char const pawn_values[2][8][8] =
 	{
 		{
-			{ 0,  90,  90,  90,  97, 106, 117, 0 },
-			{ 0,  95,  95,  95, 103, 112, 123, 0 },
-			{ 0, 105, 105, 110, 117, 125, 133, 0 },
-			{ 0, 110, 115, 120, 127, 140, 150, 0 },
-			{ 0, 110, 115, 120, 127, 140, 150, 0 },
-			{ 0, 105, 105, 110, 117, 125, 133, 0 },
-			{ 0,  95,  95,  95, 103, 112, 123, 0 },
-			{ 0,  90,  90,  90,  97, 106, 117, 0 }
+			{ 0, 105, 105, 100,  97, 106, 120, 0 },
+			{ 0, 110,  95, 100, 103, 112, 127, 0 },
+			{ 0, 110,  90, 110, 117, 125, 135, 0 },
+			{ 0,  80, 100, 120, 127, 140, 150, 0 },
+			{ 0,  80, 100, 120, 127, 140, 150, 0 },
+			{ 0, 110,  90, 110, 117, 125, 135, 0 },
+			{ 0, 110,  95, 100, 103, 112, 127, 0 },
+			{ 0, 105, 105, 100, 100, 106, 120, 0 }
 		},
 		{
-			{ 0, 117, 106,  97,  90,  90,  90, 0 },
-			{ 0, 123, 112, 103,  95,  95,  95, 0 },
-			{ 0, 133, 125, 117, 110, 105, 105, 0 },
-			{ 0, 150, 140, 127, 120, 115, 110, 0 },
-			{ 0, 150, 140, 127, 120, 115, 110, 0 },
-			{ 0, 133, 125, 117, 110, 105, 105, 0 },
-			{ 0, 123, 112, 103,  95,  95,  95, 0 },
-			{ 0, 117, 106,  97,  90,  90,  90, 0 }
+			{ 0, 120, 106,  97, 100, 105, 105, 0 },
+			{ 0, 127, 112, 103, 100,  95, 110, 0 },
+			{ 0, 135, 125, 117, 110,  90, 110, 0 },
+			{ 0, 150, 140, 127, 120, 100,  80, 0 },
+			{ 0, 150, 140, 127, 120, 100,  80, 0 },
+			{ 0, 135, 125, 117, 110,  90, 110, 0 },
+			{ 0, 127, 112, 103, 100,  95, 110, 0 },
+			{ 0, 120, 106, 100, 100, 105, 105, 0 }
 		}
 
 	};
+
+signed short const queen_values[2][8][8] = {
+	{
+		{ 880, 890, 890, 895, 900, 890, 890, 880 },
+		{ 890, 900, 905, 900, 900, 900, 900, 890 },
+		{ 890, 905, 905, 905, 905, 905, 900, 890 },
+		{ 895, 900, 905, 905, 905, 905, 900, 895 },
+		{ 895, 900, 905, 905, 905, 905, 900, 895 },
+		{ 890, 900, 905, 905, 905, 905, 900, 890 },
+		{ 890, 900, 900, 900, 900, 900, 900, 890 },
+		{ 880, 890, 890, 895, 895, 890, 890, 880 }
+	},
+	{
+		{ 880, 890, 890, 895, 900, 890, 890, 880 },
+		{ 890, 900, 900, 900, 900, 900, 900, 890 },
+		{ 890, 900, 905, 905, 905, 905, 900, 890 },
+		{ 895, 900, 905, 905, 905, 905, 900, 895 },
+		{ 895, 900, 905, 905, 905, 905, 900, 895 },
+		{ 890, 900, 905, 905, 905, 905, 905, 890 },
+		{ 890, 900, 900, 900, 900, 905, 900, 890 },
+		{ 880, 890, 890, 895, 895, 890, 890, 880 }
+	}
+};
+
+signed short const rook_values[2][8][8] = {
+	{
+		{ 500, 495, 495, 495, 495, 495, 505, 500 },
+		{ 500, 500, 500, 500, 500, 500, 510, 500 },
+		{ 500, 500, 500, 500, 500, 500, 510, 500 },
+		{ 505, 500, 500, 500, 500, 500, 510, 500 },
+		{ 505, 500, 500, 500, 500, 500, 510, 500 },
+		{ 500, 500, 500, 500, 500, 500, 510, 500 },
+		{ 500, 500, 500, 500, 500, 500, 510, 500 },
+		{ 500, 495, 495, 495, 495, 495, 505, 500 }
+	},
+	{
+		{ 500, 505, 495, 495, 495, 495, 495, 500 },
+		{ 500, 510, 500, 500, 500, 500, 500, 500 },
+		{ 500, 510, 500, 500, 500, 500, 500, 500 },
+		{ 500, 510, 500, 500, 500, 500, 500, 505 },
+		{ 500, 510, 500, 500, 500, 500, 500, 505 },
+		{ 500, 510, 500, 500, 500, 500, 500, 500 },
+		{ 500, 510, 500, 500, 500, 500, 500, 500 },
+		{ 500, 505, 495, 495, 495, 495, 495, 500 }
+	}
+};
+
+signed short const knight_values[2][8][8] = {
+	{
+		{ 260, 270, 280, 280, 280, 280, 270, 260 },
+		{ 270, 290, 305, 310, 305, 310, 290, 270 },
+		{ 280, 310, 310, 315, 315, 310, 310, 280 },
+		{ 280, 305, 315, 320, 320, 315, 310, 280 },
+		{ 280, 305, 315, 320, 320, 315, 310, 280 },
+		{ 280, 310, 310, 315, 315, 310, 310, 280 },
+		{ 270, 290, 305, 310, 305, 310, 290, 270 },
+		{ 260, 270, 280, 280, 280, 280, 270, 260 }
+	},
+	{
+		{ 260, 270, 280, 280, 280, 280, 270, 260 },
+		{ 270, 290, 310, 305, 310, 305, 290, 270 },
+		{ 280, 310, 310, 315, 315, 310, 310, 280 },
+		{ 280, 310, 315, 320, 320, 315, 305, 280 },
+		{ 280, 310, 315, 320, 320, 315, 305, 280 },
+		{ 280, 310, 310, 315, 315, 310, 310, 280 },
+		{ 270, 290, 310, 305, 310, 305, 290, 270 },
+		{ 260, 270, 280, 280, 280, 280, 270, 260 },
+	}
+};
+
+signed short const bishop_values[2][8][8] = {
+	{
+		{ 300, 310, 310, 310, 310, 310, 310, 300 },
+		{ 310, 325, 330, 320, 325, 320, 320, 310 },
+		{ 310, 320, 330, 330, 325, 325, 320, 310 },
+		{ 310, 320, 330, 330, 330, 330, 320, 310 },
+		{ 310, 320, 330, 330, 330, 330, 320, 310 },
+		{ 310, 320, 330, 330, 325, 325, 320, 310 },
+		{ 310, 325, 330, 320, 325, 320, 320, 310 },
+		{ 300, 310, 310, 310, 310, 310, 310, 300 }
+	},
+	{
+		{ 300, 310, 310, 310, 310, 310, 310, 300 },
+		{ 310, 320, 320, 325, 320, 330, 325, 310 },
+		{ 310, 320, 325, 325, 330, 330, 320, 310 },
+		{ 310, 320, 330, 330, 330, 330, 320, 310 },
+		{ 310, 320, 330, 330, 330, 330, 320, 310 },
+		{ 310, 320, 325, 325, 330, 330, 320, 310 },
+		{ 310, 320, 320, 325, 320, 330, 325, 310 },
+		{ 300, 310, 310, 310, 310, 310, 310, 300 }
+	}
+};
+
 }
 
 
@@ -65,35 +140,61 @@ short evaluate_side( position const& p, color::type c )
 	for( unsigned int i = 0; i < 16; ++i) {
 		piece const& pp = p.pieces[c][i];
 		if( pp.alive ) {
-			if( i >= pieces::pawn1 && i <= pieces::pawn8) {
+			switch( i ) {
+			case pieces::pawn1:
+			case pieces::pawn2:
+			case pieces::pawn3:
+			case pieces::pawn4:
+			case pieces::pawn5:
+			case pieces::pawn6:
+			case pieces::pawn7:
+			case pieces::pawn8:
 				if (pp.special) {
 					// Promoted pawn
 					unsigned short promoted = (p.promotions[c] >> ((i - pieces::pawn1) * 2)) & 0x03;
-					result += promotion_values[promoted];
+					switch( promoted ) {
+					case promotions::queen:
+						result += queen_values[c][pp.column][pp.row];
+						break;
+					case promotions::rook:
+						result += rook_values[c][pp.column][pp.row];
+						break;
+					case promotions::bishop:
+						result += bishop_values[c][pp.column][pp.row];
+						break;
+					case promotions::knight:
+						result += knight_values[c][pp.column][pp.row];
+						break;
+					}
 				}
 				else {
 					result += pawn_values[c][pp.column][pp.row];
 				}
-			}
-			else {
-				result += piece_values[i];
+				break;
+			case pieces::king:
+				break;
+			case pieces::queen:
+				result += queen_values[c][pp.column][pp.row];
+				break;
+			case pieces::rook1:
+			case pieces::rook2:
+				result += rook_values[c][pp.column][pp.row];
+				break;
+			case pieces::bishop1:
+			case pieces::bishop2:
+				result += bishop_values[c][pp.column][pp.row];
+				break;
+			case pieces::knight1:
+			case pieces::knight2:
+				result += knight_values[c][pp.column][pp.row];
+				break;
 			}
 		}
 	}
 
-	for( int i = 0; i < 2; ++i ) {
-		piece const& pp = p.pieces[c][pieces::knight1 + i];
-		if( pp.alive ) {
-			if( pp.column == 0 || pp.column == 7 ) {
-				result -= special_values::knight_at_border;
-			}
-
-			if( pp.row == 0 || pp.row == 7 ) {
-				result -= special_values::knight_at_border;
-			}
-		}
+	if( p.pieces[c][pieces::bishop1].alive && p.pieces[c][pieces::bishop2].alive ) {
+		result += special_values::double_bishop;
 	}
-
 	if( p.pieces[c][pieces::king].special ) {
 		result += special_values::castled;
 	}
@@ -111,39 +212,62 @@ short evaluate( position const& p, color::type c )
 }
 
 namespace {
-static void subtract_target( position const& p, color::type c, short& eval, int target, int col, int row )
+static short get_piece_value( position const& p, color::type c, int target, int col, int row )
 {
-	if( target >= pieces::pawn1 && target <= pieces::pawn8 ) {
-		piece const& pp = p.pieces[1-c][target];
+	short eval = 0;
+	switch( target ) {
+	case pieces::pawn1:
+	case pieces::pawn2:
+	case pieces::pawn3:
+	case pieces::pawn4:
+	case pieces::pawn5:
+	case pieces::pawn6:
+	case pieces::pawn7:
+	case pieces::pawn8:
+	{
+		piece const& pp = p.pieces[c][target];
 		if( pp.special ) {
-			unsigned short promoted = (p.promotions[1-c] >> ( 2 * (target - pieces::pawn1) ) ) & 0x03;
-			// Not implemented in evaluate
-//			if( promoted == promotions::knight ) {
-//				if( !col || col == 7 ) {
-//					eval -= special_values::knight_at_border;
-//				}
-//				if( !row || row == 7 ) {
-//					eval -= special_values::knight_at_border;
-//				}
-//			}
-			eval += promotion_values[ promoted ];
+			unsigned short promoted = (p.promotions[c] >> ( 2 * (target - pieces::pawn1) ) ) & 0x03;
+			switch( promoted ) {
+			case promotions::queen:
+				eval += queen_values[c][col][row];
+				break;
+			case promotions::rook:
+				eval += rook_values[c][col][row];
+				break;
+			case promotions::bishop:
+				eval += bishop_values[c][col][row];
+				break;
+			case promotions::knight:
+				eval += knight_values[c][col][row];
+				break;
+			}
 		}
 		else {
-			eval += pawn_values[1-c][col][row];
+			eval += pawn_values[c][col][row];
 		}
+		break;
 	}
-	else if( target == pieces::knight1 || target == pieces::knight2 ) {
-		if( !col || col == 7 ) {
-			eval -= special_values::knight_at_border;
-		}
-		if( !row || row == 7 ) {
-			eval -= special_values::knight_at_border;
-		}
-		eval += piece_values[ target ];
+	case pieces::king:
+		break;
+	case pieces::queen:
+		eval += queen_values[c][col][row];
+		break;
+	case pieces::rook1:
+	case pieces::rook2:
+		eval += rook_values[c][col][row];
+		break;
+	case pieces::bishop1:
+	case pieces::bishop2:
+		eval += bishop_values[c][col][row];
+		break;
+	case pieces::knight1:
+	case pieces::knight2:
+		eval += knight_values[c][col][row];
+		break;
 	}
-	else {
-		eval += piece_values[ target ];
-	}
+
+	return eval;
 }
 }
 
@@ -152,13 +276,24 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 	int target = p.board[m.target_col][m.target_row];
 	if( target != pieces::nil ) {
 		target &= 0x0f;
-		subtract_target( p, c, current_evaluation, target, m.target_col, m.target_row );
+		current_evaluation += get_piece_value( p, static_cast<color::type>(1-c), target, m.target_col, m.target_row );
+		if( target == pieces::bishop1 ) {
+			if( p.pieces[1-c][pieces::bishop2].alive ) {
+				current_evaluation += special_values::double_bishop;
+			}
+		}
+		else if( target == pieces::bishop2 ) {
+			if( p.pieces[1-c][pieces::bishop1].alive ) {
+				current_evaluation += special_values::double_bishop;
+			}
+		}
 	}
 
 	if( m.piece >= pieces::pawn1 && m.piece <= pieces::pawn8 ) {
 		piece const& pp = p.pieces[c][m.piece];
 		if( pp.special ) {
-			// Nothing changes
+			current_evaluation -= get_piece_value( p, c, m.piece, pp.column, pp.row );
+			current_evaluation += get_piece_value( p, c, m.piece, m.target_col, m.target_row );
 		}
 		else {
 			if( m.target_col != pp.column && target == pieces::nil ) {
@@ -169,7 +304,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 			}
 			else if( m.target_row == 0 || m.target_row == 7 ) {
 				current_evaluation -= pawn_values[c][pp.column][pp.row];
-				current_evaluation += promotion_values[promotions::queen];
+				current_evaluation += queen_values[c][m.target_col][m.target_row];
 			}
 			else {
 				current_evaluation -= pawn_values[c][pp.column][pp.row];
@@ -177,26 +312,25 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 			}
 		}
 	}
-	else if( m.piece == pieces::knight1 || m.piece == pieces::knight2 ) {
-		piece const& pp = p.pieces[c][m.piece];
-		if( !m.target_col || m.target_col == 7 ) {
-			current_evaluation -= special_values::knight_at_border;
-		}
-		else if( pp.column == 0 || pp.column == 7 ) {
-			current_evaluation += special_values::knight_at_border;
-		}
-		if( !m.target_row || m.target_row == 7 ) {
-			current_evaluation -= special_values::knight_at_border;
-		}
-		else if( pp.row == 0 || pp.row == 7 ) {
-			current_evaluation += special_values::knight_at_border;
-		}
-	}
 	else if( m.piece == pieces::king ) {
 		piece const& pp = p.pieces[c][m.piece];
-		if( (pp.column == m.target_col + 2) || (pp.column + 2 == m.target_col) ) {
+		if( pp.column == m.target_col + 2 ) {
+			// Queenside
 			current_evaluation += special_values::castled;
+			current_evaluation -= get_piece_value( p, c, pieces::rook1, 0, pp.row );
+			current_evaluation += get_piece_value( p, c, pieces::rook1, 3, m.target_row );
 		}
+		else if( pp.column + 2 == m.target_col ) {
+			// Kingside
+			current_evaluation += special_values::castled;
+			current_evaluation -= get_piece_value( p, c, pieces::rook2, 7, pp.row );
+			current_evaluation += get_piece_value( p, c, pieces::rook2, 5, m.target_row );
+		}
+	}
+	else {
+		piece const& pp = p.pieces[c][m.piece];
+		current_evaluation -= get_piece_value( p, c, m.piece, pp.column, pp.row );
+		current_evaluation += get_piece_value( p, c, m.piece, m.target_col, m.target_row );
 	}
 
 	return current_evaluation;
