@@ -76,6 +76,9 @@ struct move
 	bool operator!=( move const& rhs ) const {
 		return piece != rhs.piece || target_col != rhs.target_col || target_row != rhs.target_row;
 	}
+	bool operator==( move const& rhs ) const {
+		return piece == rhs.piece && target_col == rhs.target_col && target_row == rhs.target_row;
+	}
 };
 
 

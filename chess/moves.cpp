@@ -345,7 +345,6 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 						t &= 0x0f;
 						if( t == pieces::queen || t == pieces::rook1 || t == pieces::rook2 ) {
 							// Not a legal move unfortunately
-							std::cerr << "ENPASSANT SPECIAL" << std::endl;
 							return;
 						}
 						else if( t >= pieces::pawn1 && t <= pieces::pawn8 ) {
@@ -357,7 +356,6 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 							unsigned short promoted = (p.promotions[1-c] >> (2 * (t - pieces::pawn1) ) ) & 0x03;
 							if( promoted == promotions::queen || promoted == promotions::rook ) {
 								// Not a legal move unfortunately
-								std::cerr << "ENPASSANT SPECIAL" << std::endl;
 								return;
 							}
 						}

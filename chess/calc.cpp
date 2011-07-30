@@ -88,8 +88,6 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 		return current_evaluation;
 	}
 
-	short best_value = result::loss;
-
 	d.beta = beta;
 	d.alpha = alpha;
 	d.remaining_depth = limit - depth;
@@ -108,13 +106,10 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move );
 		short new_eval = evaluate_move( p, c, current_evaluation, d.best_move );
 		short value = -step( depth + 1, max_depth, new_pos, new_hash, -new_eval, captured, static_cast<color::type>(1-c), -beta, -alpha );
-		if( value > best_value ) {
+		if( value > alpha ) {
 
-			best_value = value;
+			alpha = value;
 
-			if( value > alpha ) {
-				alpha = value;
-			}
 			if( alpha >= beta ) {
 #ifdef USE_STATISTICS
 				++stats.evaluated_intermediate;
@@ -167,24 +162,38 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 
 	++depth;
 	
-	d.best_move = moves->m;
+	if( !got_old_best ) {
+		d.best_move = moves->m;
+	}
 
-	for( move_info const* it  = moves; it != pm; ++it ) {
+	for( move_info const* it = moves; it != pm; ++it ) {
+		if( got_old_best && d.best_move == it->m ) {
+			continue;
+		}
 		position new_pos = p;
 		bool captured = apply_move( new_pos, it->m, c );
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
-		short value = -step( depth, max_depth, new_pos, new_hash, -it->evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
-		if( value > best_value ) {
-			best_value = value;
+		short value;
+		if( got_old_best || it != moves ) {
+			value = -step( depth, max_depth, new_pos, new_hash, -it->evaluation, captured, static_cast<color::type>(1-c), -alpha-1, -alpha );
+			if( value > alpha ) {
+				value = -step( depth, max_depth, new_pos, new_hash, -it->evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+			}
+			else {
+				continue;
+			}
+		}
+		else {
+			value = -step( depth, max_depth, new_pos, new_hash, -it->evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+		}
+		if( value > alpha ) {
+			alpha = value;
 
 			d.best_move = it->m;
 
-			if( value > alpha ) {
-				alpha = value;
-			}
+			if( alpha >= beta )
+				break;
 		}
-		if( alpha >= beta )
-			break;
 	}
 
 	d.evaluation = alpha;
@@ -249,7 +258,16 @@ void processing_thread::onRun()
 	position new_pos = p_;
 	bool captured = apply_move( new_pos, m_.m, c_ );
 	unsigned long long hash = get_zobrist_hash( new_pos, static_cast<color::type>(1-c_) );
-	short value = -step( 1, max_depth_, new_pos, hash, -m_.evaluation, captured, static_cast<color::type>(1-c_), -beta_, -alpha_ );
+	short value;
+	if( alpha_ != result::loss ) {
+		value = -step( 1, max_depth_, new_pos, hash, -m_.evaluation, captured, static_cast<color::type>(1-c_), -alpha_-1, -alpha_ );
+		if( value > alpha_ ) {
+			value = -step( 1, max_depth_, new_pos, hash, -m_.evaluation, captured, static_cast<color::type>(1-c_), -beta_, -alpha_ );
+		}
+	}
+	else {
+		value = -step( 1, max_depth_, new_pos, hash, -m_.evaluation, captured, static_cast<color::type>(1-c_), -beta_, -alpha_ );
+	}
 
 	scoped_lock l( mutex_ );
 	result_ = value;
