@@ -63,7 +63,7 @@ void auto_play( int argc, char const* argv[] )
 			std::cout << std::setw(3) << i << ".";
 		}
 
-		std::cout << " " << move_to_string(p, c, m);
+		std::cout << " " << move_to_string(p, c, m) << std::endl;
 
 		if( c == color::black ) {
 			++i;
@@ -79,7 +79,7 @@ void auto_play( int argc, char const* argv[] )
 		}
 		apply_move( p, m, c );
 		int ev = evaluate( p, color::white );
-		std::cout << "  ; Evaluation (for white): " << ev << " centipawns";
+		std::cerr << "Evaluation (for white): " << ev << " centipawns" << std::endl;
 
 		c = static_cast<color::type>(1-c);
 	}

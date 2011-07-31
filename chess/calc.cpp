@@ -63,11 +63,13 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 //#endif
 //			return result::win - depth - 1;
 //		}
-		else if( (limit - depth) <= d.remaining_depth && alpha >= d.alpha && beta <= d.beta ) {
+		else if( (limit - depth) <= d.remaining_depth ) {
+			if( alpha >= d.alpha && beta <= d.beta ) {
 #if USE_STATISTICS
-			++stats.transposition_table_cutoffs;
+				++stats.transposition_table_cutoffs;
 #endif
-			return d.evaluation	;
+				return d.evaluation;
+			}
 		}
 		got_old_best = true;
 
@@ -359,9 +361,13 @@ bool calc( position& p, color::type c, move& m, int& res )
 		threads.push_back( new processing_thread( mtx, cond ) );
 	}
 
+	unsigned long long previous_loop_duration = 0;
+
 	short alpha_at_prev_depth = result::loss;
 	for( int max_depth = 2 + (MAX_DEPTH % 2); max_depth <= MAX_DEPTH; max_depth += 2 )
 	{
+		unsigned long long loop_start = start;
+
 		short alpha = result::loss;
 		short beta = result::win;
 
@@ -450,8 +456,15 @@ break2:
 		if( abort ) {
 			break;
 		}
-	}
 
+		unsigned long long loop_duration = get_time() - loop_start;
+		if( previous_loop_duration ) {
+			unsigned long long depth_factor = loop_duration / previous_loop_duration;
+			//std::cerr << "Search depth increment time factor is " << depth_factor << std::endl;
+		}
+		previous_loop_duration = loop_duration;
+
+	}
 	m = old_sorted.begin()->second.m;
 
 	unsigned long long stop = get_time();
