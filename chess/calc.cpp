@@ -271,7 +271,6 @@ void processing_thread::onRun()
 		short alpha = std::max( alpha_, static_cast<short>(alpha_at_prev_depth_ - ASPIRATION) );
 		short beta = std::min( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
-
 		value = -step( 1, max_depth_, new_pos, hash, -m_.evaluation, captured, static_cast<color::type>(1-c_), -beta, -alpha );
 		if( value > alpha && value < beta ) {
 			// Aspiration search found something sensible
@@ -297,6 +296,16 @@ void processing_thread::onRun()
 	result_ = value;
 	finished_ = true;
 	cond_.signal( l );
+}
+
+typedef std::vector<std::pair<short, move_info> > sorted_moves;
+void insert_sorted( sorted_moves& moves, int forecast, move_info const& m )
+{
+	sorted_moves::iterator it = moves.begin();
+	while( it != moves.end() && it->first >= forecast ) {
+		++it;
+	}
+	moves.insert( it, std::make_pair(forecast, m ) );
 }
 
 bool calc( position& p, color::type c, move& m, int& res )
@@ -343,10 +352,9 @@ bool calc( position& p, color::type c, move& m, int& res )
 
 	// Go through them sorted by previous evaluation. This way, if on time pressure,
 	// we can abort processing at high depths early if needed.
-	typedef std::multimap<short, move_info> sorted_moves;
 	sorted_moves old_sorted;
-	for( move_info const* it  = moves; it != pm; ++it ) {
-		old_sorted.insert( std::make_pair( it - moves, *it ) );
+	for( move_info const* it = moves; it != pm; ++it ) {
+		insert_sorted( old_sorted, pm - it, *it );
 	}
 
 	unsigned long long start = get_time();
@@ -429,7 +437,7 @@ break2:
 					alpha = value;
 				}
 
-				sorted.insert( std::make_pair( -value, threads[t]->get_move() ) );
+				insert_sorted( sorted, value, threads[t]->get_move() );
 			}
 
 			if( it == old_sorted.end() && all_idle ) {
@@ -465,6 +473,12 @@ break2:
 		previous_loop_duration = loop_duration;
 
 	}
+
+	std::cerr << "Candidates: " << std::endl;
+	for( sorted_moves::const_iterator it = old_sorted.begin(); it != old_sorted.end(); ++it ) {
+		std::cerr << move_to_string( p, c, it->second.m ) << " " << it->first << std::endl;
+	}
+
 	m = old_sorted.begin()->second.m;
 
 	unsigned long long stop = get_time();
