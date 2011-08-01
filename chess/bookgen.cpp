@@ -74,8 +74,12 @@ struct work {
 };
 
 struct worklist {
+	bool empty() const { return !count; }
+
 	std::vector<work> work_at_depth[MAX_BOOK_DEPTH];
 	int next_work;
+
+	int count;
 };
 
 
@@ -92,7 +96,7 @@ void get_work( worklist& wl, int max_depth, int max_width, int depth, unsigned l
 
 		if( !it->next_index ) {
 
-			if( added_at_pos < (moves.size() + 1) ) {
+			if( added_at_pos < std::min(5, static_cast<int>(moves.size()/5 + 1)) ) {
 				++added_at_pos;
 				work w;
 				w.depth = depth;
@@ -101,6 +105,7 @@ void get_work( worklist& wl, int max_depth, int max_width, int depth, unsigned l
 				w.p = new_pos;
 				w.c = static_cast<color::type>(1-c);
 				wl.work_at_depth[depth].push_back(w);
+				++wl.count;
 			}
 		}
 		else {
@@ -116,6 +121,7 @@ void get_work( worklist& wl, int max_depth, int max_width, int depth, unsigned l
 void get_work( worklist& wl, int max_depth, int max_width )
 {
 	wl.next_work = 0;
+	wl.count = 0;
 
 	position p;
 	init_board( p );
@@ -134,7 +140,7 @@ bool get_next( worklist& wl, work& w )
 			if( ++wl.next_work == MAX_BOOK_DEPTH ) {
 				wl.next_work = 0;
 			}
-
+			--wl.count;
 			return true;
 		}
 		if( ++i == MAX_BOOK_DEPTH ) {
@@ -149,7 +155,7 @@ bool get_next( worklist& wl, work& w )
 		if( ++wl.next_work == MAX_BOOK_DEPTH ) {
 			wl.next_work = 0;
 		}
-
+		--wl.count;
 		return true;
 	}
 
@@ -162,6 +168,48 @@ volatile bool stop = false;
 extern "C" void on_signal(int)
 {
 	stop = true;
+}
+
+namespace {
+class processing_thread : public thread
+{
+public:
+	processing_thread( mutex& mtx, condition& cond )
+		: mutex_(mtx), cond_(cond), finished_()
+	{
+	}
+
+	// Call locked
+	bool finished() {
+		return finished_;
+	}
+
+	void process( work const& w )
+	{
+		w_ = w;
+		finished_ = false;
+
+		spawn();
+	}
+
+	virtual void onRun();
+private:
+	mutex& mutex_;
+	condition& cond_;
+
+	work w_;
+	bool finished_;
+};
+
+void processing_thread::onRun()
+{
+	unsigned long long index = calculate_position( w_.p, w_.c, w_.depth );
+	book_update_move( w_.index, w_.move_index, index );
+
+	scoped_lock l(mutex_);
+	finished_ = true;
+	cond_.signal(l);
+}
 }
 
 int main( int argc, char const* argv[] )
@@ -190,27 +238,95 @@ int main( int argc, char const* argv[] )
 		init_book();
 	}
 
-	int max_depth = 4;
+	int max_depth = std::min(4, MAX_BOOK_DEPTH);
 	int max_width = 2;
 
-	while( !stop ) {
+	mutex mtx;
+	condition cond;
 
-		worklist wl;
-		get_work( wl, max_depth, max_width );
+	std::vector<processing_thread*> threads;
+	int thread_count = 6;
+	for( int t = 0; t < thread_count; ++t ) {
+		threads.push_back( new processing_thread( mtx, cond ) );
+	}
 
-		work w;
-		while( !stop && get_next( wl, w ) ) {
-			unsigned long long index = calculate_position( w.p, w.c, w.depth );
-			book_update_move( w.index, w.move_index, index );
+	worklist wl;
+	wl.count = 0;
+
+	scoped_lock l(mtx);
+
+	bool all_idle = true;
+
+	unsigned long long start = get_time();
+	unsigned long long calculated = 0;
+
+	while( true ) {
+
+		while( !stop ) {
+
+			while( wl.empty() ) {
+				get_work( wl, max_depth, max_width );
+				if( wl.empty() ) {
+					if( max_depth < MAX_BOOK_DEPTH ) {
+						++max_depth;
+					}
+					else {
+						break;
+					}
+				}
+				else {
+					std::cerr << "Created worklist with " << wl.count << " positions to evaluate" << std::endl;
+				}
+			}
+
+			int t;
+			for( t = 0; t < thread_count; ++t ) {
+				if( threads[t]->spawned() ) {
+					continue;
+				}
+
+				work w;
+				get_next( wl, w );
+				threads[t]->process( w );
+				all_idle = false;
+				break;
+			}
+
+			if( t == thread_count ) {
+				break;
+			}
 		}
-
-		if( max_depth < MAX_BOOK_DEPTH  ) {
-			++max_depth;
-		}
-		else {
-			std::cerr << "All done" << std::endl;
+		if( all_idle ) {
 			break;
 		}
+
+		cond.wait( l );
+
+		bool all_idle = true;
+		for( int t = 0; t < thread_count; ++t ) {
+			if( !threads[t]->spawned() ) {
+				continue;
+			}
+
+			if( !threads[t]->finished() ) {
+				all_idle = false;
+				continue;
+			}
+
+			threads[t]->join();
+
+			++calculated;
+			unsigned long long now = get_time();
+			std::cerr << "Remaining work " << wl.count << " being processed with " << (calculated * 3600 * 1000) / (now - start) << " moves/hour" << std::endl;
+		}
+
+		if( all_idle && stop ) {
+			break;
+		}
+	}
+
+	if( !stop ) {
+		std::cerr << "All done" << std::endl;
 	}
 
 	return 0;

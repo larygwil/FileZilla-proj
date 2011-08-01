@@ -1,4 +1,5 @@
 #include "book.hpp"
+#include "platform.hpp"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -6,7 +7,10 @@
 int fd = -1;
 int fd_index = -1;
 
-void close_book()
+mutex mtx;
+
+namespace {
+static void close_book_impl()
 {
 	if( fd != -1 ) {
 		close(fd);
@@ -18,23 +22,33 @@ void close_book()
 		fd_index = -1;
 	}
 }
+}
+
+
+void close_book()
+{
+	scoped_lock l(mtx);
+	close_book_impl();
+}
 
 
 bool open_book( std::string const& book_dir )
 {
-	close_book();
+	scoped_lock l(mtx);
+	close_book_impl();
 	fd = open( (book_dir + "opening_book/book").c_str(), O_RDWR );
 	fd_index = open( (book_dir + "opening_book/book_index").c_str(), O_RDWR );
 
 	if( fd == -1 || fd_index == -1 ) {
-		close_book();
+		close_book_impl();
 		return false;
 	}
 
 	return true;
 }
 
-unsigned long long get_offset( unsigned long long index )
+namespace {
+static unsigned long long get_offset_impl( unsigned long long index )
 {
 	lseek( fd_index, index * sizeof(unsigned long long), SEEK_SET );
 	unsigned long long offset = 0;
@@ -42,10 +56,19 @@ unsigned long long get_offset( unsigned long long index )
 
 	return offset;
 }
+}
+
+unsigned long long get_offset( unsigned long long index )
+{
+	scoped_lock l(mtx);
+	return get_offset_impl( index );
+}
 
 book_entry get_entries( unsigned long long index, std::vector<move_entry>& moves )
 {
-	unsigned long long offset = get_offset(index);
+	scoped_lock l(mtx);
+
+	unsigned long long offset = get_offset_impl(index);
 
 	lseek( fd, offset, SEEK_SET );
 
@@ -67,6 +90,8 @@ book_entry get_entries( unsigned long long index, std::vector<move_entry>& moves
 
 unsigned long long book_add_entry( book_entry const& b, std::vector<std::pair<short, move> > const& moves )
 {
+	scoped_lock l(mtx);
+
 	unsigned long long index = lseek( fd_index, 0, SEEK_END ) / sizeof(unsigned long long);
 	unsigned long long offset = lseek( fd, 0, SEEK_END );
 
@@ -94,13 +119,17 @@ unsigned long long book_add_entry( book_entry const& b, std::vector<std::pair<sh
 
 bool needs_init()
 {
+	scoped_lock l(mtx);
+
 	unsigned long long index = lseek( fd_index, 0, SEEK_END ) / sizeof(unsigned long long);
 	return index == 0;
 }
 
 void book_update_move( unsigned long long index, int move_index, unsigned long long new_index )
 {
-	unsigned long long offset = get_offset( index );
+	scoped_lock l(mtx);
+
+	unsigned long long offset = get_offset_impl( index );
 	offset += sizeof(book_entry);
 	offset += sizeof(move_entry) * move_index;
 	offset += sizeof(move);
