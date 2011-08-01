@@ -13,7 +13,7 @@ struct step_data {
 	move best_move;
 	short alpha;
 	short beta;
-};// __attribute__((__packed__));
+} __attribute__((__packed__));
 
 bool calc( position& p, color::type c, move& m, int& res, int time_limit );
 short step( int depth, int const max_depth, position const& p, unsigned long long hash, int current_evaluation, bool captured, color::type c, short alpha, short beta );
