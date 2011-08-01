@@ -23,8 +23,8 @@ void close_book()
 bool open_book( std::string const& book_dir )
 {
 	close_book();
-	fd = open( (book_dir + "book").c_str(), O_RDWR );
-	fd_index = open( (book_dir + "book_index").c_str(), O_RDWR );
+	fd = open( (book_dir + "opening_book/book").c_str(), O_RDWR );
+	fd_index = open( (book_dir + "opening_book/book_index").c_str(), O_RDWR );
 
 	if( fd == -1 || fd_index == -1 ) {
 		close_book();

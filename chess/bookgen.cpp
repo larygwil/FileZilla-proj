@@ -181,7 +181,10 @@ int main( int argc, char const* argv[] )
 
 	init_hash( 2048+1024, sizeof(step_data) );
 
-	open_book( book_dir );
+	if( !open_book( book_dir ) ) {
+		std::cerr << "Cound not open opening book" << std::endl;
+		return 1;
+	}
 
 	if( needs_init() ) {
 		init_book();
