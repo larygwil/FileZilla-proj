@@ -362,7 +362,7 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 	return alpha;
 }
 
-
+namespace {
 class processing_thread : public thread
 {
 public:
@@ -413,6 +413,7 @@ private:
 	bool finished_;
 	short result_;
 };
+}
 
 
 void processing_thread::onRun()
@@ -544,12 +545,6 @@ bool calc( position& p, color::type c, move& m, int& res, int time_limit )
 		bool abort = false;
 		bool done = false;
 		while( !done ) {
-			unsigned long long now = get_time();
-			if( time_limit > 0 && (now - start) > time_limit ) {
-				std::cerr << "Triggering search abort due to time limit at depth " << max_depth << std::endl;
-				abort = true;
-			}
-
 			while( it != old_sorted.end() && !abort ) {
 				int t;
 				for( t = 0; t < thread_count; ++t ) {
@@ -575,6 +570,12 @@ break2:
 			scoped_lock l( mtx );
 			cond.wait( l );
 
+			unsigned long long now = get_time();
+			if( !abort && time_limit > 0 && (now - start) > time_limit ) {
+				std::cerr << "Triggering search abort due to time limit at depth " << max_depth << std::endl;
+				abort = true;
+			}
+
 			bool all_idle = true;
 			for( int t = 0; t < thread_count; ++t ) {
 				if( !threads[t]->spawned() ) {
@@ -596,8 +597,13 @@ break2:
 				insert_sorted( sorted, value, threads[t]->get_move() );
 			}
 
-			if( it == old_sorted.end() && all_idle ) {
-				done = true;
+			if( all_idle ) {
+				if( it == old_sorted.end() ) {
+					done = true;
+				}
+				else if( abort ) {
+					done = true;
+				}
 			}
 		}
 		if( abort ) {
