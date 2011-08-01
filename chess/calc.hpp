@@ -9,7 +9,6 @@ int const QUIESCENCE_SEARCH = 5;
 
 struct step_data {
 	short evaluation;
-	char remaining_depth; // -127 on terminal position
 	move best_move;
 	short alpha;
 	short beta;

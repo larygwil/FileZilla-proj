@@ -23,7 +23,7 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 	step_data d;
 
 	if( hash && lookup( hash, reinterpret_cast<unsigned char * const>(&d) ) ) {
-		if( d.remaining_depth == -127 ) {
+		if( d.best_move.other == 31 ) {
 			if( d.evaluation == result::loss ) {
 #if USE_STATISTICS
 				++stats.transposition_table_cutoffs;
@@ -43,7 +43,7 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 				return result::draw;
 			}
 		}
-		else if( max_depth - depth - 1 >= d.remaining_depth ) {
+		else if( max_depth - depth - 1 >= d.best_move.other - 16 ) {
 			if( alpha >= d.alpha && beta <= d.beta ) {
 #if USE_STATISTICS
 				++stats.transposition_table_cutoffs;
@@ -66,7 +66,6 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 
 	d.beta = beta;
 	d.alpha = alpha;
-	d.remaining_depth = max_depth - depth - 1;
 
 	bool got_quiet_move = false;
 
@@ -104,10 +103,11 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 				++stats.evaluated_intermediate;
 #endif
 				d.evaluation = alpha;
+				d.best_move.other = max_depth - depth - 1 + 16;
 				store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 				return alpha;
 			}
-			}
+		}
 	}
 
 	move_info moves[200];
@@ -115,9 +115,9 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 	calculate_moves( p, c, current_evaluation, pm, check );
 
 	if( pm == moves ) {
-		ASSERT( !got_old_best || d.remaining_depth == -127 );
+		ASSERT( !got_old_best || d.best_move.other == 31 );
 		if( check.check ) {
-			d.remaining_depth = -127;
+			d.best_move.other = 31;
 			d.evaluation = result::loss;
 			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 #ifdef USE_STATISTICS
@@ -126,7 +126,7 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 			return result::loss + depth;
 		}
 		else {
-			d.remaining_depth = -127;
+			d.best_move.other = 31;
 			d.evaluation = result::draw;
 			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 #ifdef USE_STATISTICS
@@ -148,11 +148,11 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 	++stats.evaluated_intermediate;
 #endif
 
-	++depth;
-
 	if( !got_old_best ) {
 		d.best_move = moves->m;
 	}
+
+	++depth;
 
 	for( move_info const* it = moves; it != pm; ++it ) {
 		if( got_old_best && d.best_move == it->m ) {
@@ -199,6 +199,7 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 	}
 
 	d.evaluation = alpha;
+	d.best_move.other = d.best_move.other = max_depth - depth - 1 + 17;
 	store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 
 	return alpha;
@@ -222,7 +223,7 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 	step_data d;
 
 	if( hash && lookup( hash, reinterpret_cast<unsigned char * const>(&d) ) ) {
-		if( d.remaining_depth == -127 ) {
+		if( d.best_move.other == 31 ) {
 			if( d.evaluation == result::loss ) {
 #if USE_STATISTICS
 				++stats.transposition_table_cutoffs;
@@ -242,7 +243,7 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 				return result::draw;
 			}
 		}
-		else if( (limit - depth) <= d.remaining_depth ) {
+		else if( (limit - depth) <= d.best_move.other - 16 ) {
 			if( alpha >= d.alpha && beta <= d.beta ) {
 #if USE_STATISTICS
 				++stats.transposition_table_cutoffs;
@@ -264,10 +265,8 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 
 	d.beta = beta;
 	d.alpha = alpha;
-	d.remaining_depth = limit - depth;
 
 	if( got_old_best ) {
-
 		position new_pos = p;
 		bool captured = apply_move( new_pos, d.best_move, c );
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move );
@@ -282,6 +281,7 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 				++stats.evaluated_intermediate;
 #endif
 				d.evaluation = alpha;
+				d.best_move.other = limit - depth + 16;
 				store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 				return alpha;
 			}
@@ -296,7 +296,7 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 	if( pm == moves ) {
 		ASSERT( !got_old_best || d.remaining_depth == -127 );
 		if( check.check ) {
-			d.remaining_depth = -127;
+			d.best_move.other = 31;
 			d.evaluation = result::loss;
 			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 #ifdef USE_STATISTICS
@@ -305,7 +305,7 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 			return result::loss + depth;
 		}
 		else {
-			d.remaining_depth = -127;
+			d.best_move.other = 31;
 			d.evaluation = result::draw;
 			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 #ifdef USE_STATISTICS
@@ -320,11 +320,11 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 	++stats.evaluated_intermediate;
 #endif
 
-	++depth;
-	
 	if( !got_old_best ) {
 		d.best_move = moves->m;
 	}
+
+	++depth;
 
 	for( move_info const* it = moves; it != pm; ++it ) {
 		if( got_old_best && d.best_move == it->m ) {
@@ -356,6 +356,7 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 		}
 	}
 
+	d.best_move.other = limit - depth + 17;
 	d.evaluation = alpha;
 	store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 

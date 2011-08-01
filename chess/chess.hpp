@@ -56,7 +56,7 @@ struct position_base
 	unsigned short promotions[2];
 
 	unsigned char can_en_passant; // Piece of last-moved player that can be en-passanted
-};
+} __attribute__((__packed__));
 
 
 struct position : public position_base
@@ -64,7 +64,7 @@ struct position : public position_base
 	// board[column][row] as piece indexes in lower 4 bits, color in 5th bit.
 	// nil if square is empty.
 	unsigned char board[8][8];
-};
+} __attribute__((__packed__));
 
 
 struct move
