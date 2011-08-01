@@ -13,7 +13,7 @@ static hash_key lockBlockSize_ = 0;
 static unsigned char* data_ = 0;
 
 #define RWLOCKS 70000
-static rwlock rwl[RWLOCKS];
+static rwlock rwl[RWLOCKS + 1];
 }
 
 void init_hash( unsigned int max_size, unsigned int itemSize )
@@ -32,7 +32,7 @@ void init_hash( unsigned int max_size, unsigned int itemSize )
 	data_ = new unsigned char[size_];
 	memset( data_, 0, size_ );
 
-	for( int i = 0; i < RWLOCKS; ++i ) {
+	for( int i = 0; i < RWLOCKS + 1; ++i ) {
 		init_rw_lock( rwl[i] );
 	}
 }

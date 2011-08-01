@@ -13,19 +13,11 @@
 #include <string>
 #include <map>
 
-int const MAX_DEPTH = 9;
 short const ASPIRATION = 40;
 
-short step( int depth, int const max_depth, position const& p, unsigned long long hash, int current_evaluation, bool captured, color::type c, short alpha, short beta )
+short quiescence_search( int depth, int const max_depth, position const& p, unsigned long long hash, int current_evaluation, check_map const& check, color::type c, short alpha, short beta )
 {
-#if USE_QUIESCENCE
-	int limit = max_depth;
-	if( depth >= max_depth && captured ) {
-		limit = max_depth + 1;
-	}
-#else
-	int const limit = max_depth;
-#endif
+	int const limit = max_depth + QUIESCENCE_SEARCH;
 
 	bool got_old_best = false;
 	step_data d;
@@ -51,18 +43,205 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 				return result::draw;
 			}
 		}
-//		else if( d.evaluation < result::loss_threshold ) {
-//#if USE_STATISTICS
-//			++stats.transposition_table_cutoffs;
-//#endif
-//			return result::loss + depth + 1;
-//		}
-//		else if( d.evaluation > result::win_threshold ) {
-//#if USE_STATISTICS
-//			++stats.transposition_table_cutoffs;
-//#endif
-//			return result::win - depth - 1;
-//		}
+		else if( max_depth - depth - 1 >= d.remaining_depth ) {
+			if( alpha >= d.alpha && beta <= d.beta ) {
+#if USE_STATISTICS
+				++stats.transposition_table_cutoffs;
+#endif
+				return d.evaluation;
+			}
+		}
+		got_old_best = true;
+
+		// TODO: Does this have to be cached?
+	}
+
+	if( depth >= limit && !check.check )
+	{
+#ifdef USE_STATISTICS
+		++stats.evaluated_leaves;
+#endif
+		return current_evaluation;
+	}
+
+	d.beta = beta;
+	d.alpha = alpha;
+	d.remaining_depth = max_depth - depth - 1;
+
+	bool got_quiet_move = false;
+
+	if( got_old_best ) {
+		// Not a terminal node, do this check early:
+		if( depth >= limit ) {
+	#ifdef USE_STATISTICS
+			++stats.evaluated_leaves;
+	#endif
+			return current_evaluation;
+		}
+
+		position new_pos = p;
+		bool captured = apply_move( new_pos, d.best_move, c );
+		check_map new_check;
+		calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
+		short new_eval = evaluate_move( p, c, current_evaluation, d.best_move );
+
+		short value;
+		if( captured || new_check.check ) {
+
+			unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move );
+			value = -quiescence_search( depth + 1, max_depth, new_pos, new_hash, -new_eval, new_check, static_cast<color::type>(1-c), -beta, -alpha );
+		}
+		else {
+			got_quiet_move = true;
+			value = new_eval;
+		}
+		if( value > alpha ) {
+
+			alpha = value;
+
+			if( alpha >= beta ) {
+#ifdef USE_STATISTICS
+				++stats.evaluated_intermediate;
+#endif
+				d.evaluation = alpha;
+				store( hash, reinterpret_cast<unsigned char const* const>(&d) );
+				return alpha;
+			}
+			}
+	}
+
+	move_info moves[200];
+	move_info* pm = moves;
+	calculate_moves( p, c, current_evaluation, pm, check );
+
+	if( pm == moves ) {
+		ASSERT( !got_old_best || d.remaining_depth == -127 );
+		if( check.check ) {
+			d.remaining_depth = -127;
+			d.evaluation = result::loss;
+			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
+#ifdef USE_STATISTICS
+			++stats.evaluated_leaves;
+#endif
+			return result::loss + depth;
+		}
+		else {
+			d.remaining_depth = -127;
+			d.evaluation = result::draw;
+			store( hash, reinterpret_cast<unsigned char const* const>(&d) );
+#ifdef USE_STATISTICS
+			++stats.evaluated_leaves;
+#endif
+			return result::draw;
+		}
+	}
+
+	if( depth >= limit ) {
+#ifdef USE_STATISTICS
+		++stats.evaluated_leaves;
+#endif
+		return current_evaluation;
+	}
+
+
+#ifdef USE_STATISTICS
+	++stats.evaluated_intermediate;
+#endif
+
+	++depth;
+
+	if( !got_old_best ) {
+		d.best_move = moves->m;
+	}
+
+	for( move_info const* it = moves; it != pm; ++it ) {
+		if( got_old_best && d.best_move == it->m ) {
+			continue;
+		}
+		position new_pos = p;
+		bool captured = apply_move( new_pos, it->m, c );
+		check_map new_check;
+		calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
+		short value;
+
+		if( !captured && !new_check.check ) {// && depth != max_depth  ) {
+			value = it->evaluation;
+			got_quiet_move = true;
+		}
+		else {
+			unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
+			if( got_old_best || it != moves ) {
+				value = -quiescence_search( depth, max_depth, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -alpha-1, -alpha );
+				if( value > alpha ) {
+					value = -quiescence_search( depth, max_depth, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
+				}
+				else {
+					continue;
+				}
+			}
+			else {
+				value = -quiescence_search( depth, max_depth, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
+			}
+		}
+		if( value > alpha ) {
+			alpha = value;
+
+			d.best_move = it->m;
+
+			if( alpha >= beta )
+				break;
+		}
+	}
+
+	if( !check.check && current_evaluation > alpha && got_quiet_move ) {
+		// Avoid capture line
+		alpha = current_evaluation;
+	}
+
+	d.evaluation = alpha;
+	store( hash, reinterpret_cast<unsigned char const* const>(&d) );
+
+	return alpha;
+}
+
+
+short quiescence_search( int depth, int const max_depth, position const& p, unsigned long long hash, int current_evaluation, bool captured, color::type c, short alpha, short beta )
+{
+	check_map check;
+	calc_check_map( p, c, check );
+
+	return quiescence_search( depth, max_depth, p, hash, current_evaluation, check, c, alpha, beta );
+}
+
+
+short step( int depth, int const max_depth, position const& p, unsigned long long hash, int current_evaluation, bool captured, color::type c, short alpha, short beta )
+{
+	int const limit = max_depth;
+
+	bool got_old_best = false;
+	step_data d;
+
+	if( hash && lookup( hash, reinterpret_cast<unsigned char * const>(&d) ) ) {
+		if( d.remaining_depth == -127 ) {
+			if( d.evaluation == result::loss ) {
+#if USE_STATISTICS
+				++stats.transposition_table_cutoffs;
+#endif
+				return result::loss + depth;
+			}
+			else if( d.evaluation == result::win ) {
+#if USE_STATISTICS
+				++stats.transposition_table_cutoffs;
+#endif
+				return result::win - depth;
+			}
+			else {
+#if USE_STATISTICS
+				++stats.transposition_table_cutoffs;
+#endif
+				return result::draw;
+			}
+		}
 		else if( (limit - depth) <= d.remaining_depth ) {
 			if( alpha >= d.alpha && beta <= d.beta ) {
 #if USE_STATISTICS
@@ -79,16 +258,8 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 	check_map check;
 	calc_check_map( p, c, check );
 
-#if USE_QUIESCENCE
-	if( depth >= limit && !check.check )
-#else
-	if( depth >= max_depth && !check.check )
-#endif
-	{
-#ifdef USE_STATISTICS
-		++stats.evaluated_leaves;
-#endif
-		return current_evaluation;
+	if( depth >= limit ) {
+		return quiescence_search( depth, max_depth, p, hash, current_evaluation, captured, c, alpha, beta );
 	}
 
 	d.beta = beta;
@@ -96,13 +267,6 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 	d.remaining_depth = limit - depth;
 
 	if( got_old_best ) {
-		// Not a terminal node, do this check early:
-		if( depth >= limit ) {
-	#ifdef USE_STATISTICS
-			++stats.evaluated_leaves;
-	#endif
-			return current_evaluation;
-		}
 
 		position new_pos = p;
 		bool captured = apply_move( new_pos, d.best_move, c );
@@ -149,13 +313,6 @@ short step( int depth, int const max_depth, position const& p, unsigned long lon
 #endif
 			return result::draw;
 		}
-	}
-
-	if( depth >= limit ) {
-#ifdef USE_STATISTICS
-		++stats.evaluated_leaves;
-#endif
-		return current_evaluation;
 	}
 
 	
@@ -308,7 +465,7 @@ void insert_sorted( sorted_moves& moves, int forecast, move_info const& m )
 	moves.insert( it, std::make_pair(forecast, m ) );
 }
 
-bool calc( position& p, color::type c, move& m, int& res )
+bool calc( position& p, color::type c, move& m, int& res, int time_limit )
 {
 	check_map check;
 	calc_check_map( p, c, check );
@@ -353,8 +510,8 @@ bool calc( position& p, color::type c, move& m, int& res )
 	// Go through them sorted by previous evaluation. This way, if on time pressure,
 	// we can abort processing at high depths early if needed.
 	sorted_moves old_sorted;
-	for( move_info const* it = moves; it != pm; ++it ) {
-		insert_sorted( old_sorted, pm - it, *it );
+	for( move_info const* it  = moves; it != pm; ++it ) {
+		insert_sorted( old_sorted, it - moves, *it );
 	}
 
 	unsigned long long start = get_time();
@@ -388,10 +545,9 @@ bool calc( position& p, color::type c, move& m, int& res )
 		bool done = false;
 		while( !done ) {
 			unsigned long long now = get_time();
-			if( (now - start) > 30000 ) {
+			if( time_limit > 0 && (now - start) > time_limit ) {
 				std::cerr << "Triggering search abort due to time limit at depth " << max_depth << std::endl;
 				abort = true;
-				break;
 			}
 
 			while( it != old_sorted.end() && !abort ) {
@@ -484,6 +640,10 @@ break2:
 	unsigned long long stop = get_time();
 	print_stats( start, stop );
 	reset_stats();
+
+	for( std::vector<processing_thread*>::iterator it = threads.begin(); it != threads.end(); ++it ) {
+		delete *it;
+	}
 
 	return true;
 }

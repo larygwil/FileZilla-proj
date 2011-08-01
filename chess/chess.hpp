@@ -72,6 +72,7 @@ struct move
 	unsigned char piece : 4;
 	unsigned char target_col : 3;
 	unsigned char target_row : 3;
+	unsigned char other : 5;
 
 	bool operator!=( move const& rhs ) const {
 		return piece != rhs.piece || target_col != rhs.target_col || target_row != rhs.target_row;

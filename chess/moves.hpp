@@ -10,6 +10,6 @@ struct move_info {
 	unsigned char random; // A bit of random to randomly sort equally likely moves
 };
 
-void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check );
+void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, bool const captures_only = false );
 
 #endif

@@ -60,7 +60,7 @@ void add_if_legal_king( position const& p, color::type c, int const current_eval
 }
 
 
-void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, signed char cx, signed char cy )
+void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, signed char cx, signed char cy, bool const captures_only )
 {
 	piece const& pp = p.pieces[c][pieces::king];
 	if( cx < 0 && pp.column < 1 ) {
@@ -93,47 +93,52 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 			return;
 		}
 	}
+	else if( captures_only) {
+		return;
+	}
 
 	add_if_legal_king( p, c, current_evaluation, moves, new_col, new_row );
 }
 
-void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, bool const captures_only )
 {
 	piece const& pp = p.pieces[c][pieces::king];
 
-	calc_moves_king( p, c, current_evaluation, moves, check, 1, 0 );
-	calc_moves_king( p, c, current_evaluation, moves, check, 1, -1 );
-	calc_moves_king( p, c, current_evaluation, moves, check, 0, -1 );
-	calc_moves_king( p, c, current_evaluation, moves, check, -1, -1 );
-	calc_moves_king( p, c, current_evaluation, moves, check, -1, 0 );
-	calc_moves_king( p, c, current_evaluation, moves, check, -1, 1 );
-	calc_moves_king( p, c, current_evaluation, moves, check, 0, 1 );
-	calc_moves_king( p, c, current_evaluation, moves, check, 1, 1 );
+	calc_moves_king( p, c, current_evaluation, moves, check, 1, 0, captures_only );
+	calc_moves_king( p, c, current_evaluation, moves, check, 1, -1, captures_only );
+	calc_moves_king( p, c, current_evaluation, moves, check, 0, -1, captures_only );
+	calc_moves_king( p, c, current_evaluation, moves, check, -1, -1, captures_only );
+	calc_moves_king( p, c, current_evaluation, moves, check, -1, 0, captures_only );
+	calc_moves_king( p, c, current_evaluation, moves, check, -1, 1, captures_only );
+	calc_moves_king( p, c, current_evaluation, moves, check, 0, 1, captures_only );
+	calc_moves_king( p, c, current_evaluation, moves, check, 1, 1, captures_only );
 
 	if( check.check ) {
 		return;
 	}
 
-// Queenside castling
-	if( p.pieces[c][pieces::rook1].special ) {
-		if( p.board[1][pp.row] == pieces::nil && p.board[2][pp.row] == pieces::nil && p.board[3][pp.row] == pieces::nil ) {
-			if( !detect_check( p, c, 3, pp.row, 3, pp.row ) ) {
-				add_if_legal_king( p, c, current_evaluation, moves, 2, pp.row );
+	// Queenside castling
+	if( !captures_only ) {
+		if( p.pieces[c][pieces::rook1].special ) {
+			if( p.board[1][pp.row] == pieces::nil && p.board[2][pp.row] == pieces::nil && p.board[3][pp.row] == pieces::nil ) {
+				if( !detect_check( p, c, 3, pp.row, 3, pp.row ) ) {
+					add_if_legal_king( p, c, current_evaluation, moves, 2, pp.row );
+				}
 			}
 		}
-	}
-	// Kingside castling
-	if( p.pieces[c][pieces::rook2].special ) {
-		if( p.board[5][pp.row] == pieces::nil && p.board[6][pp.row] == pieces::nil ) {
-			if( !detect_check( p, c, 5, pp.row, 5, pp.row ) ) {
-				add_if_legal_king( p, c, current_evaluation, moves, 6, pp.row );
+		// Kingside castling
+		if( p.pieces[c][pieces::rook2].special ) {
+			if( p.board[5][pp.row] == pieces::nil && p.board[6][pp.row] == pieces::nil ) {
+				if( !detect_check( p, c, 5, pp.row, 5, pp.row ) ) {
+					add_if_legal_king( p, c, current_evaluation, moves, 6, pp.row );
+				}
 			}
 		}
 	}
 }
 
 
-void calc_moves_queen( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_queen( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp, bool const captures_only )
 {
 	for( int cx = -1; cx <= 1; ++cx ) {
 		for( int cy = -1; cy <= 1; ++cy ) {
@@ -145,7 +150,9 @@ void calc_moves_queen( position const& p, color::type c, int const current_evalu
 			for( x = pp.column + cx, y = pp.row + cy; x >= 0 && x <= 7 && y >= 0 && y <= 7; x += cx, y += cy ) {
 				unsigned char target = p.board[x][y];
 				if( target == pieces::nil ) {
-					add_if_legal( p, c, current_evaluation, moves, check, pi, x, y );
+					if( !captures_only ) {
+						add_if_legal( p, c, current_evaluation, moves, check, pi, x, y );
+					}
 				}
 				else {
 					if( (target >> 4) != c ) {
@@ -159,15 +166,15 @@ void calc_moves_queen( position const& p, color::type c, int const current_evalu
 }
 
 
-void calc_moves_queen( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_queen( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, bool const captures_only )
 {
 	piece const& pp = p.pieces[c][pieces::queen];
 	if( pp.alive ) {
-		calc_moves_queen( p, c, current_evaluation, moves, check, pieces::queen, pp );
+		calc_moves_queen( p, c, current_evaluation, moves, check, pieces::queen, pp, captures_only );
 	}
 }
 
-void calc_moves_bishop( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_bishop( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp, bool const captures_only )
 {
 	for( int cx = -1; cx <= 1; cx += 2 ) {
 		for( int cy = -1; cy <= 1; cy += 2 ) {
@@ -175,7 +182,9 @@ void calc_moves_bishop( position const& p, color::type c, int const current_eval
 			for( x = pp.column + cx, y = pp.row + cy; x >= 0 && x <= 7 && y >= 0 && y <= 7; x += cx, y += cy ) {
 				unsigned char target = p.board[x][y];
 				if( target == pieces::nil ) {
-					add_if_legal( p, c, current_evaluation, moves, check, pi, x, y );
+					if( !captures_only ) {
+						add_if_legal( p, c, current_evaluation, moves, check, pi, x, y );
+					}
 				}
 				else {
 					if( (target >> 4) != c ) {
@@ -189,30 +198,32 @@ void calc_moves_bishop( position const& p, color::type c, int const current_eval
 }
 
 
-void calc_moves_bishops( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_bishops( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, bool const captures_only )
 {
 	{
 		piece const& pp = p.pieces[c][pieces::bishop1];
 		if( pp.alive ) {
-			calc_moves_bishop( p, c, current_evaluation, moves, check, pieces::bishop1, pp );
+			calc_moves_bishop( p, c, current_evaluation, moves, check, pieces::bishop1, pp, captures_only );
 		}
 	}
 	{
 		piece const& pp = p.pieces[c][pieces::bishop2];
 		if( pp.alive ) {
-			calc_moves_bishop( p, c, current_evaluation, moves, check, pieces::bishop2, pp );
+			calc_moves_bishop( p, c, current_evaluation, moves, check, pieces::bishop2, pp, captures_only );
 		}
 	}
 }
 
 
-void calc_moves_rook( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_rook( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp, bool const captures_only )
 {
 	for( int cx = -1; cx <= 1; cx += 2 ) {
 		for( int x = pp.column + cx; x >= 0 && x <= 7; x += cx ) {
 			unsigned char target = p.board[x][pp.row];
 			if( target == pieces::nil ) {
-				add_if_legal( p, c, current_evaluation, moves, check, pi, x, pp.row );
+				if( !captures_only ) {
+					add_if_legal( p, c, current_evaluation, moves, check, pi, x, pp.row );
+				}
 			}
 			else {
 				if( (target >> 4) != c ) {
@@ -226,7 +237,9 @@ void calc_moves_rook( position const& p, color::type c, int const current_evalua
 		for( int y = pp.row + cy; y >= 0 && y <= 7; y += cy ) {
 			unsigned char target = p.board[pp.column][y];
 			if( target == pieces::nil ) {
-				add_if_legal( p, c, current_evaluation, moves, check, pi, pp.column, y );
+				if( !captures_only ) {
+					add_if_legal( p, c, current_evaluation, moves, check, pi, pp.column, y );
+				}
 			}
 			else {
 				if( (target >> 4) != c ) {
@@ -239,24 +252,24 @@ void calc_moves_rook( position const& p, color::type c, int const current_evalua
 }
 
 
-void calc_moves_rooks( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_rooks( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, bool const captures_only )
 {
 	{
 		piece const& pp = p.pieces[c][pieces::rook1];
 		if( pp.alive ) {
-			calc_moves_rook( p, c, current_evaluation, moves, check, pieces::rook1, pp );
+			calc_moves_rook( p, c, current_evaluation, moves, check, pieces::rook1, pp, captures_only );
 		}
 	}
 	{
 		piece const& pp = p.pieces[c][pieces::rook2];
 		if( pp.alive ) {
-			calc_moves_rook( p, c, current_evaluation, moves, check, pieces::rook2, pp );
+			calc_moves_rook( p, c, current_evaluation, moves, check, pieces::rook2, pp, captures_only );
 		}
 	}
 }
 
 
-void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp, int cx, int cy )
+void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp, int cx, int cy, bool const captures_only )
 {
 	int new_column = cx + pp.column;
 
@@ -275,36 +288,39 @@ void calc_moves_knight( position const& p, color::type c, int const current_eval
 			return;
 		}
 	}
+	else if( captures_only ) {
+		return;
+	}
 
 	add_if_legal( p, c, current_evaluation, moves, check, pi, new_column, new_row );
 }
 
 
-void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp, bool const captures_only )
 {
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 2, 1 );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 2, -1 );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 1, -2 );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -1, -2 );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -2, -1 );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -2, 1 );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -1, 2 );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 1, 2 );
+	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 2, 1, captures_only );
+	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 2, -1, captures_only );
+	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 1, -2, captures_only );
+	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -1, -2, captures_only );
+	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -2, -1, captures_only );
+	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -2, 1, captures_only );
+	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -1, 2, captures_only );
+	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 1, 2, captures_only );
 }
 
 
-void calc_moves_knights( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_knights( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, bool const captures_only )
 {
 	{
 		piece const& pp = p.pieces[c][pieces::knight1];
 		if( pp.alive ) {
-			calc_moves_knight( p, c, current_evaluation, moves, check, pieces::knight1, pp );
+			calc_moves_knight( p, c, current_evaluation, moves, check, pieces::knight1, pp, captures_only );
 		}
 	}
 	{
 		piece const& pp = p.pieces[c][pieces::knight2];
 		if( pp.alive ) {
-			calc_moves_knight( p, c, current_evaluation, moves, check, pieces::knight2, pp );
+			calc_moves_knight( p, c, current_evaluation, moves, check, pieces::knight2, pp, captures_only );
 		}
 	}
 }
@@ -374,7 +390,7 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 	}
 }
 
-void calc_moves_pawns( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_pawns( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, bool const captures_only )
 {
 	for( unsigned int pi = pieces::pawn1; pi <= pieces::pawn8; ++pi ) {
 		piece const& pp = p.pieces[c][pi];
@@ -392,7 +408,7 @@ void calc_moves_pawns( position const& p, color::type c, int const current_evalu
 					calc_diagonal_pawn_move( p, c, current_evaluation, moves, check, pi, pp, new_col, new_row );
 				}
 
-				if( target == pieces::nil ) {
+				if( target == pieces::nil && !captures_only) {
 
 					add_if_legal( p, c, current_evaluation, moves, check, pi, pp.column, new_row );
 
@@ -411,16 +427,16 @@ void calc_moves_pawns( position const& p, color::type c, int const current_evalu
 				// Promoted piece
 				unsigned char promoted = (p.promotions[c] >> (2 * (pi - pieces::pawn1) ) ) & 0x03;
 				if( promoted == promotions::queen ) {
-					calc_moves_queen( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp );
+					calc_moves_queen( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp, captures_only );
 				}
 				else if( promoted == promotions::rook ) {
-					calc_moves_rook( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp );
+					calc_moves_rook( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp, captures_only );
 				}
 				else if( promoted == promotions::bishop ) {
-					calc_moves_bishop( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp );
+					calc_moves_bishop( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp, captures_only );
 				}
 				else {//if( promoted == promotions::knight ) {
-					calc_moves_knight( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp );
+					calc_moves_knight( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp, captures_only );
 				}
 			}
 		}
@@ -440,19 +456,19 @@ struct MoveSort {
 	}
 } moveSort;
 
-void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, bool const captures_only )
 {
 	move_info* start = moves;
 
-	calc_moves_king( p, c, current_evaluation, moves, check );
+	calc_moves_king( p, c, current_evaluation, moves, check, captures_only );
 
 	if( !check.check || !check.multiple() )
 	{
-		calc_moves_pawns( p, c, current_evaluation, moves, check );
-		calc_moves_queen( p, c, current_evaluation, moves, check );
-		calc_moves_rooks( p, c, current_evaluation, moves, check );
-		calc_moves_bishops( p, c, current_evaluation, moves, check );
-		calc_moves_knights( p, c, current_evaluation, moves, check );
+		calc_moves_pawns( p, c, current_evaluation, moves, check, captures_only );
+		calc_moves_queen( p, c, current_evaluation, moves, check, captures_only );
+		calc_moves_rooks( p, c, current_evaluation, moves, check, captures_only );
+		calc_moves_bishops( p, c, current_evaluation, moves, check, captures_only );
+		calc_moves_knights( p, c, current_evaluation, moves, check, captures_only );
 	}
 
 	std::sort( start, moves, moveSort );

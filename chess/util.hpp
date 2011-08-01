@@ -6,7 +6,7 @@
 #include <string>
 
 bool validate_move( position const& p, move const& m, color::type c );
-void parse_move( position& p, color::type& c, std::string const& line );
+bool parse_move( position& p, color::type c, std::string const& line, move& m );
 
 std::string move_to_string( position const& p, color::type c, move const& m );
 

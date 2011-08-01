@@ -13,6 +13,7 @@ contact tim.kosse@filezilla-project.org for details.
 
 */
 
+#include "book.hpp"
 #include "chess.hpp"
 #include "calc.hpp"
 #include "eval.hpp"
@@ -26,6 +27,10 @@ contact tim.kosse@filezilla-project.org for details.
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+
+const int TIME_LIMIT = 30000;
+
+std::string book_dir;
 
 void auto_play( int argc, char const* argv[] )
 {
@@ -58,7 +63,7 @@ void auto_play( int argc, char const* argv[] )
 	color::type c = color::white;
 	move m = {0};
 	int res;
-	while( calc( p, c, m, res ) ) {
+	while( calc( p, c, m, res, TIME_LIMIT ) ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
 		}
@@ -101,6 +106,12 @@ void xboard()
 
 	init_board(p);
 
+	bool in_book = open_book( book_dir );
+	if( in_book ) {
+		std::cerr << "Opening book loaded" << std::endl;
+	}
+	unsigned long long book_index = 0;
+
 	std::string line;
 	std::getline( std::cin, line );
 	if( line != "xboard" ) {
@@ -122,9 +133,45 @@ void xboard()
 				hash_initialized = true;
 			}
 			// Do a step
+			if( in_book ) {
+				std::vector<move_entry> moves;
+				/*book_entry entry = */
+					get_entries( book_index, moves );
+				if( moves.empty() ) {
+					in_book = false;
+				}
+				else {
+					short best = moves.front().forecast;
+					int count_best = 0;
+					std::cerr << "Entries from book: " << std::endl;
+					for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+						if( it->forecast == best ) {
+							++count_best;
+						}
+						std::cerr << move_to_string( p, c, it->m ) << " " << it->forecast << std::endl;
+					}
+
+					move_entry best_move = moves[get_random_unsigned_long_long() % count_best];
+					move m = best_move.m;
+					if( !best_move.next_index ) {
+						in_book = false;
+						std::cerr << "Left opening book" << std::endl;
+					}
+					else {
+						book_index = best_move.next_index;
+					}
+
+					std::cout << "move " << move_to_string( p, c, m ) << std::endl;
+
+					apply_move( p, m, c );
+					c = static_cast<color::type>( 1 - c );
+
+					continue;
+				}
+			}
 			move m;
 			int res;
-			if( calc( p, c, m, res ) ) {
+			if( calc( p, c, m, res, TIME_LIMIT ) ) {
 
 				std::cout << "move " << move_to_string( p, c, m ) << std::endl;
 
@@ -150,13 +197,46 @@ void xboard()
 			}
 		}
 		else {
-			parse_move( p, c, line );
+			move m;
+			if( parse_move( p, c, line, m ) ) {
+				apply_move( p, m, c );
+				c = static_cast<color::type>( 1 - c );
+
+				if( in_book ) {
+					std::vector<move_entry> moves;
+					/*book_entry entry = */
+						get_entries( book_index, moves );
+					if( moves.empty() ) {
+						in_book = false;
+					}
+					else {
+						in_book = false;
+						for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+							if( it->m == m ) {
+								if( it->next_index ) {
+									in_book = true;
+									book_index = it->next_index;
+								}
+								break;
+							}
+						}
+					}
+					if( !in_book ) {
+						std::cerr << "Left opening book" << std::endl;
+					}
+				}
+			}
 		}
 	}
 }
 
 int main( int argc, char const* argv[] )
 {
+	std::string self = argv[0];
+	if( self.rfind('/') != std::string::npos ) {
+		book_dir = self.substr( 0, self.rfind('/') + 1 );
+	}
+
 	console_init();
 
 	init_random( 1234 );

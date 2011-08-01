@@ -29,33 +29,33 @@ bool validate_move( position const& p, move const& m, color::type c )
 	return false;
 }
 
-void parse_move( position& p, color::type& c, std::string const& line )
+bool parse_move( position& p, color::type c, std::string const& line, move& m )
 {
 	if( line.size() < 4 || line.size() > 5 ) {
 		std::cout << "Error (unknown command): " << line << std::endl;
-		return;
+		return false;
 	}
 
 	if( line[0] < 'a' || line[0] > 'h') {
 		std::cout << "Error (unknown command): " << line << std::endl;
-		return;
+		return false;
 	}
 	if( line[1] < '1' || line[1] > '8') {
 		std::cout << "Error (unknown command): " << line << std::endl;
-		return;
+		return false;
 	}
 	if( line[2] < 'a' || line[2] > 'h') {
 		std::cout << "Error (unknown command): " << line << std::endl;
-		return;
+		return false;
 	}
 	if( line[3] < '1' || line[3] > '8') {
 		std::cout << "Error (unknown command): " << line << std::endl;
-		return;
+		return false;
 	}
 
 	if( line.size() == 5 && line[4] != 'q' ) {
 		std::cout << "Illegal move (not promoting to queen is disallowed due to lazy developer): " << line << std::endl;
-		return;
+		return false;
 	}
 
 	int col = line[0] - 'a';
@@ -64,26 +64,24 @@ void parse_move( position& p, color::type& c, std::string const& line )
 	unsigned char pi = p.board[col][row];
 	if( pi == pieces::nil ) {
 		std::cout << "Illegal move (no piece in source square): " << line << std::endl;
-		return;
+		return false;
 	}
 	if( (pi >> 4) != c ) {
 		std::cout << "Illegal move (piece in source square of wrong color): " << line << std::endl;
-		return;
+		return false;
 	}
 	pi &= 0xf;
 
-	move m;
 	m.piece = pi;
 	m.target_col = line[2] - 'a';
 	m.target_row = line[3] - '1';
 
 	if( !validate_move( p, m, c ) ) {
 		std::cout << "Illegal move: " << line << std::endl;
-		return;
+		return false;
 	}
 
-	apply_move( p, m, c );
-	c = static_cast<color::type>( 1 - c );
+	return true;
 }
 
 std::string move_to_string( position const& p, color::type c, move const& m )
