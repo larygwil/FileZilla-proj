@@ -199,7 +199,7 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 	}
 
 	d.evaluation = alpha;
-	d.best_move.other = d.best_move.other = max_depth - depth - 1 + 17;
+	d.best_move.other = max_depth - depth - 1 + 17;
 	store( hash, reinterpret_cast<unsigned char const* const>(&d) );
 
 	return alpha;
