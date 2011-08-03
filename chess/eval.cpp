@@ -289,11 +289,13 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		}
 	}
 
-	if( m.piece >= pieces::pawn1 && m.piece <= pieces::pawn8 ) {
-		piece const& pp = p.pieces[c][m.piece];
+	int source = p.board[m.source_col][m.source_row] & 0x0f;
+
+	if( source >= pieces::pawn1 && source <= pieces::pawn8 ) {
+		piece const& pp = p.pieces[c][source];
 		if( pp.special ) {
-			current_evaluation -= get_piece_value( p, c, m.piece, pp.column, pp.row );
-			current_evaluation += get_piece_value( p, c, m.piece, m.target_col, m.target_row );
+			current_evaluation -= get_piece_value( p, c, source, pp.column, pp.row );
+			current_evaluation += get_piece_value( p, c, source, m.target_col, m.target_row );
 		}
 		else {
 			if( m.target_col != pp.column && target == pieces::nil ) {
@@ -312,8 +314,8 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 			}
 		}
 	}
-	else if( m.piece == pieces::king ) {
-		piece const& pp = p.pieces[c][m.piece];
+	else if( source == pieces::king ) {
+		piece const& pp = p.pieces[c][source];
 		if( pp.column == m.target_col + 2 ) {
 			// Queenside
 			current_evaluation += special_values::castled;
@@ -328,9 +330,9 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		}
 	}
 	else {
-		piece const& pp = p.pieces[c][m.piece];
-		current_evaluation -= get_piece_value( p, c, m.piece, pp.column, pp.row );
-		current_evaluation += get_piece_value( p, c, m.piece, m.target_col, m.target_row );
+		piece const& pp = p.pieces[c][source];
+		current_evaluation -= get_piece_value( p, c, source, pp.column, pp.row );
+		current_evaluation += get_piece_value( p, c, source, m.target_col, m.target_row );
 	}
 
 	return current_evaluation;

@@ -21,7 +21,7 @@ bool validate_move( position const& p, move const& m, color::type c )
 	calculate_moves( p, c, ev, pm, check );
 
 	for( move_info* it = moves; it != pm; ++it ) {
-		if( it->m.piece == m.piece && it->m.target_col == m.target_col && it->m.target_row == m.target_row ) {
+		if( it->m == m ) {
 			return true;
 		}
 	}
@@ -72,7 +72,8 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 	}
 	pi &= 0xf;
 
-	m.piece = pi;
+	m.source_col = col;
+	m.source_row = row;
 	m.target_col = line[2] - 'a';
 	m.target_row = line[3] - '1';
 
@@ -88,16 +89,17 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 {
 	std::string ret;
 
-	if( m.piece == pieces::king ) {
-		if( m.target_col == 6 && p.pieces[c][m.piece].column == 4 ) {
+	unsigned char source = p.board[m.source_col][m.source_row] & 0x0f;
+	if( source == pieces::king ) {
+		if( m.target_col == 6 && p.pieces[c][source].column == 4 ) {
 			return "   O-O  ";
 		}
-		else if( m.target_col == 2 && p.pieces[c][m.piece].column == 4 ) {
+		else if( m.target_col == 2 && p.pieces[c][source].column == 4 ) {
 			return " O-O-O  ";
 		}
 	}
 
-	switch( m.piece ) {
+	switch( source ) {
 		case pieces::bishop1:
 		case pieces::bishop2:
 			ret += 'B';
@@ -124,8 +126,8 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 		case pieces::pawn6:
 		case pieces::pawn7:
 		case pieces::pawn8:
-			if( p.pieces[c][m.piece].special ) {
-				switch( p.promotions[c] >> (2 * (m.piece - pieces::pawn1) ) & 0x03 ) {
+			if( p.pieces[c][source].special ) {
+				switch( p.promotions[c] >> (2 * (source - pieces::pawn1) ) & 0x03 ) {
 					case promotions::queen:
 						ret += 'Q';
 						break;
@@ -148,14 +150,14 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 			break;
 	}
 
-	ret += 'a' + p.pieces[c][m.piece].column;
-	ret += '1' + p.pieces[c][m.piece].row;
+	ret += 'a' + p.pieces[c][source].column;
+	ret += '1' + p.pieces[c][source].row;
 
 	if( p.board[m.target_col][m.target_row] != pieces::nil ) {
 		ret += 'x';
 	}
-	else if( m.piece >= pieces::pawn1 && m.piece <= pieces::pawn8
-		&& p.pieces[c][m.piece].column != m.target_col && !p.pieces[c][m.piece].special )
+	else if( source >= pieces::pawn1 && source <= pieces::pawn8
+		&& p.pieces[c][source].column != m.target_col && !p.pieces[c][source].special )
 	{
 		// Must be en-passant
 		ret += 'x';
@@ -167,7 +169,7 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 	ret += 'a' + m.target_col;
 	ret += '1' + m.target_row;
 
-	if( m.piece >= pieces::pawn1 && m.piece <= pieces::pawn8 && !p.pieces[c][m.piece].special ) {
+	if( source >= pieces::pawn1 && source <= pieces::pawn8 && !p.pieces[c][source].special ) {
 		if( m.target_row == 0 || m.target_row == 7 ) {
 			ret += "=Q";
 		}
@@ -247,18 +249,19 @@ bool apply_move( position& p, move const& m, color::type c )
 {
 	bool ret = false;
 
-	piece& pp = p.pieces[c][m.piece];
+	unsigned char source = p.board[m.source_col][m.source_row] & 0x0f;
+	piece& pp = p.pieces[c][source];
 
 	if( !pp.alive ) {
-		std::cerr << "FAIL, moving dead piece!" << (int)m.piece << " " << (int)m.target_col << " " << (int)m.target_row << std::endl;
+		std::cerr << "FAIL, moving dead piece!" << (int)source << " " << (int)m.target_col << " " << (int)m.target_row << std::endl;
 	}
 	ASSERT( pp.alive );
 
-	p.board[pp.column][pp.row] = pieces::nil;
+	p.board[m.source_col][m.source_row] = pieces::nil;
 
 	// Handle castling
-	if( m.piece == pieces::king ) {
-		if( pp.column == 4 ) {
+	if( source == pieces::king ) {
+		if( m.source_col == 4 ) {
 			if( m.target_col == 6 ) {
 				// Kingside
 				ASSERT( !pp.special );
@@ -292,14 +295,14 @@ bool apply_move( position& p, move const& m, color::type c )
 		p.pieces[c][pieces::rook1].special = 0;
 		p.pieces[c][pieces::rook2].special = 0;
 	}
-	else if( m.piece == pieces::rook1 ) {
+	else if( source == pieces::rook1 ) {
 		pp.special = 0;
 	}
-	else if( m.piece == pieces::rook2 ) {
+	else if( source == pieces::rook2 ) {
 		pp.special = 0;
 	}
 
-	bool const is_pawn = m.piece >= pieces::pawn1 && m.piece <= pieces::pawn8 && !pp.special;
+	bool const is_pawn = source >= pieces::pawn1 && source <= pieces::pawn8 && !pp.special;
 
 	unsigned char old_piece = p.board[m.target_col][m.target_row];
 	if( old_piece != pieces::nil ) {
@@ -312,10 +315,9 @@ bool apply_move( position& p, move const& m, color::type c )
 
 		ret = true;
 	}
-	else if( is_pawn && p.pieces[c][m.piece].column != m.target_col )
-	{
+	else if( is_pawn && p.pieces[c][source].column != m.target_col ) {
 		// Must be en-passant
-		old_piece = p.board[m.target_col][pp.row];
+		old_piece = p.board[m.target_col][m.source_row];
 		ASSERT( (old_piece >> 4) != c );
 		old_piece &= 0x0f;
 		ASSERT( p.can_en_passant == old_piece );
@@ -323,7 +325,7 @@ bool apply_move( position& p, move const& m, color::type c )
 		ASSERT( old_piece != pieces::king );
 		p.pieces[1-c][old_piece].alive = false;
 		p.pieces[1-c][old_piece].special = false;
-		p.board[m.target_col][pp.row] = pieces::nil;
+		p.board[m.target_col][m.source_row] = pieces::nil;
 
 		ret = true;
 	}
@@ -331,11 +333,11 @@ bool apply_move( position& p, move const& m, color::type c )
 	if( is_pawn ) {
 		if( m.target_row == 0 || m.target_row == 7) {
 			pp.special = true;
-			p.promotions[c] |= promotions::queen << (2 * (m.piece - pieces::pawn1) );
+			p.promotions[c] |= promotions::queen << (2 * (source - pieces::pawn1) );
 			p.can_en_passant = pieces::nil;
 		}
 		else if( (c == color::white) ? (pp.row + 2 == m.target_row) : (m.target_row + 2 == pp.row) ) {
-			p.can_en_passant = m.piece;
+			p.can_en_passant = source;
 		}
 		else {
 			p.can_en_passant = pieces::nil;
@@ -345,7 +347,7 @@ bool apply_move( position& p, move const& m, color::type c )
 		p.can_en_passant = pieces::nil;
 	}
 
-	p.board[m.target_col][m.target_row] = m.piece | (c << 4);
+	p.board[m.target_col][m.target_row] = source | (c << 4);
 
 	pp.column = m.target_col;
 	pp.row = m.target_row;

@@ -31,7 +31,8 @@ void add_if_legal( position const& p, color::type c, int const current_evaluatio
 
 	move_info mi;
 
-	mi.m.piece = pi;
+	mi.m.source_col = pp.column;
+	mi.m.source_row = pp.row;
 	mi.m.target_col = new_col;
 	mi.m.target_row = new_row;
 
@@ -49,7 +50,8 @@ void add_if_legal_king( position const& p, color::type c, int const current_eval
 	}
 
 	move_info mi;
-	mi.m.piece = pieces::king;
+	mi.m.source_col = kp.column;
+	mi.m.source_row = kp.row;
 	mi.m.target_col = new_col;
 	mi.m.target_row = new_row;
 

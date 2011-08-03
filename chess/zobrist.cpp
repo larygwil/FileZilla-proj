@@ -119,27 +119,29 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 		subtract_target( p, c, hash, target, m.target_col, m.target_row );
 	}
 
-	piece const& pp = p.pieces[c][m.piece];
-	if( m.piece >= pieces::pawn1 && m.piece <= pieces::pawn8 ) {
+	unsigned char source = p.board[m.source_col][m.source_row] & 0x0f;
+
+	piece const& pp = p.pieces[c][source];
+	if( source >= pieces::pawn1 && source <= pieces::pawn8 ) {
 		if( m.target_col != pp.column && target == pieces::nil ) {
 			// Was en-passant
 			hash ^= data[1-c][p.board[m.target_col][pp.row] & 0x0f][m.target_col][pp.row];
 		}
 		else if( (m.target_row == 0 || m.target_row == 7) && !pp.special ) {
 			// Promition
-			hash ^= promoted_pawns[c][m.piece];
+			hash ^= promoted_pawns[c][source];
 		}
 		else if( m.target_row == pp.row + 2 || m.target_row + 2 == pp.row ) {
 			// Becomes en-passantable
-			hash ^= enpassant[m.piece];
+			hash ^= enpassant[source];
 		}
 	}
-	else if( m.piece == pieces::rook1 || m.piece == pieces::rook2 ) {
+	else if( source == pieces::rook1 || source == pieces::rook2 ) {
 		if( pp.special ) {
-			hash ^= can_castle[c][m.piece - pieces::rook1];
+			hash ^= can_castle[c][source - pieces::rook1];
 		}
 	}
-	else if( m.piece == pieces::king ) {
+	else if( source == pieces::king ) {
 		if( (pp.column == m.target_col + 2) || (pp.column + 2 == m.target_col) ) {
 			// Was castling
 			if( m.target_col == 2 ) {
@@ -161,8 +163,8 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 			hash ^= can_castle[c][1];
 		}
 	}
-	hash ^= data[c][m.piece][pp.column][pp.row];
-	hash ^= data[c][m.piece][m.target_col][m.target_row];
+	hash ^= data[c][source][pp.column][pp.row];
+	hash ^= data[c][source][m.target_col][m.target_row];
 
 	hash ^= white_to_move;
 
