@@ -523,7 +523,7 @@ bool calc( position& p, color::type c, move& m, int& res, int time_limit )
 	condition cond;
 
 	std::vector<processing_thread*> threads;
-	int thread_count = 1;
+	int thread_count = 6;
 	for( int t = 0; t < thread_count; ++t ) {
 		threads.push_back( new processing_thread( mtx, cond ) );
 	}

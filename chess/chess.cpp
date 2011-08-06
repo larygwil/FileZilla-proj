@@ -230,6 +230,56 @@ void xboard()
 	}
 }
 
+
+void perft( int depth, position const& p, color::type c, unsigned long long& n )
+{
+	if( !depth-- ) {
+		++n;
+		return;
+	}
+
+	move_info moves[200];
+	move_info* pm = moves;
+
+	check_map check;
+	calc_check_map( p, c, check );
+	calculate_moves( p, c, 0, pm, check );
+
+	for( move_info* it = moves; it != pm; ++it ) {
+		position new_pos = p;
+		apply_move( new_pos, it->m, c );
+		perft( depth, new_pos, static_cast<color::type>(1-c), n );
+	}
+
+}
+
+void perft()
+{
+	position p;
+	init_board( p );
+
+	unsigned long long ret = 0;
+
+	int max_depth = 6;
+
+	unsigned long long start = get_time();
+	perft( max_depth, p, color::white, ret );
+	unsigned long long stop = get_time();
+
+
+	std::cerr << "Moves: "     << ret << std::endl;
+	std::cerr << "Took:  "     << (stop - start) << " ms" << std::endl;
+	std::cerr << "Time/move: " << ((stop - start) * 1000 * 1000) / ret << " ns" << std::endl;
+
+	if( ret != 119060324 ) {
+		std::cerr << "FAIL! Expected 119060324 moves." << std::endl;
+	}
+	else {
+		std::cerr << "PASS" << std::endl;
+	}
+}
+
+
 int main( int argc, char const* argv[] )
 {
 	std::string self = argv[0];
@@ -248,6 +298,9 @@ int main( int argc, char const* argv[] )
 
 	if( argc >= 2 && !strcmp(argv[1], "--xboard" ) ) {
 		xboard();
+	}
+	else if( argc >= 2 && !strcmp(argv[1], "--perft" ) ) {
+		perft();
 	}
 	else {
 		auto_play( argc, argv );
