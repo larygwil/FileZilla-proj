@@ -1,6 +1,73 @@
 #include "chess.hpp"
 #include "detect_check.hpp"
 
+extern unsigned long long const possible_knight_moves[64] = {
+	0x0000000000020400ull,
+	0x0000000000050800ull,
+	0x00000000000a1100ull,
+	0x0000000000142200ull,
+	0x0000000000284400ull,
+	0x0000000000508800ull,
+	0x0000000000a01000ull,
+	0x0000000000402000ull,
+	0x0000000002040004ull,
+	0x0000000005080008ull,
+	0x000000000a110011ull,
+	0x0000000014220022ull,
+	0x0000000028440044ull,
+	0x0000000050880088ull,
+	0x00000000a0100010ull,
+	0x0000000040200020ull,
+	0x0000000204000402ull,
+	0x0000000508000805ull,
+	0x0000000a1100110aull,
+	0x0000001422002214ull,
+	0x0000002844004428ull,
+	0x0000005088008850ull,
+	0x000000a0100010a0ull,
+	0x0000004020002040ull,
+	0x0000020400040200ull,
+	0x0000050800080500ull,
+	0x00000a1100110a00ull,
+	0x0000142200221400ull,
+	0x0000284400442800ull,
+	0x0000508800885000ull,
+	0x0000a0100010a000ull,
+	0x0000402000204000ull,
+	0x0002040004020000ull,
+	0x0005080008050000ull,
+	0x000a1100110a0000ull,
+	0x0014220022140000ull,
+	0x0028440044280000ull,
+	0x0050880088500000ull,
+	0x00a0100010a00000ull,
+	0x0040200020400000ull,
+	0x0204000402000000ull,
+	0x0508000805000000ull,
+	0x0a1100110a000000ull,
+	0x1422002214000000ull,
+	0x2844004428000000ull,
+	0x5088008850000000ull,
+	0xa0100010a0000000ull,
+	0x4020002040000000ull,
+	0x0400040200000000ull,
+	0x0800080500000000ull,
+	0x1100110a00000000ull,
+	0x2200221400000000ull,
+	0x4400442800000000ull,
+	0x8800885000000000ull,
+	0x100010a000000000ull,
+	0x2000204000000000ull,
+	0x0004020000000000ull,
+	0x0008050000000000ull,
+	0x00110a0000000000ull,
+	0x0022140000000000ull,
+	0x0044280000000000ull,
+	0x0088500000000000ull,
+	0x0010a00000000000ull,
+	0x0020400000000000ull
+};
+
 bool detect_check_knight( position const& p, color::type c, int king_col, int king_row, piece const& pp, unsigned char pi )
 {
 	signed char cx = king_col - pp.column;
@@ -35,27 +102,29 @@ bool detect_check_knight( position const& p, color::type c, int king_col, int ki
 
 bool detect_check_knights( position const& p, color::type c, int king_col, int king_row )
 {
+	unsigned long long knights = possible_knight_moves[ king_col + king_row * 8 ];
+
 	bool ret = false;
 	{
 		piece const& pp = p.pieces[1-c][pieces::knight1];
 		if( pp.alive ) {
-			ret |= detect_check_knight( p, c, king_col, king_row, pp, pieces::knight1 );
+			ret |= knights & (1ull << (pp.column + pp.row * 8) );
 		}
 	}
 	{
 		piece const& pp = p.pieces[1-c][pieces::knight2];
 		if( pp.alive ) {
-			ret |= detect_check_knight( p, c, king_col, king_row, pp, pieces::knight2 );
+			ret |= knights & (1ull << (pp.column + pp.row * 8) );
 		}
 	}
 	for( unsigned char pi = pieces::pawn1; pi < pieces::pawn8; ++pi ) {
 		piece const& pp = p.pieces[1-c][pieces::knight2];
-		if( !pp.alive || ! pp.special ) {
+		if( !pp.alive || !pp.special ) {
 			continue;
 		}
 		unsigned short promoted = (p.promotions[1-c] >> (2 * (pi - pieces::pawn1) ) ) & 0x03;
 		if( promoted == promotions::knight ) {
-			ret |= detect_check_knight( p, c, king_col, king_row, pp, pi );
+			ret |= knights & (1ull << (pp.column + pp.row * 8) );
 		}
 	}
 
@@ -370,73 +439,6 @@ void calc_check_map_knight( position const& p, color::type c, check_map& map, si
 		}
 	}
 }
-
-static unsigned long long const possible_knight_moves[64] = {
-	0x0000000000020400ull,
-	0x0000000000050800ull,
-	0x00000000000a1100ull,
-	0x0000000000142200ull,
-	0x0000000000284400ull,
-	0x0000000000508800ull,
-	0x0000000000a01000ull,
-	0x0000000000402000ull,
-	0x0000000002040004ull,
-	0x0000000005080008ull,
-	0x000000000a110011ull,
-	0x0000000014220022ull,
-	0x0000000028440044ull,
-	0x0000000050880088ull,
-	0x00000000a0100010ull,
-	0x0000000040200020ull,
-	0x0000000204000402ull,
-	0x0000000508000805ull,
-	0x0000000a1100110aull,
-	0x0000001422002214ull,
-	0x0000002844004428ull,
-	0x0000005088008850ull,
-	0x000000a0100010a0ull,
-	0x0000004020002040ull,
-	0x0000020400040200ull,
-	0x0000050800080500ull,
-	0x00000a1100110a00ull,
-	0x0000142200221400ull,
-	0x0000284400442800ull,
-	0x0000508800885000ull,
-	0x0000a0100010a000ull,
-	0x0000402000204000ull,
-	0x0002040004020000ull,
-	0x0005080008050000ull,
-	0x000a1100110a0000ull,
-	0x0014220022140000ull,
-	0x0028440044280000ull,
-	0x0050880088500000ull,
-	0x00a0100010a00000ull,
-	0x0040200020400000ull,
-	0x0204000402000000ull,
-	0x0508000805000000ull,
-	0x0a1100110a000000ull,
-	0x1422002214000000ull,
-	0x2844004428000000ull,
-	0x5088008850000000ull,
-	0xa0100010a0000000ull,
-	0x4020002040000000ull,
-	0x0400040200000000ull,
-	0x0800080500000000ull,
-	0x1100110a00000000ull,
-	0x2200221400000000ull,
-	0x4400442800000000ull,
-	0x8800885000000000ull,
-	0x100010a000000000ull,
-	0x2000204000000000ull,
-	0x0004020000000000ull,
-	0x0008050000000000ull,
-	0x00110a0000000000ull,
-	0x0022140000000000ull,
-	0x0044280000000000ull,
-	0x0088500000000000ull,
-	0x0010a00000000000ull,
-	0x0020400000000000ull
-};
 
 void calc_check_map( position const& p, color::type c, check_map& map )
 {

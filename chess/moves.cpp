@@ -62,29 +62,78 @@ void add_if_legal_king( position const& p, color::type c, int const current_eval
 }
 
 
-void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, signed char cx, signed char cy, bool const captures_only )
+unsigned long long const possible_king_moves[64] = {
+	0x0000000000000302ull,
+	0x0000000000000705ull,
+	0x0000000000000e0aull,
+	0x0000000000001c14ull,
+	0x0000000000003828ull,
+	0x0000000000007050ull,
+	0x000000000000e0a0ull,
+	0x000000000000c040ull,
+	0x0000000000030203ull,
+	0x0000000000070507ull,
+	0x00000000000e0a0eull,
+	0x00000000001c141cull,
+	0x0000000000382838ull,
+	0x0000000000705070ull,
+	0x0000000000e0a0e0ull,
+	0x0000000000c040c0ull,
+	0x0000000003020300ull,
+	0x0000000007050700ull,
+	0x000000000e0a0e00ull,
+	0x000000001c141c00ull,
+	0x0000000038283800ull,
+	0x0000000070507000ull,
+	0x00000000e0a0e000ull,
+	0x00000000c040c000ull,
+	0x0000000302030000ull,
+	0x0000000705070000ull,
+	0x0000000e0a0e0000ull,
+	0x0000001c141c0000ull,
+	0x0000003828380000ull,
+	0x0000007050700000ull,
+	0x000000e0a0e00000ull,
+	0x000000c040c00000ull,
+	0x0000030203000000ull,
+	0x0000070507000000ull,
+	0x00000e0a0e000000ull,
+	0x00001c141c000000ull,
+	0x0000382838000000ull,
+	0x0000705070000000ull,
+	0x0000e0a0e0000000ull,
+	0x0000c040c0000000ull,
+	0x0003020300000000ull,
+	0x0007050700000000ull,
+	0x000e0a0e00000000ull,
+	0x001c141c00000000ull,
+	0x0038283800000000ull,
+	0x0070507000000000ull,
+	0x00e0a0e000000000ull,
+	0x00c040c000000000ull,
+	0x0302030000000000ull,
+	0x0705070000000000ull,
+	0x0e0a0e0000000000ull,
+	0x1c141c0000000000ull,
+	0x3828380000000000ull,
+	0x7050700000000000ull,
+	0xe0a0e00000000000ull,
+	0xc040c00000000000ull,
+	0x0203000000000000ull,
+	0x0507000000000000ull,
+	0x0a0e000000000000ull,
+	0x141c000000000000ull,
+	0x2838000000000000ull,
+	0x5070000000000000ull,
+	0xa0e0000000000000ull,
+	0x40c0000000000000ull
+};
+
+
+void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, piece const& pp, unsigned char new_col, unsigned char new_row, bool const captures_only )
 {
-	piece const& pp = p.pieces[c][pieces::king];
-	if( cx < 0 && pp.column < 1 ) {
-		return;
-	}
-	if( cy < 0 && pp.row < 1 ) {
-		return;
-	}
-	if( cx > 0 && pp.column >= 7 ) {
-		return;
-	}
-	if( cy > 0 && pp.row >= 7 ) {
-		return;
-	}
-
-	unsigned char new_col = pp.column + cx;
-	unsigned char new_row = pp.row + cy;
-
 	piece const& other_king = p.pieces[1-c][pieces::king];
-	int kx = static_cast<int>(new_col) - other_king.column;
-	int ky = static_cast<int>(new_row) - other_king.row;
-	if( kx <= 1 && kx >= -1 && ky <= 1 && ky >= -1 ) {
+	if( possible_king_moves[new_row * 8 + new_col] & (1ull << (other_king.column + other_king.row * 8)) ) {
 		// Other king too close
 		return;
 	}
@@ -102,18 +151,18 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 	add_if_legal_king( p, c, current_evaluation, moves, new_col, new_row );
 }
 
+
 void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, bool const captures_only )
 {
 	piece const& pp = p.pieces[c][pieces::king];
 
-	calc_moves_king( p, c, current_evaluation, moves, check, 1, 0, captures_only );
-	calc_moves_king( p, c, current_evaluation, moves, check, 1, -1, captures_only );
-	calc_moves_king( p, c, current_evaluation, moves, check, 0, -1, captures_only );
-	calc_moves_king( p, c, current_evaluation, moves, check, -1, -1, captures_only );
-	calc_moves_king( p, c, current_evaluation, moves, check, -1, 0, captures_only );
-	calc_moves_king( p, c, current_evaluation, moves, check, -1, 1, captures_only );
-	calc_moves_king( p, c, current_evaluation, moves, check, 0, 1, captures_only );
-	calc_moves_king( p, c, current_evaluation, moves, check, 1, 1, captures_only );
+	unsigned long long kings = possible_king_moves[pp.column + pp.row * 8];
+	int i;
+	while( (i = __builtin_ffsll( kings ) ) ) {
+		--i;
+		kings ^= 1ull << i;
+		calc_moves_king( p, c, current_evaluation, moves, check, pp, i & 0x7, i >> 3, captures_only );
+	}
 
 	if( check.check ) {
 		return;
@@ -271,19 +320,8 @@ void calc_moves_rooks( position const& p, color::type c, int const current_evalu
 }
 
 
-void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp, int cx, int cy, bool const captures_only )
+void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp, int new_column, int new_row, bool const captures_only )
 {
-	int new_column = cx + pp.column;
-
-	if( new_column < 0 || new_column > 7 ) {
-		return;
-	}
-
-	int new_row = cy + pp.row;
-	if( new_row < 0 || new_row > 7 ) {
-		return;
-	}
-
 	int new_target = p.board[new_column][new_row];
 	if( new_target != pieces::nil ) {
 		if( (new_target >> 4) == c ) {
@@ -298,16 +336,17 @@ void calc_moves_knight( position const& p, color::type c, int const current_eval
 }
 
 
+extern unsigned long long const possible_knight_moves[];
+
 void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp, bool const captures_only )
 {
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 2, 1, captures_only );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 2, -1, captures_only );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 1, -2, captures_only );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -1, -2, captures_only );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -2, -1, captures_only );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -2, 1, captures_only );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, -1, 2, captures_only );
-	calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, 1, 2, captures_only );
+	unsigned long long knights = possible_knight_moves[pp.column + pp.row * 8];
+	int i;
+	while( (i = __builtin_ffsll( knights ) ) ) {
+		--i;
+		knights ^= 1ull << i;
+		calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, i & 0x7, i >> 3, captures_only );
+	}
 }
 
 
