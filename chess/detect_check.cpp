@@ -327,18 +327,8 @@ bool detect_check( position const& p, color::type c )
 }
 
 
-void calc_check_map_knight( position const& p, color::type c, check_map& map, signed char king_col, signed char king_row, signed char cx, signed char cy )
+void calc_check_map_knight( position const& p, color::type c, check_map& map, signed char king_col, signed char king_row, int col, int row )
 {
-	signed char col = king_col + cx;
-	if( col < 0 || col > 7 ) {
-		return;
-	}
-
-	signed char row = king_row + cy;
-	if( row < 0 || row > 7 ) {
-		return;
-	}
-
 	unsigned char index = p.board[col][row];
 	if( index == pieces::nil ) {
 		return;
@@ -381,6 +371,72 @@ void calc_check_map_knight( position const& p, color::type c, check_map& map, si
 	}
 }
 
+static unsigned long long const possible_knight_moves[64] = {
+	0x0000000000020400ull,
+	0x0000000000050800ull,
+	0x00000000000a1100ull,
+	0x0000000000142200ull,
+	0x0000000000284400ull,
+	0x0000000000508800ull,
+	0x0000000000a01000ull,
+	0x0000000000402000ull,
+	0x0000000002040004ull,
+	0x0000000005080008ull,
+	0x000000000a110011ull,
+	0x0000000014220022ull,
+	0x0000000028440044ull,
+	0x0000000050880088ull,
+	0x00000000a0100010ull,
+	0x0000000040200020ull,
+	0x0000000204000402ull,
+	0x0000000508000805ull,
+	0x0000000a1100110aull,
+	0x0000001422002214ull,
+	0x0000002844004428ull,
+	0x0000005088008850ull,
+	0x000000a0100010a0ull,
+	0x0000004020002040ull,
+	0x0000020400040200ull,
+	0x0000050800080500ull,
+	0x00000a1100110a00ull,
+	0x0000142200221400ull,
+	0x0000284400442800ull,
+	0x0000508800885000ull,
+	0x0000a0100010a000ull,
+	0x0000402000204000ull,
+	0x0002040004020000ull,
+	0x0005080008050000ull,
+	0x000a1100110a0000ull,
+	0x0014220022140000ull,
+	0x0028440044280000ull,
+	0x0050880088500000ull,
+	0x00a0100010a00000ull,
+	0x0040200020400000ull,
+	0x0204000402000000ull,
+	0x0508000805000000ull,
+	0x0a1100110a000000ull,
+	0x1422002214000000ull,
+	0x2844004428000000ull,
+	0x5088008850000000ull,
+	0xa0100010a0000000ull,
+	0x4020002040000000ull,
+	0x0400040200000000ull,
+	0x0800080500000000ull,
+	0x1100110a00000000ull,
+	0x2200221400000000ull,
+	0x4400442800000000ull,
+	0x8800885000000000ull,
+	0x100010a000000000ull,
+	0x2000204000000000ull,
+	0x0004020000000000ull,
+	0x0008050000000000ull,
+	0x00110a0000000000ull,
+	0x0022140000000000ull,
+	0x0044280000000000ull,
+	0x0088500000000000ull,
+	0x0010a00000000000ull,
+	0x0020400000000000ull
+};
 
 void calc_check_map( position const& p, color::type c, check_map& map )
 {
@@ -582,15 +638,13 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 		}
 	}
 
-	// Knights
-	calc_check_map_knight( p, c, map, king_col, king_row, 1, 2 );
-	calc_check_map_knight( p, c, map, king_col, king_row, 2, 1 );
-	calc_check_map_knight( p, c, map, king_col, king_row, 2, -1 );
-	calc_check_map_knight( p, c, map, king_col, king_row, 1, -2 );
-	calc_check_map_knight( p, c, map, king_col, king_row, -1, -2 );
-	calc_check_map_knight( p, c, map, king_col, king_row, -2, -1 );
-	calc_check_map_knight( p, c, map, king_col, king_row, -2, 1 );
-	calc_check_map_knight( p, c, map, king_col, king_row, -1, 2 );
+	unsigned long long knights = possible_knight_moves[king_col + king_row * 8];
+	int i;
+	while( (i = __builtin_ffsll( knights ) ) ) {
+		--i;
+		knights ^= 1ull << i;
+		calc_check_map_knight( p, c, map, king_col, king_row, i & 0x7, i >> 3 );
+	}
 
 	unsigned char cv = map.board[king_col][king_row];
 	map.check = cv;
