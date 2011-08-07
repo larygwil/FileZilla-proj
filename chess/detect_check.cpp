@@ -651,3 +651,181 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 	unsigned char cv = map.board[king_col][king_row];
 	map.check = cv;
 }
+
+
+void calc_inverse_check_map( position const& p, color::type c, inverse_check_map& map )
+{
+	// Only thing this function is missing is a goto 10
+	memset( &map, 0, sizeof(inverse_check_map) );
+
+	signed char king_col = p.pieces[1-c][pieces::king].column;
+	signed char king_row = p.pieces[1-c][pieces::king].row;
+
+	// Check diagonals
+	signed char col, row;
+	for( signed char cx = -1; cx <= 1; cx += 2 ) {
+		for( signed char cy = -1; cy <= 1; cy += 2 ) {
+
+			signed char own_col = 8;
+			signed char own_row = 8;
+
+			for( col = king_col + cx, row = king_row + cy;
+				   col >= 0 && col < 8 && row >= 0 && row < 8; col += cx, row += cy ) {
+
+				unsigned char index = p.board[col][row];
+				if( index == pieces::nil ) {
+					if( own_col == 8 ) {
+						map.board[col][row] = 0xc0;
+					}
+					continue;
+				}
+
+				unsigned char piece_color = (index >> 4) & 0x1;
+				if( piece_color != c ) {
+					// Enemy piece in direct line of sight. Capture to check.
+					map.board[col][row] = 0xc0;
+					break;
+				}
+
+				if( own_col == 8 ) {
+					own_col = col;
+					own_row = row;
+					continue;
+				}
+
+				unsigned char pi = index & 0x0f;
+
+				// Own piece on enemy king ray blocked by one other own piece
+				bool blocked_check = false;
+				if( pi == pieces::queen || pi == pieces::bishop1 || pi == pieces::bishop2 ) {
+					blocked_check = true;
+				}
+				else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
+					// Check for promoted queens
+					piece const& pp = p.pieces[c][pi];
+					if( pp.special ) {
+						unsigned short promoted = (p.promotions[c] >> ((pi - pieces::pawn1) * 2) ) & 0x03;
+						if( promoted == promotions::queen || promoted == promotions::bishop ) {
+							blocked_check = true;
+						}
+					}
+				}
+
+				if( blocked_check ) {
+					unsigned char v = 0x80 | (col << 3) | row;
+					map.board[own_col][own_row] = v;
+				}
+
+				break;
+			}
+		}
+	}
+
+	// Check horizontals
+	for( signed char cx = -1; cx <= 1; cx += 2 ) {
+
+		signed char own_col = 8;
+
+		for( col = king_col + cx; col >= 0 && col < 8; col += cx ) {
+
+			unsigned char index = p.board[col][king_row];
+			if( index == pieces::nil ) {
+				if( own_col == 8 ) {
+					map.board[col][king_row] = 0x80;
+				}
+				continue;
+			}
+
+			unsigned char piece_color = (index >> 4) & 0x1;
+			if( piece_color != c ) {
+				// Enemy piece in direct line of sight. Capture to check.
+				map.board[col][king_row] = 0x80;
+				break;
+			}
+
+			if( own_col == 8 ) {
+				own_col = col;
+				continue;
+			}
+
+			unsigned char pi = index & 0x0f;
+
+			// Own piece on enemy king ray blocked by one other own piece
+			bool blocked_check = false;
+			if( pi == pieces::queen || pi == pieces::rook1 || pi == pieces::rook2 ) {
+				blocked_check = true;
+			}
+			else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
+				// Check for promoted queens
+				piece const& pp = p.pieces[c][pi];
+				if( pp.special ) {
+					unsigned short promoted = (p.promotions[c] >> ((pi - pieces::pawn1) * 2) ) & 0x03;
+					if( promoted == promotions::queen || promoted == promotions::rook ) {
+						blocked_check = true;
+					}
+				}
+			}
+
+			if( blocked_check ) {
+				unsigned char v = 0x80 | (col << 3) | king_row;
+				map.board[own_col][king_row] = v;
+			}
+
+			break;
+		}
+	}
+
+	// Check verticals
+	for( signed char cy = -1; cy <= 1; cy += 2 ) {
+
+		signed char own_row = 8;
+
+		for( row = king_row + cy; row >= 0 && row < 8; row += cy ) {
+
+			unsigned char index = p.board[king_col][row];
+			if( index == pieces::nil ) {
+				if( own_row == 8 ) {
+					map.board[king_col][row] = 0x80;
+				}
+				continue;
+			}
+
+			unsigned char piece_color = (index >> 4) & 0x1;
+			if( piece_color != c ) {
+				// Enemy piece in direct line of sight. Capture to check.
+				map.board[king_col][row] = 0x80;
+				break;
+			}
+
+			if( own_row == 8 ) {
+				own_row = row;
+				continue;
+			}
+
+			unsigned char pi = index & 0x0f;
+
+			// Own piece on enemy king ray blocked by one other own piece
+			bool blocked_check = false;
+			if( pi == pieces::queen || pi == pieces::rook1 || pi == pieces::rook2 ) {
+				blocked_check = true;
+			}
+			else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
+				// Check for promoted queens
+				piece const& pp = p.pieces[c][pi];
+				if( pp.special ) {
+					unsigned short promoted = (p.promotions[c] >> ((pi - pieces::pawn1) * 2) ) & 0x03;
+					if( promoted == promotions::queen || promoted == promotions::rook ) {
+						blocked_check = true;
+					}
+				}
+			}
+
+			if( blocked_check ) {
+				unsigned char v = 0x80 | (row << 3) | king_col;
+				map.board[king_col][own_row] = v;
+			}
+
+			break;
+		}
+	}
+}

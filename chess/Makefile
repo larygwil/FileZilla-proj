@@ -8,6 +8,7 @@ OBJECT_FILES = \
 	eval.o \
 	hash.o \
 	moves.o \
+	moves_captures_and_checks.o \
 	statistics.o \
 	unix.o \
 	util.o \

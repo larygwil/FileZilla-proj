@@ -10,6 +10,10 @@ struct move_info {
 	unsigned char random; // A bit of random to randomly sort equally likely moves
 };
 
-void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, bool const captures_only = false );
+void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check );
+
+// Returns all captures and checks. May return additional moves.
+// Precondition: Own king not in check
+void calculate_moves_captures_and_checks( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, inverse_check_map const& inverse_check_map );
 
 #endif

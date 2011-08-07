@@ -52,8 +52,6 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 			}
 		}
 		got_old_best = true;
-
-		// TODO: Does this have to be cached?
 	}
 
 	if( depth >= limit && !check.check )
@@ -66,8 +64,6 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 
 	d.beta = beta;
 	d.alpha = alpha;
-
-	bool got_quiet_move = false;
 
 	if( got_old_best ) {
 		// Not a terminal node, do this check early:
@@ -85,14 +81,13 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 		short new_eval = evaluate_move( p, c, current_evaluation, d.best_move );
 
 		short value;
-		if( captured || new_check.check ) {
+		if( check.check || captured || new_check.check ) {
 
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move );
 			value = -quiescence_search( depth + 1, max_depth, new_pos, new_hash, -new_eval, new_check, static_cast<color::type>(1-c), -beta, -alpha );
 		}
 		else {
-			got_quiet_move = true;
-			value = new_eval;
+			value = result::loss;
 		}
 		if( value > alpha ) {
 
@@ -112,7 +107,22 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 
 	move_info moves[200];
 	move_info* pm = moves;
-	calculate_moves( p, c, current_evaluation, pm, check );
+
+	if( check.check ) {
+		calculate_moves( p, c, current_evaluation, pm, check );
+	}
+	else {
+		inverse_check_map inverse_check;
+		calc_inverse_check_map( p, c, inverse_check );
+
+		calculate_moves_captures_and_checks( p, c, current_evaluation, pm, check, inverse_check );
+		if( pm == moves ) {
+			calculate_moves( p, c, current_evaluation, pm, check );
+			if( pm != moves ) {
+				return current_evaluation;
+			}
+		}
+	}
 
 	if( pm == moves ) {
 		ASSERT( !got_old_best || d.remaining_depth == 31 );
@@ -164,9 +174,8 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 		calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
 		short value;
 
-		if( !captured && !new_check.check ) {// && depth != max_depth  ) {
-			value = it->evaluation;
-			got_quiet_move = true;
+		if( !check.check && !captured && !new_check.check ) {// && depth != max_depth  ) {
+			value = result::loss;
 		}
 		else {
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
@@ -193,7 +202,7 @@ short quiescence_search( int depth, int const max_depth, position const& p, unsi
 		}
 	}
 
-	if( !check.check && current_evaluation > alpha && got_quiet_move ) {
+	if( !check.check && current_evaluation > alpha ) {
 		// Avoid capture line
 		alpha = current_evaluation;
 	}
