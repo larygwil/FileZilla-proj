@@ -148,11 +148,11 @@ void xboard()
 						if( it->forecast == best ) {
 							++count_best;
 						}
-						std::cerr << move_to_string( p, c, it->m ) << " " << it->forecast << std::endl;
+						std::cerr << move_to_string( p, c, it->get_move() ) << " " << it->forecast << std::endl;
 					}
 
 					move_entry best_move = moves[get_random_unsigned_long_long() % count_best];
-					move m = best_move.m;
+					move m = best_move.get_move();
 					if( !best_move.next_index ) {
 						in_book = false;
 						std::cerr << "Left opening book" << std::endl;
@@ -212,7 +212,7 @@ void xboard()
 					else {
 						in_book = false;
 						for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-							if( it->m == m ) {
+							if( it->get_move() == m ) {
 								if( it->next_index ) {
 									in_book = true;
 									book_index = it->next_index;

@@ -76,43 +76,34 @@ book_entry get_entries( unsigned long long index, std::vector<move_entry>& moves
 	read( fd, &entry, sizeof(book_entry) );
 
 	move_entry move;
-	while( true ) {
+	for( unsigned char i = 0; i < entry.count_moves; ++i ) {
 		read( fd, &move, sizeof(move_entry) );
-		if( move.m.other ) {
-			break;
-		}
-
 		moves.push_back( move );
 	}
 
 	return entry;
 }
 
-unsigned long long book_add_entry( book_entry const& b, std::vector<std::pair<short, move> > const& moves )
+unsigned long long book_add_entry( book_entry b, std::vector<move_entry> const& moves )
 {
 	scoped_lock l(mtx);
 
 	unsigned long long index = lseek( fd_index, 0, SEEK_END ) / sizeof(unsigned long long);
 	unsigned long long offset = lseek( fd, 0, SEEK_END );
 
+	b.count_moves = moves.size();
+
 	write( fd_index, &offset, sizeof( unsigned long long) );
 
 	write( fd, &b, sizeof( book_entry ) );
 
-	for( std::vector<std::pair<short, move> >::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-		move_entry m;
-		m.m = it->second;
-		m.m.other = 0;
-		m.forecast = it->first;
+
+	for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+		move_entry m = *it;
 		m.next_index = 0;
 
 		write( fd, &m, sizeof(move_entry) );
 	}
-
-	move_entry m;
-	memset( &m, 0, sizeof(move_entry) );
-	m.m.other = 1;
-	write( fd, &m, sizeof(move_entry) );
 
 	return index;
 }
@@ -132,10 +123,48 @@ void book_update_move( unsigned long long index, int move_index, unsigned long l
 	unsigned long long offset = get_offset_impl( index );
 	offset += sizeof(book_entry);
 	offset += sizeof(move_entry) * move_index;
-	offset += sizeof(move);
-	offset += sizeof(short);
 
 	lseek( fd, offset, SEEK_SET );
 
-	write( fd, &new_index, sizeof(unsigned long long) );
+	move_entry e;
+	read( fd, &e, sizeof(move_entry) );
+	e.next_index = new_index;
+	write( fd, &e, sizeof(move_entry) );
+}
+
+move move_entry::get_move() const
+{
+	move m;
+	m.source_col = source_col;
+	m.source_row = source_row;
+	m.target_col = target_col;
+	m.target_row = target_row;
+	return m;
+}
+
+void move_entry::set_move( move const& m )
+{
+	source_col = m.source_col;
+	source_row = m.source_row;
+	target_col = m.target_col;
+	target_row = m.target_row;
+}
+
+bool move_entry::operator>=( move_entry const& rhs ) const
+{
+	if( forecast > rhs.forecast ) {
+		return true;
+	}
+	if( forecast < rhs.forecast ) {
+		return false;
+	}
+
+	if( full_depth > rhs.full_depth ) {
+		return true;
+	}
+	if( full_depth > rhs.full_depth ) {
+		return false;
+	}
+
+	return quiescence_depth >= rhs.quiescence_depth;
 }

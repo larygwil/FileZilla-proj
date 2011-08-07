@@ -13,14 +13,14 @@
 int const MAX_BOOK_DEPTH = 10;
 
 namespace {
-typedef std::vector<std::pair<short, move> > sorted_moves;
-void insert_sorted( sorted_moves& moves, short forecast, move const& m )
+typedef std::vector<move_entry> sorted_moves;
+void insert_sorted( sorted_moves& moves, move_entry const& m )
 {
 	sorted_moves::iterator it = moves.begin();
-	while( it != moves.end() && it->first >= forecast ) {
+	while( it != moves.end() && *it >= m ) {
 		++it;
 	}
-	moves.insert( it, std::make_pair(forecast, m ) );
+	moves.insert( it, m );
 }
 }
 
@@ -28,8 +28,6 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 {
 	book_entry entry;
 	entry.reached_at_depth = depth;
-	entry.full_depth = MAX_DEPTH;
-	entry.quiescence_depth = QUIESCENCE_SEARCH;
 
 	unsigned long long hash = get_zobrist_hash( p, c );
 
@@ -48,12 +46,44 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 		bool capture = apply_move( new_pos, it->m, c );
 
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
-		short value = -step( 1, MAX_DEPTH, new_pos, new_hash, -it->evaluation, capture, static_cast<color::type>(1-c), result::loss, result::win );
+		short value = -step( 1, MAX_DEPTH - 2, new_pos, new_hash, -it->evaluation, capture, static_cast<color::type>(1-c), result::loss, result::win );
 
-		insert_sorted( moves_with_forecast, value, it->m );
+		move_entry m;
+		m.set_move( it->m );
+		m.forecast = value;
+		m.full_depth = MAX_DEPTH - 2;
+		m.quiescence_depth = QUIESCENCE_SEARCH;
+		insert_sorted( moves_with_forecast, m );
+
+		std::cerr << ".";
 	}
 
-	return book_add_entry( entry, moves_with_forecast );
+	sorted_moves moves_with_forecast_fulldepth;
+
+	int fulldepth = 5;
+	sorted_moves::const_iterator it;
+	for( it = moves_with_forecast.begin(); fulldepth && it != moves_with_forecast.end(); ++it, --fulldepth ) {
+		position new_pos = p;
+		bool capture = apply_move( new_pos, it->get_move(), c );
+		short new_eval = evaluate_move( p, c, eval, it->get_move() );
+
+		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->get_move() );
+		short value = -step( 1, MAX_DEPTH, new_pos, new_hash, -new_eval, capture, static_cast<color::type>(1-c), result::loss, result::win );
+
+		move_entry m;
+		m.set_move( it->get_move() );
+		m.forecast = value;
+		m.full_depth = MAX_DEPTH;
+		m.quiescence_depth = QUIESCENCE_SEARCH;
+		insert_sorted( moves_with_forecast_fulldepth, m );
+
+		std::cerr << "F";
+	}
+	for( ; it != moves_with_forecast.end(); ++it ) {
+		insert_sorted( moves_with_forecast_fulldepth, *it );
+	}
+
+	return book_add_entry( entry, moves_with_forecast_fulldepth );
 }
 
 
@@ -92,7 +122,7 @@ void get_work( worklist& wl, int max_depth, int max_width, int depth, unsigned l
 	unsigned char added_at_pos = 0;
 	for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
 		position new_pos = p;
-		apply_move( new_pos, it->m, c );
+		apply_move( new_pos, it->get_move(), c );
 
 		if( !it->next_index ) {
 
@@ -227,7 +257,7 @@ int main( int argc, char const* argv[] )
 	init_random( 1234 );
 	init_zobrist_tables();
 
-	init_hash( 2048+1024, sizeof(step_data) );
+	init_hash( 3*2048, sizeof(step_data) );
 
 	if( !open_book( book_dir ) ) {
 		std::cerr << "Cound not open opening book" << std::endl;
@@ -245,7 +275,7 @@ int main( int argc, char const* argv[] )
 	condition cond;
 
 	std::vector<processing_thread*> threads;
-	int thread_count = 6;
+	int thread_count = 12;
 	for( int t = 0; t < thread_count; ++t ) {
 		threads.push_back( new processing_thread( mtx, cond ) );
 	}
@@ -264,6 +294,10 @@ int main( int argc, char const* argv[] )
 
 		while( !stop ) {
 
+			if( wl.empty() && !all_idle ) {
+				break;
+			}
+
 			while( wl.empty() ) {
 				get_work( wl, max_depth, max_width );
 				if( wl.empty() ) {
@@ -275,7 +309,7 @@ int main( int argc, char const* argv[] )
 					}
 				}
 				else {
-					std::cerr << "Created worklist with " << wl.count << " positions to evaluate" << std::endl;
+					std::cerr << std::endl << "Created worklist with " << wl.count << " positions to evaluate" << std::endl;
 				}
 			}
 
@@ -286,12 +320,14 @@ int main( int argc, char const* argv[] )
 				}
 
 				work w;
-				get_next( wl, w );
-				threads[t]->process( w );
-				all_idle = false;
-				break;
+				if( get_next( wl, w ) ) {
+					threads[t]->process( w );
+					all_idle = false;
+				}
+				else {
+					break;
+				}
 			}
-
 			if( t == thread_count ) {
 				break;
 			}
@@ -302,7 +338,7 @@ int main( int argc, char const* argv[] )
 
 		cond.wait( l );
 
-		bool all_idle = true;
+		all_idle = true;
 		for( int t = 0; t < thread_count; ++t ) {
 			if( !threads[t]->spawned() ) {
 				continue;
@@ -317,7 +353,7 @@ int main( int argc, char const* argv[] )
 
 			++calculated;
 			unsigned long long now = get_time();
-			std::cerr << "Remaining work " << wl.count << " being processed with " << (calculated * 3600 * 1000) / (now - start) << " moves/hour" << std::endl;
+			std::cerr << std::endl << "Remaining work " << wl.count << " being processed with " << (calculated * 3600 * 1000) / (now - start) << " moves/hour" << std::endl;
 		}
 
 		if( all_idle && stop ) {
