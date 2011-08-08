@@ -533,8 +533,7 @@ bool calc( position& p, color::type c, move& m, int& res, int time_limit )
 	condition cond;
 
 	std::vector<processing_thread*> threads;
-	int thread_count = 6;
-	for( int t = 0; t < thread_count; ++t ) {
+	for( int t = 0; t < conf.thread_count; ++t ) {
 		threads.push_back( new processing_thread( mtx, cond ) );
 	}
 
@@ -558,7 +557,7 @@ bool calc( position& p, color::type c, move& m, int& res, int time_limit )
 		while( !done ) {
 			while( it != old_sorted.end() && !abort ) {
 				int t;
-				for( t = 0; t < thread_count; ++t ) {
+				for( t = 0; t < conf.thread_count; ++t ) {
 					if( threads[t]->spawned() ) {
 						continue;
 					}
@@ -572,7 +571,7 @@ bool calc( position& p, color::type c, move& m, int& res, int time_limit )
 					break;
 				}
 
-				if( t == thread_count ) {
+				if( t == conf.thread_count ) {
 					break;
 				}
 			}
@@ -588,7 +587,7 @@ break2:
 			}
 
 			bool all_idle = true;
-			for( int t = 0; t < thread_count; ++t ) {
+			for( int t = 0; t < conf.thread_count; ++t ) {
 				if( !threads[t]->spawned() ) {
 					continue;
 				}

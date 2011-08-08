@@ -16,11 +16,10 @@ struct book_entry
 } __attribute__((__packed__));
 
 struct move_entry {
-	unsigned short source_col : 3;
-	unsigned short source_row : 3;
-	unsigned short target_col : 3;
-	unsigned short target_row : 3;
-	unsigned short other : 2;
+	unsigned char source_col;
+	unsigned char source_row;
+	unsigned char target_col;
+	unsigned char target_row;
 
 	unsigned char full_depth;
 	unsigned char quiescence_depth;

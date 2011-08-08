@@ -32,28 +32,17 @@ const int TIME_LIMIT = 30000;
 
 std::string book_dir;
 
-void auto_play( int argc, char const* argv[] )
+config::config()
+: thread_count(6),
+  memory(2048+1024),
+  max_moves(0)
+{}
+
+config conf;
+
+void auto_play()
 {
-	int max_moves = 0;
-
-	{
-		int i = 1;
-		while( i < argc ) {
-			if( !strcmp(argv[i], "--moves" ) ) {
-				if( ++i == argc ) {
-					std::cerr << "Missing argument to --moves" << std::endl;
-					exit(1);
-				}
-				max_moves = atoi(argv[i++]);
-			}
-			else {
-				std::cerr << "Unknown argument" << std::endl;
-				exit(1);
-			}
-		}
-	}
-
-	init_hash( 2048+1024, sizeof(step_data) );
+	init_hash( conf.memory, sizeof(step_data) );
 	unsigned long long start = get_time();
 	position p;
 
@@ -73,7 +62,7 @@ void auto_play( int argc, char const* argv[] )
 		if( c == color::black ) {
 			++i;
 			std::cout << std::endl;
-			if( max_moves && i > max_moves ) {
+			if( conf.max_moves && i > conf.max_moves ) {
 				break;
 			}
 		}
@@ -129,7 +118,7 @@ void xboard()
 		}
 		else if( line == "go" ) {
 			if( !hash_initialized ) {
-				init_hash( 2048+1024, sizeof(step_data) );
+				init_hash( conf.memory, sizeof(step_data) );
 				hash_initialized = true;
 			}
 			// Do a step
@@ -296,14 +285,57 @@ int main( int argc, char const* argv[] )
 	std::cerr << "  ---------" << std::endl;
 	std::cerr << std::endl;
 
-	if( argc >= 2 && !strcmp(argv[1], "--xboard" ) ) {
+	int i;
+	for( i = 1; i < argc && argv[i][0] == '-'; ++i ) {
+		if( !strcmp(argv[i], "--moves" ) ) {
+			if( ++i >= argc ) {
+				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			int v = atoi(argv[i]);
+			if( v < 0 ) {
+				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			conf.max_moves = v;
+		}
+		else if( !strcmp(argv[i], "--threads" ) ) {
+			if( ++i >= argc ) {
+				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			int v = atoi(argv[i]);
+			if( v < 1 ) {
+				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			conf.thread_count = v;
+		}
+		else if( !strcmp(argv[i], "--memory" ) ) {
+			if( ++i >= argc ) {
+				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			int v = atoi(argv[i]);
+			if( v < 1 ) {
+				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			conf.memory = v;
+		}
+		else {
+			std::cerr << "Unknown argument " << argv[i] << std::endl;
+			exit(1);
+		}
+	}
+	if( i < argc && !strcmp(argv[i], "xboard" ) ) {
 		xboard();
 	}
-	else if( argc >= 2 && !strcmp(argv[1], "--perft" ) ) {
+	else if( i < argc && !strcmp(argv[i], "perft" ) ) {
 		perft();
 	}
 	else {
-		auto_play( argc, argv );
+		auto_play();
 	}
 }
 
