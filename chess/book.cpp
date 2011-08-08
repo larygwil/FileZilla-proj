@@ -129,6 +129,8 @@ void book_update_move( unsigned long long index, int move_index, unsigned long l
 	move_entry e;
 	read( fd, &e, sizeof(move_entry) );
 	e.next_index = new_index;
+
+	lseek( fd, offset, SEEK_SET );
 	write( fd, &e, sizeof(move_entry) );
 }
 

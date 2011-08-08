@@ -12,6 +12,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <vector>
 
 short const ASPIRATION = 40;
 
