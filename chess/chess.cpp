@@ -15,6 +15,7 @@ contact tim.kosse@filezilla-project.org for details.
 
 #include "book.hpp"
 #include "chess.hpp"
+#include "config.hpp"
 #include "calc.hpp"
 #include "eval.hpp"
 #include "hash.hpp"
@@ -31,14 +32,6 @@ contact tim.kosse@filezilla-project.org for details.
 const int TIME_LIMIT = 30000;
 
 std::string book_dir;
-
-config::config()
-: thread_count(6),
-  memory(2048+1024),
-  max_moves(0)
-{}
-
-config conf;
 
 void auto_play()
 {
@@ -285,49 +278,7 @@ int main( int argc, char const* argv[] )
 	std::cerr << "  ---------" << std::endl;
 	std::cerr << std::endl;
 
-	int i;
-	for( i = 1; i < argc && argv[i][0] == '-'; ++i ) {
-		if( !strcmp(argv[i], "--moves" ) ) {
-			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << argv[i] << std::endl;
-				exit(1);
-			}
-			int v = atoi(argv[i]);
-			if( v < 0 ) {
-				std::cerr << "Invalid argument to " << argv[i] << std::endl;
-				exit(1);
-			}
-			conf.max_moves = v;
-		}
-		else if( !strcmp(argv[i], "--threads" ) ) {
-			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << argv[i] << std::endl;
-				exit(1);
-			}
-			int v = atoi(argv[i]);
-			if( v < 1 ) {
-				std::cerr << "Invalid argument to " << argv[i] << std::endl;
-				exit(1);
-			}
-			conf.thread_count = v;
-		}
-		else if( !strcmp(argv[i], "--memory" ) ) {
-			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << argv[i] << std::endl;
-				exit(1);
-			}
-			int v = atoi(argv[i]);
-			if( v < 1 ) {
-				std::cerr << "Invalid argument to " << argv[i] << std::endl;
-				exit(1);
-			}
-			conf.memory = v;
-		}
-		else {
-			std::cerr << "Unknown argument " << argv[i] << std::endl;
-			exit(1);
-		}
-	}
+	int i = conf.init( argc, argv );
 	if( i < argc && !strcmp(argv[i], "xboard" ) ) {
 		xboard();
 	}

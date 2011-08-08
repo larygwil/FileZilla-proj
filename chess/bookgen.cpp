@@ -1,5 +1,6 @@
 #include "book.hpp"
 #include "calc.hpp"
+#include "config.hpp"
 #include "eval.hpp"
 #include "hash.hpp"
 #include "moves.hpp"
@@ -147,18 +148,6 @@ void get_work( worklist& wl, int max_depth, int max_width, int depth, unsigned l
 	}
 }
 
-
-void get_work( worklist& wl, int max_depth, int max_width )
-{
-	wl.next_work = 0;
-	wl.count = 0;
-
-	position p;
-	init_board( p );
-
-	get_work( wl, max_depth, max_width, 1, 0, p, color::white );
-}
-
 bool get_next( worklist& wl, work& w )
 {
 	int i = wl.next_work;
@@ -242,32 +231,8 @@ void processing_thread::onRun()
 }
 }
 
-int main( int argc, char const* argv[] )
+void go( position const& p, color::type c, int index, int depth )
 {
-	std::string book_dir;
-	std::string self = argv[0];
-	if( self.rfind('/') != std::string::npos ) {
-		book_dir = self.substr( 0, self.rfind('/') + 1 );
-	}
-
-	signal( SIGINT, &on_signal );
-
-	console_init();
-
-	init_random( 1234 );
-	init_zobrist_tables();
-
-	init_hash( 3*2048, sizeof(step_data) );
-
-	if( !open_book( book_dir ) ) {
-		std::cerr << "Cound not open opening book" << std::endl;
-		return 1;
-	}
-
-	if( needs_init() ) {
-		init_book();
-	}
-
 	int max_depth = std::min(4, MAX_BOOK_DEPTH);
 	int max_width = 2;
 
@@ -299,7 +264,7 @@ int main( int argc, char const* argv[] )
 			}
 
 			while( wl.empty() ) {
-				get_work( wl, max_depth, max_width );
+				get_work( wl, max_depth, max_width, depth + 1, index, p, c );
 				if( wl.empty() ) {
 					if( max_depth < MAX_BOOK_DEPTH ) {
 						++max_depth;
@@ -364,6 +329,113 @@ int main( int argc, char const* argv[] )
 	if( !stop ) {
 		std::cerr << "All done" << std::endl;
 	}
+}
+
+void print_pos( position const& p, color::type c, std::vector<move_entry> const& moves )
+{
+	std::cout << std::endl << "Possible moves:" << std::endl;
+	for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+		std::cout << move_to_string( p, c, it->get_move() ) << " " << (it->next_index ? "    in book" : "not in book") << " with forecast " << it->forecast << " " << std::endl;
+	}
+	if( c == color::white ) {
+		std::cout << "White to move" << std::endl;
+	}
+	else {
+		std::cout << "Black to move" << std::endl;
+	}
+
+}
+
+void run()
+{
+	position p;
+	init_board( p );
+	int book_index = 0;
+	color::type c = color::white;
+
+	std::vector<move_entry> moves;
+	get_entries( book_index, moves );
+
+	print_pos( p, c, moves );
+
+	int depth = 0;
+
+	while( true ) {
+		std::string line;
+		std::getline( std::cin, line );
+		if( !std::cin ) {
+			break;
+		}
+		if( line == "go" ) {
+			go( p, c, book_index, depth );
+			return;
+		}
+		else if( !line.empty() ) {
+			move m;
+			if( parse_move( p, c, line, m ) ) {
+
+				++depth;
+
+				apply_move( p, m, c );
+				c = static_cast<color::type>( 1 - c );
+
+				bool in_book = false;
+				for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+					if( it->get_move() == m ) {
+						if( it->next_index ) {
+							book_index = it->next_index;
+						}
+						else {
+							std::cout << "Position not in book, calculating..." << std::endl;
+							unsigned long long new_index = calculate_position( p, c, depth );
+							book_update_move( book_index, it - moves.begin(), new_index );
+							book_index = new_index;
+						}
+						in_book = true;
+						break;
+					}
+				}
+				if( !in_book ) {
+					std::cerr << "Position not in book!" << std::endl;
+					exit(1);
+				}
+
+				get_entries( book_index, moves );
+				print_pos( p, c, moves );
+			}
+		}
+	}
+}
+
+int main( int argc, char const* argv[] )
+{
+	conf.init( argc, argv );
+
+	std::string book_dir;
+	std::string self = argv[0];
+	if( self.rfind('/') != std::string::npos ) {
+		book_dir = self.substr( 0, self.rfind('/') + 1 );
+	}
+
+	signal( SIGINT, &on_signal );
+
+	console_init();
+
+	init_random( 1234 );
+	init_zobrist_tables();
+
+	init_hash( 3*2048, sizeof(step_data) );
+
+	if( !open_book( book_dir ) ) {
+		std::cerr << "Cound not open opening book" << std::endl;
+		return 1;
+	}
+
+	if( needs_init() ) {
+		init_book();
+	}
+
+	run();
 
 	return 0;
 }

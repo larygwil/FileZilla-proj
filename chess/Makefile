@@ -4,6 +4,7 @@ CXXFLAGS = -O3 -g -pipe -march=corei7 -std=gnu++0x -Wall -flto
 OBJECT_FILES = \
 	book.o \
 	calc.o \
+	config.o \
 	detect_check.o \
 	eval.o \
 	hash.o \

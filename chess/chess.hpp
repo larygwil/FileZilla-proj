@@ -3,15 +3,6 @@
 
 #include <string.h>
 
-struct config
-{
-	config();
-	int thread_count;
-	unsigned int memory;
-	unsigned int max_moves; // only for auto play
-};
-extern config conf;
-
 namespace pieces {
 enum type {
 	pawn1,

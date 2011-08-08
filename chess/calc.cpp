@@ -1,5 +1,6 @@
 #include "assert.hpp"
 #include "calc.hpp"
+#include "config.hpp"
 #include "hash.hpp"
 #include "moves.hpp"
 #include "eval.hpp"

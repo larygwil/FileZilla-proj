@@ -66,6 +66,8 @@ unsigned long long get_offset( unsigned long long index )
 
 book_entry get_entries( unsigned long long index, std::vector<move_entry>& moves )
 {
+	moves.clear();
+
 	scoped_lock l(mtx);
 
 	unsigned long long offset = get_offset_impl(index);
