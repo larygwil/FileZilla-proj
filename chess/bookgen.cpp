@@ -105,7 +105,18 @@ struct work {
 };
 
 struct worklist {
+	worklist() : next_work(), count()
+		{}
+
 	bool empty() const { return !count; }
+
+	void clear() {
+		count = 0;
+		next_work = 0;
+		for( unsigned int i = 0; i < MAX_BOOK_DEPTH; ++i ) {
+			work_at_depth[i].clear();
+		}
+	}
 
 	std::vector<work> work_at_depth[MAX_BOOK_DEPTH];
 	int next_work;
@@ -120,27 +131,26 @@ void get_work( worklist& wl, int max_depth, int max_width, int depth, unsigned l
 	/*book_entry entry = */
 	get_entries( index, moves );
 
-	unsigned char added_at_pos = 0;
-	for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+	unsigned int i = 0;
+	for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it, ++i ) {
+		if( i >= max_width ) {
+			break;
+		}
+
 		position new_pos = p;
 		apply_move( new_pos, it->get_move(), c );
 
 		if( !it->next_index ) {
-
-			if( added_at_pos < std::min(5, static_cast<int>(moves.size()/5 + 1)) ) {
-				++added_at_pos;
-				work w;
-				w.depth = depth;
-				w.index = index;
-				w.move_index = it - moves.begin();
-				w.p = new_pos;
-				w.c = static_cast<color::type>(1-c);
-				wl.work_at_depth[depth].push_back(w);
-				++wl.count;
-			}
+			work w;
+			w.depth = depth;
+			w.index = index;
+			w.move_index = it - moves.begin();
+			w.p = new_pos;
+			w.c = static_cast<color::type>(1-c);
+			wl.work_at_depth[depth].push_back(w);
+			++wl.count;
 		}
 		else {
-			++added_at_pos;
 			if( depth + 1 < max_depth ) {
 				get_work( wl, max_depth, max_width, depth + 1, it->next_index, new_pos, static_cast<color::type>(1-c) );
 			}
@@ -231,11 +241,8 @@ void processing_thread::onRun()
 }
 }
 
-void go( position const& p, color::type c, int index, int depth )
+void go( position const& p, color::type c, int index, int depth, int max_depth, int max_width )
 {
-	int max_depth = std::min(4, MAX_BOOK_DEPTH);
-	int max_width = 2;
-
 	mutex mtx;
 	condition cond;
 
@@ -245,8 +252,12 @@ void go( position const& p, color::type c, int index, int depth )
 		threads.push_back( new processing_thread( mtx, cond ) );
 	}
 
+	max_depth += depth;
+	if( max_depth > MAX_BOOK_DEPTH ) {
+		max_depth = MAX_BOOK_DEPTH;
+	}
+
 	worklist wl;
-	wl.count = 0;
 
 	scoped_lock l(mtx);
 
@@ -360,6 +371,10 @@ void run()
 
 	int depth = 0;
 
+	int max_depth = std::min(4, MAX_BOOK_DEPTH);
+	int max_width = 2;
+
+
 	while( true ) {
 		std::string line;
 		std::getline( std::cin, line );
@@ -367,8 +382,28 @@ void run()
 			break;
 		}
 		if( line == "go" ) {
-			go( p, c, book_index, depth );
+			go( p, c, book_index, depth, max_depth, max_width );
 			return;
+		}
+		else if( line.substr( 0, 11 ) == "book_depth " ) {
+			int v = atoi( line.substr( 11 ).c_str() );
+			if( v <= 0 || v >= MAX_BOOK_DEPTH ) {
+				std::cerr << "Invalid depth: " << v << std::endl;
+			}
+			else {
+				max_depth = v;
+				std::cout << "Book depth set to " << v << std::endl;
+			}
+		}
+		else if( line.substr( 0, 11 ) == "book_width " ) {
+			int v = atoi( line.substr( 11 ).c_str() );
+			if( v <= 0 ) {
+				std::cerr << "Invalid width: " << v << std::endl;
+			}
+			else {
+				max_width = v;
+				std::cout << "Book width set to " << v << std::endl;
+			}
 		}
 		else if( !line.empty() ) {
 			move m;
@@ -424,7 +459,7 @@ int main( int argc, char const* argv[] )
 	init_random( 1234 );
 	init_zobrist_tables();
 
-	init_hash( 3*2048, sizeof(step_data) );
+	init_hash( conf.memory, sizeof(step_data) );
 
 	if( !open_book( book_dir ) ) {
 		std::cerr << "Cound not open opening book" << std::endl;

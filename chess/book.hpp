@@ -13,6 +13,7 @@ struct book_entry
 {
 	unsigned char reached_at_depth;
 	unsigned char count_moves;
+	unsigned long long parent_index;
 } __attribute__((__packed__));
 
 struct move_entry {
