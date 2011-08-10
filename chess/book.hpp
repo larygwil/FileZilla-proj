@@ -33,6 +33,7 @@ struct move_entry {
 	bool operator>=( move_entry const& rhs ) const;
 } __attribute__((__packed__));
 
+book_entry get_entry( unsigned long long index );
 book_entry get_entries( unsigned long long index, std::vector<move_entry>& moves );
 
 bool open_book( std::string const& book_dir );
@@ -41,5 +42,11 @@ bool needs_init();
 
 unsigned long long book_add_entry( book_entry b, std::vector<move_entry> const& moves );
 void book_update_move( unsigned long long index, int move_index, unsigned long long new_index );
+
+std::string line_string( unsigned long long index );
+
+unsigned long long fix_depth( unsigned long long index, unsigned char reached_at_depth );
+
+void set_parent( unsigned long long index, unsigned long long parent );
 
 #endif

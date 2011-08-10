@@ -10,10 +10,15 @@ unsigned long long enpassant[8];
 unsigned long long promoted_pawns[2][8];
 unsigned long long can_castle[2][2];
 unsigned long long castled[2];
+
+bool initialized = false;
 }
 
 void init_zobrist_tables()
 {
+	if( initialized ) {
+		return;
+	}
 	white_to_move = get_random_unsigned_long_long();
 
 	for( unsigned int c = 0; c < 2; ++c ) {
@@ -38,6 +43,8 @@ void init_zobrist_tables()
 	for( unsigned int i = 0; i < 8; ++i ) {
 		enpassant[i] = get_random_unsigned_long_long();
 	}
+
+	initialized = true;
 }
 
 unsigned long long get_zobrist_hash( position const& p, color::type c ) {
