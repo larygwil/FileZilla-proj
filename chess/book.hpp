@@ -49,4 +49,5 @@ unsigned long long fix_depth( unsigned long long index, unsigned char reached_at
 
 void set_parent( unsigned long long index, unsigned long long parent );
 
+void vacuum_book();
 #endif

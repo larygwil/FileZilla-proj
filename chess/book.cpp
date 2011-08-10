@@ -2,8 +2,10 @@
 #include "platform.hpp"
 #include "util.hpp"
 
+#include <deque>
 #include <iostream>
 #include <list>
+#include <map>
 #include <sstream>
 
 #include <fcntl.h>
@@ -26,6 +28,8 @@ public:
 	int fd_index_;
 
 	mutex mtx_;
+
+	std::string book_dir_;
 };
 
 book_impl impl;
@@ -52,10 +56,11 @@ void close_book()
 	close_book_impl();
 }
 
-bool open_book( std::string const& book_dir )
+namespace {
+static bool open_book_impl( std::string const& book_dir )
 {
-	scoped_lock l(impl.mtx_);
 	close_book_impl();
+	impl.book_dir_ = book_dir;
 	impl.fd_ = open( (book_dir + "opening_book/book").c_str(), O_RDWR );
 	impl.fd_index_ = open( (book_dir + "opening_book/book_index").c_str(), O_RDWR );
 
@@ -65,6 +70,13 @@ bool open_book( std::string const& book_dir )
 	}
 
 	return true;
+}
+}
+
+bool open_book( std::string const& book_dir )
+{
+	scoped_lock l(impl.mtx_);
+	return open_book_impl( book_dir );
 }
 
 namespace {
@@ -318,4 +330,122 @@ void set_parent( unsigned long long index, unsigned long long parent )
 {
 	scoped_lock l(impl.mtx_);
 	set_parent_impl( index, parent );
+}
+
+void vacuum_book()
+{
+	scoped_lock l(impl.mtx_);
+
+	unsigned long long old_count = lseek( impl.fd_index_, 0, SEEK_END ) / 8;
+
+	// Breath-first
+	struct TranspositionWork {
+		position p;
+		color::type c;
+		unsigned long long index;
+	};
+	std::deque<TranspositionWork> toVisit;
+
+	std::map<unsigned long long, unsigned long long> index_map;
+
+	{
+		// Get started
+		{
+			TranspositionWork w;
+			init_board( w.p );
+			w.c = color::white;
+			w.index = 0;
+
+			toVisit.push_back( w );
+		}
+
+		while( !toVisit.empty() ) {
+			TranspositionWork const w = toVisit.front();
+			toVisit.pop_front();
+
+			index_map.insert( std::make_pair( w.index, index_map.size()) );
+
+			std::vector<move_entry> moves;
+			get_entries_impl( w.index, moves );
+
+			for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+				if( !it->next_index ) {
+					continue;
+				}
+
+				TranspositionWork new_work;
+				new_work.c = static_cast<color::type>(1-w.c);
+				new_work.p = w.p;
+				new_work.index = it->next_index;
+				apply_move( new_work.p, it->get_move(), new_work.c );
+				toVisit.push_back( new_work );
+			}
+		}
+	}
+
+	if( index_map.size() == old_count ) {
+		return;
+	}
+
+	std::cerr << "Vaccuuming " << old_count - index_map.size() << " positions" << std::endl;
+
+	int fd_vacuum = open( (impl.book_dir_ + "opening_book/book_vacuum").c_str(), O_CREAT | O_EXCL | O_RDWR, S_IRUSR|S_IWUSR );
+	int fd_index_vacuum = open( (impl.book_dir_ + "opening_book/book_index_vacuum").c_str(), O_CREAT | O_EXCL | O_RDWR, S_IRUSR|S_IWUSR );
+
+	if( fd_vacuum == -1 || fd_index_vacuum == -1 ) {
+		std::cerr << "Failed to open vacuum files!" << std::endl;
+		return;
+	}
+
+	// Reverse mapping
+	std::map<unsigned long long, unsigned long long> index_map_reversed;
+	for( std::map<unsigned long long, unsigned long long>::const_iterator it = index_map.begin(); it != index_map.end(); ++it )	{
+		index_map_reversed[it->second] = it->first;
+	}
+	if( index_map.size() != index_map_reversed.size() ) {
+		std::cerr << "Book algorithms are faulty. Abandon ship!" << std::endl;
+		exit(1);
+	}
+
+	// Now go over it again, update indexes and write to new file
+	for( std::map<unsigned long long, unsigned long long>::const_iterator it = index_map_reversed.begin(); it != index_map_reversed.end(); ++it ) {
+
+		std::vector<move_entry> moves;
+		book_entry bentry = get_entries_impl( it->second, moves );
+
+		unsigned long long offset = lseek( fd_vacuum, 0, SEEK_END );
+
+		std::map<unsigned long long, unsigned long long>::const_iterator iit = index_map.find( bentry.parent_index );
+		if( iit == index_map.end() ) {
+			std::cerr << "Corrupt book! Missing parent entry" << std::endl;
+			exit(1);
+		}
+		bentry.parent_index = iit->second;
+		write( fd_vacuum, &bentry, sizeof(book_entry) );
+
+		lseek( fd_index_vacuum, it->first * 8, SEEK_SET );
+		write( fd_index_vacuum, &offset, 8 );
+
+		for( std::vector<move_entry>::const_iterator mit = moves.begin(); mit != moves.end(); ++mit ) {
+			move_entry entry = *mit;
+			if( entry.next_index ) {
+				std::map<unsigned long long, unsigned long long>::const_iterator iit = index_map.find( entry.next_index );
+				if( iit == index_map.end() ) {
+					std::cerr << "Corrupt book! Missing move entry" << std::endl;
+					exit(1);
+				}
+				entry.next_index = iit->second;
+			}
+			write( fd_vacuum, &entry, sizeof(move_entry) );
+		}
+	}
+
+	close( fd_vacuum );
+	close( fd_index_vacuum );
+
+	close_book_impl();
+	rename( (impl.book_dir_ + "opening_book/book_vacuum").c_str(), (impl.book_dir_ + "opening_book/book").c_str() );
+	rename( (impl.book_dir_ + "opening_book/book_index_vacuum").c_str(), (impl.book_dir_ + "opening_book/book_index").c_str() );
+
+	open_book_impl( impl.book_dir_ );
 }

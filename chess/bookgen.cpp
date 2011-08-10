@@ -529,6 +529,7 @@ void init_transposition_cache()
 
 restart:
 	// Phase 1: Vacuum
+	vacuum_book();
 
 	// Phase 2: Fix depths
 	unsigned long long fixed_entries = fix_depth( 0, 0 );
