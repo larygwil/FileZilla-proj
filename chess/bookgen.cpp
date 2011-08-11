@@ -406,119 +406,7 @@ void print_pos( std::vector<history_entry> const& history, unsigned long long bo
 	print_pos( p, c, moves );
 }
 
-void run()
-{
-	position p;
-	init_board( p );
-	unsigned long long book_index = 0;
-	color::type c = color::white;
-
-	std::vector<move_entry> moves;
-	book_entry bentry = get_entries( book_index, moves );
-
-	std::cout << std::endl;
-	print_pos( p, c, moves );
-
-	int depth = 0;
-
-	unsigned int max_depth = std::min(4u, MAX_BOOK_DEPTH);
-	unsigned int max_width = 2;
-
-	std::vector<history_entry> history;
-
-	while( true ) {
-		std::string line;
-
-		std::cout << "Move: ";
-		std::getline( std::cin, line );
-		if( !std::cin ) {
-			break;
-		}
-		if( line == "go" ) {
-			go( p, c, book_index, depth, max_depth, max_width );
-			return;
-		}
-		else if( line.substr( 0, 11 ) == "book_depth " ) {
-			int v = atoi( line.substr( 11 ).c_str() );
-			if( v <= 0 || v > static_cast<int>(MAX_BOOK_DEPTH) ) {
-				std::cerr << "Invalid depth: " << v << std::endl;
-			}
-			else {
-				max_depth = v;
-				std::cout << "Book depth set to " << v << std::endl;
-			}
-		}
-		else if( line.substr( 0, 11 ) == "book_width " ) {
-			int v = atoi( line.substr( 11 ).c_str() );
-			if( v <= 0 ) {
-				std::cerr << "Invalid width: " << v << std::endl;
-			}
-			else {
-				max_width = v;
-				std::cout << "Book width set to " << v << std::endl;
-			}
-		}
-		else if( line == "back" ) {
-			if( !book_index ) {
-				std::cerr << "Already at top" << std::endl;
-			}
-			else {
-				history_entry h = history.back();
-				history.pop_back();
-				book_index = h.book_index;
-				p = h.p;
-				c = h.c;
-				bentry = get_entries( book_index, moves );
-				print_pos( history, book_index, p, c, moves );
-			}
-		}
-		else if( !line.empty() ) {
-			move m;
-			if( parse_move( p, c, line, m ) ) {
-
-				++depth;
-
-				history_entry h;
-				h.p = p;
-				h.c = c;
-				h.m = m;
-				h.move_string = move_to_string( p, c, m );
-				h.book_index = book_index;
-				history.push_back( h );
-
-				apply_move( p, m, c );
-				c = static_cast<color::type>( 1 - c );
-
-				bool in_book = false;
-				for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-					if( it->get_move() == m ) {
-						if( it->next_index ) {
-							book_index = it->next_index;
-						}
-						else {
-							std::cout << "Position not in book, calculating..." << std::endl;
-							unsigned long long new_index = calculate_position( p, c, depth, book_index );
-							book_update_move( book_index, it - moves.begin(), new_index );
-							book_index = new_index;
-						}
-						in_book = true;
-						break;
-					}
-				}
-				if( !in_book ) {
-					std::cerr << "Position not in book!" << std::endl;
-					exit(1);
-				}
-
-				bentry = get_entries( book_index, moves );
-				print_pos( history, book_index, p, c, moves );
-			}
-		}
-	}
-}
-
-
-void init_transposition_cache()
+void cleanup_book()
 {
 	/*
 	 * This nifty function reads in the entire opening book breath-first,
@@ -687,6 +575,120 @@ restart:
 	}
 }
 
+void run()
+{
+	position p;
+	init_board( p );
+	unsigned long long book_index = 0;
+	color::type c = color::white;
+
+	std::vector<move_entry> moves;
+	book_entry bentry = get_entries( book_index, moves );
+
+	std::cout << std::endl;
+	print_pos( p, c, moves );
+
+	int depth = 0;
+
+	unsigned int max_depth = std::min(4u, MAX_BOOK_DEPTH);
+	unsigned int max_width = 2;
+
+	std::vector<history_entry> history;
+
+	while( true ) {
+		std::string line;
+
+		std::cout << "Move: ";
+		std::getline( std::cin, line );
+		if( !std::cin ) {
+			break;
+		}
+		if( line == "go" ) {
+			go( p, c, book_index, depth, max_depth, max_width );
+			return;
+		}
+		else if( line == "cleanup" ) {
+			cleanup_book();
+		}
+		else if( line.substr( 0, 11 ) == "book_depth " ) {
+			int v = atoi( line.substr( 11 ).c_str() );
+			if( v <= 0 || v > static_cast<int>(MAX_BOOK_DEPTH) ) {
+				std::cerr << "Invalid depth: " << v << std::endl;
+			}
+			else {
+				max_depth = v;
+				std::cout << "Book depth set to " << v << std::endl;
+			}
+		}
+		else if( line.substr( 0, 11 ) == "book_width " ) {
+			int v = atoi( line.substr( 11 ).c_str() );
+			if( v <= 0 ) {
+				std::cerr << "Invalid width: " << v << std::endl;
+			}
+			else {
+				max_width = v;
+				std::cout << "Book width set to " << v << std::endl;
+			}
+		}
+		else if( line == "back" ) {
+			if( !book_index ) {
+				std::cerr << "Already at top" << std::endl;
+			}
+			else {
+				history_entry h = history.back();
+				history.pop_back();
+				book_index = h.book_index;
+				p = h.p;
+				c = h.c;
+				bentry = get_entries( book_index, moves );
+				print_pos( history, book_index, p, c, moves );
+			}
+		}
+		else if( !line.empty() ) {
+			move m;
+			if( parse_move( p, c, line, m ) ) {
+
+				++depth;
+
+				history_entry h;
+				h.p = p;
+				h.c = c;
+				h.m = m;
+				h.move_string = move_to_string( p, c, m );
+				h.book_index = book_index;
+				history.push_back( h );
+
+				apply_move( p, m, c );
+				c = static_cast<color::type>( 1 - c );
+
+				bool in_book = false;
+				for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+					if( it->get_move() == m ) {
+						if( it->next_index ) {
+							book_index = it->next_index;
+						}
+						else {
+							std::cout << "Position not in book, calculating..." << std::endl;
+							unsigned long long new_index = calculate_position( p, c, depth, book_index );
+							book_update_move( book_index, it - moves.begin(), new_index );
+							book_index = new_index;
+						}
+						in_book = true;
+						break;
+					}
+				}
+				if( !in_book ) {
+					std::cerr << "Position not in book!" << std::endl;
+					exit(1);
+				}
+
+				bentry = get_entries( book_index, moves );
+				print_pos( history, book_index, p, c, moves );
+			}
+		}
+	}
+}
+
 
 int main( int argc, char const* argv[] )
 {
@@ -719,8 +721,6 @@ int main( int argc, char const* argv[] )
 	if( needs_init() ) {
 		init_book();
 	}
-
-	init_transposition_cache();
 
 	std::cout << "Ready" << std::endl;
 
