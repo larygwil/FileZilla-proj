@@ -31,56 +31,234 @@ bool validate_move( position const& p, move const& m, color::type c )
 
 bool parse_move( position& p, color::type c, std::string const& line, move& m )
 {
-	if( line.size() < 4 || line.size() > 5 ) {
+	std::string str = line;
+	std::size_t len = str.size();
+	if( len && str[len - 1] == '#' ) {
+		--len;
+		str = str.substr(0, len);
+	}
+	else if( len && str[len - 1] == '+' ) {
+		--len;
+		str = str.substr(0, len);
+	}
+
+	if( str == "0-0" || str == "O-O" ) {
+		m.source_col = 4;
+		m.target_col = 6;
+		m.source_row = c ? 7 : 0;
+		m.target_row = m.source_row;
+		if( !validate_move( p, m, c ) ) {
+			std::cout << "Illegal move (not valid): " << line << std::endl;
+			return false;
+		}
+		return true;
+	}
+	else if( str == "0-0-0" || str == "O-O-O" ) {
+		m.source_col = 4;
+		m.target_col = 2;
+		m.source_row = c ? 7 : 0;
+		m.target_row = m.source_row;
+		if( !validate_move( p, m, c ) ) {
+			std::cout << "Illegal move (not valid): " << line << std::endl;
+			return false;
+		}
+		return true;
+	}
+	unsigned char piece = 0;
+
+	if( len && str[len - 1] == 'Q' ) {
+		--len;
+		str = str.substr(0, len);
+		if( str[len - 1] == '=' ) {
+			--len;
+			str = str.substr(0, len);
+		}
+		piece = 'P';
+	}
+
+	const char* s = str.c_str();
+
+	switch( *s ) {
+	case 'B':
+	case 'Q':
+	case 'K':
+	case 'R':
+	case 'N':
+	case 'P':
+		if( piece ) {
+			std::cout << "Error (unknown command): " << line << std::endl;
+			return false;
+		}
+		piece = *(s++);
+		break;
+	}
+
+	int first_col = -1;
+	int first_row = -1;
+	int second_col = -1;
+	int second_row = -1;
+
+	bool got_separator = false;
+	bool capture = false; // Not a capture or unknown
+
+	while( *s ) {
+		if( *s == 'x' || *s == ':' || *s == '-' ) {
+			if( got_separator ) {
+				std::cout << "Error (unknown command): " << line << std::endl;
+				return false;
+			}
+			got_separator = true;
+			if( *s == 'x' ) {
+				capture = true;
+			}
+		}
+
+		if( *s >= 'a' && *s <= 'h' ) {
+			if( second_col != -1 ) {
+				std::cout << "Error (unknown command): " << line << std::endl;
+				return false;
+			}
+			if( !got_separator && first_row == -1 && first_col == -1 ) {
+				first_col = *s - 'a';
+			}
+			else {
+				second_col = *s - 'a';
+			}
+		}
+		else if( *s >= '1' && *s <= '8' ) {
+			if( second_row != -1 ) {
+				std::cout << "Error (unknown command): " << line << std::endl;
+				return false;
+			}
+			if( !got_separator && second_col == -1 && first_row == -1 ) {
+				first_row = *s - '1';
+			}
+			else {
+				second_row = *s - '1';
+			}
+		}
+
+		++s;
+	}
+
+	if( !piece && (first_col == -1 || second_col == -1 || first_row == -1 || second_col == -1) ) {
+		piece = 'P';
+	}
+
+	if( !got_separator && second_col == -1 && second_row == -1 ) {
+		second_col = first_col;
+		first_col = -1;
+		second_row = first_row;
+		first_row = -1;
+	}
+
+	if( first_col == -1 && first_row == -1 && second_col == -1 && second_row == -1 ) {
 		std::cout << "Error (unknown command): " << line << std::endl;
 		return false;
 	}
 
-	if( line[0] < 'a' || line[0] > 'h') {
-		std::cout << "Error (unknown command): " << line << std::endl;
-		return false;
+	check_map check;
+	calc_check_map( p, c, check );
+
+	move_info moves[200];
+	move_info* pm = moves;
+	int ev = evaluate( p, c );
+	calculate_moves( p, c, ev, pm, check );
+
+	move_info* match = 0;
+
+	for( move_info* it = moves; it != pm; ++it ) {
+		unsigned char source = p.board[it->m.source_col][it->m.source_row] & 0xf;
+
+		char source_piece = 0;
+
+		switch( source ) {
+		case pieces::king:
+			source_piece = 'K';
+			break;
+		case pieces::queen:
+			source_piece = 'Q';
+			break;
+		case pieces::rook1:
+		case pieces::rook2:
+			source_piece = 'R';
+			break;
+		case pieces::bishop1:
+		case pieces::bishop2:
+			source_piece = 'B';
+			break;
+		case pieces::knight1:
+		case pieces::knight2:
+			source_piece = 'N';
+			break;
+		case pieces::pawn1:
+		case pieces::pawn2:
+		case pieces::pawn3:
+		case pieces::pawn4:
+		case pieces::pawn5:
+		case pieces::pawn6:
+		case pieces::pawn7:
+		case pieces::pawn8:
+			if( p.pieces[c][source].special ) {
+				unsigned short promoted = (p.promotions[c] >> (2 * (source - pieces::pawn1) ) ) & 0x03;
+				switch( promoted ) {
+				case promotions::queen:
+					source_piece = 'Q';
+					break;
+				case promotions::rook:
+					source_piece = 'R';
+					break;
+				case promotions::bishop:
+					source_piece = 'B';
+					break;
+				case promotions::knight:
+					source_piece = 'N';
+					break;
+				}
+			}
+			else {
+				source_piece = 'P';
+			}
+			break;
+		}
+
+		if( piece && piece != source_piece ) {
+			continue;
+		}
+
+		if( capture && p.board[it->m.target_col][it->m.target_row] == pieces::nil ) {
+			continue;
+		}
+
+		if( first_col != -1 && first_col != it->m.source_col ) {
+			continue;
+		}
+		if( first_row != -1 && first_row != it->m.source_row ) {
+			continue;
+		}
+		if( second_col != -1 && second_col != it->m.target_col ) {
+			continue;
+		}
+		if( second_row != -1 && second_row != it->m.target_row ) {
+			continue;
+		}
+
+		if( match ) {
+			std::cout << "Illegal move (ambigious): " << line << std::endl;
+			return false;
+		}
+		else {
+			match = it;
+		}
 	}
-	if( line[1] < '1' || line[1] > '8') {
-		std::cout << "Error (unknown command): " << line << std::endl;
-		return false;
-	}
-	if( line[2] < 'a' || line[2] > 'h') {
-		std::cout << "Error (unknown command): " << line << std::endl;
-		return false;
-	}
-	if( line[3] < '1' || line[3] > '8') {
-		std::cout << "Error (unknown command): " << line << std::endl;
+
+
+	if( !match ) {
+		std::cout << "Illegal move (not valid): " << line << std::endl;
 		return false;
 	}
 
-	if( line.size() == 5 && line[4] != 'q' ) {
-		std::cout << "Illegal move (not promoting to queen is disallowed due to lazy developer): " << line << std::endl;
-		return false;
-	}
-
-	int col = line[0] - 'a';
-	int row = line[1] - '1';
-
-	unsigned char pi = p.board[col][row];
-	if( pi == pieces::nil ) {
-		std::cout << "Illegal move (no piece in source square): " << line << std::endl;
-		return false;
-	}
-	if( (pi >> 4) != c ) {
-		std::cout << "Illegal move (piece in source square of wrong color): " << line << std::endl;
-		return false;
-	}
-	pi &= 0xf;
-
-	m.source_col = col;
-	m.source_row = row;
-	m.target_col = line[2] - 'a';
-	m.target_row = line[3] - '1';
-
-	if( !validate_move( p, m, c ) ) {
-		std::cout << "Illegal move: " << line << std::endl;
-		return false;
-	}
+	m = match->m;
 
 	return true;
 }
