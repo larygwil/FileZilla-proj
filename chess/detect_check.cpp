@@ -117,8 +117,8 @@ bool detect_check_knights( position const& p, color::type c, int king_col, int k
 			ret |= knights & (1ull << (pp.column + pp.row * 8) );
 		}
 	}
-	for( unsigned char pi = pieces::pawn1; pi < pieces::pawn8; ++pi ) {
-		piece const& pp = p.pieces[1-c][pieces::knight2];
+	for( unsigned char pi = pieces::pawn1; pi <= pieces::pawn8; ++pi ) {
+		piece const& pp = p.pieces[1-c][pi];
 		if( !pp.alive || !pp.special ) {
 			continue;
 		}
