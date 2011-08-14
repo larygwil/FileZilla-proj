@@ -29,7 +29,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include <iomanip>
 #include <stdlib.h>
 
-const int TIME_LIMIT = 30000;
+const int TIME_LIMIT = 90000; //30000;
 
 std::string book_dir;
 
@@ -41,7 +41,7 @@ void auto_play()
 
 	init_board(p);
 
-	int i = 1;
+	unsigned int i = 1;
 	color::type c = color::white;
 	move m = {0};
 	int res;
@@ -127,7 +127,7 @@ void xboard()
 					int count_best = 0;
 					std::cerr << "Entries from book: " << std::endl;
 					for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-						if( it->forecast == best ) {
+						if( it->forecast + 25 >= best ) {
 							++count_best;
 						}
 						std::cerr << move_to_string( p, c, it->get_move() ) << " " << it->forecast << std::endl;

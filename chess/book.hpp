@@ -3,6 +3,7 @@
 
 #include "chess.hpp"
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -50,4 +51,19 @@ unsigned long long fix_depth( unsigned long long index, unsigned char reached_at
 void set_parent( unsigned long long index, unsigned long long parent );
 
 void vacuum_book();
+
+struct book_stats
+{
+	unsigned long long unique_positions;
+	//unsigned long long transpositions;
+
+	double average_moves_per_position;
+
+	std::map<int, unsigned long long> positions_at_depth;
+};
+
+book_stats get_book_stats();
+
+void print_book_stats();
+
 #endif

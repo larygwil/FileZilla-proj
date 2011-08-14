@@ -3,6 +3,7 @@
 #include "util.hpp"
 
 #include <deque>
+#include <iomanip>
 #include <iostream>
 #include <list>
 #include <map>
@@ -448,4 +449,42 @@ void vacuum_book()
 	rename( (impl.book_dir_ + "opening_book/book_index_vacuum").c_str(), (impl.book_dir_ + "opening_book/book_index").c_str() );
 
 	open_book_impl( impl.book_dir_ );
+}
+
+book_stats get_book_stats()
+{
+	book_stats s;
+	s.unique_positions = 0;
+	//s.transpositions = 0;
+
+	unsigned long long total_moves = 0;
+
+	scoped_lock l(impl.mtx_);
+	s.unique_positions = lseek( impl.fd_index_, 0, SEEK_END ) / 8;
+
+
+	for( unsigned long long i = 0; i < s.unique_positions; ++i ) {
+		book_entry bentry = get_entry_impl( i );
+		total_moves += bentry.count_moves;
+
+		s.positions_at_depth.insert( std::make_pair( bentry.reached_at_depth, 0 ) );
+		++s.positions_at_depth[bentry.reached_at_depth];
+	}
+
+	s.average_moves_per_position = total_moves / double(s.unique_positions);
+
+	return s;
+}
+
+void print_book_stats()
+{
+	book_stats s = get_book_stats();
+
+	std::cout << "Number of unique positions in book: " << s.unique_positions << std::endl;
+	std::cout << "Average number of moves per position: " << s.average_moves_per_position << std::endl;
+	std::cout << "Depth statistics:" << std::endl;
+	for( std::map<int, unsigned long long>::const_iterator it = s.positions_at_depth.begin(); it != s.positions_at_depth.end(); ++it ) {
+		std::cout << "  " << std::setw( 3 ) << it->first;
+		std::cout << "  " << std::setw( 5 ) << it->second << std::endl;
+	}
 }

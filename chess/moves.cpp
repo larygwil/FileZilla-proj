@@ -108,7 +108,6 @@ void add_if_legal( position const& p, color::type c, int const current_evaluatio
 	mi.m.target_row = new_row;
 
 	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m );
-	mi.random = get_random_unsigned_char();
 
 	*(moves++) = mi;
 }
@@ -127,7 +126,6 @@ void add_if_legal_king( position const& p, color::type c, int const current_eval
 	mi.m.target_row = new_row;
 
 	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m );
-	mi.random = get_random_unsigned_char();
 
 	*(moves++) = mi;
 }
@@ -466,20 +464,6 @@ void calc_moves_pawns( position const& p, color::type c, int const current_evalu
 		}
 	}
 }
-
-struct MoveSort {
-	bool operator()( move_info const& lhs, move_info const& rhs ) const {
-		if( lhs.evaluation > rhs.evaluation ) {
-			return true;
-		}
-		if( lhs.evaluation < rhs.evaluation ) {
-			return false;
-		}
-
-		return lhs.random > rhs.random;
-	}
-} moveSort;
-
 }
 
 void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
@@ -496,6 +480,4 @@ void calculate_moves( position const& p, color::type c, int const current_evalua
 		calc_moves_bishops( p, c, current_evaluation, moves, check );
 		calc_moves_knights( p, c, current_evaluation, moves, check );
 	}
-
-	std::sort( start, moves, moveSort );
 }

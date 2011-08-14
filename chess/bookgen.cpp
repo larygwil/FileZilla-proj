@@ -57,12 +57,15 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 
 	sorted_moves moves_with_forecast;
 
+	context ctx;
+	ctx.max_depth = MAX_DEPTH - 2;
+	ctx.quiescence_depth = QUIESCENCE_SEARCH;
 	for( move_info const* it = moves; it != pm; ++it ) {
 		position new_pos = p;
 		bool capture = apply_move( new_pos, it->m, c );
 
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
-		short value = -step( 1, MAX_DEPTH - 2, new_pos, new_hash, -it->evaluation, capture, static_cast<color::type>(1-c), result::loss, result::win );
+		short value = -step( 1, ctx, new_pos, new_hash, -it->evaluation, capture, static_cast<color::type>(1-c), result::loss, result::win );
 
 		move_entry m;
 		m.set_move( it->m );
@@ -76,6 +79,8 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 
 	sorted_moves moves_with_forecast_fulldepth;
 
+	ctx.max_depth = MAX_DEPTH;
+
 	int fulldepth = 5;
 	sorted_moves::const_iterator it;
 	for( it = moves_with_forecast.begin(); fulldepth && it != moves_with_forecast.end(); ++it, --fulldepth ) {
@@ -84,7 +89,7 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 		short new_eval = evaluate_move( p, c, eval, it->get_move() );
 
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->get_move() );
-		short value = -step( 1, MAX_DEPTH, new_pos, new_hash, -new_eval, capture, static_cast<color::type>(1-c), result::loss, result::win );
+		short value = -step( 1, ctx, new_pos, new_hash, -new_eval, capture, static_cast<color::type>(1-c), result::loss, result::win );
 
 		move_entry m;
 		m.set_move( it->get_move() );
@@ -609,6 +614,9 @@ void run()
 		}
 		else if( line == "cleanup" ) {
 			cleanup_book();
+		}
+		else if( line == "stats" ) {
+			print_book_stats();
 		}
 		else if( line.substr( 0, 11 ) == "book_depth " ) {
 			int v = atoi( line.substr( 11 ).c_str() );
