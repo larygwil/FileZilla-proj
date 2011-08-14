@@ -423,17 +423,17 @@ void init_board_from_pieces( position& p )
 	}
 }
 
-bool apply_move( position& p, move const& m, color::type c )
+bool apply_move( position& p, move const& m, color::type c, bool& capture )
 {
-	bool ret = false;
-
-	unsigned char source = p.board[m.source_col][m.source_row] & 0x0f;
-	piece& pp = p.pieces[c][source];
-
-	if( !pp.alive ) {
-		std::cerr << "FAIL, moving dead piece!" << (int)source << " " << (int)m.target_col << " " << (int)m.target_row << std::endl;
+	unsigned char source = p.board[m.source_col][m.source_row];
+	if( source == pieces::nil ) {
+		// Happens in case of hash collisions. Sad but unavoidable.
+		//std::cerr << "FAIL, moving dead piece!" << (int)source << " " << (int)m.target_col << " " << (int)m.target_row << std::endl;
+		capture = false;
+		return false;
 	}
-	ASSERT( pp.alive );
+	source &= 0x0f;
+	piece& pp = p.pieces[c][source];
 
 	p.board[m.source_col][m.source_row] = pieces::nil;
 
@@ -454,7 +454,8 @@ bool apply_move( position& p, move const& m, color::type c )
 				p.pieces[c][pieces::rook1].special = 0;
 				p.pieces[c][pieces::rook2].special = 0;
 				p.can_en_passant = pieces::nil;
-				return false;
+				capture = false;
+				return true;
 			}
 			else if( m.target_col == 2 ) {
 				// Queenside
@@ -467,7 +468,8 @@ bool apply_move( position& p, move const& m, color::type c )
 				p.pieces[c][pieces::rook1].special = 0;
 				p.pieces[c][pieces::rook2].special = 0;
 				p.can_en_passant = pieces::nil;
-				return false;
+				capture = false;
+				return true;
 			}
 		}
 		p.pieces[c][pieces::rook1].special = 0;
@@ -491,7 +493,7 @@ bool apply_move( position& p, move const& m, color::type c )
 		p.pieces[1-c][old_piece].alive = false;
 		p.pieces[1-c][old_piece].special = false;
 
-		ret = true;
+		capture = true;
 	}
 	else if( is_pawn && p.pieces[c][source].column != m.target_col ) {
 		// Must be en-passant
@@ -505,7 +507,10 @@ bool apply_move( position& p, move const& m, color::type c )
 		p.pieces[1-c][old_piece].special = false;
 		p.board[m.target_col][m.source_row] = pieces::nil;
 
-		ret = true;
+		capture = true;
+	}
+	else {
+		capture = false;
 	}
 
 	if( is_pawn ) {
@@ -530,7 +535,7 @@ bool apply_move( position& p, move const& m, color::type c )
 	pp.column = m.target_col;
 	pp.row = m.target_row;
 
-	return ret;
+	return true;
 }
 
 

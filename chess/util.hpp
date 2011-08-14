@@ -13,7 +13,7 @@ std::string move_to_string( position const& p, color::type c, move const& m );
 void init_board_from_pieces( position& p );
 void init_board( position& p );
 
-bool apply_move( position& p, move const& m, color::type c );
+bool apply_move( position& p, move const& m, color::type c, bool& capture );
 
 
 void init_random( int seed );

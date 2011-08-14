@@ -64,7 +64,8 @@ void auto_play()
 			std::cerr << std::endl << "NOT A VALID MOVE" << std::endl;
 			exit(1);
 		}
-		apply_move( p, m, c );
+		bool captured;
+		apply_move( p, m, c, captured );
 		int ev = evaluate( p, color::white );
 		std::cerr << "Evaluation (for white): " << ev << " centipawns" << std::endl;
 
@@ -145,7 +146,8 @@ void xboard()
 
 					std::cout << "move " << move_to_string( p, c, m ) << std::endl;
 
-					apply_move( p, m, c );
+					bool captured;
+					apply_move( p, m, c, captured );
 					c = static_cast<color::type>( 1 - c );
 
 					continue;
@@ -157,7 +159,8 @@ void xboard()
 
 				std::cout << "move " << move_to_string( p, c, m ) << std::endl;
 
-				apply_move( p, m, c );
+				bool captured;
+				apply_move( p, m, c, captured );
 
 				{
 					int i = evaluate( p, c );
@@ -181,7 +184,8 @@ void xboard()
 		else {
 			move m;
 			if( parse_move( p, c, line, m ) ) {
-				apply_move( p, m, c );
+				bool captured;
+				apply_move( p, m, c, captured );
 				c = static_cast<color::type>( 1 - c );
 
 				if( in_book ) {
@@ -229,7 +233,8 @@ void perft( int depth, position const& p, color::type c, unsigned long long& n )
 
 	for( move_info* it = moves; it != pm; ++it ) {
 		position new_pos = p;
-		apply_move( new_pos, it->m, c );
+		bool captured;
+		apply_move( new_pos, it->m, c, captured );
 		perft( depth, new_pos, static_cast<color::type>(1-c), n );
 	}
 

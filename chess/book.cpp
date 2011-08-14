@@ -278,7 +278,8 @@ std::string line_string( unsigned long long index )
 		}
 		ss << move_to_string( p, c, *it );
 
-		apply_move( p, *it, c );
+		bool captured;
+		apply_move( p, *it, c, captured );
 		c = static_cast<color::type>(1-c);
 	}
 
@@ -378,7 +379,8 @@ void vacuum_book()
 				new_work.c = static_cast<color::type>(1-w.c);
 				new_work.p = w.p;
 				new_work.index = it->next_index;
-				apply_move( new_work.p, it->get_move(), new_work.c );
+				bool captured;
+				apply_move( new_work.p, it->get_move(), new_work.c, captured );
 				toVisit.push_back( new_work );
 			}
 		}

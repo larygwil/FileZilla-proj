@@ -23,6 +23,6 @@ struct context
 	int quiescence_depth;
 };
 
-short step( int depth, context const& ctx, position const& p, unsigned long long hash, int current_evaluation, bool captured, color::type c, short alpha, short beta );
+short step( int depth, context const& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta );
 
 #endif

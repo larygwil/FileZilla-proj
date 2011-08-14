@@ -135,7 +135,7 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 			hash ^= data[1-c][p.board[m.target_col][pp.row] & 0x0f][m.target_col][pp.row];
 		}
 		else if( (m.target_row == 0 || m.target_row == 7) && !pp.special ) {
-			// Promition
+			// Promotion
 			hash ^= promoted_pawns[c][source];
 		}
 		else if( m.target_row == pp.row + 2 || m.target_row + 2 == pp.row ) {

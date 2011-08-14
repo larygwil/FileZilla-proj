@@ -100,33 +100,38 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 		}
 
 		position new_pos = p;
-		bool captured = apply_move( new_pos, d.best_move, c );
-		check_map new_check;
-		calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
-		short new_eval = evaluate_move( p, c, current_evaluation, d.best_move );
+		bool captured;
+		if( apply_move( new_pos, d.best_move, c, captured ) ) {
+			check_map new_check;
+			calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
+			short new_eval = evaluate_move( p, c, current_evaluation, d.best_move );
 
-		short value;
-		if( check.check || captured || new_check.check ) {
+			short value;
+			if( check.check || captured || new_check.check ) {
 
-			unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move );
-			value = -quiescence_search( depth + 1, ctx, new_pos, new_hash, -new_eval, new_check, static_cast<color::type>(1-c), -beta, -alpha );
+				unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move );
+				value = -quiescence_search( depth + 1, ctx, new_pos, new_hash, -new_eval, new_check, static_cast<color::type>(1-c), -beta, -alpha );
+			}
+			else {
+				value = result::loss;
+			}
+			if( value > alpha ) {
+
+				alpha = value;
+
+				if( alpha >= beta ) {
+	#ifdef USE_STATISTICS
+					++stats.evaluated_intermediate;
+	#endif
+					d.evaluation = alpha;
+					d.remaining_depth = ctx.max_depth - depth - 1 + 16;
+					store( hash, reinterpret_cast<unsigned char const* const>(&d) );
+					return alpha;
+				}
+			}
 		}
 		else {
-			value = result::loss;
-		}
-		if( value > alpha ) {
-
-			alpha = value;
-
-			if( alpha >= beta ) {
-#ifdef USE_STATISTICS
-				++stats.evaluated_intermediate;
-#endif
-				d.evaluation = alpha;
-				d.remaining_depth = ctx.max_depth - depth - 1 + 16;
-				store( hash, reinterpret_cast<unsigned char const* const>(&d) );
-				return alpha;
-			}
+			got_old_best = false;
 		}
 	}
 
@@ -195,7 +200,8 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 			continue;
 		}
 		position new_pos = p;
-		bool captured = apply_move( new_pos, it->m, c );
+		bool captured;
+		apply_move( new_pos, it->m, c, captured );
 		check_map new_check;
 		calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
 		short value;
@@ -206,7 +212,7 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 		else {
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 			if( got_old_best || it != moves ) {
-				value = -quiescence_search( depth, ctx	, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -alpha-1, -alpha );
+				value = -quiescence_search( depth, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -alpha-1, -alpha );
 				if( value > alpha ) {
 					value = -quiescence_search( depth, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
 				}
@@ -241,7 +247,7 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 }
 
 
-short quiescence_search( int depth, context const& ctx, position const& p, unsigned long long hash, int current_evaluation, bool captured, color::type c, short alpha, short beta )
+short quiescence_search( int depth, context const& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta )
 {
 	check_map check;
 	calc_check_map( p, c, check );
@@ -250,7 +256,7 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 }
 
 
-short step( int depth, context const& ctx, position const& p, unsigned long long hash, int current_evaluation, bool captured, color::type c, short alpha, short beta )
+short step( int depth, context const& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta )
 {
 	int const limit = ctx.max_depth;
 
@@ -295,7 +301,7 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 	calc_check_map( p, c, check );
 
 	if( depth >= limit ) {
-		return quiescence_search( depth, ctx, p, hash, current_evaluation, captured, c, alpha, beta );
+		return quiescence_search( depth, ctx, p, hash, current_evaluation, c, alpha, beta );
 	}
 
 	d.beta = beta;
@@ -303,23 +309,28 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 
 	if( got_old_best ) {
 		position new_pos = p;
-		bool captured = apply_move( new_pos, d.best_move, c );
-		unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move );
-		short new_eval = evaluate_move( p, c, current_evaluation, d.best_move );
-		short value = -step( depth + 1, ctx, new_pos, new_hash, -new_eval, captured, static_cast<color::type>(1-c), -beta, -alpha );
-		if( value > alpha ) {
+		bool captured;
+		if( apply_move( new_pos, d.best_move, c, captured ) ) {
+			unsigned long long new_hash = update_zobrist_hash( p, c, hash, d.best_move );
+			short new_eval = evaluate_move( p, c, current_evaluation, d.best_move );
+			short value = -step( depth + 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), -beta, -alpha );
+			if( value > alpha ) {
 
-			alpha = value;
+				alpha = value;
 
-			if( alpha >= beta ) {
-#ifdef USE_STATISTICS
-				++stats.evaluated_intermediate;
-#endif
-				d.evaluation = alpha;
-				d.remaining_depth = limit - depth + 16;
-				store( hash, reinterpret_cast<unsigned char const* const>(&d) );
-				return alpha;
+				if( alpha >= beta ) {
+	#ifdef USE_STATISTICS
+					++stats.evaluated_intermediate;
+	#endif
+					d.evaluation = alpha;
+					d.remaining_depth = limit - depth + 16;
+					store( hash, reinterpret_cast<unsigned char const* const>(&d) );
+					return alpha;
+				}
 			}
+		}
+		else {
+			got_old_best = false;
 		}
 	}
 
@@ -372,9 +383,10 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 				continue;
 			}
 			position new_pos = p;
-			bool captured = apply_move( new_pos, it->m, c );
+			bool captured;
+			apply_move( new_pos, it->m, c, captured );
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
-			it->forecast = -step( depth, ctx_reduced, new_pos, new_hash, -it->evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+			it->forecast = -step( depth, ctx_reduced, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha );
 		}
 		std::sort( moves, pm, moveSortForecast );
 	}
@@ -387,20 +399,21 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 			continue;
 		}
 		position new_pos = p;
-		bool captured = apply_move( new_pos, it->m, c );
+		bool captured;
+		apply_move( new_pos, it->m, c, captured );
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 		short value;
 		if( got_old_best || it != moves ) {
-			value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, captured, static_cast<color::type>(1-c), -alpha-1, -alpha );
+			value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -alpha-1, -alpha );
 			if( value > alpha ) {
-				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha );
 			}
 			else {
 				continue;
 			}
 		}
 		else {
-			value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, captured, static_cast<color::type>(1-c), -beta, -alpha );
+			value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha );
 		}
 		if( value > alpha ) {
 			alpha = value;
@@ -477,7 +490,8 @@ private:
 void processing_thread::onRun()
 {
 	position new_pos = p_;
-	bool captured = apply_move( new_pos, m_.m, c_ );
+	bool captured;
+	apply_move( new_pos, m_.m, c_, captured );
 	unsigned long long hash = get_zobrist_hash( new_pos, static_cast<color::type>(1-c_) );
 
 	// Search using aspiration window:
@@ -491,7 +505,7 @@ void processing_thread::onRun()
 		short alpha = std::max( alpha_, static_cast<short>(alpha_at_prev_depth_ - ASPIRATION) );
 		short beta = std::min( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, captured, static_cast<color::type>(1-c_), -beta, -alpha );
+		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha );
 		if( value > alpha && value < beta ) {
 			// Aspiration search found something sensible
 			scoped_lock l( mutex_ );
@@ -503,13 +517,13 @@ void processing_thread::onRun()
 	}
 
 	if( alpha_ != result::loss ) {
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, captured, static_cast<color::type>(1-c_), -alpha_-1, -alpha_ );
+		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_ );
 		if( value > alpha_ ) {
-			value = -step( 1, ctx, new_pos, hash, -m_.evaluation, captured, static_cast<color::type>(1-c_), -beta_, -alpha_ );
+			value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_ );
 		}
 	}
 	else {
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, captured, static_cast<color::type>(1-c_), -beta_, -alpha_ );
+		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_ );
 	}
 
 	scoped_lock l( mutex_ );
