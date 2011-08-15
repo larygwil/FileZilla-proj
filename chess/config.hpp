@@ -10,6 +10,8 @@ struct config
 	int thread_count;
 	unsigned int memory;
 	unsigned int max_moves; // only for auto play
+	unsigned char depth;
+	unsigned char quiescence_depth;
 };
 extern config conf;
 

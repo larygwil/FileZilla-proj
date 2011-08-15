@@ -9,7 +9,7 @@ CXXFLAGS = -O3 -g -pipe -march=corei7 -std=gnu++0x -Wall -flto -fwhole-program -
 
 chess-gen: *.cpp *.hpp
 	g++ $(CXXFLAGS) -fprofile-generate -o $@ book.cpp chess.cpp config.cpp detect_check.cpp calc.cpp moves.cpp moves_captures_and_checks.cpp util.cpp statistics.cpp unix.cpp eval.cpp hash.cpp zobrist.cpp
-	./chess-gen --moves 1
+	./chess-gen --moves 1 --depth 8 --quiescence 5
 	rm -f chess-gen *.o
 
 chess-use: chess-gen

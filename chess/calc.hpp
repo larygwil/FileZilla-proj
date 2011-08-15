@@ -4,9 +4,6 @@
 #include "chess.hpp"
 #include "detect_check.hpp"
 
-int const MAX_DEPTH = 8;
-int const QUIESCENCE_SEARCH = 5;
-
 struct step_data {
 	short evaluation;
 	move best_move;

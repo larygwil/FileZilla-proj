@@ -213,11 +213,8 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 			if( got_old_best || it != moves ) {
 				value = -quiescence_search( depth, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -alpha-1, -alpha );
-				if( value > alpha ) {
+				if( value > alpha && value < beta ) {
 					value = -quiescence_search( depth, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
-				}
-				else {
-					continue;
 				}
 			}
 			else {
@@ -405,11 +402,8 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 		short value;
 		if( got_old_best || it != moves ) {
 			value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -alpha-1, -alpha );
-			if( value > alpha ) {
+			if( value > alpha && value < beta) {
 				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha );
-			}
-			else {
-				continue;
 			}
 		}
 		else {
@@ -424,7 +418,6 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 				break;
 		}
 	}
-
 
 	d.remaining_depth = limit - depth + 17;
 	d.evaluation = alpha;
@@ -452,12 +445,13 @@ public:
 		return result_;
 	}
 
-	void process( position const& p, color::type c, move_info const& m, short max_depth, short alpha_at_prev_depth, short alpha, short beta )
+	void process( position const& p, color::type c, move_info const& m, short max_depth, short quiescence_depth, short alpha_at_prev_depth, short alpha, short beta )
 	{
 		p_ = p;
 		c_ = c;
 		m_ = m;
 		max_depth_ = max_depth;
+		quiescence_depth_ = quiescence_depth;
 		alpha_at_prev_depth_ = alpha_at_prev_depth;
 		alpha_ = alpha;
 		beta_ = beta;
@@ -477,6 +471,7 @@ private:
 	color::type c_;
 	move_info m_;
 	short max_depth_;
+	short quiescence_depth_;
 	short alpha_at_prev_depth_;
 	short alpha_;
 	short beta_;
@@ -498,7 +493,7 @@ void processing_thread::onRun()
 
 	context ctx;
 	ctx.max_depth = max_depth_;
-	ctx.quiescence_depth = QUIESCENCE_SEARCH;
+	ctx.quiescence_depth = quiescence_depth_;
 
 	short value;
 	if( alpha_at_prev_depth_ != result::loss ) {
@@ -605,7 +600,7 @@ bool calc( position& p, color::type c, move& m, int& res, int time_limit )
 	unsigned long long previous_loop_duration = 0;
 
 	short alpha_at_prev_depth = result::loss;
-	for( int max_depth = 2 + (MAX_DEPTH % 2); max_depth <= MAX_DEPTH; max_depth += 2 )
+	for( int max_depth = 2 + (conf.depth % 2); max_depth <= conf.depth; max_depth += 2 )
 	{
 		unsigned long long loop_start = start;
 
@@ -627,7 +622,7 @@ bool calc( position& p, color::type c, move& m, int& res, int time_limit )
 						continue;
 					}
 
-					threads[t]->process( p, c, it->second, max_depth, alpha_at_prev_depth, alpha, beta );
+					threads[t]->process( p, c, it->second, max_depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta );
 
 					// First one is run on its own to get a somewhat sane lower bound for others to work with.
 					if( it++ == old_sorted.begin() ) {
@@ -687,7 +682,7 @@ break2:
 
 		res = alpha;
 		if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
-			if( max_depth < MAX_DEPTH ) {
+			if( max_depth < conf.depth ) {
 				std::cerr << "Early break at " << max_depth << std::endl;
 			}
 			abort = true;

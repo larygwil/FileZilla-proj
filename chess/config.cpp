@@ -7,7 +7,9 @@
 config::config()
 : thread_count(6),
   memory(2048+1024),
-  max_moves(0)
+  max_moves(0),
+  depth(8),
+  quiescence_depth(5)
 {}
 
 int config::init( int argc,  char const* argv[] )
@@ -37,6 +39,30 @@ int config::init( int argc,  char const* argv[] )
 				exit(1);
 			}
 			conf.thread_count = v;
+		}
+		else if( !strcmp(argv[i], "--depth" ) ) {
+			if( ++i >= argc ) {
+				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			int v = atoi(argv[i]);
+			if( v < 1 || v > 20 ) {
+				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			conf.depth = v;
+		}
+		else if( !strcmp(argv[i], "--quiescence" ) ) {
+			if( ++i >= argc ) {
+				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			int v = atoi(argv[i]);
+			if( v < 1 || v > 20 ) {
+				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			conf.quiescence_depth = v;
 		}
 		else if( !strcmp(argv[i], "--memory" ) ) {
 			if( ++i >= argc ) {

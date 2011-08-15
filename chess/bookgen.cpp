@@ -15,6 +15,9 @@
 
 #include <signal.h>
 
+int const MAX_DEPTH = 10;
+int const QUIESCENCE_SEARCH = 5;
+
 unsigned int const MAX_BOOK_DEPTH = 10;
 
 typedef std::map<unsigned long long, unsigned long long> TranspositionCache;
@@ -62,10 +65,11 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 	ctx.quiescence_depth = QUIESCENCE_SEARCH;
 	for( move_info const* it = moves; it != pm; ++it ) {
 		position new_pos = p;
-		bool capture = apply_move( new_pos, it->m, c );
+		bool captured;
+		apply_move( new_pos, it->m, c, captured );
 
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
-		short value = -step( 1, ctx, new_pos, new_hash, -it->evaluation, capture, static_cast<color::type>(1-c), result::loss, result::win );
+		short value = -step( 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), result::loss, result::win );
 
 		move_entry m;
 		m.set_move( it->m );
@@ -85,11 +89,12 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 	sorted_moves::const_iterator it;
 	for( it = moves_with_forecast.begin(); fulldepth && it != moves_with_forecast.end(); ++it, --fulldepth ) {
 		position new_pos = p;
-		bool capture = apply_move( new_pos, it->get_move(), c );
+		bool captured;
+		apply_move( new_pos, it->get_move(), c, captured );
 		short new_eval = evaluate_move( p, c, eval, it->get_move() );
 
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->get_move() );
-		short value = -step( 1, ctx, new_pos, new_hash, -new_eval, capture, static_cast<color::type>(1-c), result::loss, result::win );
+		short value = -step( 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win );
 
 		move_entry m;
 		m.set_move( it->get_move() );
@@ -158,7 +163,8 @@ void get_work( worklist& wl, int max_depth, unsigned int max_width, int depth, u
 		}
 
 		position new_pos = p;
-		apply_move( new_pos, it->get_move(), c );
+		bool captured;
+		apply_move( new_pos, it->get_move(), c, captured );
 
 		if( !it->next_index ) {
 			work w;
@@ -471,7 +477,8 @@ restart:
 			new_work.c = static_cast<color::type>(1-w.c);
 			new_work.p = w.p;
 			new_work.index = it->next_index;
-			apply_move( new_work.p, it->get_move(), new_work.c );
+			bool captured;
+			apply_move( new_work.p, it->get_move(), new_work.c, captured );
 			unsigned long long hash = get_zobrist_hash( new_work.p, new_work.c );
 
 			if( !it->next_index ) {
@@ -666,7 +673,8 @@ void run()
 				h.book_index = book_index;
 				history.push_back( h );
 
-				apply_move( p, m, c );
+				bool captured;
+				apply_move( p, m, c, captured );
 				c = static_cast<color::type>( 1 - c );
 
 				bool in_book = false;
