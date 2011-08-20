@@ -89,17 +89,11 @@
  *   Replace first sorted entry
  *
  * Implementation specifics:
- * I am aware of Hyatt's paper on lockless hashing, though for now go with the
- * locked approach. I am not yet entirely convinced, that the the lockless
- * approach is safe in case the compiler or even the CPU reorders loads and
- * stores. To err on the safe side, I'll keep the locks but lay out the data
- * fields such that doing it lockless becomes possible later on should the
- * need arive.
+ * Hashing is implemented lockless using the xor technique described in
+ * Hyatt's paper on lockless transposition tables.
  */
 
 typedef unsigned long long hash_key;
-
-#define RWLOCKS 70000
 
 struct move;
 struct entry;
@@ -157,10 +151,7 @@ private:
 
 	hash_key size_;
 	hash_key bucket_count_;
-	hash_key lock_block_size_;
 	entry* data_;
-
-	rwlock rwl[RWLOCKS + 1];
 };
 
 extern hash transposition_table;

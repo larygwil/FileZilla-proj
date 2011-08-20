@@ -468,8 +468,6 @@ void calc_moves_pawns( position const& p, color::type c, int const current_evalu
 
 void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
 {
-	move_info* start = moves;
-
 	calc_moves_king( p, c, current_evaluation, moves, check );
 
 	if( !check.check || !check.multiple() )

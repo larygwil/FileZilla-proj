@@ -16,7 +16,6 @@ unsigned int const bucket_size = sizeof(entry) * bucket_entries;
 hash::hash()
 	: size_()
 	, bucket_count_()
-	, lock_block_size_()
 	, data_()
 {
 }
@@ -36,16 +35,10 @@ bool hash::init( unsigned int max_size )
 	bucket_count_ = size_ / bucket_size;
 	size_ = bucket_count_ * bucket_size;
 
-	lock_block_size_ = ((bucket_count_ * bucket_entries) + ((bucket_count_ * bucket_entries) % RWLOCKS) ) / RWLOCKS;
-
 	delete [] data_;
 	data_ = 0;
 	data_ = new entry[ bucket_count_ * bucket_entries ];
 	memset( data_, 0, size_ );
-
-	for( int i = 0; i < RWLOCKS + 1; ++i ) {
-		init_rw_lock( rwl[i] );
-	}
 
 	return true;
 }
@@ -76,8 +69,6 @@ void hash::store( hash_key key, unsigned char remaining_depth, short eval, short
 	unsigned long long bucket_offset = (key % bucket_count_) * bucket_entries;
 	entry* bucket = data_ + bucket_offset;
 
-	scoped_exclusive_lock l(rwl[ bucket_offset / lock_block_size_ ]);
-
 	uint64_t v = static_cast<unsigned long long>(clock) << field_shifts::age;
 	v |= static_cast<unsigned long long>(remaining_depth) << field_shifts::depth;
 	v |= (
@@ -98,8 +89,9 @@ void hash::store( hash_key key, unsigned char remaining_depth, short eval, short
 	v |= static_cast<unsigned long long>(eval) << field_shifts::score;
 
 	for( unsigned int i = 0; i < bucket_entries; ++i ) {
-		if( (bucket + i)->key == key ) {
+		if( ((bucket + i)->v ^ (bucket + i)->key) == key ) {
 			(bucket + i)->v = v;
+			(bucket + i)->key = key ^ v;
 			return;
 		}
 	}
@@ -122,7 +114,7 @@ void hash::store( hash_key key, unsigned char remaining_depth, short eval, short
 			++stats_.entries;
 		}
 #endif
-		pos->key = key;
+		pos->key = v ^ key;
 
 		return;
 	}
@@ -142,7 +134,7 @@ void hash::store( hash_key key, unsigned char remaining_depth, short eval, short
 		++stats_.entries;
 	}
 #endif
-	pos->key = key;
+	pos->key = v ^ key;
 }
 
 
@@ -151,17 +143,16 @@ bool hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, sho
 	unsigned long long bucket_offset = (key % bucket_count_) * bucket_entries;
 	entry const* bucket = data_ + bucket_offset;
 
-	scoped_shared_lock l(rwl[ bucket_offset / lock_block_size_ ]);
-
 	for( unsigned int i = 0; i < bucket_entries; ++i, ++bucket ) {
-		if( bucket->key != key ) {
+		uint64_t v = bucket->v;
+		if( (v ^ bucket->key) != key ) {
 			continue;
 		}
 
-		unsigned char depth = (bucket->v >> field_shifts::depth) & field_masks::depth;
+		unsigned char depth = (v >> field_shifts::depth) & field_masks::depth;
 		if( depth >= remaining_depth ) {
-			unsigned char type = (bucket->v >> field_shifts::node_type) & field_masks::node_type;
-			eval = (bucket->v >> field_shifts::score) & field_masks::score;
+			unsigned char type = (v >> field_shifts::node_type) & field_masks::node_type;
+			eval = (v >> field_shifts::score) & field_masks::score;
 			if( ( type == score_type::exact ) ||
 				( type == score_type::lower_bound && beta <= eval ) ||
 				( type == score_type::upper_bound && alpha >= eval ) )
@@ -178,10 +169,10 @@ bool hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, sho
 #endif
 
 		best_move.other = 1;
-		best_move.source_col = (bucket->v >> field_shifts::move) & 0x07;
-		best_move.source_row = (bucket->v >> (field_shifts::move + 3)) & 0x07;
-		best_move.target_col = (bucket->v >> (field_shifts::move + 6)) & 0x07;
-		best_move.target_row = (bucket->v >> (field_shifts::move + 9)) & 0x07;
+		best_move.source_col = (v >> field_shifts::move) & 0x07;
+		best_move.source_row = (v >> (field_shifts::move + 3)) & 0x07;
+		best_move.target_col = (v >> (field_shifts::move + 6)) & 0x07;
+		best_move.target_row = (v >> (field_shifts::move + 9)) & 0x07;
 
 		return false;
 	}
