@@ -69,11 +69,11 @@ struct position : public position_base
 
 struct move
 {
-	unsigned char source_col: 3;
-	unsigned char source_row: 3;
-	unsigned char target_col : 3;
-	unsigned char target_row : 3;
-	unsigned char other : 2;
+	unsigned char source_col;//: 3;
+	unsigned char source_row;//: 3;
+	unsigned char target_col;// : 3;
+	unsigned char target_row;// : 3;
+	unsigned char other;// : 2;
 
 	bool operator!=( move const& rhs ) const {
 		return source_col != rhs.source_col || source_row != rhs.source_row || target_col != rhs.target_col || target_row != rhs.target_row;

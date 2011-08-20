@@ -35,7 +35,7 @@ std::string book_dir;
 
 void auto_play()
 {
-	init_hash( conf.memory, sizeof(step_data) );
+	transposition_table.init( conf.memory );
 	unsigned long long start = get_time();
 	position p;
 
@@ -45,7 +45,7 @@ void auto_play()
 	color::type c = color::white;
 	move m = {0};
 	int res;
-	while( calc( p, c, m, res, TIME_LIMIT ) ) {
+	while( calc( p, c, m, res, TIME_LIMIT, i ) ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
 		}
@@ -105,6 +105,8 @@ void xboard()
 
 	color::type c = color::white;
 
+	int clock = 1;
+
 	while( true ) {
 		std::getline( std::cin, line );
 		if( line == "force" ) {
@@ -112,7 +114,7 @@ void xboard()
 		}
 		else if( line == "go" ) {
 			if( !hash_initialized ) {
-				init_hash( conf.memory, sizeof(step_data) );
+				transposition_table.init( conf.memory );
 				hash_initialized = true;
 			}
 			// Do a step
@@ -148,6 +150,7 @@ void xboard()
 
 					bool captured;
 					apply_move( p, m, c, captured );
+					++clock;
 					c = static_cast<color::type>( 1 - c );
 
 					continue;
@@ -155,12 +158,13 @@ void xboard()
 			}
 			move m;
 			int res;
-			if( calc( p, c, m, res, TIME_LIMIT ) ) {
+			if( calc( p, c, m, res, TIME_LIMIT, clock ) ) {
 
 				std::cout << "move " << move_to_string( p, c, m ) << std::endl;
 
 				bool captured;
 				apply_move( p, m, c, captured );
+				++clock;
 
 				{
 					int i = evaluate( p, c );
@@ -186,6 +190,7 @@ void xboard()
 			if( parse_move( p, c, line, m ) ) {
 				bool captured;
 				apply_move( p, m, c, captured );
+				++clock;
 				c = static_cast<color::type>( 1 - c );
 
 				if( in_book ) {

@@ -63,6 +63,8 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 	context ctx;
 	ctx.max_depth = MAX_DEPTH - 2;
 	ctx.quiescence_depth = QUIESCENCE_SEARCH;
+	ctx.clock = 0; //TODO: Actual clock
+
 	for( move_info const* it = moves; it != pm; ++it ) {
 		position new_pos = p;
 		bool captured;
@@ -725,7 +727,7 @@ int main( int argc, char const* argv[] )
 	init_random( 1234 );
 	init_zobrist_tables();
 
-	init_hash( conf.memory, sizeof(step_data) );
+	transposition_table.init( conf.memory );
 
 	std::cout << "Opening book" << std::endl;
 

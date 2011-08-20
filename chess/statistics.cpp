@@ -21,12 +21,15 @@ void print_stats( unsigned long long start, unsigned long long stop )
 		}
 	}
 	std::cerr << "Transposition table" << std::endl;
-	std::cerr << "- Number of entries: " << stats.transposition_table_num_entries << std::endl;
-	std::cerr << "- Fill level:        " << static_cast<double>(stats.transposition_table_num_entries) / max_hash_entry_count() << std::endl;
-	std::cerr << "- Lookup misses:     " << stats.transposition_table_misses << std::endl;
-	std::cerr << "- Lookup hits:       " << stats.transposition_table_hits << std::endl;
-	std::cerr << "- Produced cutoffs:  " << stats.transposition_table_cutoffs << std::endl;
-	std::cerr << "- Index collisions:  " << stats.transposition_table_collisions << std::endl;
+
+	std::cerr << "Transposition table" << std::endl;
+	hash::stats s = transposition_table.get_stats( true );
+
+	std::cerr << "- Number of entries: " << s.entries << std::endl;
+	std::cerr << "- Fill level:        " << static_cast<double>(s.entries) / transposition_table.max_hash_entry_count() << std::endl;
+	std::cerr << "- Lookup misses:     " << s.misses << std::endl;
+	std::cerr << "- Lookup hits:       " << s.hits << std::endl;
+	std::cerr << "- Lookup best moves: " << s.best_move << std::endl;
 }
 
 void reset_stats()
@@ -34,10 +37,6 @@ void reset_stats()
 	stats.evaluated_leaves = 0;
 	stats.evaluated_intermediate = 0;
 	stats.quiescence_moves = 0;
-	stats.transposition_table_cutoffs = 0;
-	stats.transposition_table_hits = 0;
-	stats.transposition_table_misses = 0;
-	stats.transposition_table_collisions = 0;
 }
 
 #endif

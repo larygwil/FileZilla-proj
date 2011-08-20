@@ -13,11 +13,6 @@ struct type {
 #if USE_QUIESCENCE
 	unsigned long long quiescence_moves;
 #endif
-	unsigned long long transposition_table_cutoffs;
-	unsigned long long transposition_table_hits;
-	unsigned long long transposition_table_misses;
-	unsigned long long transposition_table_collisions;
-	unsigned long long transposition_table_num_entries;
 };
 }
 

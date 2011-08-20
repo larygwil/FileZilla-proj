@@ -554,7 +554,6 @@ void init_random( int seed )
 
 unsigned char get_random_unsigned_char()
 {
-	return 0;
 	scoped_lock l( m ) ;
 	if( ++random_unsigned_char >= sizeof(precomputed_random_data) ) {
 		random_unsigned_char = 0;
