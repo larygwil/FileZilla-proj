@@ -107,7 +107,7 @@ void add_if_legal( position const& p, color::type c, int const current_evaluatio
 	mi.m.target_col = new_col;
 	mi.m.target_row = new_row;
 
-	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m );
+	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m, mi.pawns );
 
 	*(moves++) = mi;
 }
@@ -125,7 +125,7 @@ void add_if_legal_king( position const& p, color::type c, int const current_eval
 	mi.m.target_col = new_col;
 	mi.m.target_row = new_row;
 
-	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m );
+	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m, mi.pawns );
 
 	*(moves++) = mi;
 }

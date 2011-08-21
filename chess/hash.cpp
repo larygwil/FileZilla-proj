@@ -138,7 +138,7 @@ void hash::store( hash_key key, unsigned char remaining_depth, short eval, short
 }
 
 
-bool hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, short beta, short& eval, move& best_move )
+bool hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, short beta, short& eval, move& best_move, unsigned char clock )
 {
 	unsigned long long bucket_offset = (key % bucket_count_) * bucket_entries;
 	entry const* bucket = data_ + bucket_offset;
@@ -153,13 +153,15 @@ bool hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, sho
 		if( depth >= remaining_depth ) {
 			unsigned char type = (v >> field_shifts::node_type) & field_masks::node_type;
 			eval = (v >> field_shifts::score) & field_masks::score;
+			unsigned char age = (v >> field_shifts::age) & field_masks::age;
+
 			if( ( type == score_type::exact ) ||
 				( type == score_type::lower_bound && beta <= eval ) ||
 				( type == score_type::upper_bound && alpha >= eval ) )
 			{
-#if USE_STATISTICS
+	#if USE_STATISTICS
 				++stats_.hits;
-#endif
+	#endif
 				return true;
 			}
 		}

@@ -8,6 +8,7 @@ struct move_info {
 	move m;
 	short evaluation;
 	short forecast;
+	position::pawn_structure pawns;
 };
 
 void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check );

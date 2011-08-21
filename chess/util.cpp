@@ -404,6 +404,9 @@ void init_board( position& p )
 	p.promotions[1] = 0;
 
 	p.can_en_passant = pieces::nil;
+
+	p.calc_pawn_map();
+	p.evaluate_pawn_structure();
 }
 
 void init_board_from_pieces( position& p )
@@ -484,14 +487,24 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 
 	bool const is_pawn = source >= pieces::pawn1 && source <= pieces::pawn8 && !pp.special;
 
+	bool pawn_capture = false;
+
 	unsigned char old_piece = p.board[m.target_col][m.target_row];
 	if( old_piece != pieces::nil ) {
 		// Ordinary capture
 		ASSERT( (old_piece >> 4) != c );
 		old_piece &= 0x0f;
 		ASSERT( old_piece != pieces::king );
-		p.pieces[1-c][old_piece].alive = false;
-		p.pieces[1-c][old_piece].special = false;
+
+		piece& cp = p.pieces[1-c][old_piece];
+
+		if( old_piece >= pieces::pawn1 && old_piece <= pieces::pawn8 && !p.pieces[1-c][old_piece].special) {
+			p.pawns.map[1-c] &= ~(1ull << (m.target_row * 8 + m.target_col));
+			pawn_capture = true;
+		}
+
+		cp.alive = false;
+		cp.special = false;
 
 		capture = true;
 	}
@@ -503,8 +516,143 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 		ASSERT( p.can_en_passant == old_piece );
 		ASSERT( old_piece >= pieces::pawn1 && old_piece <= pieces::pawn8 );
 		ASSERT( old_piece != pieces::king );
-		p.pieces[1-c][old_piece].alive = false;
-		p.pieces[1-c][old_piece].special = false;
+		piece& cp = p.pieces[1-c][old_piece];
+
+		cp.alive = false;
+		cp.special = false;
+		p.board[m.target_col][m.source_row] = pieces::nil;
+
+		p.pawns.map[1-c] &= ~(1ull << (m.source_row * 8 + m.target_col));
+		pawn_capture = true;
+
+		capture = true;
+	}
+	else {
+		capture = false;
+	}
+
+	if( is_pawn ) {
+		p.pawns.map[c] &= ~(1ull << (m.source_row * 8 + m.source_col));
+		if( m.target_row == 0 || m.target_row == 7) {
+			pp.special = true;
+			p.promotions[c] |= promotions::queen << (2 * (source - pieces::pawn1) );
+			p.can_en_passant = pieces::nil;
+		}
+		else if( (c == color::white) ? (pp.row + 2 == m.target_row) : (m.target_row + 2 == pp.row) ) {
+			p.can_en_passant = source;
+			p.pawns.map[c] |= 1ull << (m.target_row * 8 + m.target_col);
+		}
+		else {
+			p.can_en_passant = pieces::nil;
+			p.pawns.map[c] |= 1ull << (m.target_row * 8 + m.target_col);
+		}
+	}
+	else {
+		p.can_en_passant = pieces::nil;
+	}
+
+	p.board[m.target_col][m.target_row] = source | (c << 4);
+
+	pp.column = m.target_col;
+	pp.row = m.target_row;
+
+	if( is_pawn || pawn_capture ) {
+		p.evaluate_pawn_structure();
+	}
+
+	return true;
+}
+
+
+bool apply_move( position& p, move_info const& mi, color::type c, bool& capture )
+{
+	move const& m = mi.m;
+	unsigned char source = p.board[m.source_col][m.source_row];
+	if( source == pieces::nil ) {
+		// Happens in case of hash collisions. Sad but unavoidable.
+		//std::cerr << "FAIL, moving dead piece!" << (int)source << " " << (int)m.target_col << " " << (int)m.target_row << std::endl;
+		capture = false;
+		return false;
+	}
+	source &= 0x0f;
+	piece& pp = p.pieces[c][source];
+
+	p.board[m.source_col][m.source_row] = pieces::nil;
+	p.pawns = mi.pawns;
+
+	// Handle castling
+	if( source == pieces::king ) {
+		if( m.source_col == 4 ) {
+			if( m.target_col == 6 ) {
+				// Kingside
+				ASSERT( !pp.special );
+				ASSERT( p.pieces[c][pieces::rook2].special );
+				ASSERT( p.pieces[c][pieces::rook2].alive );
+				pp.special = 1;
+				pp.column = 6;
+				p.board[6][m.target_row] = pieces::king | (c << 4);
+				p.board[7][m.target_row] = pieces::nil;
+				p.board[5][m.target_row] = pieces::rook2 | (c << 4);
+				p.pieces[c][pieces::rook2].column = 5;
+				p.pieces[c][pieces::rook1].special = 0;
+				p.pieces[c][pieces::rook2].special = 0;
+				p.can_en_passant = pieces::nil;
+				capture = false;
+				return true;
+			}
+			else if( m.target_col == 2 ) {
+				// Queenside
+				pp.special = 1;
+				pp.column = 2;
+				p.board[2][m.target_row] = pieces::king | (c << 4);
+				p.board[0][m.target_row] = pieces::nil;
+				p.board[3][m.target_row] = pieces::rook1 | (c << 4);
+				p.pieces[c][pieces::rook1].column = 3;
+				p.pieces[c][pieces::rook1].special = 0;
+				p.pieces[c][pieces::rook2].special = 0;
+				p.can_en_passant = pieces::nil;
+				capture = false;
+				return true;
+			}
+		}
+		p.pieces[c][pieces::rook1].special = 0;
+		p.pieces[c][pieces::rook2].special = 0;
+	}
+	else if( source == pieces::rook1 ) {
+		pp.special = 0;
+	}
+	else if( source == pieces::rook2 ) {
+		pp.special = 0;
+	}
+
+	bool const is_pawn = source >= pieces::pawn1 && source <= pieces::pawn8 && !pp.special;
+
+	unsigned char old_piece = p.board[m.target_col][m.target_row];
+	if( old_piece != pieces::nil ) {
+		// Ordinary capture
+		ASSERT( (old_piece >> 4) != c );
+		old_piece &= 0x0f;
+		ASSERT( old_piece != pieces::king );
+
+		piece& cp = p.pieces[1-c][old_piece];
+
+		cp.alive = false;
+		cp.special = false;
+
+		capture = true;
+	}
+	else if( is_pawn && p.pieces[c][source].column != m.target_col ) {
+		// Must be en-passant
+		old_piece = p.board[m.target_col][m.source_row];
+		ASSERT( (old_piece >> 4) != c );
+		old_piece &= 0x0f;
+		ASSERT( p.can_en_passant == old_piece );
+		ASSERT( old_piece >= pieces::pawn1 && old_piece <= pieces::pawn8 );
+		ASSERT( old_piece != pieces::king );
+		piece& cp = p.pieces[1-c][old_piece];
+
+		cp.alive = false;
+		cp.special = false;
 		p.board[m.target_col][m.source_row] = pieces::nil;
 
 		capture = true;
@@ -570,4 +718,31 @@ unsigned long long get_random_unsigned_long_long() {
 	}
 
 	return *reinterpret_cast<unsigned long long*>(precomputed_random_data + random_unsigned_long_long_pos);
+}
+
+void position::calc_pawn_map()
+{
+	pawns.map[0] = 0;
+	pawns.map[1] = 0;
+	for( int c = 0; c < 2; ++c ) {
+		for( int i = pieces::pawn1; i <= pieces::pawn8; ++i ) {
+			piece const& pp = pieces[c][i];
+			if( pp.alive && !pp.special ) {
+				pawns.map[c] |= 1ull << (pp.row * 8 + pp.column);
+			}
+		}
+	}
+}
+
+
+
+void position::evaluate_pawn_structure()
+{
+	evaluate_pawn_structure( color::white );
+	evaluate_pawn_structure( color::black );
+}
+
+void position::evaluate_pawn_structure( color::type c )
+{
+	pawns.eval[c] = evaluate_pawns( pawns.map, c );
 }

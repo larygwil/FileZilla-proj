@@ -93,7 +93,8 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 		position new_pos = p;
 		bool captured;
 		apply_move( new_pos, it->get_move(), c, captured );
-		short new_eval = evaluate_move( p, c, eval, it->get_move() );
+		position::pawn_structure pawns;
+		short new_eval = evaluate_move( p, c, eval, it->get_move(), pawns );
 
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->get_move() );
 		short value = -step( 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win );

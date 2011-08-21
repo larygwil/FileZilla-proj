@@ -46,7 +46,7 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 
 	short eval;
 	move best_move;
-	if( transposition_table.lookup( hash, limit - depth, alpha, beta, eval, best_move ) ) {
+	if( transposition_table.lookup( hash, limit - depth, alpha, beta, eval, best_move, ctx.clock ) ) {
 		return eval;
 	}
 
@@ -59,6 +59,8 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 	}
 
 	short old_alpha = alpha;
+
+	bool evaluated_move = false;
 
 	if( best_move.other ) {
 		// Not a terminal node, do this check early:
@@ -74,10 +76,13 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 		if( apply_move( new_pos, best_move, c, captured ) ) {
 			check_map new_check;
 			calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
-			short new_eval = evaluate_move( p, c, current_evaluation, best_move );
+			position::pawn_structure pawns;
+			short new_eval = evaluate_move( p, c, current_evaluation, best_move, pawns );
 
 			short value;
 			if( check.check || captured || new_check.check ) {
+
+				evaluated_move = true;
 
 				unsigned long long new_hash = update_zobrist_hash( p, c, hash, best_move );
 				value = -quiescence_search( depth + 1, ctx, new_pos, new_hash, -new_eval, new_check, static_cast<color::type>(1-c), -beta, -alpha );
@@ -90,13 +95,6 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 		#ifdef USE_STATISTICS
 						++stats.evaluated_intermediate;
 		#endif
-
-						if( alpha < result::loss_threshold ) {
-							++alpha;
-						}
-						else if( alpha > result::win_threshold ) {
-							--alpha;
-						}
 
 						transposition_table.store( hash, limit - depth, alpha, old_alpha, beta, best_move, ctx.clock );
 						return alpha;
@@ -135,7 +133,7 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 #ifdef USE_STATISTICS
 			++stats.evaluated_leaves;
 #endif
-			return result::loss;
+			return result::loss + depth;
 		}
 		else {
 #ifdef USE_STATISTICS
@@ -169,12 +167,15 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 		}
 		position new_pos = p;
 		bool captured;
-		apply_move( new_pos, it->m, c, captured );
+		apply_move( new_pos, *it, c, captured );
 		check_map new_check;
 		calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
 		short value;
 
 		if( check.check || captured || new_check.check ) {
+
+			evaluated_move = true;
+
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 			if( best_move.other || it != moves ) {
 				value = -quiescence_search( depth, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -alpha-1, -alpha );
@@ -196,16 +197,12 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 		}
 	}
 
-	if( !check.check && current_evaluation > alpha ) {
-		// Avoid capture line
+	if( !evaluated_move ) {
 		alpha = current_evaluation;
 	}
-
-	if( alpha < result::loss_threshold ) {
-		++alpha;
-	}
-	else if( alpha > result::win_threshold ) {
-		--alpha;
+	else if( !check.check && current_evaluation > alpha ) {
+		// Avoid capture line
+		alpha = current_evaluation;
 	}
 
 	transposition_table.store( hash, limit - depth + 1, alpha, old_alpha, beta, best_move, ctx.clock );
@@ -227,7 +224,7 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 {
 	short eval;
 	move best_move;
-	if( transposition_table.lookup( hash, ctx.max_depth - depth + 128, alpha, beta, eval, best_move ) ) {
+	if( transposition_table.lookup( hash, ctx.max_depth - depth + 128, alpha, beta, eval, best_move, ctx.clock ) ) {
 		return eval;
 	}
 
@@ -245,7 +242,8 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 		bool captured;
 		if( apply_move( new_pos, best_move, c, captured ) ) {
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, best_move );
-			short new_eval = evaluate_move( p, c, current_evaluation, best_move );
+			position::pawn_structure pawns;
+			short new_eval = evaluate_move( p, c, current_evaluation, best_move, pawns );
 			short value = -step( depth + 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), -beta, -alpha );
 			if( value > alpha ) {
 
@@ -255,12 +253,6 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 	#ifdef USE_STATISTICS
 					++stats.evaluated_intermediate;
 	#endif
-					if( alpha < result::loss_threshold ) {
-						++alpha;
-					}
-					else if( alpha > result::win_threshold ) {
-						--alpha;
-					}
 
 					transposition_table.store( hash, ctx.max_depth - depth + 128, alpha, old_alpha, beta, best_move, ctx.clock );
 					return alpha;
@@ -280,7 +272,7 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 	if( pm == moves ) {
 		ASSERT( !best_move.other || d.remaining_depth == -127 );
 		if( check.check ) {
-			return result::loss;
+			return result::loss + depth;
 		}
 		else {
 			return result::draw;
@@ -310,7 +302,7 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 			}
 			position new_pos = p;
 			bool captured;
-			apply_move( new_pos, it->m, c, captured );
+			apply_move( new_pos, *it, c, captured );
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 			it->forecast = -step( depth, ctx_reduced, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha );
 		}
@@ -347,13 +339,6 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 			if( alpha >= beta )
 				break;
 		}
-	}
-
-	if( alpha < result::loss_threshold ) {
-		++alpha;
-	}
-	else if( alpha > result::win_threshold ) {
-		--alpha;
 	}
 
 	transposition_table.store( hash, ctx.max_depth - depth + 128 + 1, alpha, old_alpha, beta, best_move, ctx.clock );

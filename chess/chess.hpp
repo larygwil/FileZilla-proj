@@ -47,7 +47,16 @@ struct piece
 	unsigned char special : 1;
 };
 
-struct position_base
+
+namespace color {
+enum type {
+	white = 0,
+	black = 1
+};
+}
+
+
+struct position
 {
 	// [color][piece]
 	piece pieces[2][16];
@@ -56,14 +65,21 @@ struct position_base
 	unsigned short promotions[2];
 
 	unsigned char can_en_passant; // Piece of last-moved player that can be en-passanted
-} __attribute__((__packed__));
 
-
-struct position : public position_base
-{
 	// board[column][row] as piece indexes in lower 4 bits, color in 5th bit.
 	// nil if square is empty.
 	unsigned char board[8][8];
+
+	void calc_pawn_map();
+
+	void evaluate_pawn_structure();
+	void evaluate_pawn_structure( color::type c );
+
+	struct pawn_structure {
+		unsigned long long map[2];
+		unsigned short eval[2];
+	} pawns;
+
 } __attribute__((__packed__));
 
 
@@ -94,12 +110,6 @@ enum type {
 };
 }
 
-namespace color {
-enum type {
-	white = 0,
-	black = 1
-};
-}
 
 #define USE_QUIESCENCE 1
 

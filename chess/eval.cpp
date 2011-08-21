@@ -579,6 +579,7 @@ short evaluate_pawn( position const& p, color::type c, piece const& pp )
 
 	return evaluate_pawn( pawns, c, pp.column, pp.row );
 }
+}
 
 short evaluate_pawns( unsigned long long const* pawns, color::type c )
 {
@@ -594,8 +595,6 @@ short evaluate_pawns( unsigned long long const* pawns, color::type c )
 	}
 
 	return ret;
-}
-
 }
 
 
@@ -741,7 +740,7 @@ static short get_piece_value( position const& p, color::type c, int target, int 
 }
 }
 
-short evaluate_move( position const& p, color::type c, short current_evaluation, move const& m )
+short evaluate_move( position const& p, color::type c, short current_evaluation, move const& m, position::pawn_structure& outPawns )
 {
 	int pawn_move = 0;
 	int captured_pawn_index = -1;
@@ -818,28 +817,30 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		current_evaluation += get_piece_value( p, c, source, m.target_col, m.target_row );
 	}
 
+	outPawns = p.pawns;
 	if( pawn_move || captured_pawn_index != -1 ) {
-		unsigned long long pawns[2];
-		get_pawn_map( p, pawns );
-		current_evaluation -= evaluate_pawns( pawns, c );
-		current_evaluation += evaluate_pawns( pawns, static_cast<color::type>(1-c) );
+		current_evaluation -= p.pawns.eval[c];
+		current_evaluation += p.pawns.eval[1-c];
 		if( captured_pawn_index != -1 ) {
-			pawns[1-c] &= ~(1ull << captured_pawn_index);
+			outPawns.map[1-c] &= ~(1ull << captured_pawn_index);
 		}
 		if( pawn_move ) {
-			pawns[c] &= ~(1ull << (m.source_row * 8 + m.source_col) );
+			outPawns.map[c] &= ~(1ull << (m.source_row * 8 + m.source_col) );
 			if( pawn_move == 1 ) {
-				pawns[c] |= 1ull << (m.target_row * 8 + m.target_col);
+				outPawns.map[c] |= 1ull << (m.target_row * 8 + m.target_col);
 			}
 		}
-		current_evaluation += evaluate_pawns( pawns, c );
-		current_evaluation -= evaluate_pawns( pawns, static_cast<color::type>(1-c) );
+		outPawns.eval[c] = evaluate_pawns( outPawns.map, c );
+		outPawns.eval[1-c] = evaluate_pawns( outPawns.map, static_cast<color::type>(1-c) );
+		current_evaluation += outPawns.eval[c];
+		current_evaluation -= outPawns.eval[1-c];
 	}
 
 #if 0
 	position p2 = p;
 	bool capture;
 	apply_move( p2, m, c, capture );
+	p2.calc_pawn_map();
 	short ev2 = evaluate( p2, c );
 	if( ev2 != current_evaluation ) {
 		std::cerr << current_evaluation << " " << ev2 << " " << move_to_string( p, c, m ) << " " << captured_pawn_index << std::endl;

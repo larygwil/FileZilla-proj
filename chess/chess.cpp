@@ -299,4 +299,3 @@ int main( int argc, char const* argv[] )
 		auto_play();
 	}
 }
-

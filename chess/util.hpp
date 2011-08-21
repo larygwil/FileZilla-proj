@@ -5,6 +5,8 @@
 
 #include <string>
 
+struct move_info;
+
 bool validate_move( position const& p, move const& m, color::type c );
 bool parse_move( position& p, color::type c, std::string const& line, move& m );
 
@@ -14,6 +16,7 @@ void init_board_from_pieces( position& p );
 void init_board( position& p );
 
 bool apply_move( position& p, move const& m, color::type c, bool& capture );
+bool apply_move( position& p, move_info const& m, color::type c, bool& capture );
 
 
 void init_random( int seed );
