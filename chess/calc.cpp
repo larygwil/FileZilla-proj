@@ -10,7 +10,9 @@
 #include "zobrist.hpp"
 
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <map>
 #include <vector>
@@ -40,7 +42,7 @@ struct MoveSortForecast {
 }
 
 
-short quiescence_search( int depth, context const& ctx, position const& p, unsigned long long hash, int current_evaluation, check_map const& check, color::type c, short alpha, short beta )
+short quiescence_search( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, check_map const& check, color::type c, short alpha, short beta )
 {
 	int const limit = ctx.max_depth + ctx.quiescence_depth;
 
@@ -211,7 +213,7 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 }
 
 
-short quiescence_search( int depth, context const& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta )
+short quiescence_search( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta )
 {
 	check_map check;
 	calc_check_map( p, c, check );
@@ -220,33 +222,50 @@ short quiescence_search( int depth, context const& ctx, position const& p, unsig
 }
 
 
-short step( int depth, context const& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta )
+short step( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv )
 {
-	short eval;
-	move best_move;
-	if( transposition_table.lookup( hash, ctx.max_depth - depth + 128, alpha, beta, eval, best_move, ctx.clock ) ) {
-		return eval;
+	{
+		short eval;
+		move best_move;
+		if( transposition_table.lookup( hash, ctx.max_depth - depth + 128, alpha, beta, eval, best_move, ctx.clock ) ) {
+			ctx.pv_pool.set_pv_move( pv, best_move );
+			return eval;
+		}
+		if( best_move.other ) {
+			ctx.pv_pool.set_pv_move( pv, best_move );
+		}
 	}
-
-	check_map check;
-	calc_check_map( p, c, check );
 
 	if( depth >= ctx.max_depth ) {
 		return quiescence_search( depth, ctx, p, hash, current_evaluation, c, alpha, beta );
 	}
 
+	if( !pv->get_best_move().other && depth + 2 <= ctx.max_depth ) {
+		ctx.max_depth -= 2;
+		step( depth, ctx, p, hash, current_evaluation, c, alpha, beta, pv );
+		ctx.max_depth += 2;
+	}
+
 	short old_alpha = alpha;
 
-	if( best_move.other ) {
+	if( pv->get_best_move().other ) {
 		position new_pos = p;
 		bool captured;
-		if( apply_move( new_pos, best_move, c, captured ) ) {
-			unsigned long long new_hash = update_zobrist_hash( p, c, hash, best_move );
+		if( apply_move( new_pos, pv->get_best_move(), c, captured ) ) {
+			unsigned long long new_hash = update_zobrist_hash( p, c, hash, pv->get_best_move() );
 			position::pawn_structure pawns;
-			short new_eval = evaluate_move( p, c, current_evaluation, best_move, pawns );
-			short value = -step( depth + 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), -beta, -alpha );
+			short new_eval = evaluate_move( p, c, current_evaluation, pv->get_best_move(), pawns );
+
+			pv_entry* cpv = pv->next();
+			if( !cpv ) {
+				cpv = ctx.pv_pool.get();
+			}
+			short value = -step( depth + 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), -beta, -alpha, cpv );
 			if( value > alpha ) {
 
+				if( !pv->next() ) {
+					ctx.pv_pool.append( pv, pv->get_best_move(), cpv );
+				}
 				alpha = value;
 
 				if( alpha >= beta ) {
@@ -254,23 +273,33 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 					++stats.evaluated_intermediate;
 	#endif
 
-					transposition_table.store( hash, ctx.max_depth - depth + 128, alpha, old_alpha, beta, best_move, ctx.clock );
+					transposition_table.store( hash, ctx.max_depth - depth + 128, alpha, old_alpha, beta, pv->get_best_move(), ctx.clock );
 					return alpha;
+				}
+			}
+			else {
+				if( !pv->next() ) {
+					ctx.pv_pool.release(cpv);
 				}
 			}
 		}
 		else {
-			best_move.other = false;
+			// Unfortunate type-1 collision
+			std::cerr << "Possible type-1 collision" << std::endl;
+			ctx.pv_pool.clear_pv_move( pv );
+			//goto retry_after_type1_collision;
 		}
 	}
 
+	check_map check;
+	calc_check_map( p, c, check );
 
 	move_info moves[200];
 	move_info* pm = moves;
 	calculate_moves( p, c, current_evaluation, pm, check );
 
 	if( pm == moves ) {
-		ASSERT( !best_move.other || d.remaining_depth == -127 );
+		ASSERT( !pv->get_best_move().other )
 		if( check.check ) {
 			return result::loss + depth;
 		}
@@ -279,69 +308,52 @@ short step( int depth, context const& ctx, position const& p, unsigned long long
 		}
 	}
 
-	
 #ifdef USE_STATISTICS
 	++stats.evaluated_intermediate;
 #endif
 
-	if( !best_move.other ) {
-		best_move = moves->m;
-	}
-
 	++depth;
 
-	if( depth + 2 < ctx.max_depth ) {
-		context ctx_reduced = ctx;
-		ctx_reduced.quiescence_depth = 0;
-		ctx_reduced.max_depth = std::min( ctx.max_depth, ctx.max_depth - (ctx.max_depth - depth) / 2 + 1 );
-
-		for( move_info* it = moves; it != pm; ++it ) {
-			if( best_move.other && best_move == it->m ) {
-				it->forecast = result::loss;
-				continue;
-			}
-			position new_pos = p;
-			bool captured;
-			apply_move( new_pos, *it, c, captured );
-			unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
-			it->forecast = -step( depth, ctx_reduced, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha );
-		}
-		std::sort( moves, pm, moveSortForecast );
-	}
-	else {
-		std::sort( moves, pm, moveSort );
-	}
+	std::sort( moves, pm, moveSort );
 
 	for( move_info const* it = moves; it != pm; ++it ) {
-		if( best_move.other && best_move == it->m ) {
+		if( pv->get_best_move().other && pv->get_best_move() == it->m ) {
 			continue;
 		}
+
 		position new_pos = p;
 		bool captured;
 		apply_move( new_pos, it->m, c, captured );
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 		short value;
-		if( best_move.other || it != moves ) {
-			value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -alpha-1, -alpha );
+		pv_entry* cpv = ctx.pv_pool.get();
+		if( pv->get_best_move().other ) {
+			value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -alpha-1, -alpha, cpv );
 
 			if( value > alpha && value < beta) {
-				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha );
+				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv );
 			}
 		}
 		else {
-			value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha );
+			value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv );
 		}
 		if( value > alpha ) {
+			ctx.pv_pool.append( pv, it->m, cpv );
 			alpha = value;
-
-			best_move = it->m;
 
 			if( alpha >= beta )
 				break;
 		}
+		else {
+			ctx.pv_pool.release(cpv);
+		}
 	}
 
-	transposition_table.store( hash, ctx.max_depth - depth + 128 + 1, alpha, old_alpha, beta, best_move, ctx.clock );
+	if( !pv->get_best_move().other ) {
+		ctx.pv_pool.set_pv_move( pv, moves->m );
+	}
+
+	transposition_table.store( hash, ctx.max_depth - depth + 128 + 1, alpha, old_alpha, beta, pv->get_best_move(), ctx.clock );
 
 	return alpha;
 }
@@ -365,7 +377,7 @@ public:
 		return result_;
 	}
 
-	void process( position const& p, color::type c, move_info const& m, short max_depth, short quiescence_depth, short alpha_at_prev_depth, short alpha, short beta, int clock )
+	void process( position const& p, color::type c, move_info const& m, short max_depth, short quiescence_depth, short alpha_at_prev_depth, short alpha, short beta, int clock, pv_entry* pv )
 	{
 		p_ = p;
 		c_ = c;
@@ -377,11 +389,17 @@ public:
 		beta_ = beta;
 		finished_ = false;
 		clock_ = clock;
+		pv_ = pv;
 
 		spawn();
 	}
 
 	move_info get_move() const { return m_; }
+
+	// Call locked and when finished
+	pv_entry* get_pv() const {
+		return pv_;
+	}
 
 	virtual void onRun();
 private:
@@ -400,6 +418,8 @@ private:
 	bool finished_;
 	short result_;
 	int clock_;
+
+	pv_entry* pv_;
 };
 }
 
@@ -423,7 +443,7 @@ void processing_thread::onRun()
 		short alpha = std::max( alpha_, static_cast<short>(alpha_at_prev_depth_ - ASPIRATION) );
 		short beta = std::min( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha );
+		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next() );
 		if( value > alpha && value < beta ) {
 			// Aspiration search found something sensible
 			scoped_lock l( mutex_ );
@@ -435,13 +455,13 @@ void processing_thread::onRun()
 	}
 
 	if( alpha_ != result::loss ) {
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_ );
+		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_, pv_->next() );
 		if( value > alpha_ ) {
-			value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_ );
+			value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next() );
 		}
 	}
 	else {
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_ );
+		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next() );
 	}
 
 	scoped_lock l( mutex_ );
@@ -450,14 +470,24 @@ void processing_thread::onRun()
 	cond_.signal( l );
 }
 
-typedef std::vector<std::pair<short, move_info> > sorted_moves;
-void insert_sorted( sorted_moves& moves, int forecast, move_info const& m )
+struct move_data {
+	short forecast;
+	move_info m;
+	pv_entry* pv;
+};
+
+typedef std::vector<move_data> sorted_moves;
+void insert_sorted( sorted_moves& moves, int forecast, move_info const& m, pv_entry* pv )
 {
 	sorted_moves::iterator it = moves.begin();
-	while( it != moves.end() && it->first >= forecast ) {
+	while( it != moves.end() && it->forecast >= forecast ) {
 		++it;
 	}
-	moves.insert( it, std::make_pair(forecast, m ) );
+	move_data d;
+	d.forecast = forecast;
+	d.m = m;
+	d.pv = pv;
+	moves.insert( it, d );
 }
 
 bool calc( position& p, color::type c, move& m, int& res, int time_limit, int clock )
@@ -505,8 +535,14 @@ bool calc( position& p, color::type c, move& m, int& res, int time_limit, int cl
 	// Go through them sorted by previous evaluation. This way, if on time pressure,
 	// we can abort processing at high depths early if needed.
 	sorted_moves old_sorted;
-	for( move_info const* it  = moves; it != pm; ++it ) {
-		insert_sorted( old_sorted, it - moves, *it );
+
+	{
+		pv_entry_pool pool;
+		for( move_info const* it  = moves; it != pm; ++it ) {
+			pv_entry* pv = pool.get();
+			pool.append( pv, it->m, pool.get() );
+			insert_sorted( old_sorted, it - moves, *it, pv );
+		}
 	}
 
 	unsigned long long start = get_time();
@@ -545,7 +581,7 @@ bool calc( position& p, color::type c, move& m, int& res, int time_limit, int cl
 						continue;
 					}
 
-					threads[t]->process( p, c, it->second, max_depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock );
+					threads[t]->process( p, c, it->m, max_depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv );
 
 					// First one is run on its own to get a somewhat sane lower bound for others to work with.
 					if( it++ == old_sorted.begin() ) {
@@ -587,7 +623,8 @@ break2:
 					alpha = value;
 				}
 
-				insert_sorted( sorted, value, threads[t]->get_move() );
+				pv_entry* pv = threads[t]->get_pv();
+				insert_sorted( sorted, value, threads[t]->get_move(), pv );
 			}
 
 			if( all_idle ) {
@@ -631,10 +668,15 @@ break2:
 
 	std::cerr << "Candidates: " << std::endl;
 	for( sorted_moves::const_iterator it = old_sorted.begin(); it != old_sorted.end(); ++it ) {
-		std::cerr << move_to_string( p, c, it->second.m ) << " " << it->first << std::endl;
+		std::stringstream ss;
+		ss << std::setw( 7 ) << it->forecast;
+		std::cerr << ss.str() << " " << pv_to_string( it->pv, p, c ) << std::endl;
+
+		pv_entry_pool p;
+		p.release( it->pv );
 	}
 
-	m = old_sorted.begin()->second.m;
+	m = old_sorted.begin()->m.m;
 
 	unsigned long long stop = get_time();
 	print_stats( start, stop );

@@ -14,6 +14,28 @@ unsigned long long castled[2];
 bool initialized = false;
 }
 
+void init_zobrist_table( unsigned int pi )
+{
+	for( unsigned int c = 0; c < 2; ++c ) {
+		for( unsigned int col = 0; col < 8; ++col ) {
+			for( unsigned int row = 0; row < 8; ++row ) {
+				data[c][pi][col][row] = get_random_unsigned_long_long();
+			}
+		}
+	}
+}
+
+void zobrist_copy( unsigned int source, unsigned int target )
+{
+	for( unsigned int c = 0; c < 2; ++c ) {
+		for( unsigned int col = 0; col < 8; ++col ) {
+			for( unsigned int row = 0; row < 8; ++row ) {
+				data[c][target][col][row] = data[c][source][col][row];
+			}
+		}
+	}
+}
+
 void init_zobrist_tables()
 {
 	if( initialized ) {
@@ -21,15 +43,18 @@ void init_zobrist_tables()
 	}
 	white_to_move = get_random_unsigned_long_long();
 
-	for( unsigned int c = 0; c < 2; ++c ) {
-		for( unsigned int pi = 0; pi < 16; ++pi ) {
-			for( unsigned int col = 0; col < 8; ++col ) {
-				for( unsigned int row = 0; row < 8; ++row ) {
-					data[c][pi][col][row] = get_random_unsigned_long_long();
-				}
-			}
-		}
+	init_zobrist_table( pieces::pawn1 );
+	init_zobrist_table( pieces::knight1 );
+	init_zobrist_table( pieces::bishop1 );
+	init_zobrist_table( pieces::rook1 );
+	init_zobrist_table( pieces::queen );
+	init_zobrist_table( pieces::king );
+	for( unsigned int i = pieces::pawn2; i <= pieces::pawn8; ++i ) {
+		zobrist_copy( pieces::pawn1, i );
 	}
+	zobrist_copy( pieces::knight1, pieces::knight2 );
+	zobrist_copy( pieces::bishop1, pieces::bishop2 );
+	zobrist_copy( pieces::rook1, pieces::rook2 );
 
 	for( unsigned int c = 0; c < 2; ++c ) {
 		for( unsigned int pi = 0; pi < 8; ++pi ) {
@@ -129,12 +154,12 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 	unsigned char source = p.board[m.source_col][m.source_row] & 0x0f;
 
 	piece const& pp = p.pieces[c][source];
-	if( source >= pieces::pawn1 && source <= pieces::pawn8 ) {
+	if( source >= pieces::pawn1 && source <= pieces::pawn8 && !pp.special ) {
 		if( m.target_col != pp.column && target == pieces::nil ) {
 			// Was en-passant
 			hash ^= data[1-c][p.board[m.target_col][pp.row] & 0x0f][m.target_col][pp.row];
 		}
-		else if( (m.target_row == 0 || m.target_row == 7) && !pp.special ) {
+		else if( (m.target_row == 0 || m.target_row == 7) ) {
 			// Promotion
 			hash ^= promoted_pawns[c][source];
 		}

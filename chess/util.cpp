@@ -267,7 +267,21 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 {
 	std::string ret;
 
-	unsigned char source = p.board[m.source_col][m.source_row] & 0x0f;
+	unsigned char source = p.board[m.source_col][m.source_row];
+
+	if( (source >> 4 ) != c ) {
+		std::cerr << "FAIL! Invalid move: "
+				  << c << " "
+				  << (source >> 4) << " "
+				  << (source & 0xf) << " "
+				  << static_cast<int>(m.source_col) << " "
+				  << static_cast<int>(m.source_row) << " "
+				  << static_cast<int>(m.target_col) << " "
+				  << static_cast<int>(m.target_row) << " "
+				  << std::endl;
+	}
+
+	source &= 0x0f;
 	if( source == pieces::king ) {
 		if( m.target_col == 6 && p.pieces[c][source].column == 4 ) {
 			return "   O-O  ";

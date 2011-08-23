@@ -10,6 +10,7 @@ OBJECT_FILES = \
 	hash.o \
 	moves.o \
 	moves_captures_and_checks.o \
+	pvlist.o \
 	statistics.o \
 	unix.o \
 	util.o \

@@ -149,11 +149,17 @@ bool hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, sho
 			continue;
 		}
 
+		best_move.other = 1;
+		best_move.source_col = (v >> field_shifts::move) & 0x07;
+		best_move.source_row = (v >> (field_shifts::move + 3)) & 0x07;
+		best_move.target_col = (v >> (field_shifts::move + 6)) & 0x07;
+		best_move.target_row = (v >> (field_shifts::move + 9)) & 0x07;
+
 		unsigned char depth = (v >> field_shifts::depth) & field_masks::depth;
 		if( depth >= remaining_depth ) {
 			unsigned char type = (v >> field_shifts::node_type) & field_masks::node_type;
 			eval = (v >> field_shifts::score) & field_masks::score;
-			unsigned char age = (v >> field_shifts::age) & field_masks::age;
+			//unsigned char age = (v >> field_shifts::age) & field_masks::age;
 
 			if( ( type == score_type::exact ) ||
 				( type == score_type::lower_bound && beta <= eval ) ||
@@ -169,12 +175,6 @@ bool hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, sho
 #if USE_STATISTICS
 		++stats_.best_move;
 #endif
-
-		best_move.other = 1;
-		best_move.source_col = (v >> field_shifts::move) & 0x07;
-		best_move.source_row = (v >> (field_shifts::move + 3)) & 0x07;
-		best_move.target_col = (v >> (field_shifts::move + 6)) & 0x07;
-		best_move.target_row = (v >> (field_shifts::move + 9)) & 0x07;
 
 		return false;
 	}
