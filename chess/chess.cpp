@@ -45,7 +45,12 @@ void auto_play()
 	color::type c = color::white;
 	move m = {0};
 	int res;
-	while( calc( p, c, m, res, TIME_LIMIT, i ) ) {
+
+	seen_positions seen;
+	seen.root_position = 0;
+	seen.pos[0] = get_zobrist_hash( p, c );
+
+	while( calc( p, c, m, res, TIME_LIMIT, i, seen ) ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
 		}
@@ -64,12 +69,32 @@ void auto_play()
 			std::cerr << std::endl << "NOT A VALID MOVE" << std::endl;
 			exit(1);
 		}
+
+		bool reset_seen = false;
+		int pi = p.board[m.source_col][m.source_row] & 0x0f;
+		if( (pi >= pieces::pawn1 && pi <= pieces::pawn8 && !p.pieces[c][pi].special) || p.board[m.target_col][m.target_row] != pieces::nil ) {
+			reset_seen = true;
+		}
+
 		bool captured;
 		apply_move( p, m, c, captured );
 		int ev = evaluate( p, color::white );
 		std::cerr << "Evaluation (for white): " << ev << " centipawns" << std::endl;
 
 		c = static_cast<color::type>(1-c);
+
+		if( !reset_seen ) {
+			seen.pos[++seen.root_position] = get_zobrist_hash( p, c );
+		}
+		else {
+			seen.root_position = 0;
+			seen.pos[0] = get_zobrist_hash( p, c );
+		}
+
+		if( seen.root_position > 110 ) { // Be lenient, 55 move rule is fine for us in case we don't implement this correctly.
+			std::cerr << "DRAW" << std::endl;
+			exit(1);
+		}
 	}
 
 	unsigned long long stop = get_time();
@@ -107,8 +132,16 @@ void xboard()
 
 	int clock = 1;
 
+	seen_positions seen;
+	seen.root_position = 0;
+	seen.pos[0] = get_zobrist_hash( p, c );
+
 	while( true ) {
 		std::getline( std::cin, line );
+		if( !std::cin ) {
+			std::cerr << "EOF" << std::endl;
+			break;
+		}
 		if( line == "force" ) {
 			// Ignore
 		}
@@ -158,9 +191,15 @@ void xboard()
 			}
 			move m;
 			int res;
-			if( calc( p, c, m, res, TIME_LIMIT, clock ) ) {
+			if( calc( p, c, m, res, TIME_LIMIT, clock, seen ) ) {
 
 				std::cout << "move " << move_to_string( p, c, m ) << std::endl;
+
+				bool reset_seen = false;
+				int pi = p.board[m.source_col][m.source_row] & 0x0f;
+				if( (pi >= pieces::pawn1 && pi <= pieces::pawn8 && !p.pieces[c][pi].special) || p.board[m.target_col][m.target_row] != pieces::nil ) {
+					reset_seen = true;
+				}
 
 				bool captured;
 				apply_move( p, m, c, captured );
@@ -172,6 +211,14 @@ void xboard()
 				}
 
 				c = static_cast<color::type>( 1 - c );
+
+				if( !reset_seen ) {
+					seen.pos[++seen.root_position] = get_zobrist_hash( p, c );
+				}
+				else {
+					seen.root_position = 0;
+					seen.pos[0] = get_zobrist_hash( p, c );
+				}
 			}
 			else {
 				if( res == result::win ) {
@@ -188,10 +235,29 @@ void xboard()
 		else {
 			move m;
 			if( parse_move( p, c, line, m ) ) {
+
+				bool reset_seen = false;
+				int pi = p.board[m.source_col][m.source_row] & 0x0f;
+				if( (pi >= pieces::pawn1 && pi <= pieces::pawn8 && !p.pieces[c][pi].special) || p.board[m.target_col][m.target_row] != pieces::nil ) {
+					reset_seen = true;
+				}
+
 				bool captured;
 				apply_move( p, m, c, captured );
 				++clock;
 				c = static_cast<color::type>( 1 - c );
+
+				if( !reset_seen ) {
+					seen.pos[++seen.root_position] = get_zobrist_hash( p, c );
+				}
+				else {
+					seen.root_position = 0;
+					seen.pos[0] = get_zobrist_hash( p, c );
+				}
+
+				if( seen.root_position >= 110 ) {
+					std::cout << "1/2-1/2 (Draw)" << std::endl;
+				}
 
 				if( in_book ) {
 					std::vector<move_entry> moves;

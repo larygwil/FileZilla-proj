@@ -260,7 +260,17 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 			if( !cpv ) {
 				cpv = ctx.pv_pool.get();
 			}
-			short value = -step( depth + 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), -beta, -alpha, cpv );
+
+			short value;
+			if( ctx.seen.is_two_fold( new_hash, depth + 1 ) ) {
+				value = result::draw;
+				ctx.pv_pool.clear_pv_move( cpv );
+			}
+			else {
+				ctx.seen.pos[ctx.seen.root_position + depth + 1] = new_hash;
+
+				value = -step( depth + 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), -beta, -alpha, cpv );
+			}
 			if( value > alpha ) {
 
 				if( !pv->next() ) {
@@ -326,16 +336,24 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 		apply_move( new_pos, it->m, c, captured );
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 		short value;
-		pv_entry* cpv = ctx.pv_pool.get();
-		if( pv->get_best_move().other ) {
-			value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -alpha-1, -alpha, cpv );
 
-			if( value > alpha && value < beta) {
-				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv );
-			}
+		pv_entry* cpv = ctx.pv_pool.get();
+		if( ctx.seen.is_two_fold( new_hash, depth ) ) {
+			value = result::draw;
 		}
 		else {
-			value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv );
+			ctx.seen.pos[ctx.seen.root_position + depth] = new_hash;
+
+			if( pv->get_best_move().other ) {
+				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -alpha-1, -alpha, cpv );
+
+				if( value > alpha && value < beta) {
+					value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv );
+				}
+			}
+			else {
+				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv );
+			}
 		}
 		if( value > alpha ) {
 			ctx.pv_pool.append( pv, it->m, cpv );
@@ -377,7 +395,7 @@ public:
 		return result_;
 	}
 
-	void process( position const& p, color::type c, move_info const& m, short max_depth, short quiescence_depth, short alpha_at_prev_depth, short alpha, short beta, int clock, pv_entry* pv )
+	void process( position const& p, color::type c, move_info const& m, short max_depth, short quiescence_depth, short alpha_at_prev_depth, short alpha, short beta, int clock, pv_entry* pv, seen_positions const& seen )
 	{
 		p_ = p;
 		c_ = c;
@@ -390,6 +408,8 @@ public:
 		finished_ = false;
 		clock_ = clock;
 		pv_ = pv;
+
+		seen_ = seen;
 
 		spawn();
 	}
@@ -420,6 +440,8 @@ private:
 	int clock_;
 
 	pv_entry* pv_;
+
+	seen_positions seen_;
 };
 }
 
@@ -431,13 +453,26 @@ void processing_thread::onRun()
 	apply_move( new_pos, m_.m, c_, captured );
 	unsigned long long hash = get_zobrist_hash( new_pos, static_cast<color::type>(1-c_) );
 
-	// Search using aspiration window:
-
 	context ctx;
 	ctx.max_depth = max_depth_;
 	ctx.quiescence_depth = quiescence_depth_;
 	ctx.clock = clock_ % 256;
+	ctx.seen = seen_;
 
+	if( ctx.seen.is_two_fold( hash, 0 ) ) {
+		ctx.pv_pool.clear_pv_move( pv_->next() );
+
+		scoped_lock l( mutex_ );
+		result_ = result::draw;
+		finished_ = true;
+		cond_.signal( l );
+
+		return;
+	}
+
+	ctx.seen.pos[++ctx.seen.root_position] = hash;
+
+	// Search using aspiration window:
 	short value;
 	if( alpha_at_prev_depth_ != result::loss ) {
 		short alpha = std::max( alpha_, static_cast<short>(alpha_at_prev_depth_ - ASPIRATION) );
@@ -490,7 +525,7 @@ void insert_sorted( sorted_moves& moves, int forecast, move_info const& m, pv_en
 	moves.insert( it, d );
 }
 
-bool calc( position& p, color::type c, move& m, int& res, int time_limit, int clock )
+bool calc( position& p, color::type c, move& m, int& res, int time_limit, int clock, seen_positions& seen )
 {
 	check_map check;
 	calc_check_map( p, c, check );
@@ -581,7 +616,7 @@ bool calc( position& p, color::type c, move& m, int& res, int time_limit, int cl
 						continue;
 					}
 
-					threads[t]->process( p, c, it->m, max_depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv );
+					threads[t]->process( p, c, it->m, max_depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv, seen );
 
 					// First one is run on its own to get a somewhat sane lower bound for others to work with.
 					if( it++ == old_sorted.begin() ) {
@@ -690,3 +725,23 @@ break2:
 }
 
 
+bool seen_positions::is_three_fold( unsigned long long hash, int depth ) const
+{
+	int count = 0;
+	for( int i = root_position + depth - 1; i >= 0; --i ) {
+		if( pos[i] == hash ) {
+			++count;
+		}
+	}
+	return count >= 2;
+}
+
+bool seen_positions::is_two_fold( unsigned long long hash, int depth ) const
+{
+	for( int i = root_position + depth - 1; i >= 0; --i ) {
+		if( pos[i] == hash ) {
+			return true;
+		}
+	}
+	return false;
+}
