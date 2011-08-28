@@ -50,7 +50,9 @@ void init_zobrist_tables()
 	init_zobrist_table( pieces::queen );
 	init_zobrist_table( pieces::king );
 	for( unsigned int i = pieces::pawn2; i <= pieces::pawn8; ++i ) {
-		zobrist_copy( pieces::pawn1, i );
+		//zobrist_copy( pieces::pawn1, i );
+		// Sadly cannot merge pawns as it screws with promotions right now
+		init_zobrist_table( i );
 	}
 	zobrist_copy( pieces::knight1, pieces::knight2 );
 	zobrist_copy( pieces::bishop1, pieces::bishop2 );
