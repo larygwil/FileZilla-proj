@@ -7,7 +7,6 @@
 struct move_info {
 	move m;
 	short evaluation;
-	short forecast;
 	position::pawn_structure pawns;
 };
 

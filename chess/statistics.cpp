@@ -15,9 +15,9 @@ void print_stats( unsigned long long start, unsigned long long stop )
 	std::cerr << "Quiescent moves:        " << stats.quiescence_moves << std::endl;
 #endif
 	if( stats.evaluated_intermediate || stats.evaluated_intermediate ) {
-		std::cerr << "Time per position:      " << ((stop - start) * 1000 * 1000) / (stats.evaluated_intermediate + stats.evaluated_intermediate) << " ns" << std::endl;
+		std::cerr << "Time per position:      " << ((stop - start) * 1000 * 1000 * 1000) / (stats.evaluated_intermediate + stats.evaluated_intermediate) / timer_precision() << " ns" << std::endl;
 		if( stop != start ) {
-			std::cerr << "Positions per second:   " << (1000 * (stats.evaluated_intermediate + stats.evaluated_intermediate)) / (stop - start) << std::endl;
+			std::cerr << "Positions per second:   " << (timer_precision() * (stats.evaluated_intermediate + stats.evaluated_intermediate)) / (stop - start) << std::endl;
 		}
 	}
 	std::cerr << "Transposition table" << std::endl;

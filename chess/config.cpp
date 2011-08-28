@@ -9,7 +9,8 @@ config::config()
   memory(2048+1024),
   max_moves(0),
   depth(8),
-  quiescence_depth(5)
+  quiescence_depth(5),
+  time_limit(3600*1000) // In ms
 {}
 
 int config::init( int argc,  char const* argv[] )

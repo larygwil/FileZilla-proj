@@ -2,6 +2,7 @@
 #include "statistics.hpp"
 
 #include <string.h>
+#include <iostream>
 
 hash transposition_table;
 
@@ -58,7 +59,7 @@ namespace field_masks {
 enum type {
 	age = 0xff,
 	depth = 0xff,
-	move = 0xfff,
+	move = 0x1fff,
 	node_type = 0x3,
 	score = 0xffff
 };
@@ -75,7 +76,8 @@ void hash::store( hash_key key, unsigned char remaining_depth, short eval, short
 				(static_cast<unsigned long long>(best_move.source_col)) |
 				(static_cast<unsigned long long>(best_move.source_row) << 3) |
 				(static_cast<unsigned long long>(best_move.target_col) << 6) |
-				(static_cast<unsigned long long>(best_move.target_row) << 9) ) << field_shifts::move;
+				(static_cast<unsigned long long>(best_move.target_row) << 9) |
+				(static_cast<unsigned long long>(best_move.other) << 12 ) ) << field_shifts::move;
 
 	if( eval >= beta ) {
 		v |= static_cast<unsigned long long>(score_type::lower_bound) << field_shifts::node_type;
@@ -138,7 +140,7 @@ void hash::store( hash_key key, unsigned char remaining_depth, short eval, short
 }
 
 
-bool hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, short beta, short& eval, move& best_move, unsigned char clock )
+score_type::type hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, short beta, short& eval, move& best_move, unsigned char clock )
 {
 	unsigned long long bucket_offset = (key % bucket_count_) * bucket_entries;
 	entry const* bucket = data_ + bucket_offset;
@@ -149,13 +151,14 @@ bool hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, sho
 			continue;
 		}
 
-		best_move.other = 1;
 		best_move.source_col = (v >> field_shifts::move) & 0x07;
 		best_move.source_row = (v >> (field_shifts::move + 3)) & 0x07;
 		best_move.target_col = (v >> (field_shifts::move + 6)) & 0x07;
 		best_move.target_row = (v >> (field_shifts::move + 9)) & 0x07;
+		best_move.other = (v >> (field_shifts::move + 12)) & 0x01;
 
 		unsigned char depth = (v >> field_shifts::depth) & field_masks::depth;
+
 		if( depth >= remaining_depth ) {
 			unsigned char type = (v >> field_shifts::node_type) & field_masks::node_type;
 			eval = (v >> field_shifts::score) & field_masks::score;
@@ -168,15 +171,20 @@ bool hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, sho
 	#if USE_STATISTICS
 				++stats_.hits;
 	#endif
-				return true;
+				return static_cast<score_type::type>(type);
 			}
 		}
 
 #if USE_STATISTICS
-		++stats_.best_move;
+		if( best_move.other ) {
+			++stats_.best_move;
+		}
+		else {
+			++stats_.misses;
+		}
 #endif
 
-		return false;
+		return score_type::none;
 	}
 
 #if USE_STATISTICS
@@ -184,7 +192,7 @@ bool hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, sho
 #endif
 
 	best_move.other = 0;
-	return false;
+	return score_type::none;
 }
 
 

@@ -7,7 +7,7 @@
 pv_entry::pv_entry()
 	: next_()
 {
-	best_move_.other = 0;
+	memset(&best_move_, 0, sizeof(move));
 }
 
 pv_entry_pool::pv_entry_pool()

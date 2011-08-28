@@ -85,11 +85,19 @@ struct position
 
 struct move
 {
-	unsigned char source_col;//: 3;
-	unsigned char source_row;//: 3;
-	unsigned char target_col;// : 3;
-	unsigned char target_row;// : 3;
-	unsigned char other;// : 2;
+	move()
+		: source_col()
+		, source_row()
+		, target_col()
+		, target_row()
+		, other()
+	{}
+
+	unsigned char source_col;
+	unsigned char source_row;
+	unsigned char target_col;
+	unsigned char target_row;
+	unsigned char other;
 
 	bool operator!=( move const& rhs ) const {
 		return source_col != rhs.source_col || source_row != rhs.source_row || target_col != rhs.target_col || target_row != rhs.target_row;

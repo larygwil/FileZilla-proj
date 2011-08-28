@@ -3,7 +3,9 @@
 
 #include <pthread.h>
 
+unsigned long long timer_precision();
 unsigned long long get_time();
+
 void console_init();
 
 typedef pthread_rwlock_t rwlock;
@@ -39,6 +41,7 @@ public:
 	~condition();
 
 	void wait( scoped_lock& l );
+	void wait( scoped_lock& l, unsigned long long timeout );
 	void signal( scoped_lock& l );
 
 private:

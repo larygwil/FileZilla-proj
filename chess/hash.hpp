@@ -100,7 +100,7 @@ struct entry;
 
 namespace score_type {
 enum type {
-	other,
+	none,
 	exact,
 	lower_bound,
 	upper_bound
@@ -136,7 +136,7 @@ public:
 
 	// Returns true on hit, caller should return eval.
 	// If it returns false and best_move.other==1, there is a best move.
-	bool lookup( hash_key key, unsigned char remaining_depth, short alpha, short beta, short& eval, move& best_move, unsigned char clock );
+	score_type::type lookup( hash_key key, unsigned char remaining_depth, short alpha, short beta, short& eval, move& best_move, unsigned char clock );
 
 	void store( hash_key key, unsigned char remaining_depth, short eval, short alpha, short beta, move const& best_move, unsigned char clock );
 

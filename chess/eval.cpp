@@ -11,7 +11,7 @@ enum type
 	castled = 25,
 	doubled_pawn = -50,
 	passed_pawn = 30,
-	connected_pawn = 20
+	connected_pawn = 15
 };
 }
 

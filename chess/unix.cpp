@@ -3,13 +3,19 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <errno.h>
+#include <iostream>
+
+unsigned long long timer_precision()
+{
+	return 1000000ull;
+}
 
 unsigned long long get_time()
 {
 	timeval tv = {0};
 	gettimeofday( &tv, 0 );
 
-	unsigned long long ret = static_cast<unsigned long long>(tv.tv_sec) * 1000 + (tv.tv_usec / 1000);
+	unsigned long long ret = static_cast<unsigned long long>(tv.tv_sec) * 1000 * 1000 + tv.tv_usec;
 	return ret;
 }
 
@@ -66,6 +72,32 @@ void condition::wait( scoped_lock& l )
 	int res;
 	do {
 		res = pthread_cond_wait( &cond_, &l.m_.m_ );
+	}
+	while( res == EINTR );
+	signalled_ = false;
+}
+
+typedef char static_assertion_sizeof_tv_nsec[(sizeof(timespec::tv_nsec)==8)?1:-1];
+
+void condition::wait( scoped_lock& l, unsigned long long timeout )
+{
+	if( signalled_ ) {
+		signalled_ = false;
+		return;
+	}
+	int res;
+	do {
+		timeval tv = {0};
+		gettimeofday( &tv, 0 );
+
+		timespec ts;
+		ts.tv_sec = tv.tv_sec + timeout / timer_precision();
+		ts.tv_nsec = tv.tv_usec + timeout % timer_precision();
+		if( ts.tv_nsec > 1000000000ll ) {
+			++ts.tv_sec;
+			ts.tv_nsec -= 1000000000ll;
+		}
+		res = pthread_cond_timedwait( &cond_, &l.m_.m_, &ts );
 	}
 	while( res == EINTR );
 	signalled_ = false;

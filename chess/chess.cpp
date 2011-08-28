@@ -28,6 +28,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+#include <sstream>
 
 const int TIME_LIMIT = 90000; //30000;
 
@@ -43,14 +44,14 @@ void auto_play()
 
 	unsigned int i = 1;
 	color::type c = color::white;
-	move m = {0};
+	move m;
 	int res;
 
 	seen_positions seen;
 	seen.root_position = 0;
 	seen.pos[0] = get_zobrist_hash( p, c );
 
-	while( calc( p, c, m, res, TIME_LIMIT, i, seen ) ) {
+	while( calc( p, c, m, res, TIME_LIMIT * timer_precision() / 1000, i, seen ) ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
 		}
@@ -99,7 +100,7 @@ void auto_play()
 
 	unsigned long long stop = get_time();
 
-	std::cerr << std::endl << "Runtime: " << stop - start << " ms " << std::endl;
+	std::cerr << std::endl << "Runtime: " << (stop - start) * 1000 / timer_precision() << " ms " << std::endl;
 
 #ifdef USE_STATISTICS
 	print_stats( start, stop );
@@ -136,6 +137,8 @@ void xboard()
 	seen.root_position = 0;
 	seen.pos[0] = get_zobrist_hash( p, c );
 
+	unsigned long long time_remaining = conf.time_limit * timer_precision() / 1000;
+
 	while( true ) {
 		std::getline( std::cin, line );
 		if( !std::cin ) {
@@ -145,7 +148,58 @@ void xboard()
 		if( line == "force" ) {
 			// Ignore
 		}
+		else if( line.substr( 0, 6 ) == "level " ) {
+			line = line.substr( 6 );
+			std::stringstream ss;
+			ss.flags(std::stringstream::skipws);
+			ss.str(line);
+
+			unsigned int unused;
+			ss >> unused;
+
+			std::string time;
+			ss >> time;
+
+			std::string unused2;
+			ss >> unused;
+
+			if( !ss ) {
+				std::cout << "Not a valid level command" << std::endl;
+				continue;
+			}
+
+			std::stringstream ss2;
+			ss2.str(time);
+
+			unsigned int minutes;
+			unsigned int seconds = 0;
+
+			ss2 >> minutes;
+			if( !ss2 ) {
+				std::cout << "Not a valid level command" << std::endl;
+				continue;
+			}
+
+			char ch;
+			if( ss2 >> ch ) {
+				if( ch == ':' ) {
+					ss2 >> seconds;
+					if( !ss2 ) {
+						std::cout << "Not a valid level command" << std::endl;
+						continue;
+					}
+				}
+				else {
+					std::cout << "Not a valid level command" << std::endl;
+					continue;
+				}
+			}
+
+			time_remaining = minutes * 60 + seconds;
+			time_remaining *= timer_precision();
+		}
 		else if( line == "go" ) {
+			unsigned long long start = get_time();
 			if( !hash_initialized ) {
 				transposition_table.init( conf.memory );
 				hash_initialized = true;
@@ -186,12 +240,18 @@ void xboard()
 					++clock;
 					c = static_cast<color::type>( 1 - c );
 
+					unsigned long long stop = get_time();
+					time_remaining -= stop - start;
 					continue;
 				}
 			}
+
+			int remaining_moves = std::max( 10, (71 - clock) / 2 );
+			unsigned long long time_limit = time_remaining / remaining_moves;
+
 			move m;
 			int res;
-			if( calc( p, c, m, res, TIME_LIMIT, clock, seen ) ) {
+			if( calc( p, c, m, res, time_limit, clock, seen ) ) {
 
 				std::cout << "move " << move_to_string( p, c, m ) << std::endl;
 
@@ -231,6 +291,8 @@ void xboard()
 					std::cout << "1/2-1/2 (Draw)" << std::endl;
 				}
 			}
+			unsigned long long stop = get_time();
+			time_remaining -= stop - start;
 		}
 		else {
 			move m;
@@ -327,7 +389,7 @@ void perft()
 
 	std::cerr << "Moves: "     << ret << std::endl;
 	std::cerr << "Took:  "     << (stop - start) << " ms" << std::endl;
-	std::cerr << "Time/move: " << ((stop - start) * 1000 * 1000) / ret << " ns" << std::endl;
+	std::cerr << "Time/move: " << ((stop - start) * 1000 * 1000 * 1000) / ret / timer_precision() << " ns" << std::endl;
 
 	if( ret != 119060324 ) {
 		std::cerr << "FAIL! Expected 119060324 moves." << std::endl;
@@ -347,12 +409,15 @@ int main( int argc, char const* argv[] )
 
 	console_init();
 
-	init_random( 1234 );
-	init_zobrist_tables();
-
 	std::cerr << "  Octochess" << std::endl;
 	std::cerr << "  ---------" << std::endl;
 	std::cerr << std::endl;
+
+	init_random( 1234 );
+	//unsigned long long seed = get_time();
+	//init_random(seed);
+	//std::cerr << "Random seed is " << seed << std::endl;
+	init_zobrist_tables();
 
 	int i = conf.init( argc, argv );
 	if( i < argc && !strcmp(argv[i], "xboard" ) ) {
