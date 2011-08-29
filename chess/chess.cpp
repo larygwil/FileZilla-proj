@@ -367,7 +367,7 @@ void perft( int depth, position const& p, color::type c, unsigned long long& n )
 	for( move_info* it = moves; it != pm; ++it ) {
 		position new_pos = p;
 		bool captured;
-		apply_move( new_pos, it->m, c, captured );
+		apply_move( new_pos, *it, c, captured );
 		perft( depth, new_pos, static_cast<color::type>(1-c), n );
 	}
 
@@ -388,7 +388,7 @@ void perft()
 
 
 	std::cerr << "Moves: "     << ret << std::endl;
-	std::cerr << "Took:  "     << (stop - start) << " ms" << std::endl;
+	std::cerr << "Took:  "     << (stop - start) * 1000 / timer_precision() << " ms" << std::endl;
 	std::cerr << "Time/move: " << ((stop - start) * 1000 * 1000 * 1000) / ret / timer_precision() << " ns" << std::endl;
 
 	if( ret != 119060324 ) {

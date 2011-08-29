@@ -407,7 +407,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 
 		position new_pos = p;
 		bool captured;
-		apply_move( new_pos, it->m, c, captured );
+		apply_move( new_pos, *it, c, captured );
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 		short value;
 
@@ -540,7 +540,7 @@ void processing_thread::onRun()
 {
 	position new_pos = p_;
 	bool captured;
-	apply_move( new_pos, m_.m, c_, captured );
+	apply_move( new_pos, m_, c_, captured );
 	unsigned long long hash = get_zobrist_hash( new_pos, static_cast<color::type>(1-c_) );
 
 	context ctx;
