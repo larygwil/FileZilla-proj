@@ -1,6 +1,8 @@
 #include "eval.hpp"
 #include "assert.hpp"
 #include "util.hpp"
+#include "pawn_structure_hash_table.hpp"
+#include "zobrist.hpp"
 
 #include <iostream>
 
@@ -740,8 +742,23 @@ static short get_piece_value( position const& p, color::type c, int target, int 
 }
 }
 
+
 short evaluate_move( position const& p, color::type c, short current_evaluation, move const& m, position::pawn_structure& outPawns )
 {
+#if 0
+	{
+		position p2 = p;
+		p2.calc_pawn_map();
+		if( p.pawns.hash != p2.pawns.hash ) {
+			std::cerr << "Pre-eval pawn hash mismatch: " << p.pawns.hash << " " << p2.pawns.hash << " " << move_to_string( p, c, m ) << std::endl;
+			exit(1);
+		}
+		if( evaluate(p2, c) != current_evaluation ) {
+			std::cerr << "Pre-eval mismatch: " << current_evaluation << " " << evaluate(p2, c ) << std::endl;
+			exit(1);
+		}
+	}
+#endif
 	int pawn_move = 0;
 	int captured_pawn_index = -1;
 
@@ -819,21 +836,34 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 
 	outPawns = p.pawns;
 	if( pawn_move || captured_pawn_index != -1 ) {
-		current_evaluation -= p.pawns.eval[c];
-		current_evaluation += p.pawns.eval[1-c];
 		if( captured_pawn_index != -1 ) {
 			outPawns.map[1-c] &= ~(1ull << captured_pawn_index);
+			outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), captured_pawn_index % 8, captured_pawn_index / 8 );
 		}
 		if( pawn_move ) {
 			outPawns.map[c] &= ~(1ull << (m.source_row * 8 + m.source_col) );
+			outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.source_col, m.source_row );
 			if( pawn_move == 1 ) {
+				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.target_col, m.target_row );
 				outPawns.map[c] |= 1ull << (m.target_row * 8 + m.target_col);
 			}
 		}
-		outPawns.eval[c] = evaluate_pawns( outPawns.map, c );
-		outPawns.eval[1-c] = evaluate_pawns( outPawns.map, static_cast<color::type>(1-c) );
-		current_evaluation += outPawns.eval[c];
-		current_evaluation -= outPawns.eval[1-c];
+
+		short pawn_eval;
+		if( !pawn_hash_table.lookup( outPawns.hash, pawn_eval ) ) {
+			pawn_eval = evaluate_pawns(outPawns.map, color::white) - evaluate_pawns(outPawns.map, color::black);
+			pawn_hash_table.store( outPawns.hash, pawn_eval );
+		}
+
+		if( c == color::white ) {
+			current_evaluation -= outPawns.eval;
+			current_evaluation += pawn_eval;
+		}
+		else {
+			current_evaluation += outPawns.eval;
+			current_evaluation -= pawn_eval;
+		}
+		outPawns.eval = pawn_eval;
 	}
 
 #if 0
@@ -842,8 +872,20 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 	apply_move( p2, m, c, capture );
 	p2.calc_pawn_map();
 	short ev2 = evaluate( p2, c );
+	if( outPawns.hash != p2.pawns.hash ) {
+		std::cerr << "Pawn hash mismatch: " << p.pawns.hash << " " << p2.pawns.hash << " " << move_to_string( p, c, m ) << std::endl;
+		exit(1);
+	}
+	if( outPawns.map[0] != p2.pawns.map[0] || outPawns.map[1] != p2.pawns.map[1] ) {
+		std::cerr << "Pawn map mismatch: " << outPawns.map[0] << " " << outPawns.map[1] << " " << p2.pawns.map[0] << " " << p2.pawns.map[1] << std::endl;
+		exit(1);
+	}
+	if( outPawns.eval != p2.pawns.eval ) {
+		std::cerr << "Pawn eval mismatch: " << outPawns.eval << " " << p2.pawns.eval << std::endl;
+		exit(1);
+	}
 	if( ev2 != current_evaluation ) {
-		std::cerr << current_evaluation << " " << ev2 << " " << move_to_string( p, c, m ) << " " << captured_pawn_index << std::endl;
+		std::cerr << current_evaluation << " " << ev2 << " " << outPawns.eval << " " << p2.pawns.eval << " " << move_to_string( p, c, m ) << " " << captured_pawn_index << " " << pawn_move << std::endl;
 		exit(1);
 	}
 #endif

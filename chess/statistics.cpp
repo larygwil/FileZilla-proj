@@ -1,5 +1,6 @@
 #include "statistics.hpp"
 #include "hash.hpp"
+#include "pawn_structure_hash_table.hpp"
 
 #include <iostream>
 
@@ -20,7 +21,6 @@ void print_stats( unsigned long long start, unsigned long long stop )
 			std::cerr << "Positions per second:   " << (timer_precision() * (stats.evaluated_intermediate + stats.evaluated_intermediate)) / (stop - start) << std::endl;
 		}
 	}
-	std::cerr << "Transposition table" << std::endl;
 
 	std::cerr << "Transposition table" << std::endl;
 	hash::stats s = transposition_table.get_stats( true );
@@ -30,6 +30,14 @@ void print_stats( unsigned long long start, unsigned long long stop )
 	std::cerr << "- Lookup misses:     " << s.misses << std::endl;
 	std::cerr << "- Lookup hits:       " << s.hits << std::endl;
 	std::cerr << "- Lookup best moves: " << s.best_move << std::endl;
+
+	pawn_structure_hash_table::stats ps = pawn_hash_table.get_stats(true);
+
+	std::cerr << "Pawn structure hash table" << std::endl;
+	std::cerr << "- Hits:     " << ps.hits << std::endl;
+	std::cerr << "- Misses:   " << ps.misses << std::endl;
+	std::cerr << "- Hit rate: " << static_cast<double>(ps.hits) / (ps.hits + ps.misses) << std::endl;
+
 }
 
 void reset_stats()

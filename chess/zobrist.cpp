@@ -11,6 +11,8 @@ unsigned long long promoted_pawns[2][8];
 unsigned long long can_castle[2][2];
 unsigned long long castled[2];
 
+unsigned long long pawn_structure[2][8][8];
+
 bool initialized = false;
 }
 
@@ -69,6 +71,14 @@ void init_zobrist_tables()
 
 	for( unsigned int i = 0; i < 8; ++i ) {
 		enpassant[i] = get_random_unsigned_long_long();
+	}
+
+	for( unsigned int c = 0; c < 2; ++c ) {
+		for( unsigned int col = 0; col < 8; ++col ) {
+			for( unsigned int row = 0; row < 8; ++row ) {
+				pawn_structure[c][col][row] = get_random_unsigned_long_long();
+			}
+		}
 	}
 
 	initialized = true;
@@ -203,4 +213,9 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 	hash ^= white_to_move;
 
 	return hash;
+}
+
+unsigned long long get_pawn_structure_hash( color::type c, unsigned char col, unsigned char row )
+{
+	return pawn_structure[c][col][row];
 }

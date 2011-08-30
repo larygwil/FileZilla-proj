@@ -73,11 +73,11 @@ struct position
 	void calc_pawn_map();
 
 	void evaluate_pawn_structure();
-	void evaluate_pawn_structure( color::type c );
 
 	struct pawn_structure {
 		unsigned long long map[2];
-		unsigned short eval[2];
+		unsigned short eval; // From white's point of view
+		unsigned long long hash;
 	} pawns;
 
 } __attribute__((__packed__));

@@ -21,6 +21,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "hash.hpp"
 #include "moves.hpp"
 #include "util.hpp"
+#include "pawn_structure_hash_table.hpp"
 #include "platform.hpp"
 #include "statistics.hpp"
 #include "zobrist.hpp"
@@ -32,11 +33,14 @@ contact tim.kosse@filezilla-project.org for details.
 
 const int TIME_LIMIT = 90000; //30000;
 
+const int PAWN_HASH_TABLE_SIZE = 5;
+
 std::string book_dir;
 
 void auto_play()
 {
 	transposition_table.init( conf.memory );
+	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
 	unsigned long long start = get_time();
 	position p;
 
@@ -138,6 +142,8 @@ void xboard()
 	seen.pos[0] = get_zobrist_hash( p, c );
 
 	unsigned long long time_remaining = conf.time_limit * timer_precision() / 1000;
+
+	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
 
 	while( true ) {
 		std::getline( std::cin, line );
@@ -375,6 +381,8 @@ void perft( int depth, position const& p, color::type c, unsigned long long& n )
 
 void perft()
 {
+	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
+
 	position p;
 	init_board( p );
 
@@ -413,10 +421,10 @@ int main( int argc, char const* argv[] )
 	std::cerr << "  ---------" << std::endl;
 	std::cerr << std::endl;
 
-	init_random( 1234 );
-	//unsigned long long seed = get_time();
-	//init_random(seed);
-	//std::cerr << "Random seed is " << seed << std::endl;
+	//init_random( 1234 );
+	unsigned long long seed = get_time();
+	init_random(seed);
+	std::cerr << "Random seed is " << seed << std::endl;
 	init_zobrist_tables();
 
 	int i = conf.init( argc, argv );

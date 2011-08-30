@@ -94,7 +94,7 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 	for( it = moves_with_forecast.begin(); fulldepth && it != moves_with_forecast.end(); ++it, --fulldepth ) {
 		position new_pos = p;
 		bool captured;
-		apply_move( new_pos, *it, c, captured );
+		apply_move( new_pos, it->get_move(), c, captured );
 		position::pawn_structure pawns;
 		short new_eval = evaluate_move( p, c, eval, it->get_move(), pawns );
 
@@ -170,7 +170,7 @@ void get_work( worklist& wl, int max_depth, unsigned int max_width, int depth, u
 
 		position new_pos = p;
 		bool captured;
-		apply_move( new_pos, *it, c, captured );
+		apply_move( new_pos, it->get_move(), c, captured );
 
 		if( !it->next_index ) {
 			work w;
@@ -484,7 +484,7 @@ restart:
 			new_work.p = w.p;
 			new_work.index = it->next_index;
 			bool captured;
-			apply_move( new_work.p, *it, new_work.c, captured );
+			apply_move( new_work.p, it->get_move(), new_work.c, captured );
 			unsigned long long hash = get_zobrist_hash( new_work.p, new_work.c );
 
 			if( !it->next_index ) {

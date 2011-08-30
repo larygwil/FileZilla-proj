@@ -6,7 +6,9 @@
 #include "moves.hpp"
 #include "util.hpp"
 #include "random.hpp"
+#include "pawn_structure_hash_table.hpp"
 #include "platform.hpp"
+#include "zobrist.hpp"
 
 #include <iostream>
 
@@ -514,6 +516,7 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 
 		if( old_piece >= pieces::pawn1 && old_piece <= pieces::pawn8 && !p.pieces[1-c][old_piece].special) {
 			p.pawns.map[1-c] &= ~(1ull << (m.target_row * 8 + m.target_col));
+			p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.target_row );
 			pawn_capture = true;
 		}
 
@@ -537,6 +540,7 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 		p.board[m.target_col][m.source_row] = pieces::nil;
 
 		p.pawns.map[1-c] &= ~(1ull << (m.source_row * 8 + m.target_col));
+		p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.source_row );
 		pawn_capture = true;
 
 		capture = true;
@@ -547,6 +551,7 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 
 	if( is_pawn ) {
 		p.pawns.map[c] &= ~(1ull << (m.source_row * 8 + m.source_col));
+		p.pawns.hash ^= get_pawn_structure_hash( c, m.source_col, m.source_row );
 		if( m.target_row == 0 || m.target_row == 7) {
 			pp.special = true;
 			p.promotions[c] |= promotions::queen << (2 * (source - pieces::pawn1) );
@@ -555,10 +560,12 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 		else if( (c == color::white) ? (pp.row + 2 == m.target_row) : (m.target_row + 2 == pp.row) ) {
 			p.can_en_passant = source;
 			p.pawns.map[c] |= 1ull << (m.target_row * 8 + m.target_col);
+			p.pawns.hash ^= get_pawn_structure_hash( c, m.target_col, m.target_row );
 		}
 		else {
 			p.can_en_passant = pieces::nil;
 			p.pawns.map[c] |= 1ull << (m.target_row * 8 + m.target_col);
+			p.pawns.hash ^= get_pawn_structure_hash( c, m.target_col, m.target_row );
 		}
 	}
 	else {
@@ -571,7 +578,12 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 	pp.row = m.target_row;
 
 	if( is_pawn || pawn_capture ) {
-		p.evaluate_pawn_structure();
+		short pawn_eval;
+		if( !pawn_hash_table.lookup( p.pawns.hash, pawn_eval ) ) {
+			pawn_eval = evaluate_pawns( p.pawns.map, color::white) - evaluate_pawns( p.pawns.map, color::black );
+			pawn_hash_table.store( p.pawns.hash, pawn_eval );
+		}
+		p.pawns.eval = pawn_eval;
 	}
 
 	return true;
@@ -738,11 +750,13 @@ void position::calc_pawn_map()
 {
 	pawns.map[0] = 0;
 	pawns.map[1] = 0;
+	pawns.hash = 0;
 	for( int c = 0; c < 2; ++c ) {
 		for( int i = pieces::pawn1; i <= pieces::pawn8; ++i ) {
 			piece const& pp = pieces[c][i];
 			if( pp.alive && !pp.special ) {
 				pawns.map[c] |= 1ull << (pp.row * 8 + pp.column);
+				pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), pp.column, pp.row );
 			}
 		}
 	}
@@ -752,11 +766,5 @@ void position::calc_pawn_map()
 
 void position::evaluate_pawn_structure()
 {
-	evaluate_pawn_structure( color::white );
-	evaluate_pawn_structure( color::black );
-}
-
-void position::evaluate_pawn_structure( color::type c )
-{
-	pawns.eval[c] = evaluate_pawns( pawns.map, c );
+	pawns.eval = evaluate_pawns( pawns.map, color::white ) - evaluate_pawns( pawns.map, color::black );
 }
