@@ -421,13 +421,18 @@ int main( int argc, char const* argv[] )
 	std::cerr << "  ---------" << std::endl;
 	std::cerr << std::endl;
 
-	//init_random( 1234 );
-	unsigned long long seed = get_time();
-	init_random(seed);
-	std::cerr << "Random seed is " << seed << std::endl;
+	int i = conf.init( argc, argv );
+
+	if( conf.random_seed != -1 ) {
+		init_random( conf.random_seed );
+	}
+	else {
+		unsigned long long seed = get_time();
+		init_random(seed);
+		std::cerr << "Random seed is " << seed << std::endl;
+	}
 	init_zobrist_tables();
 
-	int i = conf.init( argc, argv );
 	if( i < argc && !strcmp(argv[i], "xboard" ) ) {
 		xboard();
 	}

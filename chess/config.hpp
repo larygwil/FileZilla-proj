@@ -14,6 +14,8 @@ struct config
 	unsigned char quiescence_depth;
 
 	unsigned long long time_limit; // In milliseconds
+
+	int random_seed;
 };
 extern config conf;
 

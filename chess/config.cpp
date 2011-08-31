@@ -10,7 +10,8 @@ config::config()
   max_moves(0),
   depth(8),
   quiescence_depth(5),
-  time_limit(3600*1000) // In ms
+  time_limit(3600*1000), // In ms
+  random_seed(-1) //-1 == based on time
 {}
 
 int config::init( int argc,  char const* argv[] )
@@ -76,6 +77,18 @@ int config::init( int argc,  char const* argv[] )
 				exit(1);
 			}
 			conf.memory = v;
+		}
+		else if( !strcmp(argv[i], "--seed" ) ) {
+			if( ++i >= argc ) {
+				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			int v = atoi(argv[i]);
+			if( v < -1 ) {
+				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			conf.random_seed = v;
 		}
 		else {
 			std::cerr << "Unknown argument " << argv[i] << std::endl;
