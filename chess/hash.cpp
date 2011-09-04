@@ -1,5 +1,6 @@
 #include "hash.hpp"
 #include "statistics.hpp"
+#include "zobrist.hpp"
 
 #include <string.h>
 #include <iostream>
@@ -65,8 +66,12 @@ enum type {
 };
 }
 
-void hash::store( hash_key key, unsigned char remaining_depth, short eval, short alpha, short beta, move const& best_move, unsigned char clock )
+void hash::store( hash_key key, color::type c, unsigned char remaining_depth, short eval, short alpha, short beta, move const& best_move, unsigned char clock )
 {
+	if( c ) {
+		key = ~key;
+	}
+
 	unsigned long long bucket_offset = (key % bucket_count_) * bucket_entries;
 	entry* bucket = data_ + bucket_offset;
 
@@ -140,8 +145,12 @@ void hash::store( hash_key key, unsigned char remaining_depth, short eval, short
 }
 
 
-score_type::type hash::lookup( hash_key key, unsigned char remaining_depth, short alpha, short beta, short& eval, move& best_move, unsigned char clock )
+score_type::type hash::lookup( hash_key key, color::type c, unsigned char remaining_depth, short alpha, short beta, short& eval, move& best_move, unsigned char clock )
 {
+	if( c ) {
+		key = ~key;
+	}
+
 	unsigned long long bucket_offset = (key % bucket_count_) * bucket_entries;
 	entry const* bucket = data_ + bucket_offset;
 

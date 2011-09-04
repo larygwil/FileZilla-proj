@@ -55,7 +55,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 
 	{
 		short eval;
-		score_type::type t = transposition_table.lookup( hash, ctx.max_depth - depth + 128, alpha, beta, eval, tt_move, ctx.clock );
+		score_type::type t = transposition_table.lookup( hash, c, ctx.max_depth - depth + 128, alpha, beta, eval, tt_move, ctx.clock );
 		if( t != score_type::none ) {
 			if( t == score_type::exact ) {
 				ctx.pv_pool.set_pv_move( pv, tt_move );
@@ -125,7 +125,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		#endif
 
 						if( !do_abort ) {
-							transposition_table.store( hash, limit - depth, alpha, old_alpha, beta, tt_move, ctx.clock );
+							transposition_table.store( hash, c, limit - depth, alpha, old_alpha, beta, tt_move, ctx.clock );
 						}
 						return alpha;
 					}
@@ -171,7 +171,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		if( best_pv ) {
 			ctx.pv_pool.release( best_pv );
 		}
-		ASSERT( !best_move.other || d.remaining_depth == 31 );
+		ASSERT( !tt_move.other );
 		if( check.check ) {
 #ifdef USE_STATISTICS
 			++stats.evaluated_leaves;
@@ -277,7 +277,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 	}
 
 	if( !do_abort ) {
-		transposition_table.store( hash, limit - depth + 1, alpha, old_alpha, beta, tt_move, ctx.clock );
+		transposition_table.store( hash, c, limit - depth + 1, alpha, old_alpha, beta, tt_move, ctx.clock );
 	}
 
 	return alpha;
@@ -302,7 +302,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 
 	{
 		short eval;
-		score_type::type t = transposition_table.lookup( hash, ctx.max_depth - depth + 128, alpha, beta, eval, tt_move, ctx.clock );
+		score_type::type t = transposition_table.lookup( hash, c, ctx.max_depth - depth + 128, alpha, beta, eval, tt_move, ctx.clock );
 		if( t != score_type::none ) {
 			if( t == score_type::exact ) {
 				ctx.pv_pool.set_pv_move( pv, tt_move );
@@ -322,7 +322,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 		ctx.max_depth += 2;
 
 		short eval;
-		transposition_table.lookup( hash, ctx.max_depth - depth + 128, alpha, beta, eval, tt_move, ctx.clock );
+		transposition_table.lookup( hash, c, ctx.max_depth - depth + 128, alpha, beta, eval, tt_move, ctx.clock );
 	}
 
 	short old_alpha = alpha;
@@ -359,7 +359,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 	#endif
 
 					if( !do_abort ) {
-						transposition_table.store( hash, ctx.max_depth - depth + 128, alpha, old_alpha, beta, tt_move, ctx.clock );
+						transposition_table.store( hash, c, ctx.max_depth - depth + 128, alpha, old_alpha, beta, tt_move, ctx.clock );
 					}
 					return alpha;
 				}
@@ -466,7 +466,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 	}
 
 	if( !do_abort ) {
-		transposition_table.store( hash, ctx.max_depth - depth + 128 + 1, alpha, old_alpha, beta, tt_move, ctx.clock );
+		transposition_table.store( hash, c, ctx.max_depth - depth + 128 + 1, alpha, old_alpha, beta, tt_move, ctx.clock );
 	}
 
 	return alpha;

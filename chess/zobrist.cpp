@@ -4,7 +4,6 @@
 
 namespace {
 static unsigned long long data[2][16][8][8];
-unsigned long long white_to_move;
 unsigned long long enpassant[8];
 
 unsigned long long promoted_pawns[2][8];
@@ -43,7 +42,6 @@ void init_zobrist_tables()
 	if( initialized ) {
 		return;
 	}
-	white_to_move = get_random_unsigned_long_long();
 
 	init_zobrist_table( pieces::pawn1 );
 	init_zobrist_table( pieces::knight1 );
@@ -85,7 +83,7 @@ void init_zobrist_tables()
 }
 
 unsigned long long get_zobrist_hash( position const& p, color::type c ) {
-	unsigned long long ret = c ? 0 : white_to_move;
+	unsigned long long ret = 0;
 
 	for( unsigned int c = 0; c < 2; ++c ) {
 		for( unsigned int pi = 0; pi < 8; ++pi ) {
@@ -209,8 +207,6 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 	}
 	hash ^= data[c][source][pp.column][pp.row];
 	hash ^= data[c][source][m.target_col][m.target_row];
-
-	hash ^= white_to_move;
 
 	return hash;
 }
