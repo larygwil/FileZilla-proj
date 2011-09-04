@@ -20,7 +20,7 @@ public:
 };
 
 // May modify seen_positions at indexes > root_position
-bool calc( position& p, color::type c, move& m, int& res, unsigned long long time_limit, int clock, seen_positions& seen );
+bool calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long time_remaining, int clock, seen_positions& seen );
 
 class context
 {

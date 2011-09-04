@@ -55,7 +55,7 @@ void auto_play()
 	seen.root_position = 0;
 	seen.pos[0] = get_zobrist_hash( p, c );
 
-	while( calc( p, c, m, res, TIME_LIMIT * timer_precision() / 1000, i, seen ) ) {
+	while( calc( p, c, m, res, TIME_LIMIT * timer_precision() / 1000, TIME_LIMIT * timer_precision() / 1000, i, seen ) ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
 		}
@@ -261,7 +261,7 @@ void xboard()
 
 			move m;
 			int res;
-			if( calc( p, c, m, res, time_limit, clock, seen ) ) {
+			if( calc( p, c, m, res, time_limit, time_remaining, clock, seen ) ) {
 
 				std::cout << "move " << move_to_string( p, c, m ) << std::endl;
 

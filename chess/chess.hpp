@@ -83,6 +83,9 @@ struct position
 		unsigned long long hash;
 	} pawns;
 
+	short material[2];
+	short tropism[2];
+
 } __attribute__((__packed__));
 
 
@@ -123,5 +126,7 @@ enum type {
 
 
 #define USE_QUIESCENCE 1
+
+#define NULL_MOVE_REDUCTION 2
 
 #endif

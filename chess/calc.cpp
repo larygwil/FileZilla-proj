@@ -10,6 +10,7 @@
 #include "zobrist.hpp"
 
 #include <algorithm>
+#include <math.h>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -319,11 +320,11 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 	check_map check;
 	calc_check_map( p, c, check );
 
-	if( !last_was_null && !check.check && depth > 1 ) {
+	if( !last_was_null && !check.check && depth > 1 && p.material[0] > 1000 && p.material[1] > 1000 ) {
 		int old_null = ctx.seen.null_move_position;
 		ctx.seen.null_move_position = ctx.seen.root_position + depth;
 		pv_entry* cpv = ctx.pv_pool.get();
-		short value = -step( depth + 3, ctx, p, hash, -current_evaluation, static_cast<color::type>(1-c), -beta, -beta + 1, cpv, true );
+		short value = -step( depth + NULL_MOVE_REDUCTION, ctx, p, hash, -current_evaluation, static_cast<color::type>(1-c), -beta, -beta + 1, cpv, true );
 		ctx.pv_pool.release( cpv );
 
 		ctx.seen.null_move_position = old_null;
@@ -636,9 +637,59 @@ void insert_sorted( sorted_moves& moves, int forecast, move_info const& m, pv_en
 	moves.insert( it, d );
 }
 
-bool calc( position& p, color::type c, move& m, int& res, unsigned long long time_limit, int clock, seen_positions& seen )
+class increment {
+public:
+	double get_increment( unsigned int depth ) {
+		if( data_.size() < depth ) {
+			data_.resize( depth + 1 );
+		}
+		return data_[depth].mean;
+	}
+
+	void update_increment( unsigned int depth, double increment ) {
+		if( data_.size() < depth ) {
+			data_.resize( depth + 1 );
+		}
+		data& d = data_[depth];
+
+		++d.item_count;
+		d.sum += increment;
+		d.squared_sum += increment * increment;
+		d.mean = d.sum / d.item_count;
+	}
+
+	double get_variance( unsigned int depth ) {
+		data& d = data_[depth];
+
+		if( !d.item_count ) {
+			return 0;
+		}
+
+		double sigma = sqrt( d.item_count * d.squared_sum - d.sum * d.sum ) / d.item_count;
+
+		return sigma / sqrt( d.item_count );
+	}
+
+	struct data {
+		data()
+			: sum(), squared_sum(), mean(20), item_count()
+		{
+		}
+
+		double sum;
+		double squared_sum;
+		double mean;
+		int item_count;
+	};
+private:
+	std::vector<data> data_;
+};
+
+increment increments;
+
+bool calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long /*time_remaining*/, int clock, seen_positions& seen )
 {
-	std::cerr << "Current move time limit is " << 1000 * time_limit / timer_precision() << " ms" << std::endl;
+	std::cerr << "Current move time limit is " << 1000 * move_time_limit / timer_precision() << " ms" << std::endl;
 
 	do_abort = false;
 	check_map check;
@@ -690,7 +741,8 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long tim
 		for( move_info const* it  = moves; it != pm; ++it ) {
 			pv_entry* pv = pool.get();
 			pool.append( pv, it->m, pool.get() );
-			insert_sorted( old_sorted, it - moves, *it, pv );
+			// Initial order is random to get some variation into play
+			insert_sorted( old_sorted, static_cast<int>(get_random_unsigned_long_long()), *it, pv );
 		}
 	}
 
@@ -710,8 +762,6 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long tim
 	short alpha_at_prev_depth = result::loss;
 	for( int max_depth = 2 + (conf.depth % 2); max_depth <= conf.depth; max_depth += 2 )
 	{
-		unsigned long long loop_start = start;
-
 		short alpha = result::loss;
 		short beta = result::win;
 
@@ -755,12 +805,12 @@ break2:
 			scoped_lock l( mtx );
 
 			unsigned long long now = get_time();
-			if( time_limit > now - start ) {
-				cond.wait( l, time_limit - now + start );
+			if( move_time_limit * 4 > now - start ) {
+				cond.wait( l, move_time_limit * 4 - now + start );
 			}
 
 			now = get_time();
-			if( !do_abort && time_limit > 0 && (now - start) > time_limit ) {
+			if( !do_abort && move_time_limit > 0 && (now - start) > move_time_limit * 4 ) {
 				std::cerr << "Triggering search abort due to time limit at depth " << max_depth << std::endl;
 				do_abort = true;
 			}
@@ -806,12 +856,12 @@ break2:
 			}
 		}
 		if( do_abort ) {
-			std::cerr << "Aborted with " << evaluated << " moves evaluated at current depth" << std::endl;
+			std::cerr << "Aborted with " << evaluated << " of " << old_sorted.size() << " moves evaluated at current depth" << std::endl;
 		}
 
-		if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
+		if( !do_abort && (alpha < result::loss_threshold || alpha > result::win_threshold) ) {
 			if( max_depth < conf.depth ) {
-				std::cerr << "Early break at " << max_depth << std::endl;
+				std::cerr << "Early break due to mate at " << max_depth << std::endl;
 			}
 			do_abort = true;
 		}
@@ -849,13 +899,20 @@ break2:
 			std::cerr << "Best so far: " << it->forecast << " " << pv_to_string( it->pv, p, c ) << std::endl;
 		}
 
-		unsigned long long loop_duration = get_time() - loop_start;
+		unsigned long long loop_duration = get_time() - start;
 		if( previous_loop_duration ) {
-			unsigned long long depth_factor = loop_duration / previous_loop_duration;
-			std::cerr << "Search depth increment time factor is " << depth_factor << std::endl;
+			double depth_factor = static_cast<double>(loop_duration) / previous_loop_duration;
+			increments.update_increment( max_depth, depth_factor );
+			std::cerr << "Current search depth increment time factor is " << depth_factor << ", avg " << increments.get_increment( max_depth ) << ", variance " << increments.get_variance( max_depth ) << std::endl;
 		}
 		previous_loop_duration = loop_duration;
 
+		double next_depth_factor = increments.get_increment( max_depth + 2 ) - increments.get_variance( max_depth + 2 );
+		std::cerr << "Next search depth increment time factor would be " << increments.get_increment( max_depth + 2 ) << ", variance " << increments.get_variance( max_depth + 2 ) << std::endl;
+		if( (get_time() - start) * next_depth_factor > move_time_limit ) {
+			std::cerr << "Aborting search at depth " << max_depth << ", next search depth would exceed move time limit" << std::endl;
+			break;
+		}
 	}
 
 	std::cerr << "Candidates: " << std::endl;

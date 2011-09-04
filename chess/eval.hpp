@@ -12,4 +12,21 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 
 short evaluate_pawns( unsigned long long const* pawns, color::type c );
 
+namespace material_values {
+enum type {
+	pawn = 100,
+	knight = 295,
+	bishop = 305,
+	rook = 500,
+	queen = 900,
+	initial = pawn * 8 + rook * 2 + knight * 2 + bishop * 2 + queen
+};
+}
+
+short get_material_value( position const& p, color::type c, int pi );
+
+short evaluate_tropism_side( position const& p, color::type c );
+
+short evaluate_tropism_piece( position const& p, color::type c, int pi, int col, int row );
+
 #endif

@@ -13,7 +13,7 @@ enum type
 	doubled_pawn = -50,
 	passed_pawn = 30,
 	connected_pawn = 15,
-	pawn_shield = 6
+	pawn_shield = 5
 };
 }
 
@@ -905,18 +905,17 @@ short evaluate_pawn_shield_side( position const& p, color::type c )
 {
 	short ev = 0;
 
-	int const cy = c ? -8 : 8;
-	int const y = c ? 48 : 8;
+	int const y = c ? 40 : 8;
 
 	int row = p.pieces[c][pieces::king].row;
 	if( row == (c ? 7 : 0) ) {
 		int col = p.pieces[c][pieces::king].column;
 
-		if( p.pawns.map[c] & (1ull << (col + y) ) || p.pawns.map[c] & (1ull << (col + y + cy) ) ) {
+		if( p.pawns.map[c] & (9ull << (col + y) ) ) {
 			ev += special_values::pawn_shield * 2;
 		}
 		if( col ) {
-			if( p.pawns.map[c] & (1ull << (col - 1 + y) ) || p.pawns.map[c] & (1ull << (col - 1 + y + cy) ) ) {
+			if( p.pawns.map[c] & (9ull << (col - 1 + y) ) ) {
 				if( col == 7 ) {
 					ev += special_values::pawn_shield * 2;
 				}
@@ -926,7 +925,7 @@ short evaluate_pawn_shield_side( position const& p, color::type c )
 			}
 		}
 		if( col != 7 ) {
-			if( p.pawns.map[c] & (1ull << (col + 1 + y) ) || p.pawns.map[c] & (1ull << (col + 1 + y + cy) ) ) {
+			if( p.pawns.map[c] & (9ull << (col + 1 + y) ) ) {
 				if( col == 0 ) {
 					ev += special_values::pawn_shield * 2;
 				}
@@ -953,6 +952,36 @@ short evaluate_pawn_shield( position const& p, color::type c )
 }
 
 
+
+namespace {
+static unsigned char const distance_1d[8][8] = {
+	{ 0, 1, 2, 3, 4, 5, 6, 7 },
+	{ 1, 0, 1, 2, 3, 4, 5, 6 },
+	{ 2, 1, 0, 1, 2, 3, 4, 5 },
+	{ 3, 2, 1, 0, 1, 2, 3, 4 },
+	{ 4, 3, 2, 1, 0, 1, 2, 3 },
+	{ 5, 4, 3, 2, 1, 0, 1, 2 },
+	{ 6, 5, 4, 3, 2, 1, 0, 1 },
+	{ 7, 6, 5, 4, 3, 2, 1, 0 }
+};
+
+static unsigned char const tropism_min[8][8] = {
+	{ 7, 6, 5, 4, 3, 2, 1, 0 },
+	{ 6, 6, 5, 4, 3, 2, 1, 0 },
+	{ 5, 5, 5, 4, 3, 2, 1, 0 },
+	{ 4, 4, 4, 4, 3, 2, 1, 0 },
+	{ 3, 3, 3, 3, 3, 2, 1, 0 },
+	{ 2, 2, 2, 2, 2, 2, 1, 0 },
+	{ 1, 1, 1, 1, 1, 1, 1, 0 },
+	{ 0, 0, 0, 0, 0, 0, 0, 0 }
+};
+}
+
+
+static inline unsigned char tropism( unsigned char col1, unsigned char row1, unsigned char col2, unsigned char row2 ) {
+	return tropism_min[distance_1d[col1][col2]][ distance_1d[row1][row2]];
+}
+
 short evaluate_tropism_side( position const& p, color::type c )
 {
 	short ev = 0;
@@ -965,7 +994,9 @@ short evaluate_tropism_side( position const& p, color::type c )
 			continue;
 		}
 
-		int dist = 7 - std::max( abs(static_cast<signed char>(pp.column) - kp.column), abs(static_cast<signed char>(pp.row) - kp.row) );
+		// FAST version of
+		// 7 - std::max( abs(static_cast<signed char>(pp.column) - kp.column), abs(static_cast<signed char>(pp.row) - kp.row) );
+		int dist = tropism( pp.column, pp.row, kp.column, kp.row );
 
 		ev += dist;
 	}
@@ -973,12 +1004,32 @@ short evaluate_tropism_side( position const& p, color::type c )
 	return ev;
 }
 
+short evaluate_tropism_piece( position const& p, color::type c, int /*pi*/, int col, int row )
+{
+	piece const& kp = p.pieces[1-c][pieces::king];
+
+	// FAST version of
+	// 7 - std::max( abs(static_cast<signed char>(pp.column) - kp.column), abs(static_cast<signed char>(pp.row) - kp.row) );
+	return tropism( col, row, kp.column, kp.row );
+}
+
 short evaluate_tropism( position const& p, color::type c )
 {
-	short own = evaluate_tropism_side( p, c );
-	short other = evaluate_tropism_side( p, static_cast<color::type>(1-c) );
+	short own = p.tropism[c];
+	short other = p.tropism[1-c];
 
 	short ev = own - other;
+
+#if 0
+	if( own != evaluate_tropism_side( p, c ) ) {
+		std::cerr << c << " " << own << " " << evaluate_tropism_side( p, c ) << std::endl;
+		exit(1);
+	}
+	if( other != evaluate_tropism_side( p, static_cast<color::type>(1-c) ) ) {
+		std::cerr << c << " " << own << " " << evaluate_tropism_side( p, static_cast<color::type>(1-c) ) << std::endl;
+		exit(1);
+	}
+#endif
 
 	return (ev * 2) / 3;
 }
@@ -991,12 +1042,69 @@ short evaluate_full( position const& p, color::type c )
 	return evaluate_full( p, c, eval );
 }
 
-
 short evaluate_full( position const& p, color::type c, short eval_fast )
 {
 	eval_fast += evaluate_pawn_shield( p, c );
 	eval_fast += evaluate_tropism( p, c );
 
+	// Adjust score based on material. The basic idea is that,
+	// given two positions with equal, non-zero score,
+	// the position having fewer material is better.
+	short v = 25 * std::max( 0, material_values::initial * 2 - p.material[0] - p.material[1] ) / (material_values::initial * 2);
+	if( eval_fast > 0 ) {
+		eval_fast += v;
+	}
+	else if( eval_fast < 0 ) {
+		eval_fast -= v;
+	}
+
 	return eval_fast;
 }
 
+short get_material_value( position const& p, color::type c, int pi )
+{
+	switch( pi ) {
+	case pieces::pawn1:
+	case pieces::pawn2:
+	case pieces::pawn3:
+	case pieces::pawn4:
+	case pieces::pawn5:
+	case pieces::pawn6:
+	case pieces::pawn7:
+	case pieces::pawn8:
+	{
+		piece const& pp = p.pieces[c][pi];
+		if( pp.special ) {
+			unsigned short promoted = (p.promotions[c] >> ( 2 * (pi - pieces::pawn1) ) ) & 0x03;
+			switch( promoted ) {
+			case promotions::queen:
+				return material_values::queen;
+			case promotions::rook:
+				return material_values::rook;
+			case promotions::bishop:
+				return material_values::bishop;
+			case promotions::knight:
+				return material_values::knight;
+			}
+		}
+		else {
+			return material_values::pawn;
+		}
+	}
+	case pieces::king:
+		return 0;
+	case pieces::queen:
+		return material_values::queen;
+	case pieces::rook1:
+	case pieces::rook2:
+		return material_values::rook;
+	case pieces::bishop1:
+	case pieces::bishop2:
+		return material_values::bishop;
+	case pieces::knight1:
+	case pieces::knight2:
+		return material_values::knight;
+	}
+
+	return 0;
+}
