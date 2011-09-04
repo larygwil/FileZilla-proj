@@ -19,7 +19,7 @@ bool validate_move( position const& p, move const& m, color::type c )
 
 	move_info moves[200];
 	move_info* pm = moves;
-	int ev = evaluate( p, c );
+	int ev = evaluate_fast( p, c );
 	calculate_moves( p, c, ev, pm, check );
 
 	for( move_info* it = moves; it != pm; ++it ) {
@@ -164,7 +164,7 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 
 	move_info moves[200];
 	move_info* pm = moves;
-	int ev = evaluate( p, c );
+	int ev = evaluate_fast( p, c );
 	calculate_moves( p, c, ev, pm, check );
 
 	move_info* match = 0;
@@ -761,7 +761,6 @@ void position::calc_pawn_map()
 		}
 	}
 }
-
 
 
 void position::evaluate_pawn_structure()

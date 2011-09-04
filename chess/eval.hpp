@@ -3,7 +3,10 @@
 
 #include "chess.hpp"
 
-short evaluate( position const& p, color::type c );
+short evaluate_fast( position const& p, color::type c );
+
+short evaluate_full( position const& p, color::type c );
+short evaluate_full( position const& p, color::type c, short eval_fast );
 
 short evaluate_move( position const& p, color::type c, short current_evaluation, move const& m, position::pawn_structure& outPawns );
 

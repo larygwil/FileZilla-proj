@@ -10,10 +10,10 @@ namespace special_values {
 enum type
 {
 	double_bishop = 25,
-	castled = 25,
 	doubled_pawn = -50,
 	passed_pawn = 30,
-	connected_pawn = 15
+	connected_pawn = 15,
+	pawn_shield = 5
 };
 }
 
@@ -21,24 +21,24 @@ namespace {
 unsigned char const pawn_values[2][8][8] =
 	{
 		{
-			{ 0, 105, 105, 100,  97, 106, 120, 0 },
-			{ 0, 110,  95, 100, 103, 112, 127, 0 },
-			{ 0, 110,  90, 110, 117, 125, 135, 0 },
+			{ 0, 105, 105, 100, 101, 106, 120, 0 },
+			{ 0, 110, 100, 100, 103, 112, 127, 0 },
+			{ 0, 110, 100, 110, 117, 125, 135, 0 },
 			{ 0,  80, 100, 120, 127, 140, 150, 0 },
 			{ 0,  80, 100, 120, 127, 140, 150, 0 },
-			{ 0, 110,  90, 110, 117, 125, 135, 0 },
-			{ 0, 110,  95, 100, 103, 112, 127, 0 },
-			{ 0, 105, 105, 100, 100, 106, 120, 0 }
+			{ 0, 110, 100, 110, 117, 125, 135, 0 },
+			{ 0, 110, 100, 100, 103, 112, 127, 0 },
+			{ 0, 105, 105, 100, 101, 106, 120, 0 }
 		},
 		{
-			{ 0, 120, 106,  97, 100, 105, 105, 0 },
-			{ 0, 127, 112, 103, 100,  95, 110, 0 },
-			{ 0, 135, 125, 117, 110,  90, 110, 0 },
+			{ 0, 120, 106, 101, 100, 105, 105, 0 },
+			{ 0, 127, 112, 103, 100, 100, 110, 0 },
+			{ 0, 135, 125, 117, 110, 100, 110, 0 },
 			{ 0, 150, 140, 127, 120, 100,  80, 0 },
 			{ 0, 150, 140, 127, 120, 100,  80, 0 },
-			{ 0, 135, 125, 117, 110,  90, 110, 0 },
-			{ 0, 127, 112, 103, 100,  95, 110, 0 },
-			{ 0, 120, 106, 100, 100, 105, 105, 0 }
+			{ 0, 135, 125, 117, 110, 100, 110, 0 },
+			{ 0, 127, 112, 103, 100, 100, 110, 0 },
+			{ 0, 120, 106, 101, 100, 105, 105, 0 }
 		}
 
 	};
@@ -664,14 +664,11 @@ short evaluate_side( position const& p, color::type c, unsigned long long* pawns
 	if( p.pieces[c][pieces::bishop1].alive && p.pieces[c][pieces::bishop2].alive ) {
 		result += special_values::double_bishop;
 	}
-	if( p.pieces[c][pieces::king].special ) {
-		result += special_values::castled;
-	}
 
 	return result;
 }
 
-short evaluate( position const& p, color::type c )
+short evaluate_fast( position const& p, color::type c )
 {
 	unsigned long long pawns[2];
 	get_pawn_map( p, pawns );
@@ -817,13 +814,11 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		piece const& pp = p.pieces[c][source];
 		if( pp.column == m.target_col + 2 ) {
 			// Queenside
-			current_evaluation += special_values::castled;
 			current_evaluation -= get_piece_value( p, c, pieces::rook1, 0, pp.row );
 			current_evaluation += get_piece_value( p, c, pieces::rook1, 3, m.target_row );
 		}
 		else if( pp.column + 2 == m.target_col ) {
 			// Kingside
-			current_evaluation += special_values::castled;
 			current_evaluation -= get_piece_value( p, c, pieces::rook2, 7, pp.row );
 			current_evaluation += get_piece_value( p, c, pieces::rook2, 5, m.target_row );
 		}
@@ -892,3 +887,133 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 
 	return current_evaluation;
 }
+
+
+unsigned char const shield_const = 5;
+
+
+/* Pawn shield for king
+ * 1 2 3
+ * 4 5 6
+ *   K
+ * Pawns on 1, 3, 4, 6 are awarded shield_const points, pawns on 2 and 5 are awarded twice as many points.
+ * Double pawns do not count.
+ *
+ * Special case: a and h file. There b and g also count twice.
+ */
+short evaluate_pawn_shield( position const& p )
+{
+	short ev = 0;
+
+	int row = p.pieces[color::white][pieces::king].row;
+	if( row == 0 ) {
+		int col = p.pieces[color::white][pieces::king].column;
+
+		if( p.pawns.map[color::white] & (1ull << (col + 8) ) || p.pawns.map[color::white] & (1ull << (col + 16) ) ) {
+			ev += special_values::pawn_shield * 2;
+		}
+		if( col ) {
+			if( p.pawns.map[color::white] & (1ull << (col - 1 + 8) ) || p.pawns.map[color::white] & (1ull << (col - 1 + 16) ) ) {
+				if( col == 7 ) {
+					ev += special_values::pawn_shield * 2;
+				}
+				else {
+					ev += special_values::pawn_shield;
+				}
+			}
+		}
+		if( col != 7 ) {
+			if( p.pawns.map[color::white] & (1ull << (col + 1 + 8) ) || p.pawns.map[color::white] & (1ull << (col + 1 + 16) ) ) {
+				if( col == 0 ) {
+					ev += special_values::pawn_shield * 2;
+				}
+				else {
+					ev += special_values::pawn_shield;
+				}
+			}
+		}
+	}
+
+	row = p.pieces[color::black][pieces::king].row;
+	if( row == 7 ) {
+		int col = p.pieces[color::black][pieces::king].column;
+
+		if( p.pawns.map[color::black] & (1ull << (col + 48) ) || p.pawns.map[color::black] & (1ull << (col + 40) ) ) {
+			ev -= special_values::pawn_shield * 2;
+		}
+		if( col ) {
+			if( p.pawns.map[color::black] & (1ull << (col - 1 + 48) ) || p.pawns.map[color::black] & (1ull << (col - 1 + 40) ) ) {
+				if( col == 7 ) {
+					ev -= special_values::pawn_shield * 2;
+				}
+				else {
+					ev -= special_values::pawn_shield;
+				}
+			}
+		}
+		if( col != 7 ) {
+			if( p.pawns.map[color::black] & (1ull << (col + 1 + 48) ) || p.pawns.map[color::black] & (1ull << (col + 1 + 40) ) ) {
+				if( col == 0 ) {
+					ev -= special_values::pawn_shield * 2;
+				}
+				else {
+					ev -= special_values::pawn_shield;
+				}
+			}
+		}
+	}
+
+	return ev;
+}
+
+
+short evaluate_tropism( position const& p, color::type c )
+{
+	short ev = 0;
+
+	piece const& kp = p.pieces[1-c][pieces::king];
+
+	for( unsigned int i = 0; i < 16; ++i ) {
+		piece const& pp = p.pieces[c][i];
+		if( !pp.alive ) {
+			continue;
+		}
+
+		int dist = 7 - std::max( abs(static_cast<signed char>(pp.column) - kp.column), abs(static_cast<signed char>(pp.row) - kp.row) );
+
+		ev += dist;
+	}
+
+	return ev * 2;
+}
+
+short evaluate_tropism( position const& p )
+{
+	short ev = evaluate_tropism( p, color::white ) - evaluate_tropism( p, color::black );
+
+	return ev;
+}
+
+
+short evaluate_full( position const& p, color::type c )
+{
+	short eval = evaluate_fast( p, c );
+
+	return evaluate_full( p, c, eval );
+}
+
+
+short evaluate_full( position const& p, color::type c, short eval_fast )
+{
+	if( c == color::white ) {
+		eval_fast += evaluate_pawn_shield( p );
+		eval_fast += evaluate_tropism( p );
+	}
+	else {
+		eval_fast -= evaluate_pawn_shield( p );
+		eval_fast -= evaluate_tropism( p );
+	}
+
+	return eval_fast;
+}
+

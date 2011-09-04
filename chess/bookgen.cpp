@@ -51,7 +51,7 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 
 	unsigned long long hash = get_zobrist_hash( p, c );
 
-	short eval = evaluate( p, c );
+	short eval = evaluate_fast( p, c );
 
 	move_info moves[200];
 	move_info* pm = moves;

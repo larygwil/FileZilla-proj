@@ -83,7 +83,7 @@ void auto_play()
 
 		bool captured;
 		apply_move( p, m, c, captured );
-		int ev = evaluate( p, color::white );
+		int ev = evaluate_fast( p, color::white );
 		std::cerr << "Evaluation (for white): " << ev << " centipawns" << std::endl;
 
 		c = static_cast<color::type>(1-c);
@@ -254,6 +254,10 @@ void xboard()
 
 			int remaining_moves = std::max( 10, (71 - clock) / 2 );
 			unsigned long long time_limit = time_remaining / remaining_moves;
+			unsigned long long overhead_compensation = 50 * timer_precision() / 1000;
+			if( time_limit > overhead_compensation ) {
+				time_limit -= overhead_compensation;
+			}
 
 			move m;
 			int res;
@@ -272,7 +276,7 @@ void xboard()
 				++clock;
 
 				{
-					int i = evaluate( p, c );
+					int i = evaluate_fast( p, c );
 					std::cerr << "  ; Current evaluation " << i << " centipawns, forecast " << res << std::endl;
 				}
 

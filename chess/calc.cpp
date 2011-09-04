@@ -46,6 +46,9 @@ struct MoveSort {
 
 short quiescence_search( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, check_map const& check, color::type c, short alpha, short beta, pv_entry* pv )
 {
+	if( do_abort ) {
+		return result::loss;
+	}
 	int const limit = ctx.max_depth + ctx.quiescence_depth;
 
 	move tt_move;
@@ -61,12 +64,15 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		}
 	}
 
+
+	short full_eval = evaluate_full( p, c, current_evaluation );
+
 	if( depth >= limit && !check.check )
 	{
 #ifdef USE_STATISTICS
 		++stats.evaluated_leaves;
 #endif
-		return current_evaluation;
+		return full_eval;
 	}
 
 	short old_alpha = alpha;
@@ -80,7 +86,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 	#ifdef USE_STATISTICS
 			++stats.evaluated_leaves;
 	#endif
-			return current_evaluation;
+			return full_eval;
 		}
 
 		position new_pos = p;
@@ -156,7 +162,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 					ctx.pv_pool.release( best_pv );
 				}
 				ctx.move_ptr = moves;
-				return current_evaluation;
+				return full_eval;
 			}
 		}
 	}
@@ -189,7 +195,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		}
 
 		ctx.move_ptr = moves;
-		return current_evaluation;
+		return full_eval;
 	}
 
 
@@ -255,11 +261,11 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 	ctx.move_ptr = moves;
 
 	if( !evaluated_move ) {
-		alpha = current_evaluation;
+		alpha = full_eval;
 	}
-	else if( !check.check && current_evaluation > alpha ) {
+	else if( !check.check && full_eval > alpha ) {
 		// Avoid capture line
-		alpha = current_evaluation;
+		alpha = full_eval;
 	}
 	else {
 		if( alpha < beta && alpha > old_alpha ) {
@@ -625,7 +631,7 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long tim
 
 	move_info moves[200];
 	move_info* pm = moves;
-	int current_evaluation = evaluate( p, c );
+	int current_evaluation = evaluate_fast( p, c );
 	calculate_moves( p, c, current_evaluation, pm, check );
 
 	if( moves == pm ) {
