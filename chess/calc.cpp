@@ -772,6 +772,8 @@ break2:
 					}
 
 					pv_entry* pv = threads[t]->get_pv();
+					extend_pv_from_tt( pv, p, c, max_depth, conf.quiescence_depth );
+
 					insert_sorted( sorted, value, threads[t]->get_move(), pv );
 					if( threads[t]->get_move().m != pv->get_best_move() ) {
 						std::cerr << "FAIL: Wrong PV move" << std::endl;
