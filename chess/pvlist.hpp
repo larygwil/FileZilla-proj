@@ -46,5 +46,6 @@ private:
 
 void print_pv( pv_entry const* pv, position p, color::type c );
 std::string pv_to_string( pv_entry const* pv, position p, color::type c );
+void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, int max_qdepth );
 
 #endif
