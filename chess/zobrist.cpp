@@ -5,6 +5,7 @@
 namespace {
 static unsigned long long data[2][16][8][8];
 unsigned long long enpassant[8];
+unsigned long long enpassant_color;
 
 unsigned long long promoted_pawns[2][8];
 unsigned long long can_castle[2][2];
@@ -42,7 +43,6 @@ void init_zobrist_tables()
 	if( initialized ) {
 		return;
 	}
-
 	init_zobrist_table( pieces::pawn1 );
 	init_zobrist_table( pieces::knight1 );
 	init_zobrist_table( pieces::bishop1 );
@@ -70,6 +70,7 @@ void init_zobrist_tables()
 	for( unsigned int i = 0; i < 8; ++i ) {
 		enpassant[i] = get_random_unsigned_long_long();
 	}
+	enpassant_color = get_random_unsigned_long_long();
 
 	for( unsigned int c = 0; c < 2; ++c ) {
 		for( unsigned int col = 0; col < 8; ++col ) {
@@ -124,7 +125,10 @@ unsigned long long get_zobrist_hash( position const& p, color::type c ) {
 	}
 
 	if( p.can_en_passant != pieces::nil ) {
-		ret ^= enpassant[p.can_en_passant];
+		ret ^= enpassant[p.can_en_passant & 0x0f];
+		if( p.can_en_passant >> 4 ) {
+			ret ^= enpassant_color;
+		}
 	}
 
 	return ret;
@@ -152,7 +156,10 @@ static void subtract_target( position const& p, color::type c, unsigned long lon
 unsigned long long update_zobrist_hash( position const& p, color::type c, unsigned long long hash, move const& m )
 {
 	if( p.can_en_passant != pieces::nil ) {
-		hash ^= enpassant[p.can_en_passant];
+		hash ^= enpassant[p.can_en_passant & 0x0f];
+		if( p.can_en_passant >> 4 ) {
+			hash ^= enpassant_color;
+		}
 	}
 
 	int target = p.board[m.target_col][m.target_row];
@@ -176,6 +183,9 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 		else if( m.target_row == pp.row + 2 || m.target_row + 2 == pp.row ) {
 			// Becomes en-passantable
 			hash ^= enpassant[source];
+			if( c ) {
+				hash ^= enpassant_color;
+			}
 		}
 	}
 	else if( source == pieces::rook1 || source == pieces::rook2 ) {

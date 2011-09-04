@@ -453,6 +453,7 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 	}
 	source &= 0x0f;
 	piece& pp = p.pieces[c][source];
+	ASSERT( pp.alive );
 
 	p.board[m.source_col][m.source_row] = pieces::nil;
 
@@ -530,7 +531,7 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 		old_piece = p.board[m.target_col][m.source_row];
 		ASSERT( (old_piece >> 4) != c );
 		old_piece &= 0x0f;
-		ASSERT( p.can_en_passant == old_piece );
+		ASSERT( (p.can_en_passant & 0x0f) == old_piece );
 		ASSERT( old_piece >= pieces::pawn1 && old_piece <= pieces::pawn8 );
 		ASSERT( old_piece != pieces::king );
 		piece& cp = p.pieces[1-c][old_piece];
@@ -559,6 +560,9 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 		}
 		else if( (c == color::white) ? (pp.row + 2 == m.target_row) : (m.target_row + 2 == pp.row) ) {
 			p.can_en_passant = source;
+			if( c ) {
+				p.can_en_passant |= 0x10;
+			}
 			p.pawns.map[c] |= 1ull << (m.target_row * 8 + m.target_col);
 			p.pawns.hash ^= get_pawn_structure_hash( c, m.target_col, m.target_row );
 		}
@@ -672,7 +676,7 @@ bool apply_move( position& p, move_info const& mi, color::type c, bool& capture 
 		old_piece = p.board[m.target_col][m.source_row];
 		ASSERT( (old_piece >> 4) != c );
 		old_piece &= 0x0f;
-		ASSERT( p.can_en_passant == old_piece );
+		ASSERT( (p.can_en_passant & 0x0f) == old_piece );
 		ASSERT( old_piece >= pieces::pawn1 && old_piece <= pieces::pawn8 );
 		ASSERT( old_piece != pieces::king );
 		piece& cp = p.pieces[1-c][old_piece];
@@ -695,6 +699,9 @@ bool apply_move( position& p, move_info const& mi, color::type c, bool& capture 
 		}
 		else if( (c == color::white) ? (pp.row + 2 == m.target_row) : (m.target_row + 2 == pp.row) ) {
 			p.can_en_passant = source;
+			if( c ) {
+				p.can_en_passant |= 0x10;
+			}
 		}
 		else {
 			p.can_en_passant = pieces::nil;

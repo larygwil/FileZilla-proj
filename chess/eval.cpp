@@ -13,7 +13,7 @@ enum type
 	doubled_pawn = -50,
 	passed_pawn = 30,
 	connected_pawn = 15,
-	pawn_shield = 5
+	pawn_shield = 6
 };
 }
 
@@ -901,19 +901,22 @@ unsigned char const shield_const = 5;
  *
  * Special case: a and h file. There b and g also count twice.
  */
-short evaluate_pawn_shield( position const& p )
+short evaluate_pawn_shield_side( position const& p, color::type c )
 {
 	short ev = 0;
 
-	int row = p.pieces[color::white][pieces::king].row;
-	if( row == 0 ) {
-		int col = p.pieces[color::white][pieces::king].column;
+	int const cy = c ? -8 : 8;
+	int const y = c ? 48 : 8;
 
-		if( p.pawns.map[color::white] & (1ull << (col + 8) ) || p.pawns.map[color::white] & (1ull << (col + 16) ) ) {
+	int row = p.pieces[c][pieces::king].row;
+	if( row == (c ? 7 : 0) ) {
+		int col = p.pieces[c][pieces::king].column;
+
+		if( p.pawns.map[c] & (1ull << (col + y) ) || p.pawns.map[c] & (1ull << (col + y + cy) ) ) {
 			ev += special_values::pawn_shield * 2;
 		}
 		if( col ) {
-			if( p.pawns.map[color::white] & (1ull << (col - 1 + 8) ) || p.pawns.map[color::white] & (1ull << (col - 1 + 16) ) ) {
+			if( p.pawns.map[c] & (1ull << (col - 1 + y) ) || p.pawns.map[c] & (1ull << (col - 1 + y + cy) ) ) {
 				if( col == 7 ) {
 					ev += special_values::pawn_shield * 2;
 				}
@@ -923,41 +926,12 @@ short evaluate_pawn_shield( position const& p )
 			}
 		}
 		if( col != 7 ) {
-			if( p.pawns.map[color::white] & (1ull << (col + 1 + 8) ) || p.pawns.map[color::white] & (1ull << (col + 1 + 16) ) ) {
+			if( p.pawns.map[c] & (1ull << (col + 1 + y) ) || p.pawns.map[c] & (1ull << (col + 1 + y + cy) ) ) {
 				if( col == 0 ) {
 					ev += special_values::pawn_shield * 2;
 				}
 				else {
 					ev += special_values::pawn_shield;
-				}
-			}
-		}
-	}
-
-	row = p.pieces[color::black][pieces::king].row;
-	if( row == 7 ) {
-		int col = p.pieces[color::black][pieces::king].column;
-
-		if( p.pawns.map[color::black] & (1ull << (col + 48) ) || p.pawns.map[color::black] & (1ull << (col + 40) ) ) {
-			ev -= special_values::pawn_shield * 2;
-		}
-		if( col ) {
-			if( p.pawns.map[color::black] & (1ull << (col - 1 + 48) ) || p.pawns.map[color::black] & (1ull << (col - 1 + 40) ) ) {
-				if( col == 7 ) {
-					ev -= special_values::pawn_shield * 2;
-				}
-				else {
-					ev -= special_values::pawn_shield;
-				}
-			}
-		}
-		if( col != 7 ) {
-			if( p.pawns.map[color::black] & (1ull << (col + 1 + 48) ) || p.pawns.map[color::black] & (1ull << (col + 1 + 40) ) ) {
-				if( col == 0 ) {
-					ev -= special_values::pawn_shield * 2;
-				}
-				else {
-					ev -= special_values::pawn_shield;
 				}
 			}
 		}
@@ -967,7 +941,19 @@ short evaluate_pawn_shield( position const& p )
 }
 
 
-short evaluate_tropism( position const& p, color::type c )
+short evaluate_pawn_shield( position const& p, color::type c )
+{
+
+	short own = evaluate_pawn_shield_side( p, c );
+	short other = evaluate_pawn_shield_side( p, static_cast<color::type>(1-c) );
+
+	short ev = own - other;
+
+	return ev;
+}
+
+
+short evaluate_tropism_side( position const& p, color::type c )
 {
 	short ev = 0;
 
@@ -984,14 +970,17 @@ short evaluate_tropism( position const& p, color::type c )
 		ev += dist;
 	}
 
-	return ev * 2;
+	return ev;
 }
 
-short evaluate_tropism( position const& p )
+short evaluate_tropism( position const& p, color::type c )
 {
-	short ev = evaluate_tropism( p, color::white ) - evaluate_tropism( p, color::black );
+	short own = evaluate_tropism_side( p, c );
+	short other = evaluate_tropism_side( p, static_cast<color::type>(1-c) );
 
-	return ev;
+	short ev = own - other;
+
+	return (ev * 2) / 3;
 }
 
 
@@ -1005,14 +994,8 @@ short evaluate_full( position const& p, color::type c )
 
 short evaluate_full( position const& p, color::type c, short eval_fast )
 {
-	if( c == color::white ) {
-		eval_fast += evaluate_pawn_shield( p );
-		eval_fast += evaluate_tropism( p );
-	}
-	else {
-		eval_fast -= evaluate_pawn_shield( p );
-		eval_fast -= evaluate_tropism( p );
-	}
+	eval_fast += evaluate_pawn_shield( p, c );
+	eval_fast += evaluate_tropism( p, c );
 
 	return eval_fast;
 }

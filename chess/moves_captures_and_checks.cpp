@@ -307,8 +307,8 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 {
 	unsigned char target = p.board[new_col][new_row];
 	if( target == pieces::nil ) {
-		if( p.can_en_passant != pieces::nil ) {
-			piece const& ep = p.pieces[1-c][p.can_en_passant];
+		if( p.can_en_passant != pieces::nil && (p.can_en_passant >> 4) != c ) {
+			piece const& ep = p.pieces[1-c][p.can_en_passant & 0x0f];
 			ASSERT( ep.alive );
 			if( ep.column == new_col && ep.row == pp.row ) {
 

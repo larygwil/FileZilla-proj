@@ -64,7 +64,10 @@ struct position
 	// 2 bit for every pawn.
 	unsigned short promotions[2];
 
-	unsigned char can_en_passant; // Piece of last-moved player that can be en-passanted
+	// pieces::nil if en-passant not possible.
+	// Otherwise piece of last-moved player that can be en-passanted in
+	// lower 4 bits, 5th bit color of pawn that is en-passantable.
+	unsigned char can_en_passant;
 
 	// board[column][row] as piece indexes in lower 4 bits, color in 5th bit.
 	// nil if square is empty.

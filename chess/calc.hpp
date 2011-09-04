@@ -13,6 +13,7 @@ public:
 
 	unsigned long long pos[200]; // Must be at least 50 full moves + max depth
 	int root_position; // Index of first move after root position in seen_positions
+	int null_move_position;
 
 	bool is_two_fold( unsigned long long hash, int depth ) const;
 	bool is_three_fold( unsigned long long hash, int depth ) const;
@@ -43,6 +44,6 @@ public:
 	seen_positions seen;
 };
 
-short step( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv );
+short step( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv, bool last_was_null );
 
 #endif

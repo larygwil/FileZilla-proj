@@ -292,8 +292,12 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 	return quiescence_search( depth, ctx, p, hash, current_evaluation, check, c, alpha, beta, pv );
 }
 
-short step( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv )
+short step( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv, bool last_was_null )
 {
+	if( depth >= ctx.max_depth ) {
+		return quiescence_search( depth, ctx, p, hash, current_evaluation, c, alpha, beta, pv );
+	}
+
 	if( do_abort ) {
 		return result::loss;
 	}
@@ -311,14 +315,28 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 		}
 	}
 
-	if( depth >= ctx.max_depth ) {
-		return quiescence_search( depth, ctx, p, hash, current_evaluation, c, alpha, beta, pv );
+
+	check_map check;
+	calc_check_map( p, c, check );
+
+	if( !last_was_null && !check.check && depth > 1 ) {
+		int old_null = ctx.seen.null_move_position;
+		ctx.seen.null_move_position = ctx.seen.root_position + depth;
+		pv_entry* cpv = ctx.pv_pool.get();
+		short value = -step( depth + 3, ctx, p, hash, -current_evaluation, static_cast<color::type>(1-c), -beta, -beta + 1, cpv, true );
+		ctx.pv_pool.release( cpv );
+
+		ctx.seen.null_move_position = old_null;
+
+		if( value >= beta ) {
+			return value;
+		}
 	}
 
 	if( !tt_move.other && depth + 2 < ctx.max_depth ) {
 
 		ctx.max_depth -= 2;
-		step( depth, ctx, p, hash, current_evaluation, c, alpha, beta, pv );
+		step( depth, ctx, p, hash, current_evaluation, c, alpha, beta, pv, false );
 		ctx.max_depth += 2;
 
 		short eval;
@@ -346,7 +364,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 			else {
 				ctx.seen.pos[ctx.seen.root_position + depth + 1] = new_hash;
 
-				value = -step( depth + 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), -beta, -alpha, cpv );
+				value = -step( depth + 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
 			}
 			if( value > alpha ) {
 
@@ -378,9 +396,6 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 			//goto retry_after_type1_collision;
 		}
 	}
-
-	check_map check;
-	calc_check_map( p, c, check );
 
 	move_info* moves = ctx.move_ptr;
 	calculate_moves( p, c, current_evaluation, ctx.move_ptr, check );
@@ -425,14 +440,14 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 			ctx.seen.pos[ctx.seen.root_position + depth] = new_hash;
 
 			if( alpha != old_alpha ) {
-				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -alpha-1, -alpha, cpv );
+				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -alpha-1, -alpha, cpv, false );
 
 				if( value > alpha && value < beta) {
-					value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv );
+					value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
 				}
 			}
 			else {
-				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv );
+				value = -step( depth, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
 			}
 		}
 		if( value > alpha ) {
@@ -574,7 +589,7 @@ void processing_thread::onRun()
 		short alpha = std::max( alpha_, static_cast<short>(alpha_at_prev_depth_ - ASPIRATION) );
 		short beta = std::min( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next() );
+		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next(), false );
 		if( value > alpha && value < beta ) {
 			// Aspiration search found something sensible
 			scoped_lock l( mutex_ );
@@ -586,13 +601,13 @@ void processing_thread::onRun()
 	}
 
 	if( alpha_ != result::loss ) {
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_, pv_->next() );
+		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_, pv_->next(), false );
 		if( value > alpha_ ) {
-			value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next() );
+			value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
 		}
 	}
 	else {
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next() );
+		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
 	}
 
 	scoped_lock l( mutex_ );
@@ -871,6 +886,8 @@ break2:
 
 
 seen_positions::seen_positions()
+	: root_position()
+	, null_move_position()
 {
 	memset( pos, 0, 200*8 );
 }
@@ -878,7 +895,7 @@ seen_positions::seen_positions()
 bool seen_positions::is_three_fold( unsigned long long hash, int depth ) const
 {
 	int count = 0;
-	for( int i = root_position + depth - 1; i >= 0; --i ) {
+	for( int i = root_position + depth - 1; i >= null_move_position; --i ) {
 		if( pos[i] == hash ) {
 			++count;
 		}
@@ -888,7 +905,7 @@ bool seen_positions::is_three_fold( unsigned long long hash, int depth ) const
 
 bool seen_positions::is_two_fold( unsigned long long hash, int depth ) const
 {
-	for( int i = root_position + depth - 1; i >= 0; --i ) {
+	for( int i = root_position + depth - 1; i >= null_move_position; --i ) {
 		if( pos[i] == hash ) {
 			return true;
 		}
