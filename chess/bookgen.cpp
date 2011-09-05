@@ -72,8 +72,9 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 		apply_move( new_pos, *it, c, captured );
 
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
-		pv_entry* pv = 0;//FIXME
-		short value = -step( 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), result::loss, result::win, pv );
+		pv_entry* pv = ctx.pv_pool.get();
+		short value = -step( 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+		ctx.pv_pool.release(pv);
 
 		move_entry m;
 		m.set_move( it->m );
@@ -99,8 +100,9 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 		short new_eval = evaluate_move( p, c, eval, it->get_move(), pawns );
 
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->get_move() );
-		pv_entry* pv = 0;//FIXME
-		short value = -step( 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win, pv );
+		pv_entry* pv = ctx.pv_pool.get();
+		short value = -step( 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+		ctx.pv_pool.release(pv);
 
 		move_entry m;
 		m.set_move( it->get_move() );

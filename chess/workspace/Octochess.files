@@ -14,9 +14,13 @@
 ../eval.hpp
 ../hash.cpp
 ../hash.hpp
+../mobility.cpp
+../mobility.hpp
 ../moves.cpp
 ../moves.hpp
 ../moves_captures_and_checks.cpp
+../pawn_structure_hash_table.cpp
+../pawn_structure_hash_table.hpp
 ../platform.hpp
 ../pvlist.cpp
 ../pvlist.hpp
