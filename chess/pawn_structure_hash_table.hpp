@@ -1,8 +1,7 @@
 #ifndef __PAWN_STRUCTURE_HASH_TABLE_H__
 #define __PAWN_STRUCTURE_HASH_TABLE_H__
 
-#include <stdint.h>
-
+#include "platform.hpp"
 /*
  * Hash table to hold the pawn structure evaluation.
  * The general idea is the following:

@@ -10,7 +10,7 @@ hash transposition_table;
 struct entry {
 	uint64_t v;
 	uint64_t key;
-} __attribute__((__packed__));
+} PACKED;
 
 uint64_t const bucket_entries = 4;
 unsigned int const bucket_size = sizeof(entry) * bucket_entries;

@@ -314,11 +314,23 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\book.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bookgen.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\calc.cpp"
 				>
 			</File>
 			<File
-				RelativePath="chess.cpp"
+				RelativePath=".\chess.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\config.cpp"
 				>
 			</File>
 			<File
@@ -327,6 +339,26 @@
 			</File>
 			<File
 				RelativePath=".\eval.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\hash.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\moves.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\moves_captures_and_checks.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\pawn_structure_hash_table.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\pvlist.cpp"
 				>
 			</File>
 			<File
@@ -341,6 +373,10 @@
 				RelativePath=".\windows.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\zobrist.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -352,11 +388,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\book.hpp"
+				>
+			</File>
+			<File
 				RelativePath=".\calc.hpp"
 				>
 			</File>
 			<File
 				RelativePath=".\chess.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\config.hpp"
 				>
 			</File>
 			<File
@@ -368,15 +412,31 @@
 				>
 			</File>
 			<File
+				RelativePath=".\hash.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\moves.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\pawn_structure_hash_table.hpp"
+				>
+			</File>
+			<File
 				RelativePath=".\platform.hpp"
 				>
 			</File>
 			<File
-				RelativePath=".\statistics.hpp"
+				RelativePath=".\pvlist.hpp"
 				>
 			</File>
 			<File
-				RelativePath=".\unix.hpp"
+				RelativePath=".\random.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\statistics.hpp"
 				>
 			</File>
 			<File
@@ -385,6 +445,10 @@
 			</File>
 			<File
 				RelativePath=".\windows.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\zobrist.hpp"
 				>
 			</File>
 		</Filter>

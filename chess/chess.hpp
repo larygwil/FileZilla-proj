@@ -3,6 +3,8 @@
 
 #include <string.h>
 
+#include "platform.hpp"
+
 namespace pieces {
 enum type {
 	pawn1,
@@ -56,7 +58,7 @@ enum type {
 }
 
 
-struct position
+PACKED(struct position
 {
 	// [color][piece]
 	piece pieces[2][16];
@@ -86,7 +88,7 @@ struct position
 	short material[2];
 	short tropism[2];
 
-} __attribute__((__packed__));
+});
 
 
 struct move

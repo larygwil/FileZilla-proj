@@ -1,7 +1,10 @@
 #ifndef __UNIX_H__
 #define __UNIX_H__
 
+#include <stdint.h>
 #include <pthread.h>
+
+#define PACKED(s) s __attribute__((__packed__))
 
 unsigned long long timer_precision();
 unsigned long long get_time();

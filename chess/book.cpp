@@ -1,3 +1,4 @@
+#include "assert.hpp"
 #include "book.hpp"
 #include "platform.hpp"
 #include "util.hpp"
@@ -10,7 +11,16 @@
 #include <sstream>
 
 #include <fcntl.h>
+#ifdef __GNUG__
 #include <unistd.h>
+#else
+#pragma warning(disable:4996)
+#include <io.h>
+#include <sys/stat.h>
+#define lseek _lseeki64
+#define S_IRUSR _S_IREAD
+#define S_IWUSR _S_IWRITE
+#endif
 
 void close_book();
 
@@ -145,12 +155,13 @@ book_entry get_entries( unsigned long long index, std::vector<move_entry>& moves
 
 unsigned long long book_add_entry( book_entry b, std::vector<move_entry> const& moves )
 {
+	ASSERT(moves.size() <= 255);
 	scoped_lock l(impl.mtx_);
 
 	unsigned long long index = lseek( impl.fd_index_, 0, SEEK_END ) / sizeof(unsigned long long);
 	unsigned long long offset = lseek( impl.fd_, 0, SEEK_END );
 
-	b.count_moves = moves.size();
+	b.count_moves = static_cast<unsigned char>(moves.size());
 
 	write( impl.fd_index_, &offset, sizeof( unsigned long long) );
 

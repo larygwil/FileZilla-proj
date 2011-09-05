@@ -10,14 +10,14 @@
 // Indexes get mapped to offsets where a book entry is stored, followed by list of move_entries
 
 // Root position has index 0.
-struct book_entry
+PACKED(struct book_entry
 {
 	unsigned char reached_at_depth;
 	unsigned char count_moves;
 	unsigned long long parent_index;
-} __attribute__((__packed__));
+});
 
-struct move_entry {
+PACKED(struct move_entry {
 	unsigned char source_col;
 	unsigned char source_row;
 	unsigned char target_col;
@@ -32,7 +32,7 @@ struct move_entry {
 	void set_move( move const& m );
 	move get_move() const;
 	bool operator>=( move_entry const& rhs ) const;
-} __attribute__((__packed__));
+});
 
 book_entry get_entry( unsigned long long index );
 book_entry get_entries( unsigned long long index, std::vector<move_entry>& moves );
