@@ -320,6 +320,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 	check_map check;
 	calc_check_map( p, c, check );
 
+#if NULL_MOVE_REDUCTION > 0
 	if( !last_was_null && !check.check && depth > 1 && p.material[0] > 1000 && p.material[1] > 1000 ) {
 		int old_null = ctx.seen.null_move_position;
 		ctx.seen.null_move_position = ctx.seen.root_position + depth;
@@ -333,6 +334,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 			return value;
 		}
 	}
+#endif
 
 	if( !tt_move.other && depth + 2 < ctx.max_depth ) {
 
@@ -805,12 +807,12 @@ break2:
 			scoped_lock l( mtx );
 
 			unsigned long long now = get_time();
-			if( move_time_limit * 4 > now - start ) {
-				cond.wait( l, move_time_limit * 4 - now + start );
+			if( move_time_limit > now - start ) {
+				cond.wait( l, move_time_limit - now + start );
 			}
 
 			now = get_time();
-			if( !do_abort && move_time_limit > 0 && (now - start) > move_time_limit * 4 ) {
+			if( !do_abort && move_time_limit > 0 && (now - start) > move_time_limit  ) {
 				std::cerr << "Triggering search abort due to time limit at depth " << max_depth << std::endl;
 				do_abort = true;
 			}
@@ -911,7 +913,7 @@ break2:
 		std::cerr << "Next search depth increment time factor would be " << increments.get_increment( max_depth + 2 ) << ", variance " << increments.get_variance( max_depth + 2 ) << std::endl;
 		if( (get_time() - start) * next_depth_factor > move_time_limit ) {
 			std::cerr << "Aborting search at depth " << max_depth << ", next search depth would exceed move time limit" << std::endl;
-			break;
+	//		break;
 		}
 	}
 

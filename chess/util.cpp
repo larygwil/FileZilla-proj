@@ -851,3 +851,95 @@ void position::evaluate_pawn_structure()
 {
 	pawns.eval = evaluate_pawns( pawns.map, color::white ) - evaluate_pawns( pawns.map, color::black );
 }
+
+extern unsigned long long pawn_control[2][64];
+
+void get_bitboards( position const& p, bitboard *bitboards )
+{
+	memset( bitboards, 0, sizeof(bitboard) * 2 );
+
+	for( int c = 0; c < 2; ++c ) {
+		for( int i = pieces::pawn1; i <= pieces::pawn8; ++i ) {
+			piece const& pp = p.pieces[c][i];
+			if( !pp.alive ) {
+				continue;
+			}
+			if( pp.special ) {
+				unsigned short promoted = (p.promotions[1-c] >> (2 * (i - pieces::pawn1) ) ) & 0x03;
+				if( promoted == promotions::queen ) {
+					bitboards[c].queens |= 1ull << (pp.column + pp.row * 8);
+				}
+				else if( promoted == promotions::bishop ) {
+					bitboards[c].bishops |= 1ull << (pp.column + pp.row * 8);
+				}
+				else if( promoted == promotions::rook ) {
+					bitboards[c].rooks |= 1ull << (pp.column + pp.row * 8);
+				}
+				else if( promoted == promotions::knight ) {
+					bitboards[c].knights |= 1ull << (pp.column + pp.row * 8);
+				}
+			}
+			else {
+				bitboards[c].pawns |= 1ull << (pp.column + pp.row * 8);
+				bitboards[c].pawn_control |= pawn_control[c][pp.column + pp.row * 8];
+			}
+		}
+
+
+		{
+			piece const& pp = p.pieces[c][pieces::rook1];
+			if( pp.alive ) {
+				bitboards[c].rooks |= 1ull << (pp.column + pp.row * 8);
+			}
+		}
+
+		{
+			piece const& pp = p.pieces[c][pieces::rook2];
+			if( pp.alive ) {
+				bitboards[c].rooks |= 1ull << (pp.column + pp.row * 8);
+			}
+		}
+
+		{
+			piece const& pp = p.pieces[c][pieces::knight1];
+			if( pp.alive ) {
+				bitboards[c].knights |= 1ull << (pp.column + pp.row * 8);
+			}
+		}
+
+		{
+			piece const& pp = p.pieces[c][pieces::knight2];
+			if( pp.alive ) {
+				bitboards[c].knights |= 1ull << (pp.column + pp.row * 8);
+			}
+		}
+
+		{
+			piece const& pp = p.pieces[c][pieces::bishop1];
+			if( pp.alive ) {
+				bitboards[c].bishops |= 1ull << (pp.column + pp.row * 8);
+			}
+		}
+
+		{
+			piece const& pp = p.pieces[c][pieces::bishop1];
+			if( pp.alive ) {
+				bitboards[c].bishops |= 1ull << (pp.column + pp.row * 8);
+			}
+		}
+
+		{
+			piece const& pp = p.pieces[c][pieces::queen];
+			if( pp.alive ) {
+				bitboards[c].queens |= 1ull << (pp.column + pp.row * 8);
+			}
+		}
+
+		{
+			piece const& pp = p.pieces[c][pieces::king];
+			bitboards[c].king |= 1ull << (pp.column + pp.row * 8);
+		}
+
+		bitboards[c].all_pieces = bitboards[c].pawns | bitboards[c].knights | bitboards[c].bishops | bitboards[c].rooks | bitboards[c].queens | bitboards[c].king;
+	}
+}

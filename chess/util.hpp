@@ -25,4 +25,6 @@ unsigned char get_random_unsigned_char();
 
 unsigned long long get_random_unsigned_long_long();
 
+void get_bitboards( position const& p, bitboard *bitboards );
+
 #endif

@@ -1,5 +1,6 @@
 #include "eval.hpp"
 #include "assert.hpp"
+#include "mobility.hpp"
 #include "util.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "zobrist.hpp"
@@ -13,7 +14,7 @@ enum type
 	doubled_pawn = -50,
 	passed_pawn = 30,
 	connected_pawn = 15,
-	pawn_shield = 5
+	pawn_shield = 3
 };
 }
 
@@ -1031,7 +1032,7 @@ short evaluate_tropism( position const& p, color::type c )
 	}
 #endif
 
-	return (ev * 2) / 3;
+	return ev;
 }
 
 
@@ -1056,6 +1057,17 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 	}
 	else if( eval_fast < 0 ) {
 		eval_fast -= v;
+	}
+
+	bitboard bitboards[2];
+	get_bitboards( p, bitboards );
+
+	short mobility = get_mobility( p, bitboards ) / 2;
+	if( c ) {
+		eval_fast -= mobility;
+	}
+	else {
+		eval_fast += mobility;
 	}
 
 	return eval_fast;
