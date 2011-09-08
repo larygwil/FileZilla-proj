@@ -16,7 +16,7 @@
 
 #include <signal.h>
 
-int const MAX_DEPTH = 10;
+int const MAX_BOOKSEARCH_DEPTH = 10;
 int const QUIESCENCE_SEARCH = 5;
 
 unsigned int const MAX_BOOK_DEPTH = 10;
@@ -62,7 +62,7 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 	sorted_moves moves_with_forecast;
 
 	context ctx;
-	ctx.max_depth = MAX_DEPTH - 2;
+	ctx.max_depth = MAX_BOOKSEARCH_DEPTH - 2;
 	ctx.quiescence_depth = QUIESCENCE_SEARCH;
 	ctx.clock = 0; //TODO: Actual clock
 
@@ -79,7 +79,7 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 		move_entry m;
 		m.set_move( it->m );
 		m.forecast = value;
-		m.full_depth = MAX_DEPTH - 2;
+		m.full_depth = MAX_BOOKSEARCH_DEPTH - 2;
 		m.quiescence_depth = QUIESCENCE_SEARCH;
 		insert_sorted( moves_with_forecast, m );
 
@@ -88,7 +88,7 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 
 	sorted_moves moves_with_forecast_fulldepth;
 
-	ctx.max_depth = MAX_DEPTH;
+	ctx.max_depth = MAX_BOOKSEARCH_DEPTH;
 
 	int fulldepth = 5;
 	sorted_moves::const_iterator it;
@@ -107,7 +107,7 @@ unsigned long long calculate_position( position const& p, color::type c, int dep
 		move_entry m;
 		m.set_move( it->get_move() );
 		m.forecast = value;
-		m.full_depth = MAX_DEPTH;
+		m.full_depth = MAX_BOOKSEARCH_DEPTH;
 		m.quiescence_depth = QUIESCENCE_SEARCH;
 		insert_sorted( moves_with_forecast_fulldepth, m );
 

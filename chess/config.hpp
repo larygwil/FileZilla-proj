@@ -1,6 +1,10 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+// Upper limits, cannot go higher without recompilation.
+#define MAX_DEPTH  40
+#define MAX_QDEPTH 40
+
 struct config
 {
 	config();

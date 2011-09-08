@@ -8,11 +8,8 @@
 #ifdef USE_STATISTICS
 namespace statistics {
 struct type {
-	unsigned long long evaluated_leaves;
-	unsigned long long evaluated_intermediate;
-#if USE_QUIESCENCE
-	unsigned long long quiescence_moves;
-#endif
+	unsigned long long full_width_nodes;
+	unsigned long long quiescence_nodes;
 };
 }
 

@@ -10,19 +10,20 @@ statistics::type stats = {0};
 
 void print_stats( unsigned long long start, unsigned long long stop )
 {
-	std::cerr << "Evaluated positions:    " << stats.evaluated_leaves << std::endl;
-	std::cerr << "Intermediate positions: " << stats.evaluated_intermediate << std::endl;
-#if USE_QUIESCENCE
-	std::cerr << "Quiescent moves:        " << stats.quiescence_moves << std::endl;
-#endif
-	if( stats.evaluated_intermediate || stats.evaluated_intermediate ) {
-		std::cerr << "Time per position:      " << ((stop - start) * 1000 * 1000 * 1000) / (stats.evaluated_intermediate + stats.evaluated_intermediate) / timer_precision() << " ns" << std::endl;
+	std::cerr << std::endl;
+	std::cerr << "Node stats:" << std::endl;
+	  std::cerr << "  Total:            " << stats.full_width_nodes + stats.quiescence_nodes << std::endl;
+	  std::cerr << "  Full-width:       " << stats.full_width_nodes << std::endl;
+	  std::cerr << "  Quiescence:       " << stats.quiescence_nodes << std::endl;
+	if( stats.full_width_nodes || stats.quiescence_nodes ) {
+		std::cerr << "  Time per node:    " << ((stop - start) * 1000 * 1000 * 1000) / (stats.full_width_nodes + stats.quiescence_nodes) / timer_precision() << " ns" << std::endl;
 		if( stop != start ) {
-			std::cerr << "Positions per second:   " << (timer_precision() * (stats.evaluated_intermediate + stats.evaluated_intermediate)) / (stop - start) << std::endl;
+			std::cerr << "  Nodes per second: " << (timer_precision() * (stats.full_width_nodes + stats.quiescence_nodes) ) / (stop - start) << std::endl;
 		}
 	}
 
-	std::cerr << "Transposition table" << std::endl;
+	std::cerr << std::endl;
+	std::cerr << "Transposition table stats:" << std::endl;
 	hash::stats s = transposition_table.get_stats( true );
 
 	std::cerr << "- Number of entries: " << s.entries << std::endl;
@@ -33,18 +34,19 @@ void print_stats( unsigned long long start, unsigned long long stop )
 
 	pawn_structure_hash_table::stats ps = pawn_hash_table.get_stats(true);
 
-	std::cerr << "Pawn structure hash table" << std::endl;
+	std::cerr << std::endl;
+	std::cerr << "Pawn structure hash table stats:" << std::endl;
 	std::cerr << "- Hits:     " << ps.hits << std::endl;
 	std::cerr << "- Misses:   " << ps.misses << std::endl;
 	std::cerr << "- Hit rate: " << static_cast<double>(ps.hits) / (ps.hits + ps.misses) << std::endl;
 
+	std::cerr << std::endl;
 }
 
 void reset_stats()
 {
-	stats.evaluated_leaves = 0;
-	stats.evaluated_intermediate = 0;
-	stats.quiescence_moves = 0;
+	stats.full_width_nodes = 0;
+	stats.quiescence_nodes = 0;
 }
 
 #endif

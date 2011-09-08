@@ -140,9 +140,6 @@ enum type {
 };
 }
 
-
-#define USE_QUIESCENCE 1
-
 #define NULL_MOVE_REDUCTION 2
 
 #endif

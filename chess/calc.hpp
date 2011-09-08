@@ -1,6 +1,7 @@
 #ifndef __CALC_H__
 #define __CALC_H__
 
+#include "config.hpp"
 #include "chess.hpp"
 #include "detect_check.hpp"
 #include "pvlist.hpp"
@@ -11,7 +12,7 @@ class seen_positions {
 public:
 	seen_positions();
 
-	unsigned long long pos[400]; // Must be at least 50 full moves + max depth
+	unsigned long long pos[100 + MAX_DEPTH + MAX_QDEPTH + 10]; // Must be at least 50 full moves + max depth and add some safety margin.
 	int root_position; // Index of first move after root position in seen_positions
 	int null_move_position;
 
@@ -38,7 +39,7 @@ public:
 	unsigned char clock; // The halfmove clock
 	pv_entry_pool pv_pool;
 
-	move_info moves[200 * 45];
+	move_info moves[200 * (MAX_DEPTH + MAX_QDEPTH)];
 	move_info* move_ptr;
 
 	seen_positions seen;

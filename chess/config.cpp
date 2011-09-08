@@ -9,7 +9,7 @@ config::config()
   memory(2048+1024),
   max_moves(0),
   depth(8),
-  quiescence_depth(30),
+  quiescence_depth(MAX_QDEPTH),
   time_limit(3600*1000), // In ms
   random_seed(-1) //-1 == based on time
 {}
@@ -48,7 +48,7 @@ int config::init( int argc,  char const* argv[] )
 				exit(1);
 			}
 			int v = atoi(argv[i]);
-			if( v < 1 || v > 40 ) {
+			if( v < 1 || v > MAX_DEPTH ) {
 				std::cerr << "Invalid argument to " << argv[i] << std::endl;
 				exit(1);
 			}
@@ -60,7 +60,7 @@ int config::init( int argc,  char const* argv[] )
 				exit(1);
 			}
 			int v = atoi(argv[i]);
-			if( v < 1 || v > 20 ) {
+			if( v < 1 || v > MAX_QDEPTH ) {
 				std::cerr << "Invalid argument to " << argv[i] << std::endl;
 				exit(1);
 			}
