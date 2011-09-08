@@ -9,7 +9,7 @@ config::config()
   memory(2048+1024),
   max_moves(0),
   depth(8),
-  quiescence_depth(5),
+  quiescence_depth(30),
   time_limit(3600*1000), // In ms
   random_seed(-1) //-1 == based on time
 {}

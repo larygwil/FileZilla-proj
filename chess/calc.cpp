@@ -65,11 +65,9 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		}
 	}
 
-
 	short full_eval = evaluate_full( p, c, current_evaluation );
 
-	if( depth >= limit && !check.check )
-	{
+	if( depth >= limit && !check.check ) {
 #ifdef USE_STATISTICS
 		++stats.evaluated_leaves;
 #endif
@@ -78,8 +76,14 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 
 	short old_alpha = alpha;
 
+	if( full_eval > alpha ) {
+		if( full_eval >= beta && !check.check ) {
+			return full_eval;
+		}
+		alpha = full_eval;
+	}
+
 	pv_entry* best_pv = 0;
-	bool evaluated_move = false;
 
 	if( tt_move.other ) {
 		// Not a terminal node, do this check early:
@@ -97,9 +101,8 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 			calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
 			position::pawn_structure pawns;
 
-			if( check.check || captured || new_check.check ) {
+			if( check.check || captured || (new_check.check && depth <= conf.depth + 2) ) {
 
-				evaluated_move = true;
 				pv_entry* cpv = ctx.pv_pool.get();
 
 				unsigned long long new_hash = update_zobrist_hash( p, c, hash, tt_move );
@@ -126,7 +129,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		#endif
 
 						if( !do_abort ) {
-							transposition_table.store( hash, c, limit - depth, alpha, old_alpha, beta, tt_move, ctx.clock );
+						//	transposition_table.store( hash, c, limit - depth, alpha, old_alpha, beta, tt_move, ctx.clock );
 						}
 						return alpha;
 					}
@@ -215,9 +218,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		check_map new_check;
 		calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
 
-		if( check.check || captured || new_check.check ) {
-
-			evaluated_move = true;
+		if( check.check || captured || (new_check.check && depth <= conf.depth + 2) ) {
 			pv_entry* cpv = ctx.pv_pool.get();
 
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
@@ -261,24 +262,15 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 	}
 	ctx.move_ptr = moves;
 
-	if( !evaluated_move ) {
-		alpha = full_eval;
+	/*if( alpha < beta && alpha > old_alpha ) {
+		ctx.pv_pool.append( pv, tt_move, best_pv );
 	}
-	else if( !check.check && full_eval > alpha ) {
-		// Avoid capture line
-		alpha = full_eval;
-	}
-	else {
-		if( alpha < beta && alpha > old_alpha ) {
-			ctx.pv_pool.append( pv, tt_move, best_pv );
-		}
-		else if( best_pv ) {
-			ctx.pv_pool.release( best_pv );
-		}
+	else*/ if( best_pv ) {
+		ctx.pv_pool.release( best_pv );
 	}
 
 	if( !do_abort ) {
-		transposition_table.store( hash, c, limit - depth + 1, alpha, old_alpha, beta, tt_move, ctx.clock );
+	//	transposition_table.store( hash, c, limit - depth + 1, alpha, old_alpha, beta, tt_move, ctx.clock );
 	}
 
 	return alpha;
