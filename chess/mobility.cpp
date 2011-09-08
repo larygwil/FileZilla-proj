@@ -3,6 +3,9 @@
 #include <iostream>
 extern unsigned long long const possible_knight_moves[64];
 
+// Using the XRAYS pattern, own pieces do not stop mobility.
+// We do stop at own pawns and king though.
+// Naturally, enemy pieces also block us.
 
 short get_knight_mobility( position const& p, bitboard const* bitboards, color::type c )
 {
@@ -19,7 +22,14 @@ short get_knight_mobility( position const& p, bitboard const* bitboards, color::
 		moves &= ~bitboards[c].all_pieces;
 		moves &= ~bitboards[1-c].pawn_control;
 
-		ev += __builtin_popcountll(moves);
+		short kev = __builtin_popcountll(moves);
+
+		// Punish bad mobility
+		if( kev < 3 ) {
+			--kev;
+		}
+
+		ev += kev;
 	}
 
 	return ev;
@@ -39,8 +49,7 @@ short get_bishop_mobility( position const& p, bitboard const* bitboards, color::
 
 		unsigned long long moves = visibility_bishop[bishop];
 
-
-		unsigned long long blockers = bitboards[1-c].all_pieces | bitboards[c].pawns;
+		unsigned long long blockers = bitboards[1-c].all_pieces | bitboards[c].pawns | bitboards[c].king;
 		blockers &= moves;
 
 		moves &= ~bitboards[c].all_pieces;
@@ -55,7 +64,14 @@ short get_bishop_mobility( position const& p, bitboard const* bitboards, color::
 			moves &= ~mobility_block[bishop][blocker];
 		}
 
-		ev += __builtin_popcountll(moves);
+		short bev = __builtin_popcountll(moves);
+
+		// Punish bad mobility
+		if( bev < 5 ) {
+			--bev;
+		}
+
+		ev += bev;
 	}
 
 	return ev;
@@ -76,7 +92,7 @@ short get_rook_mobility( position const& p, bitboard const* bitboards, color::ty
 		unsigned long long moves = visibility_rook[rook];
 
 
-		unsigned long long blockers = bitboards[1-c].all_pieces | bitboards[c].pawns;
+		unsigned long long blockers = bitboards[1-c].all_pieces | bitboards[c].pawns | bitboards[c].king;
 		blockers &= moves;
 
 		moves &= ~bitboards[c].all_pieces;
@@ -91,7 +107,19 @@ short get_rook_mobility( position const& p, bitboard const* bitboards, color::ty
 			moves &= ~mobility_block[rook][blocker];
 		}
 
-		ev += __builtin_popcountll(moves);
+		unsigned long long vertical = moves & (0x0101010101010101ull << (rook % 8));
+		unsigned long long horizontal = moves & ~vertical;
+
+		// Rooks dig verticals.
+		short rev = __builtin_popcountll(horizontal) + 2 * __builtin_popcountll(vertical);
+
+		// Punish bad mobility
+		if( rev < 5 ) {
+			--rev;
+		}
+
+
+		ev += rev;
 	}
 
 	return ev;
@@ -112,7 +140,7 @@ short get_queen_mobility( position const& p, bitboard const* bitboards, color::t
 		unsigned long long moves = visibility_bishop[queen] | visibility_rook[queen];
 
 
-		unsigned long long blockers = bitboards[1-c].all_pieces | bitboards[c].pawns;
+		unsigned long long blockers = bitboards[1-c].all_pieces | bitboards[c].pawns | bitboards[c].king;
 		blockers &= moves;
 
 		moves &= ~bitboards[c].all_pieces;
@@ -127,11 +155,12 @@ short get_queen_mobility( position const& p, bitboard const* bitboards, color::t
 			moves &= ~mobility_block[queen][blocker];
 		}
 
-		ev += __builtin_popcountll(moves);
+		// Queen is just too mobile, can get anywhere quickly. Just punish very low mobility.
+		short qev = __builtin_popcountll(moves);
+		ev += (qev > 5) ? 5 : qev;
 	}
 
-	// Queen is just too mobile to leave it unvalued
-	return ev / 4;
+	return ev;
 }
 
 

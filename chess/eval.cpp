@@ -12,9 +12,10 @@ enum type
 {
 	double_bishop = 25,
 	doubled_pawn = -50,
-	passed_pawn = 30,
+	passed_pawn = 35,
 	connected_pawn = 15,
-	pawn_shield = 3
+	pawn_shield = 3,
+	castled = 25
 };
 }
 
@@ -22,24 +23,24 @@ namespace {
 unsigned char const pawn_values[2][8][8] =
 	{
 		{
-			{ 0, 105, 105, 100, 101, 106, 120, 0 },
-			{ 0, 110, 100, 100, 103, 112, 127, 0 },
-			{ 0, 110, 100, 110, 117, 125, 135, 0 },
-			{ 0,  80, 100, 120, 127, 140, 150, 0 },
-			{ 0,  80, 100, 120, 127, 140, 150, 0 },
-			{ 0, 110, 100, 110, 117, 125, 135, 0 },
-			{ 0, 110, 100, 100, 103, 112, 127, 0 },
-			{ 0, 105, 105, 100, 101, 106, 120, 0 }
+			{ 0, 100, 102, 103, 104, 106, 145, 0 },
+			{ 0, 100, 102, 105, 108, 112, 150, 0 },
+			{ 0, 100, 102, 110, 117, 125, 155, 0 },
+			{ 0,  80, 102, 120, 127, 140, 160, 0 },
+			{ 0,  80, 102, 120, 127, 140, 160, 0 },
+			{ 0, 100, 102, 110, 117, 125, 155, 0 },
+			{ 0, 100, 102, 105, 108, 112, 150, 0 },
+			{ 0, 100, 102, 103, 104, 106, 145, 0 }
 		},
 		{
-			{ 0, 120, 106, 101, 100, 105, 105, 0 },
-			{ 0, 127, 112, 103, 100, 100, 110, 0 },
-			{ 0, 135, 125, 117, 110, 100, 110, 0 },
-			{ 0, 150, 140, 127, 120, 100,  80, 0 },
-			{ 0, 150, 140, 127, 120, 100,  80, 0 },
-			{ 0, 135, 125, 117, 110, 100, 110, 0 },
-			{ 0, 127, 112, 103, 100, 100, 110, 0 },
-			{ 0, 120, 106, 101, 100, 105, 105, 0 }
+			{ 0, 145, 106, 104, 103, 102, 100, 0 },
+			{ 0, 150, 112, 108, 105, 102, 100, 0 },
+			{ 0, 155, 125, 117, 110, 102, 100, 0 },
+			{ 0, 160, 140, 127, 120, 102,  80, 0 },
+			{ 0, 160, 140, 127, 120, 102,  80, 0 },
+			{ 0, 155, 125, 117, 110, 102, 100, 0 },
+			{ 0, 150, 112, 108, 105, 102, 100, 0 },
+			{ 0, 145, 106, 104, 103, 102, 100, 0 }
 		}
 
 	};
@@ -665,6 +666,9 @@ short evaluate_side( position const& p, color::type c, unsigned long long* pawns
 	if( p.pieces[c][pieces::bishop1].alive && p.pieces[c][pieces::bishop2].alive ) {
 		result += special_values::double_bishop;
 	}
+	if( p.pieces[c][pieces::king].special ) {
+		result += special_values::castled;
+	}
 
 	return result;
 }
@@ -815,11 +819,13 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		piece const& pp = p.pieces[c][source];
 		if( pp.column == m.target_col + 2 ) {
 			// Queenside
+			current_evaluation += special_values::castled;
 			current_evaluation -= get_piece_value( p, c, pieces::rook1, 0, pp.row );
 			current_evaluation += get_piece_value( p, c, pieces::rook1, 3, m.target_row );
 		}
 		else if( pp.column + 2 == m.target_col ) {
 			// Kingside
+			current_evaluation += special_values::castled;
 			current_evaluation -= get_piece_value( p, c, pieces::rook2, 7, pp.row );
 			current_evaluation += get_piece_value( p, c, pieces::rook2, 5, m.target_row );
 		}
@@ -1043,6 +1049,33 @@ short evaluate_full( position const& p, color::type c )
 	return evaluate_full( p, c, eval );
 }
 
+
+short evaluate_rooks_on_open_files( position const& p, color::type c, bitboard const* bitboards )
+{
+	short ev = 0;
+
+	unsigned long long rooks = bitboards[c].rooks;
+
+	unsigned long long rook;
+	while( (rook = __builtin_ffsll(rooks) ) ) {
+		--rook;
+		rooks ^= 1ull << rook;
+
+		unsigned long long file = 0x0101010101010101ull << (rook % 8);
+		if( !(bitboards[c].pawns & file) ) {
+			if( bitboards[1-c].pawns & file ) {
+				ev += __builtin_popcountll(bitboards[c].pawns) * 3;
+			}
+			else {
+				ev += __builtin_popcountll(bitboards[c].pawns) * 6;
+			}
+		}
+	}
+
+	return ev;
+}
+
+
 short evaluate_full( position const& p, color::type c, short eval_fast )
 {
 	eval_fast += evaluate_pawn_shield( p, c );
@@ -1069,6 +1102,9 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 	else {
 		eval_fast += mobility;
 	}
+
+	eval_fast += evaluate_rooks_on_open_files( p, c, bitboards );
+	eval_fast -= evaluate_rooks_on_open_files( p, static_cast<color::type>(1-c), bitboards );
 
 	return eval_fast;
 }
