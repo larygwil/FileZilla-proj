@@ -48,7 +48,7 @@ int config::init( int argc,  char const* argv[] )
 				exit(1);
 			}
 			int v = atoi(argv[i]);
-			if( v < 1 || v > 20 ) {
+			if( v < 1 || v > 40 ) {
 				std::cerr << "Invalid argument to " << argv[i] << std::endl;
 				exit(1);
 			}

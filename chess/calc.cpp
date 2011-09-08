@@ -948,7 +948,7 @@ seen_positions::seen_positions()
 	: root_position()
 	, null_move_position()
 {
-	memset( pos, 0, 200*8 );
+	memset( pos, 0, 400*8 );
 }
 
 bool seen_positions::is_three_fold( unsigned long long hash, int depth ) const

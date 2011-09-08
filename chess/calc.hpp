@@ -11,7 +11,7 @@ class seen_positions {
 public:
 	seen_positions();
 
-	unsigned long long pos[200]; // Must be at least 50 full moves + max depth
+	unsigned long long pos[400]; // Must be at least 50 full moves + max depth
 	int root_position; // Index of first move after root position in seen_positions
 	int null_move_position;
 
@@ -38,7 +38,7 @@ public:
 	unsigned char clock; // The halfmove clock
 	pv_entry_pool pv_pool;
 
-	move_info moves[200 * 25];
+	move_info moves[200 * 45];
 	move_info* move_ptr;
 
 	seen_positions seen;
