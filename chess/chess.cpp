@@ -145,6 +145,8 @@ void xboard()
 
 	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
 
+	unsigned long long bonus_time = 0;
+
 	while( true ) {
 		std::getline( std::cin, line );
 		if( !std::cin ) {
@@ -252,9 +254,13 @@ void xboard()
 				}
 			}
 
-			int remaining_moves = std::max( 10, (71 - clock) / 2 );
-			unsigned long long time_limit = time_remaining / remaining_moves;
-			unsigned long long overhead_compensation = 50 * timer_precision() / 1000;
+			if( bonus_time > time_remaining ) {
+				bonus_time = 0;
+			}
+
+			int remaining_moves = std::max( 10, (80 - clock) / 2 );
+			unsigned long long time_limit = (time_remaining - bonus_time) / remaining_moves + bonus_time;
+			unsigned long long overhead_compensation = 100 * timer_precision() / 1000;
 			if( time_limit > overhead_compensation ) {
 				time_limit -= overhead_compensation;
 			}
@@ -302,7 +308,14 @@ void xboard()
 				}
 			}
 			unsigned long long stop = get_time();
-			time_remaining -= stop - start;
+			unsigned long long elapsed = stop - start;
+			if( time_limit > elapsed ) {
+				bonus_time = (time_limit - elapsed) / 2;
+			}
+			else {
+				bonus_time = 0;
+			}
+			time_remaining -= elapsed;
 		}
 		else {
 			move m;

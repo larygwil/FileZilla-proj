@@ -779,12 +779,21 @@ break2:
 		if( do_abort ) {
 			std::cerr << "Aborted with " << evaluated << " of " << old_sorted.size() << " moves evaluated at current depth" << std::endl;
 		}
-
-		if( !do_abort && (alpha < result::loss_threshold || alpha > result::win_threshold) ) {
-			if( max_depth < conf.depth ) {
-				std::cerr << "Early break due to mate at " << max_depth << std::endl;
+		else {
+			if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
+				if( max_depth < conf.depth ) {
+					std::cerr << "Early break due to mate at " << max_depth << std::endl;
+				}
+				do_abort = true;
 			}
-			do_abort = true;
+			else {
+				unsigned long long now = get_time();
+				unsigned long long elapsed = now - start;
+				if( elapsed * 2 > move_time_limit ) {
+					std::cerr << "Not increasing depth due to time limit. Elapsed: " << elapsed * 1000 / timer_precision() << " ms" << std::endl;
+					do_abort = true;
+				}
+			}
 		}
 
 
