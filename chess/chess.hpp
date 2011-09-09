@@ -140,6 +140,6 @@ enum type {
 };
 }
 
-#define NULL_MOVE_REDUCTION 2
+#define NULL_MOVE_REDUCTION 3
 
 #endif
