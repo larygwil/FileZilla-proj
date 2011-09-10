@@ -334,8 +334,8 @@ short get_queen_pins( position const& p, bitboard const* bitboards, color::type 
 short get_pins( position const& p, bitboard const* bitboards, color::type c )
 {
 	short ev = get_bishop_pins( p, bitboards, c )
-			+ get_rook_mobility( p, bitboards, c )
-			+ get_queen_mobility( p, bitboards, c );
+			+ get_rook_pins( p, bitboards, c )
+			+ get_queen_pins( p, bitboards, c );
 
 	return ev;
 }
