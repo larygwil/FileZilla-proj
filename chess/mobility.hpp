@@ -5,4 +5,6 @@
 
 short get_mobility( position const& p, bitboard const* bitboards );
 
+short get_pins( position const& p, bitboard const* bitboards );
+
 #endif
