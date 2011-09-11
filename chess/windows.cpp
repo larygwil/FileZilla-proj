@@ -2,6 +2,8 @@
 
 #include <windows.h>
 
+#include <iostream>
+
 namespace std {
 using namespace tr1;
 }
@@ -20,6 +22,7 @@ unsigned long long get_time() {
 
 void console_init()
 {
+	std::cout.setf(std::ios::unitbuf);
 }
 
 

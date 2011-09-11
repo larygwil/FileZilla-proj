@@ -27,11 +27,14 @@ pawn_structure_hash_table::~pawn_structure_hash_table()
 
 bool pawn_structure_hash_table::init( uint64_t size_in_mib )
 {
-	size_ = size_in_mib * 1024 * 1024 / sizeof(entry);
-	delete [] data_;
-	data_ = new entry[size_];
+	uint64_t size = size_in_mib * 1024 * 1024 / sizeof(entry);
+	if( !data_ || size != size_ ) {
+		size_ = size;
+		delete [] data_;
+		data_ = new entry[size_];
 
-	memset(data_, 0, sizeof(entry) * size_);
+		memset(data_, 0, sizeof(entry) * size_);
+	}
 
 	return true;
 }

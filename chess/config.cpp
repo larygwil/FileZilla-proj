@@ -90,6 +90,13 @@ int config::init( int argc,  char const* argv[] )
 			}
 			conf.random_seed = v;
 		}
+		else if( !strcmp(argv[i], "--logfile" ) ) {
+			if( ++i >= argc ) {
+				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				exit(1);
+			}
+			conf.logfile = argv[i];
+		}
 		else {
 			std::cerr << "Unknown argument " << argv[i] << std::endl;
 			exit(1);

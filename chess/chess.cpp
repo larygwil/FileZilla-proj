@@ -25,7 +25,9 @@ contact tim.kosse@filezilla-project.org for details.
 #include "platform.hpp"
 #include "statistics.hpp"
 #include "zobrist.hpp"
+#include "logger.hpp"
 
+#include <list>
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
@@ -111,41 +113,266 @@ void auto_play()
 #endif
 }
 
-void xboard()
+struct xboard_state
 {
-	bool hash_initialized = false;
+	xboard_state()
+		: c()
+		, clock()
+		, in_book()
+		, book_index()
+		, time_remaining()
+		, bonus_time()
+		, force(true)
+		, self(color::black)
+		, hash_initialized()
+		, time_control()
+		, time_increment()
+		, history()
+	{
+		reset();
+	}
+
+	void reset()
+	{
+		init_board(p);
+		in_book = open_book( book_dir );
+		if( in_book ) {
+			std::cerr << "Opening book loaded" << std::endl;
+		}
+		book_index = 0;
+
+		c = color::white;
+
+		clock = 1;
+
+		seen = seen_positions();
+		seen.root_position = 0;
+		seen.pos[0] = get_zobrist_hash( p, c );
+
+		time_remaining = conf.time_limit * timer_precision() / 1000;
+		bonus_time = 0;
+
+		force = false;
+		self = color::black;
+	}
+
+	void apply( move const& m )
+	{
+		history.push_back( p );
+		bool reset_seen = false;
+		int pi = p.board[m.source_col][m.source_row] & 0x0f;
+		if( (pi >= pieces::pawn1 && pi <= pieces::pawn8 && !p.pieces[c][pi].special) || p.board[m.target_col][m.target_row] != pieces::nil ) {
+			reset_seen = true;
+		}
+
+		bool captured;
+		apply_move( p, m, c, captured );
+		++clock;
+		c = static_cast<color::type>( 1 - c );
+
+		if( !reset_seen ) {
+			seen.pos[++seen.root_position] = get_zobrist_hash( p, c );
+		}
+		else {
+			seen.root_position = 0;
+			seen.pos[0] = get_zobrist_hash( p, c );
+		}
+
+		if( seen.root_position >= 110 ) {
+			std::cout << "1/2-1/2 (Draw)" << std::endl;
+		}
+
+		if( in_book ) {
+			std::vector<move_entry> moves;
+			/*book_entry entry = */
+				get_entries( book_index, moves );
+			if( moves.empty() ) {
+				in_book = false;
+			}
+			else {
+				in_book = false;
+				for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+					if( it->get_move() == m ) {
+						if( it->next_index ) {
+							in_book = true;
+							book_index = it->next_index;
+						}
+						break;
+					}
+				}
+			}
+			if( !in_book ) {
+				std::cerr << "Left opening book" << std::endl;
+			}
+		}
+	}
+
+	bool undo( unsigned int count )
+	{
+		if( !count || count > history.size() ) {
+			return false;
+		}
+
+		clock -= count;
+		seen.root_position -= count;
+
+		if( count % 2 ) {
+			c = static_cast<color::type>(1 - c);
+		}
+
+		while( --count ) {
+			history.pop_back();
+		}
+		p = history.back();
+		history.pop_back();
+		
+
+		bonus_time = false;
+		in_book = false;
+	}
 
 	position p;
+	color::type c;
+	int clock;
+	seen_positions seen;
+	bool in_book;
+	unsigned long long book_index;
+	unsigned long long time_remaining;
+	unsigned long long bonus_time;
+	bool force;
+	color::type self;
+	bool hash_initialized;
+	unsigned long long time_control;
+	unsigned long long time_increment;
 
-	init_board(p);
+	std::list<position> history;
+};
 
-	bool in_book = open_book( book_dir );
-	if( in_book ) {
-		std::cerr << "Opening book loaded" << std::endl;
+void go( xboard_state& state )
+{
+	unsigned long long start = get_time();
+	if( !state.hash_initialized ) {
+		transposition_table.init( conf.memory );
+		state.hash_initialized = true;
 	}
-	unsigned long long book_index = 0;
+	// Do a step
+	if( state.in_book ) {
+		std::vector<move_entry> moves;
+		/*book_entry entry = */
+			get_entries( state.book_index, moves );
+		if( moves.empty() ) {
+			state.in_book = false;
+		}
+		else {
+			short best = moves.front().forecast;
+			int count_best = 0;
+			std::cerr << "Entries from book: " << std::endl;
+			for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
+				if( it->forecast + 25 >= best ) {
+					++count_best;
+				}
+				std::cerr << move_to_string( state.p, state.c, it->get_move() ) << " " << it->forecast << std::endl;
+			}
+
+			move_entry best_move = moves[get_random_unsigned_long_long() % count_best];
+			move m = best_move.get_move();
+			if( !best_move.next_index ) {
+				state.in_book = false;
+				std::cerr << "Left opening book" << std::endl;
+			}
+			else {
+				state.book_index = best_move.next_index;
+			}
+
+			std::cout << "move " << move_to_string( state.p, state.c, m ) << std::endl;
+
+			state.history.push_back( state.p );
+
+			bool captured;
+			apply_move( state.p, m, state.c, captured );
+			++state.clock;
+			state.c = static_cast<color::type>( 1 - state.c );
+
+			unsigned long long stop = get_time();
+			state.time_remaining -= stop - start;
+			return;
+		}
+	}
+
+	if( state.bonus_time > state.time_remaining ) {
+		state.bonus_time = 0;
+	}
+
+	int remaining_moves;
+	if( !state.time_control ) {
+		remaining_moves = (std::max)( 15, (80 - state.clock) / 2 );
+	}
+	else {
+		remaining_moves = (state.time_control * 2) - (state.clock % (state.time_control * 2));
+	}
+	unsigned long long time_limit = (state.time_remaining - state.bonus_time) / remaining_moves + state.bonus_time;
+	unsigned long long overhead_compensation = 100 * timer_precision() / 1000;
+
+	if( state.time_increment && state.time_remaining > (time_limit + state.time_increment) ) {
+		time_limit += state.time_increment;
+	}
+
+	if( time_limit > overhead_compensation ) {
+		time_limit -= overhead_compensation;
+	}
+
+	move m;
+	int res;
+	if( calc( state.p, state.c, m, res, time_limit, state.time_remaining, state.clock, state.seen ) ) {
+
+		std::cout << "move " << move_to_string( state.p, state.c, m ) << std::endl;
+
+		state.apply( m );
+
+		{
+			int i = evaluate_fast( state.p, state.c );
+			std::cerr << "  ; Current evaluation " << i << " centipawns, forecast " << res << std::endl;
+		}
+	}
+	else {
+		if( res == result::win ) {
+			std::cout << "1-0 (White wins)" << std::endl;
+		}
+		else if( res == result::loss ) {
+			std::cout << "0-1 (Black wins)" << std::endl;
+		}
+		else {
+			std::cout << "1/2-1/2 (Draw)" << std::endl;
+		}
+	}
+	unsigned long long stop = get_time();
+	unsigned long long elapsed = stop - start;
+	if( time_limit > elapsed ) {
+		state.bonus_time = (time_limit - elapsed) / 2;
+	}
+	else {
+		state.bonus_time = 0;
+	}
+	state.time_remaining -= elapsed;
+}
+
+void xboard()
+{
+	xboard_state state;
 
 	std::string line;
 	std::getline( std::cin, line );
+	logger::log_input( line );
 	if( line != "xboard" ) {
 		std::cerr << "First command needs to be xboard!" << std::endl;
 		exit(1);
 	}
+
+	conf.depth = 40;
+
 	std::cout << std::endl;
 
-	color::type c = color::white;
-
-	int clock = 1;
-
-	seen_positions seen;
-	seen.root_position = 0;
-	seen.pos[0] = get_zobrist_hash( p, c );
-
-	unsigned long long time_remaining = conf.time_limit * timer_precision() / 1000;
-
 	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
-
-	unsigned long long bonus_time = 0;
 
 	while( true ) {
 		std::getline( std::cin, line );
@@ -153,8 +380,71 @@ void xboard()
 			std::cerr << "EOF" << std::endl;
 			break;
 		}
-		if( line == "force" ) {
+		if( line.empty() ) {
+			continue;
+		}
+
+		logger::log_input( line );
+
+		if( line == "quit" ) {
+			break;
+		}
+		else if( line.substr( 0, 9 ) == "protover " ) {
+			std::cout << "feature done=1" << std::endl;
+		}
+		else if( line == "new" ) {
+			state.reset();
+		}
+		else if( line == "force" ) {
+			state.force = true;
+		}
+		else if( line == "random" ) {
 			// Ignore
+		}
+		else if( line.substr( 0, 9 ) == "accepted " ) {
+			// Ignore
+		}
+		else if( line.substr( 0, 9 ) == "rejected " ) {
+			// Ignore
+		}
+		else if( line == "computer" ) {
+			// Ignore
+		}
+		else if( line == "white" ) {
+			state.c = color::white;
+			state.self = color::black;
+		}
+		else if( line == "black" ) {
+			state.c = color::black;
+			state.self = color::white;
+		}
+		else if( line == "undo" ) {
+			if( !state.undo(1) ) {
+				std::cout << "Error (command not legal now): undo" << std::endl;
+			}
+		}
+		else if( line == "remove" ) {
+			if( !state.undo(2) ) {
+				std::cout << "Error (command not legal now): undo" << std::endl;
+			}
+		}
+		else if( line.substr( 0, 5 ) == "otim " ) {
+			// Ignore
+		}
+		else if( line.substr( 0, 5 ) == "time " ) {
+			line = line.substr( 5 );
+			std::stringstream ss;
+			ss.flags(std::stringstream::skipws);
+			ss.str(line);
+
+			unsigned long long t;
+			ss >> t;
+			if( !ss ) {
+				std::cout << "Error (bad command): Not a valid time command" << std::endl;
+			}
+			else {
+				state.time_remaining = static_cast<unsigned long long>(t) * timer_precision() / 100;
+			}
 		}
 		else if( line.substr( 0, 6 ) == "level " ) {
 			line = line.substr( 6 );
@@ -162,17 +452,17 @@ void xboard()
 			ss.flags(std::stringstream::skipws);
 			ss.str(line);
 
-			unsigned int unused;
-			ss >> unused;
+			int control;
+			ss >> control;
 
 			std::string time;
 			ss >> time;
 
-			std::string unused2;
-			ss >> unused;
+			int increment;
+			ss >> increment;
 
 			if( !ss ) {
-				std::cout << "Not a valid level command" << std::endl;
+				std::cout << "Error (bad command): Not a valid level command" << std::endl;
 				continue;
 			}
 
@@ -184,7 +474,7 @@ void xboard()
 
 			ss2 >> minutes;
 			if( !ss2 ) {
-				std::cout << "Not a valid level command" << std::endl;
+				std::cout << "Error (bad command): Not a valid level command" << std::endl;
 				continue;
 			}
 
@@ -193,179 +483,34 @@ void xboard()
 				if( ch == ':' ) {
 					ss2 >> seconds;
 					if( !ss2 ) {
-						std::cout << "Not a valid level command" << std::endl;
+						std::cout << "Error (bad command): Not a valid level command" << std::endl;
 						continue;
 					}
 				}
 				else {
-					std::cout << "Not a valid level command" << std::endl;
+					std::cout << "Error (bad command): Not a valid level command" << std::endl;
 					continue;
 				}
 			}
 
-			time_remaining = minutes * 60 + seconds;
-			time_remaining *= timer_precision();
+			state.time_control = control;
+			state.time_remaining = minutes * 60 + seconds;
+			state.time_remaining *= timer_precision();
+			state.time_increment = increment * timer_precision();
 		}
 		else if( line == "go" ) {
-			unsigned long long start = get_time();
-			if( !hash_initialized ) {
-				transposition_table.init( conf.memory );
-				hash_initialized = true;
-			}
-			// Do a step
-			if( in_book ) {
-				std::vector<move_entry> moves;
-				/*book_entry entry = */
-					get_entries( book_index, moves );
-				if( moves.empty() ) {
-					in_book = false;
-				}
-				else {
-					short best = moves.front().forecast;
-					int count_best = 0;
-					std::cerr << "Entries from book: " << std::endl;
-					for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-						if( it->forecast + 25 >= best ) {
-							++count_best;
-						}
-						std::cerr << move_to_string( p, c, it->get_move() ) << " " << it->forecast << std::endl;
-					}
-
-					move_entry best_move = moves[get_random_unsigned_long_long() % count_best];
-					move m = best_move.get_move();
-					if( !best_move.next_index ) {
-						in_book = false;
-						std::cerr << "Left opening book" << std::endl;
-					}
-					else {
-						book_index = best_move.next_index;
-					}
-
-					std::cout << "move " << move_to_string( p, c, m ) << std::endl;
-
-					bool captured;
-					apply_move( p, m, c, captured );
-					++clock;
-					c = static_cast<color::type>( 1 - c );
-
-					unsigned long long stop = get_time();
-					time_remaining -= stop - start;
-					continue;
-				}
-			}
-
-			if( bonus_time > time_remaining ) {
-				bonus_time = 0;
-			}
-
-			int remaining_moves = (std::max)( 15, (80 - clock) / 2 );
-			unsigned long long time_limit = (time_remaining - bonus_time) / remaining_moves + bonus_time;
-			unsigned long long overhead_compensation = 100 * timer_precision() / 1000;
-			if( time_limit > overhead_compensation ) {
-				time_limit -= overhead_compensation;
-			}
-
-			move m;
-			int res;
-			if( calc( p, c, m, res, time_limit, time_remaining, clock, seen ) ) {
-
-				std::cout << "move " << move_to_string( p, c, m ) << std::endl;
-
-				bool reset_seen = false;
-				int pi = p.board[m.source_col][m.source_row] & 0x0f;
-				if( (pi >= pieces::pawn1 && pi <= pieces::pawn8 && !p.pieces[c][pi].special) || p.board[m.target_col][m.target_row] != pieces::nil ) {
-					reset_seen = true;
-				}
-
-				bool captured;
-				apply_move( p, m, c, captured );
-				++clock;
-
-				{
-					int i = evaluate_fast( p, c );
-					std::cerr << "  ; Current evaluation " << i << " centipawns, forecast " << res << std::endl;
-				}
-
-				c = static_cast<color::type>( 1 - c );
-
-				if( !reset_seen ) {
-					seen.pos[++seen.root_position] = get_zobrist_hash( p, c );
-				}
-				else {
-					seen.root_position = 0;
-					seen.pos[0] = get_zobrist_hash( p, c );
-				}
-			}
-			else {
-				if( res == result::win ) {
-					std::cout << "1-0 (White wins)" << std::endl;
-				}
-				else if( res == result::loss ) {
-					std::cout << "0-1 (Black wins)" << std::endl;
-				}
-				else {
-					std::cout << "1/2-1/2 (Draw)" << std::endl;
-				}
-			}
-			unsigned long long stop = get_time();
-			unsigned long long elapsed = stop - start;
-			if( time_limit > elapsed ) {
-				bonus_time = (time_limit - elapsed) / 2;
-			}
-			else {
-				bonus_time = 0;
-			}
-			time_remaining -= elapsed;
+			state.force = false;
+			state.self = state.c;
+			// TODO: clocks...
+			go( state );
 		}
 		else {
 			move m;
-			if( parse_move( p, c, line, m ) ) {
+			if( parse_move( state.p, state.c, line, m ) ) {
 
-				bool reset_seen = false;
-				int pi = p.board[m.source_col][m.source_row] & 0x0f;
-				if( (pi >= pieces::pawn1 && pi <= pieces::pawn8 && !p.pieces[c][pi].special) || p.board[m.target_col][m.target_row] != pieces::nil ) {
-					reset_seen = true;
-				}
-
-				bool captured;
-				apply_move( p, m, c, captured );
-				++clock;
-				c = static_cast<color::type>( 1 - c );
-
-				if( !reset_seen ) {
-					seen.pos[++seen.root_position] = get_zobrist_hash( p, c );
-				}
-				else {
-					seen.root_position = 0;
-					seen.pos[0] = get_zobrist_hash( p, c );
-				}
-
-				if( seen.root_position >= 110 ) {
-					std::cout << "1/2-1/2 (Draw)" << std::endl;
-				}
-
-				if( in_book ) {
-					std::vector<move_entry> moves;
-					/*book_entry entry = */
-						get_entries( book_index, moves );
-					if( moves.empty() ) {
-						in_book = false;
-					}
-					else {
-						in_book = false;
-						for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-							if( it->get_move() == m ) {
-								if( it->next_index ) {
-									in_book = true;
-									book_index = it->next_index;
-								}
-								break;
-							}
-						}
-					}
-					if( !in_book ) {
-						std::cerr << "Left opening book" << std::endl;
-					}
+				state.apply( m );
+				if( !state.force && state.c == state.self ) {
+					go( state );
 				}
 			}
 		}
@@ -434,11 +579,12 @@ int main( int argc, char const* argv[] )
 
 	console_init();
 
+	int i = conf.init( argc, argv );
+	logger::init( conf.logfile );
+
 	std::cerr << "  Octochess" << std::endl;
 	std::cerr << "  ---------" << std::endl;
 	std::cerr << std::endl;
-
-	int i = conf.init( argc, argv );
 
 	if( conf.random_seed != -1 ) {
 		init_random( conf.random_seed );
@@ -459,4 +605,6 @@ int main( int argc, char const* argv[] )
 	else {
 		auto_play();
 	}
+
+	logger::cleanup();
 }

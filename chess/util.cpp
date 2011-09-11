@@ -44,6 +44,13 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 		str = str.substr(0, len);
 	}
 
+	bool promotion = false;
+	if( len && (str[len - 1] == 'q' || str[len - 1] == 'r' || str[len - 1] == 'b' || str[len - 1] == 'n') ) {
+		promotion = true;
+		--len;
+		str = str.substr(0, len);
+	}
+
 	if( str == "0-0" || str == "O-O" ) {
 		m.source_col = 4;
 		m.target_col = 6;
@@ -114,8 +121,7 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 				capture = true;
 			}
 		}
-
-		if( *s >= 'a' && *s <= 'h' ) {
+		else if( *s >= 'a' && *s <= 'h' ) {
 			if( second_col != -1 ) {
 				std::cout << "Error (unknown command): " << line << std::endl;
 				return false;
@@ -138,6 +144,10 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 			else {
 				second_row = *s - '1';
 			}
+		}
+		else {
+			std::cout << "Error (unknown command): " << line << std::endl;
+			return false;
 		}
 
 		++s;
@@ -258,6 +268,10 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 	if( !match ) {
 		std::cout << "Illegal move (not valid): " << line << std::endl;
 		return false;
+	}
+
+	if( promotion && match->m.target_row != (c ? 0 : 7) ) {
+		std::cout << "Illegal move (not valid, expecting a promotion): " << line << std::endl;
 	}
 
 	m = match->m;
