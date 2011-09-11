@@ -128,6 +128,7 @@ struct xboard_state
 		, time_control()
 		, time_increment()
 		, history()
+		, post(true)
 	{
 		reset();
 	}
@@ -248,6 +249,8 @@ struct xboard_state
 	unsigned long long time_increment;
 
 	std::list<position> history;
+
+	bool post;
 };
 
 
@@ -391,7 +394,12 @@ void xboard_thread::on_new_best_move( position const& p, color::type c, int dept
 		unsigned long long elapsed = ( get_time() - starttime ) * 100 / timer_precision();
 		std::stringstream ss;
 		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << elapsed << " " << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
-		std::cout << ss.str();
+		if( state.post ) {
+			std::cout << ss.str();
+		}
+		else {
+			std::cerr << ss.str();
+		}
 
 		best_move = pv->get_best_move();
 	}
@@ -502,6 +510,9 @@ void xboard()
 		else if( line.substr( 0, 9 ) == "protover " ) {
 			std::cout << "feature done=1" << std::endl;
 		}
+		else if( line.substr( 0, 7 ) == "result " ) {
+			// Ignore
+		}
 		else if( line == "new" ) {
 			state.reset();
 		}
@@ -510,6 +521,18 @@ void xboard()
 		}
 		else if( line == "random" ) {
 			// Ignore
+		}
+		else if( line == "hard" ) {
+			// Ignore
+		}
+		else if( line == "easy" ) {
+			// Ignore
+		}
+		else if( line == "post" ) {
+			state.post = true;
+		}
+		else if( line == "nopost" ) {
+			state.post = false;
 		}
 		else if( line.substr( 0, 9 ) == "accepted " ) {
 			// Ignore
