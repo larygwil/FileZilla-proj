@@ -560,8 +560,9 @@ void processing_thread::onRun()
 	// Search using aspiration window:
 	short value;
 	if( alpha_at_prev_depth_ != result::loss ) {
-		short alpha = std::max( alpha_, static_cast<short>(alpha_at_prev_depth_ - ASPIRATION) );
-		short beta = std::min( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
+		// Windows headers unfortunately create some defines called max and min :(
+		short alpha = (std::max)( alpha_, static_cast<short>(alpha_at_prev_depth_ - ASPIRATION) );
+		short beta = (std::min)( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
 		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next(), false );
 		if( value > alpha && value < beta ) {

@@ -589,12 +589,12 @@ short evaluate_pawn( position const& p, color::type c, piece const& pp )
 
 short evaluate_pawns( unsigned long long const* pawns, color::type c )
 {
-	unsigned short ret = 0;
+	short ret = 0;
 
 	unsigned long long p = pawns[c];
 
 	unsigned long long pi;
-	while( (pi = __builtin_ffsll(p) ) ) {
+	while( (pi = bitscan(p) ) ) {
 		--pi;
 		p ^= 1ull << pi;
 		ret += evaluate_pawn( pawns, c, pi );
@@ -1059,17 +1059,17 @@ short evaluate_rooks_on_open_files( position const& p, color::type c, bitboard c
 	unsigned long long rooks = bitboards[c].rooks;
 
 	unsigned long long rook;
-	while( (rook = __builtin_ffsll(rooks) ) ) {
+	while( (rook = bitscan(rooks) ) ) {
 		--rook;
 		rooks ^= 1ull << rook;
 
 		unsigned long long file = 0x0101010101010101ull << (rook % 8);
 		if( !(bitboards[c].pawns & file) ) {
 			if( bitboards[1-c].pawns & file ) {
-				ev += __builtin_popcountll(bitboards[c].pawns) * 3;
+				ev += static_cast<short>(popcount(bitboards[c].pawns)) * 3;
 			}
 			else {
-				ev += __builtin_popcountll(bitboards[c].pawns) * 6;
+				ev += static_cast<short>(popcount(bitboards[c].pawns)) * 6;
 			}
 		}
 	}
@@ -1086,7 +1086,7 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 	// Adjust score based on material. The basic idea is that,
 	// given two positions with equal, non-zero score,
 	// the position having fewer material is better.
-	short v = 25 * std::max( 0, material_values::initial * 2 - p.material[0] - p.material[1] ) / (material_values::initial * 2);
+	short v = 25 * (std::max)( 0, material_values::initial * 2 - p.material[0] - p.material[1] ) / (material_values::initial * 2);
 	if( eval_fast > 0 ) {
 		eval_fast += v;
 	}

@@ -642,7 +642,7 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 
 	unsigned long long knights = possible_knight_moves[king_col + king_row * 8];
 	int i;
-	while( (i = __builtin_ffsll( knights ) ) ) {
+	while( (i = bitscan( knights ) ) ) {
 		--i;
 		knights ^= 1ull << i;
 		calc_check_map_knight( p, c, map, king_col, king_row, i & 0x7, i >> 3 );

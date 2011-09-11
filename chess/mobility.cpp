@@ -33,7 +33,7 @@ short get_knight_mobility( position const& p, bitboard const* bitboards, color::
 	unsigned long long knights = bitboards[c].knights;
 
 	unsigned long long knight;
-	while( (knight = __builtin_ffsll(knights) ) ) {
+	while( (knight = bitscan(knights) ) ) {
 		--knight;
 		knights ^= 1ull << knight;
 
@@ -41,7 +41,7 @@ short get_knight_mobility( position const& p, bitboard const* bitboards, color::
 		moves &= ~bitboards[c].all_pieces;
 		moves &= ~bitboards[1-c].pawn_control;
 
-		short kev = __builtin_popcountll(moves);
+		short kev = static_cast<short>(popcount(moves));
 
 		ev += knight_mobility_scale[kev];
 	}
@@ -57,7 +57,7 @@ short get_bishop_mobility( position const& p, bitboard const* bitboards, color::
 	unsigned long long bishops = bitboards[c].bishops;
 
 	unsigned long long bishop;
-	while( (bishop = __builtin_ffsll(bishops) ) ) {
+	while( (bishop = bitscan(bishops) ) ) {
 		--bishop;
 		bishops ^= 1ull << bishop;
 
@@ -70,7 +70,7 @@ short get_bishop_mobility( position const& p, bitboard const* bitboards, color::
 		moves &= ~bitboards[1-c].pawn_control;
 
 		unsigned long long blocker;
-		while( (blocker = __builtin_ffsll(blockers) ) ) {
+		while( (blocker = bitscan(blockers) ) ) {
 			--blocker;
 			blockers ^= 1ull << blocker;
 
@@ -78,7 +78,7 @@ short get_bishop_mobility( position const& p, bitboard const* bitboards, color::
 			moves &= ~mobility_block[bishop][blocker];
 		}
 
-		short bev = __builtin_popcountll(moves);
+		short bev = static_cast<short>(popcount(moves));
 
 		ev += bishop_mobility_scale[bev];
 	}
@@ -94,7 +94,7 @@ short get_rook_mobility( position const& p, bitboard const* bitboards, color::ty
 	unsigned long long rooks = bitboards[c].rooks;
 
 	unsigned long long rook;
-	while( (rook = __builtin_ffsll(rooks) ) ) {
+	while( (rook = bitscan(rooks) ) ) {
 		--rook;
 		rooks ^= 1ull << rook;
 
@@ -108,7 +108,7 @@ short get_rook_mobility( position const& p, bitboard const* bitboards, color::ty
 		moves &= ~bitboards[1-c].pawn_control;
 
 		unsigned long long blocker;
-		while( (blocker = __builtin_ffsll(blockers) ) ) {
+		while( (blocker = bitscan(blockers) ) ) {
 			--blocker;
 			blockers ^= 1ull << blocker;
 
@@ -120,7 +120,7 @@ short get_rook_mobility( position const& p, bitboard const* bitboards, color::ty
 		unsigned long long horizontal = moves & ~vertical;
 
 		// Rooks dig verticals.
-		short rev = __builtin_popcountll(horizontal) + 2 * __builtin_popcountll(vertical);
+		short rev = static_cast<short>(popcount(horizontal)) + 2 * static_cast<short>(popcount(vertical));
 
 		// Punish bad mobility
 		ev += rook_mobility_scale[rev];
@@ -137,7 +137,7 @@ short get_queen_mobility( position const& p, bitboard const* bitboards, color::t
 	unsigned long long queens = bitboards[c].queens;
 
 	unsigned long long queen;
-	while( (queen = __builtin_ffsll(queens) ) ) {
+	while( (queen = bitscan(queens) ) ) {
 		--queen;
 		queens ^= 1ull << queen;
 
@@ -151,7 +151,7 @@ short get_queen_mobility( position const& p, bitboard const* bitboards, color::t
 		moves &= ~bitboards[1-c].pawn_control;
 
 		unsigned long long blocker;
-		while( (blocker = __builtin_ffsll(blockers) ) ) {
+		while( (blocker = bitscan(blockers) ) ) {
 			--blocker;
 			blockers ^= 1ull << blocker;
 
@@ -160,7 +160,7 @@ short get_queen_mobility( position const& p, bitboard const* bitboards, color::t
 		}
 
 		// Queen is just too mobile, can get anywhere quickly. Just punish very low mobility.
-		short qev = __builtin_popcountll(moves);
+		short qev = static_cast<short>(popcount(moves));
 		ev += (qev > 5) ? 5 : qev;
 	}
 
@@ -194,7 +194,7 @@ short get_bishop_pins( position const& p, bitboard const* bitboards, color::type
 	unsigned long long bishops = bitboards[c].bishops;
 
 	unsigned long long bishop;
-	while( (bishop = __builtin_ffsll(bishops) ) ) {
+	while( (bishop = bitscan(bishops) ) ) {
 		--bishop;
 		bishops ^= 1ull << bishop;
 
@@ -204,7 +204,7 @@ short get_bishop_pins( position const& p, bitboard const* bitboards, color::type
 		blockers &= moves;
 
 		unsigned long long blocker;
-		while( (blocker = __builtin_ffsll(blockers) ) ) {
+		while( (blocker = bitscan(blockers) ) ) {
 			--blocker;
 			blockers ^= 1ull << blocker;
 
@@ -217,7 +217,7 @@ short get_bishop_pins( position const& p, bitboard const* bitboards, color::type
 		blockers = bitboards[1-c].all_pieces;
 		blockers &= moves;
 
-		while( (blocker = __builtin_ffsll(blockers) ) ) {
+		while( (blocker = bitscan(blockers) ) ) {
 			--blocker;
 			blockers ^= 1ull << blocker;
 
@@ -242,7 +242,7 @@ short get_rook_pins( position const& p, bitboard const* bitboards, color::type c
 	unsigned long long rooks = bitboards[c].rooks;
 
 	unsigned long long rook;
-	while( (rook = __builtin_ffsll(rooks) ) ) {
+	while( (rook = bitscan(rooks) ) ) {
 		--rook;
 		rooks ^= 1ull << rook;
 
@@ -252,7 +252,7 @@ short get_rook_pins( position const& p, bitboard const* bitboards, color::type c
 		blockers &= moves;
 
 		unsigned long long blocker;
-		while( (blocker = __builtin_ffsll(blockers) ) ) {
+		while( (blocker = bitscan(blockers) ) ) {
 			--blocker;
 			blockers ^= 1ull << blocker;
 
@@ -265,7 +265,7 @@ short get_rook_pins( position const& p, bitboard const* bitboards, color::type c
 		blockers = bitboards[1-c].all_pieces;
 		blockers &= moves;
 
-		while( (blocker = __builtin_ffsll(blockers) ) ) {
+		while( (blocker = bitscan(blockers) ) ) {
 			--blocker;
 			blockers ^= 1ull << blocker;
 
@@ -290,7 +290,7 @@ short get_queen_pins( position const& p, bitboard const* bitboards, color::type 
 	unsigned long long queens = bitboards[c].queens;
 
 	unsigned long long queen;
-	while( (queen = __builtin_ffsll(queens) ) ) {
+	while( (queen = bitscan(queens) ) ) {
 		--queen;
 		queens ^= 1ull << queen;
 
@@ -300,7 +300,7 @@ short get_queen_pins( position const& p, bitboard const* bitboards, color::type 
 		blockers &= moves;
 
 		unsigned long long blocker;
-		while( (blocker = __builtin_ffsll(blockers) ) ) {
+		while( (blocker = bitscan(blockers) ) ) {
 			--blocker;
 			blockers ^= 1ull << blocker;
 
@@ -313,7 +313,7 @@ short get_queen_pins( position const& p, bitboard const* bitboards, color::type 
 		blockers = bitboards[1-c].all_pieces;
 		blockers &= moves;
 
-		while( (blocker = __builtin_ffsll(blockers) ) ) {
+		while( (blocker = bitscan(blockers) ) ) {
 			--blocker;
 			blockers ^= 1ull << blocker;
 

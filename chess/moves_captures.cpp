@@ -91,7 +91,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 
 	unsigned long long kings = possible_king_moves[pp.column + pp.row * 8];
 	int i;
-	while( (i = __builtin_ffsll( kings ) ) ) {
+	while( (i = bitscan( kings ) ) ) {
 		--i;
 		kings ^= 1ull << i;
 		calc_moves_king( p, c, moves, check, pp, i & 0x7, i >> 3 );
@@ -241,7 +241,7 @@ void calc_moves_knight( position const& p, color::type c, move_info*& moves, che
 {
 	unsigned long long knights = possible_knight_moves[pp.column + pp.row * 8];
 	int i;
-	while( (i = __builtin_ffsll( knights ) ) ) {
+	while( (i = bitscan( knights ) ) ) {
 		--i;
 		knights ^= 1ull << i;
 		calc_moves_knight( p, c, moves, check, pi, pp, i & 0x7, i >> 3 );

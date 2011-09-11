@@ -258,7 +258,7 @@ void xboard()
 				bonus_time = 0;
 			}
 
-			int remaining_moves = std::max( 15, (80 - clock) / 2 );
+			int remaining_moves = (std::max)( 15, (80 - clock) / 2 );
 			unsigned long long time_limit = (time_remaining - bonus_time) / remaining_moves + bonus_time;
 			unsigned long long overhead_compensation = 100 * timer_precision() / 1000;
 			if( time_limit > overhead_compensation ) {

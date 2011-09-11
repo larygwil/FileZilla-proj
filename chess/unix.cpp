@@ -92,7 +92,7 @@ void condition::wait( scoped_lock& l, unsigned long long timeout )
 
 		timespec ts;
 		ts.tv_sec = tv.tv_sec + timeout / timer_precision();
-		ts.tv_nsec = tv.tv_usec + timeout % timer_precision();
+		ts.tv_nsec = tv.tv_usec + (timeout % timer_precision()) * 1000000 / timer_precision();
 		if( ts.tv_nsec > 1000000000ll ) {
 			++ts.tv_sec;
 			ts.tv_nsec -= 1000000000ll;
@@ -130,9 +130,7 @@ static void* run( void* p ) {
 
 void thread::spawn()
 {
-	if( t_ ) {
-		join();
-	}
+	join();
 	t_ = new pthread_t;
 	pthread_create( t_, 0, &run, this );
 }

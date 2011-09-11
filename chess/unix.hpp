@@ -25,6 +25,7 @@ private:
 	pthread_mutex_t m_;
 };
 
+
 class scoped_lock
 {
 public:
@@ -51,6 +52,7 @@ private:
 	bool signalled_;
 	pthread_cond_t cond_;
 };
+
 
 class scoped_shared_lock
 {
@@ -90,5 +92,7 @@ private:
 	pthread_t* t_;
 };
 
+#define bitscan __builtin_ffsll
+#define popcount __builtin_popcountll
 
 #endif
