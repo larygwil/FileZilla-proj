@@ -1,12 +1,13 @@
 #include "config.hpp"
+#include "platform.hpp"
 
 #include <iostream>
 
 #include <string.h>
 
 config::config()
-: thread_count(6),
-  memory(2048+1024),
+: thread_count(get_cpu_count()),
+  memory(get_system_memory() / 3 ),
   max_moves(0),
   depth(8),
   quiescence_depth(MAX_QDEPTH),

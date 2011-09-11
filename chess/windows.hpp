@@ -91,4 +91,9 @@ inline int bitscan( unsigned long long mask )
 	return static_cast<int>(i);
 }
 
+int get_cpu_count();
+
+// In MiB
+int get_system_memory();
+
 #define popcount __popcnt64

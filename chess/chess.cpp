@@ -229,6 +229,8 @@ struct xboard_state
 
 		bonus_time = false;
 		in_book = false;
+
+		return true;
 	}
 
 	position p;

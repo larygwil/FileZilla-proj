@@ -128,3 +128,53 @@ void thread::spawn()
 
 	t_ = CreateThread( 0, 0, &run, this, 0, 0 );
 }
+
+int get_cpu_count()
+{
+	PSYSTEM_LOGICAL_PROCESSOR_INFORMATION buffer = 0;
+	DWORD len = 0;
+
+	bool done = false;
+	while( !GetLogicalProcessorInformation( buffer, &len ) ) {
+		if( buffer ) {
+			free(buffer);
+		}
+
+		if( GetLastError() != ERROR_INSUFFICIENT_BUFFER ) {
+			return 1;
+		}
+
+		buffer = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION>(malloc( len ));
+	}
+
+	int count = 0;
+
+	DWORD offset = 0;
+	PSYSTEM_LOGICAL_PROCESSOR_INFORMATION ptr = buffer;
+	while( offset < len ) {
+		switch (ptr->Relationship) {
+			case RelationProcessorCore:
+				count += static_cast<int>(popcount( ptr->ProcessorMask ));
+				break;
+			default:
+				break;
+		}
+		offset += sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+		++ptr;
+	}
+
+	free( buffer );
+
+	return count;
+}
+
+// In MiB
+int get_system_memory()
+{
+	MEMORYSTATUSEX status;
+	status.dwLength = sizeof(MEMORYSTATUSEX);
+
+	GlobalMemoryStatusEx( &status );
+
+	return static_cast<int>(status.ullTotalPhys / 1024 / 1024);
+}
