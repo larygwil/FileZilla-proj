@@ -18,7 +18,7 @@
 #include <map>
 #include <vector>
 
-volatile bool do_abort = false;
+volatile extern bool do_abort = false;
 
 short const ASPIRATION = 40;
 
@@ -611,7 +611,8 @@ void insert_sorted( sorted_moves& moves, int forecast, move_info const& m, pv_en
 	moves.insert( it, d );
 }
 
-bool calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long /*time_remaining*/, int clock, seen_positions& seen )
+bool calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long /*time_remaining*/, int clock, seen_positions& seen
+		  , new_best_move_callback& new_best_cb )
 {
 	std::cerr << "Current move time limit is " << 1000 * move_time_limit / timer_precision() << " ms" << std::endl;
 
@@ -754,9 +755,6 @@ break2:
 				if( !do_abort ) {
 					int value = threads[t]->result();
 					++evaluated;
-					if( value > alpha ) {
-						alpha = value;
-					}
 
 					pv_entry* pv = threads[t]->get_pv();
 					extend_pv_from_tt( pv, p, c, max_depth, conf.quiescence_depth );
@@ -764,6 +762,12 @@ break2:
 					insert_sorted( sorted, value, threads[t]->get_move(), pv );
 					if( threads[t]->get_move().m != pv->get_best_move() ) {
 						std::cerr << "FAIL: Wrong PV move" << std::endl;
+					}
+
+					if( value > alpha ) {
+						alpha = value;
+
+						new_best_cb.on_new_best_move( p, c, max_depth, value, stats.full_width_nodes + stats.quiescence_nodes, pv );
 					}
 				}
 			}
@@ -824,14 +828,9 @@ break2:
 		if( do_abort ) {
 			break;
 		}
-
-		if( !old_sorted.empty() ) {
-			sorted_moves::const_iterator it = old_sorted.begin();
-			std::cerr << "Best so far: " << it->forecast << " " << pv_to_string( it->pv, p, c ) << std::endl;
-		}
 	}
 
-	std::cerr << "Candidates: " << std::endl;
+/*	std::cerr << "Candidates: " << std::endl;
 	for( sorted_moves::const_iterator it = old_sorted.begin(); it != old_sorted.end(); ++it ) {
 		if( it->pv->get_best_move() != it->m.m ) {
 			std::cerr << "FAIL: Wrong PV move" << std::endl;
@@ -842,7 +841,7 @@ break2:
 
 		pv_entry_pool p;
 		p.release( it->pv );
-	}
+	}*/
 
 	m = old_sorted.begin()->m.m;
 
@@ -884,4 +883,11 @@ bool seen_positions::is_two_fold( unsigned long long hash, int depth ) const
 		}
 	}
 	return false;
+}
+
+void new_best_move_callback::on_new_best_move( position const& p, color::type c, int depth, int evaluation, unsigned long long nodes, pv_entry const* pv )
+{
+	std::stringstream ss;
+	ss << "Best so far: " << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
+	std::cerr << ss.str();
 }

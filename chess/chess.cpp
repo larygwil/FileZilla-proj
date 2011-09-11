@@ -250,7 +250,155 @@ struct xboard_state
 	std::list<position> history;
 };
 
-void go( xboard_state& state )
+
+volatile extern bool do_abort;
+
+class xboard_thread : public thread, public new_best_move_callback
+{
+public:
+	xboard_thread( xboard_state& s );
+	~xboard_thread();
+
+	virtual void onRun();
+
+	void start( unsigned long long t );
+
+	move stop();
+
+	mutex mtx;
+
+	virtual void on_new_best_move( position const& p, color::type c, int depth, int evaluation, unsigned long long nodes, pv_entry const* pv );
+
+private:
+	bool abort;
+	xboard_state& state;
+	unsigned long long starttime;
+	move best_move;
+};
+
+
+xboard_thread::xboard_thread( xboard_state& s )
+: abort()
+, state(s)
+{
+}
+
+
+xboard_thread::~xboard_thread()
+{
+	stop();
+}
+
+
+void xboard_thread::onRun()
+{
+	if( state.bonus_time > state.time_remaining ) {
+		state.bonus_time = 0;
+	}
+
+	int remaining_moves;
+	if( !state.time_control ) {
+		remaining_moves = (std::max)( 15, (80 - state.clock) / 2 );
+	}
+	else {
+		remaining_moves = (state.time_control * 2) - (state.clock % (state.time_control * 2));
+	}
+	unsigned long long time_limit = (state.time_remaining - state.bonus_time) / remaining_moves + state.bonus_time;
+	unsigned long long overhead_compensation = 100 * timer_precision() / 1000;
+
+	if( state.time_increment && state.time_remaining > (time_limit + state.time_increment) ) {
+		time_limit += state.time_increment;
+	}
+
+	if( time_limit > overhead_compensation ) {
+		time_limit -= overhead_compensation;
+	}
+
+	move m;
+	int res;
+	bool success = calc( state.p, state.c, m, res, time_limit, state.time_remaining, state.clock, state.seen, *this );
+	
+	scoped_lock l( mtx );
+
+	if( abort ) {
+		return;
+	}
+
+	if( success ) {
+
+		std::cout << "move " << move_to_string( state.p, state.c, m ) << std::endl;
+
+		state.apply( m );
+
+		{
+			int i = evaluate_fast( state.p, state.c );
+			std::cerr << "  ; Current evaluation " << i << " centipawns, forecast " << res << std::endl;
+		}
+	}
+	else {
+		if( res == result::win ) {
+			std::cout << "1-0 (White wins)" << std::endl;
+		}
+		else if( res == result::loss ) {
+			std::cout << "0-1 (Black wins)" << std::endl;
+		}
+		else {
+			std::cout << "1/2-1/2 (Draw)" << std::endl;
+		}
+	}
+	unsigned long long stop = get_time();
+	unsigned long long elapsed = stop - starttime;
+	if( time_limit > elapsed ) {
+		state.bonus_time = (time_limit - elapsed) / 2;
+	}
+	else {
+		state.bonus_time = 0;
+	}
+	state.time_remaining -= elapsed;
+}
+
+
+void xboard_thread::start( unsigned long long t )
+{
+	join();
+	do_abort = false;
+	abort = false;
+	best_move.other = false;
+
+	starttime = t;
+
+	spawn();
+}
+
+
+move xboard_thread::stop()
+{
+	do_abort = true;
+	abort = true;
+	join();
+	move m = best_move;
+	best_move.other = false;
+
+	return m;
+}
+
+
+void xboard_thread::on_new_best_move( position const& p, color::type c, int depth, int evaluation, unsigned long long nodes, pv_entry const* pv )
+{
+	scoped_lock lock( mtx );
+	if( !do_abort ) {
+
+		unsigned long long elapsed = ( get_time() - starttime ) * 100 / timer_precision();
+		std::stringstream ss;
+		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << elapsed << " " << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
+		std::cout << ss.str();
+
+		best_move = pv->get_best_move();
+	}
+}
+
+
+void go( xboard_thread& thread, xboard_state& state )
 {
 	unsigned long long start = get_time();
 	if( !state.hash_initialized ) {
@@ -301,66 +449,13 @@ void go( xboard_state& state )
 		}
 	}
 
-	if( state.bonus_time > state.time_remaining ) {
-		state.bonus_time = 0;
-	}
-
-	int remaining_moves;
-	if( !state.time_control ) {
-		remaining_moves = (std::max)( 15, (80 - state.clock) / 2 );
-	}
-	else {
-		remaining_moves = (state.time_control * 2) - (state.clock % (state.time_control * 2));
-	}
-	unsigned long long time_limit = (state.time_remaining - state.bonus_time) / remaining_moves + state.bonus_time;
-	unsigned long long overhead_compensation = 100 * timer_precision() / 1000;
-
-	if( state.time_increment && state.time_remaining > (time_limit + state.time_increment) ) {
-		time_limit += state.time_increment;
-	}
-
-	if( time_limit > overhead_compensation ) {
-		time_limit -= overhead_compensation;
-	}
-
-	move m;
-	int res;
-	if( calc( state.p, state.c, m, res, time_limit, state.time_remaining, state.clock, state.seen ) ) {
-
-		std::cout << "move " << move_to_string( state.p, state.c, m ) << std::endl;
-
-		state.apply( m );
-
-		{
-			int i = evaluate_fast( state.p, state.c );
-			std::cerr << "  ; Current evaluation " << i << " centipawns, forecast " << res << std::endl;
-		}
-	}
-	else {
-		if( res == result::win ) {
-			std::cout << "1-0 (White wins)" << std::endl;
-		}
-		else if( res == result::loss ) {
-			std::cout << "0-1 (Black wins)" << std::endl;
-		}
-		else {
-			std::cout << "1/2-1/2 (Draw)" << std::endl;
-		}
-	}
-	unsigned long long stop = get_time();
-	unsigned long long elapsed = stop - start;
-	if( time_limit > elapsed ) {
-		state.bonus_time = (time_limit - elapsed) / 2;
-	}
-	else {
-		state.bonus_time = 0;
-	}
-	state.time_remaining -= elapsed;
+	thread.start( start );
 }
 
 void xboard()
 {
 	xboard_state state;
+	xboard_thread thread( state );
 
 	std::string line;
 	std::getline( std::cin, line );
@@ -388,8 +483,21 @@ void xboard()
 
 		logger::log_input( line );
 
+		move best_move = thread.stop();
+
+		scoped_lock l( thread.mtx );
+
 		if( line == "quit" ) {
 			break;
+		}
+		else if( line == "?" ) {
+			if( best_move.other ) {
+				std::cout << "move " << move_to_string( state.p, state.c, best_move ) << std::endl;
+				state.apply( best_move );
+			}
+			else {
+				std::cout << "Error (command not legal now): ?" << std::endl;
+			}
 		}
 		else if( line.substr( 0, 9 ) == "protover " ) {
 			std::cout << "feature done=1" << std::endl;
@@ -504,7 +612,7 @@ void xboard()
 			state.force = false;
 			state.self = state.c;
 			// TODO: clocks...
-			go( state );
+			go( thread, state );
 		}
 		else {
 			move m;
@@ -512,7 +620,7 @@ void xboard()
 
 				state.apply( m );
 				if( !state.force && state.c == state.self ) {
-					go( state );
+					go( thread, state );
 				}
 			}
 		}
