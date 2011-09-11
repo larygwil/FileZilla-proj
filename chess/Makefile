@@ -15,6 +15,7 @@ OBJECT_FILES = \
 	detect_check.o \
 	eval.o \
 	hash.o \
+	logger.o \
 	mobility.o \
 	moves.o \
 	moves_captures.o \
