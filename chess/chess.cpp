@@ -35,7 +35,7 @@ contact tim.kosse@filezilla-project.org for details.
 
 const int TIME_LIMIT = 90000; //30000;
 
-const int PAWN_HASH_TABLE_SIZE = 5;
+const int PAWN_HASH_TABLE_SIZE = 10;
 
 std::string book_dir;
 
@@ -389,7 +389,7 @@ move xboard_thread::stop()
 void xboard_thread::on_new_best_move( position const& p, color::type c, int depth, int evaluation, unsigned long long nodes, pv_entry const* pv )
 {
 	scoped_lock lock( mtx );
-	if( !do_abort ) {
+	if( !abort ) {
 
 		unsigned long long elapsed = ( get_time() - starttime ) * 100 / timer_precision();
 		std::stringstream ss;

@@ -683,6 +683,7 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 	}
 
 	short alpha_at_prev_depth = result::loss;
+	int highest_depth = 0;
 	for( int max_depth = 2 + (conf.depth % 2); max_depth <= conf.depth; max_depth += 2 )
 	{
 		short alpha = result::loss;
@@ -767,6 +768,7 @@ break2:
 					if( value > alpha ) {
 						alpha = value;
 
+						highest_depth = max_depth;
 						new_best_cb.on_new_best_move( p, c, max_depth, value, stats.full_width_nodes + stats.quiescence_nodes, pv );
 					}
 				}
@@ -844,6 +846,9 @@ break2:
 	}*/
 
 	m = old_sorted.begin()->m.m;
+
+	pv_entry const* pv = old_sorted.begin()->pv;
+	new_best_cb.on_new_best_move( p, c, highest_depth, old_sorted.begin()->forecast, stats.full_width_nodes + stats.quiescence_nodes, pv );
 
 	unsigned long long stop = get_time();
 	print_stats( start, stop );
