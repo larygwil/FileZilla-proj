@@ -41,6 +41,9 @@ std::string book_dir;
 
 void auto_play()
 {
+	if( conf.depth == -1 ) {
+		conf.depth = 8;
+	}
 	transposition_table.init( conf.memory );
 	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
 	unsigned long long start = get_time();
@@ -473,7 +476,9 @@ void xboard()
 		exit(1);
 	}
 
-	conf.depth = 40;
+	if( conf.depth == -1 ) {
+		conf.depth = 40;
+	}
 
 	std::cout << std::endl;
 
@@ -653,6 +658,10 @@ void xboard()
 
 void perft( int depth, position const& p, color::type c, unsigned long long& n )
 {
+	if( conf.depth == -1 ) {
+		conf.depth = 8;
+	}
+
 	if( !depth-- ) {
 		++n;
 		return;

@@ -38,15 +38,15 @@ enum type {
 
 struct piece
 {
-	unsigned char alive : 1;
-	unsigned char column : 3;
-	unsigned char row : 3;
+	unsigned char alive;
+	unsigned char column;
+	unsigned char row;
 
 	// For knights, indicates whether they can castle.
 	// For king, indicates whether it has castled
 	// For pawns:
 	//   Alive set: promoted
-	unsigned char special : 1;
+	unsigned char special;
 };
 
 
@@ -58,7 +58,7 @@ enum type {
 }
 
 
-PACKED(struct position
+struct position
 {
 	// [color][piece]
 	piece pieces[2][16];
@@ -88,7 +88,7 @@ PACKED(struct position
 	short material[2];
 	short tropism[2];
 
-});
+};
 
 
 struct bitboard
@@ -128,7 +128,6 @@ struct move
 		return source_col == rhs.source_col && source_row == rhs.source_row && target_col == rhs.target_col && target_row == rhs.target_row;
 	}
 };
-
 
 namespace result {
 enum type {

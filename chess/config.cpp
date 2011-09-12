@@ -9,7 +9,7 @@ config::config()
 : thread_count(get_cpu_count()),
   memory(get_system_memory() / 3 ),
   max_moves(0),
-  depth(8),
+  depth(-1),
   quiescence_depth(MAX_QDEPTH),
   time_limit(3600*1000), // In ms
   random_seed(-1) //-1 == based on time
