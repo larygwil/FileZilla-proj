@@ -1097,16 +1097,14 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 	bitboard bitboards[2];
 	get_bitboards( p, bitboards );
 
-	short mobility = get_mobility( p, bitboards ) / 2;
-	short pin = get_pins( p, bitboards );
-	if( c ) {
-		eval_fast -= mobility;
-		eval_fast -= pin;
-	}
-	else {
-		eval_fast += mobility;
-		eval_fast += pin;
-	}
+	short mobility = 0;
+	short pin = 0;
+
+	evaluate_mobility( p, c, bitboards, mobility, pin );
+	mobility /= 2;
+
+	eval_fast += mobility;
+	eval_fast += pin;
 
 	eval_fast += evaluate_rooks_on_open_files( p, c, bitboards );
 	eval_fast -= evaluate_rooks_on_open_files( p, static_cast<color::type>(1-c), bitboards );

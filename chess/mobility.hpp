@@ -3,8 +3,6 @@
 
 #include "chess.hpp"
 
-short get_mobility( position const& p, bitboard const* bitboards );
-
-short get_pins( position const& p, bitboard const* bitboards );
+void evaluate_mobility( position const& p, color::type c, bitboard const* bitboards, short& mobility, short& pin );
 
 #endif
