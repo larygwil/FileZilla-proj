@@ -24,9 +24,10 @@ struct new_best_move_callback
 {
 	virtual void on_new_best_move( position const& p, color::type c, int depth, int evaluation, unsigned long long nodes, pv_entry const* pv );
 };
+extern new_best_move_callback default_new_best_move_callback;
 
 // May modify seen_positions at indexes > root_position
-bool calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long time_remaining, int clock, seen_positions& seen, new_best_move_callback& new_best_cb = new_best_move_callback() );
+bool calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long time_remaining, int clock, seen_positions& seen, new_best_move_callback& new_best_cb = default_new_best_move_callback );
 
 class context
 {

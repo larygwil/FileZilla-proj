@@ -92,6 +92,12 @@ private:
 	pthread_t* t_;
 };
 
+
+int get_cpu_count();
+
+// In MiB
+int get_system_memory();
+
 #define bitscan __builtin_ffsll
 #define popcount __builtin_popcountll
 

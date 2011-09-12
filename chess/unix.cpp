@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <iostream>
+#include <unistd.h>
 
 unsigned long long timer_precision()
 {
@@ -170,4 +171,18 @@ mutex::mutex()
 mutex::~mutex()
 {
 	pthread_mutex_destroy( &m_ );
+}
+
+
+int get_cpu_count()
+{
+	return sysconf(_SC_NPROCESSORS_ONLN);
+}
+
+
+int get_system_memory()
+{
+	uint64_t pages = sysconf(_SC_PHYS_PAGES);
+	uint64_t page_size = sysconf(_SC_PAGE_SIZE);
+	return pages * page_size / 1024 / 1024;
 }

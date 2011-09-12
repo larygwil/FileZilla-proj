@@ -76,8 +76,6 @@ private:
 	HANDLE t_;
 };
 
-#endif
-
 inline int bitscan( unsigned long long mask )
 {
 	unsigned long i;
@@ -97,3 +95,5 @@ int get_cpu_count();
 int get_system_memory();
 
 #define popcount __popcnt64
+
+#endif

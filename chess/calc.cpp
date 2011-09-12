@@ -18,9 +18,11 @@
 #include <map>
 #include <vector>
 
-volatile extern bool do_abort = false;
+volatile bool do_abort = false;
 
 short const ASPIRATION = 40;
+
+new_best_move_callback default_new_best_move_callback;
 
 namespace {
 struct MoveSort {
