@@ -389,6 +389,7 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 							piece const& pawn = p.pieces[1-c][t];
 							if( !pawn.special ) {
 								// Harmless pawn
+								break;
 							}
 
 							unsigned short promoted = (p.promotions[1-c] >> (2 * (t - pieces::pawn1) ) ) & 0x03;
