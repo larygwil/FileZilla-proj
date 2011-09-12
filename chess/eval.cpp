@@ -594,8 +594,8 @@ short evaluate_pawns( unsigned long long const* pawns, color::type c )
 	unsigned long long p = pawns[c];
 
 	unsigned long long pi;
-	while( (pi = bitscan(p) ) ) {
-		--pi;
+	while( p ) {
+		bitscan( p, pi );
 		p ^= 1ull << pi;
 		ret += evaluate_pawn( pawns, c, pi );
 	}
@@ -1059,8 +1059,8 @@ short evaluate_rooks_on_open_files( position const& p, color::type c, bitboard c
 	unsigned long long rooks = bitboards[c].rooks;
 
 	unsigned long long rook;
-	while( (rook = bitscan(rooks) ) ) {
-		--rook;
+	while( rooks ) {
+		bitscan( rooks, rook );
 		rooks ^= 1ull << rook;
 
 		unsigned long long file = 0x0101010101010101ull << (rook % 8);

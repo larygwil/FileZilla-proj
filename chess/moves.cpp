@@ -154,9 +154,9 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 	piece const& pp = p.pieces[c][pieces::king];
 
 	unsigned long long kings = possible_king_moves[pp.column + pp.row * 8];
-	int i;
-	while( (i = bitscan( kings ) ) ) {
-		--i;
+	unsigned long long i;
+	while( kings ) {
+		bitscan( kings, i );
 		kings ^= 1ull << i;
 		calc_moves_king( p, c, current_evaluation, moves, check, pp, i & 0x7, i >> 3 );
 	}
@@ -322,11 +322,11 @@ void calc_moves_knight( position const& p, color::type c, int const current_eval
 void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
 {
 	unsigned long long knights = possible_knight_moves[pp.column + pp.row * 8];
-	int i;
-	while( (i = bitscan( knights ) ) ) {
-		--i;
-		knights ^= 1ull << i;
-		calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, i & 0x7, i >> 3 );
+	unsigned long long knight;
+	while( knights ) {
+		bitscan( knights, knight );
+		knights ^= 1ull << knight;
+		calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, knight & 0x7, knight >> 3 );
 	}
 }
 

@@ -641,11 +641,11 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 	}
 
 	unsigned long long knights = possible_knight_moves[king_col + king_row * 8];
-	int i;
-	while( (i = bitscan( knights ) ) ) {
-		--i;
-		knights ^= 1ull << i;
-		calc_check_map_knight( p, c, map, king_col, king_row, i & 0x7, i >> 3 );
+	unsigned long long knight;
+	while( knights ) {
+		bitscan( knights, knight );
+		knights ^= 1ull << knight;
+		calc_check_map_knight( p, c, map, king_col, king_row, knight & 0x7, knight >> 3 );
 	}
 
 	unsigned char cv = map.board[king_col][king_row];

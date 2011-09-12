@@ -76,17 +76,12 @@ private:
 	HANDLE t_;
 };
 
-inline int bitscan( unsigned long long mask )
+inline void bitscan( unsigned long long mask, unsigned long long& index )
 {
 	unsigned long i;
-	if( _BitScanForward64( &i, mask ) ) {
-		++i;
-	}
-	else {
-		i = 0;
-	}
+	_BitScanForward64( &i, mask );
 
-	return static_cast<int>(i);
+	index = static_cast<unsigned long long >(i);
 }
 
 int get_cpu_count();

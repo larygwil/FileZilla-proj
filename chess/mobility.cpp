@@ -36,8 +36,8 @@ inline static void evaluate_knights_mobility( position const& p, color::type c, 
 	unsigned long long knights = bitboards[c].knights;
 
 	unsigned long long knight;
-	while( (knight = bitscan(knights) ) ) {
-		--knight;
+	while( knights ) {
+		bitscan( knights, knight );
 		knights ^= 1ull << knight;
 
 		unsigned long long moves = possible_knight_moves[knight];
@@ -61,8 +61,8 @@ inline static void evaluate_bishop_mobility( position const& p, color::type c, b
 	moves &= ~bitboards[1-c].pawn_control;
 
 	unsigned long long blocker;
-	while( (blocker = bitscan(blockers) ) ) {
-		--blocker;
+	while( blockers ) {
+		bitscan( blockers, blocker );
 		blockers ^= 1ull << blocker;
 
 		blockers &= ~mobility_block[bishop][blocker];
@@ -81,8 +81,8 @@ inline static void evaluate_bishop_pin( position const& p, color::type c, bitboa
 	blockers &= moves;
 
 	unsigned long long blocker;
-	while( (blocker = bitscan(blockers) ) ) {
-		--blocker;
+	while( blockers ) {
+		bitscan( blockers, blocker );
 		blockers ^= 1ull << blocker;
 
 		blockers &= ~mobility_block[bishop][blocker];
@@ -94,8 +94,8 @@ inline static void evaluate_bishop_pin( position const& p, color::type c, bitboa
 	blockers = bitboards[1-c].all_pieces;
 	blockers &= moves;
 
-	while( (blocker = bitscan(blockers) ) ) {
-		--blocker;
+	while( blockers ) {
+		bitscan( blockers, blocker );
 		blockers ^= 1ull << blocker;
 
 		blockers &= ~mobility_block[bishop][blocker];
@@ -114,8 +114,8 @@ inline static void evaluate_bishops_mobility( position const& p, color::type c, 
 	unsigned long long bishops = bitboards[c].bishops;
 
 	unsigned long long bishop;
-	while( (bishop = bitscan(bishops) ) ) {
-		--bishop;
+	while( bishops ) {
+		bitscan( bishops, bishop );
 		bishops ^= 1ull << bishop;
 
 		unsigned long long moves = visibility_bishop[bishop];
@@ -134,8 +134,8 @@ inline static void evaluate_rook_mobility( position const& p, color::type c, bit
 	moves &= ~bitboards[1-c].pawn_control;
 
 	unsigned long long blocker;
-	while( (blocker = bitscan(blockers) ) ) {
-		--blocker;
+	while( blockers ) {
+		bitscan( blockers, blocker );
 		blockers ^= 1ull << blocker;
 
 		blockers &= ~mobility_block[rook][blocker];
@@ -160,8 +160,8 @@ inline static void evaluate_rook_pin( position const& p, color::type c, bitboard
 	blockers &= moves;
 
 	unsigned long long blocker;
-	while( (blocker = bitscan(blockers) ) ) {
-		--blocker;
+	while( blockers ) {
+		bitscan( blockers, blocker );
 		blockers ^= 1ull << blocker;
 
 		blockers &= ~mobility_block[rook][blocker];
@@ -173,8 +173,8 @@ inline static void evaluate_rook_pin( position const& p, color::type c, bitboard
 	blockers = bitboards[1-c].all_pieces;
 	blockers &= moves;
 
-	while( (blocker = bitscan(blockers) ) ) {
-		--blocker;
+	while( blockers ) {
+		bitscan( blockers, blocker );
 		blockers ^= 1ull << blocker;
 
 		blockers &= ~mobility_block[rook][blocker];
@@ -193,8 +193,8 @@ inline static void evaluate_rooks_mobility( position const& p, color::type c, bi
 	unsigned long long rooks = bitboards[c].rooks;
 
 	unsigned long long rook;
-	while( (rook = bitscan(rooks) ) ) {
-		--rook;
+	while( rooks ) {
+		bitscan( rooks, rook );
 		rooks ^= 1ull << rook;
 
 		unsigned long long moves = visibility_rook[rook];
@@ -213,8 +213,8 @@ inline static void evaluate_queen_mobility( position const& p, color::type c, bi
 	moves &= ~bitboards[1-c].pawn_control;
 
 	unsigned long long blocker;
-	while( (blocker = bitscan(blockers) ) ) {
-		--blocker;
+	while( blockers ) {
+		bitscan( blockers, blocker );
 		blockers ^= 1ull << blocker;
 
 		blockers &= ~mobility_block[queen][blocker];
@@ -233,8 +233,8 @@ inline static void evaluate_queen_pin( position const& p, color::type c, bitboar
 	blockers &= moves;
 
 	unsigned long long blocker;
-	while( (blocker = bitscan(blockers) ) ) {
-		--blocker;
+	while( blockers ) {
+		bitscan( blockers, blocker );
 		blockers ^= 1ull << blocker;
 
 		blockers &= ~mobility_block[queen][blocker];
@@ -246,8 +246,8 @@ inline static void evaluate_queen_pin( position const& p, color::type c, bitboar
 	blockers = bitboards[1-c].all_pieces;
 	blockers &= moves;
 
-	while( (blocker = bitscan(blockers) ) ) {
-		--blocker;
+	while( blockers ) {
+		bitscan( blockers, blocker );
 		blockers ^= 1ull << blocker;
 
 		blockers &= ~mobility_block[queen][blocker];
@@ -266,8 +266,8 @@ inline static void evaluate_queens_mobility( position const& p, color::type c, b
 	unsigned long long queens = bitboards[c].queens;
 
 	unsigned long long queen;
-	while( (queen = bitscan(queens) ) ) {
-		--queen;
+	while( queens ) {
+		bitscan( queens, queen );
 		queens ^= 1ull << queen;
 
 		unsigned long long moves = visibility_bishop[queen] | visibility_rook[queen];

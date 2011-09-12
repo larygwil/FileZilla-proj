@@ -98,7 +98,19 @@ int get_cpu_count();
 // In MiB
 int get_system_memory();
 
-#define bitscan __builtin_ffsll
+// Bitscan forward.
+// We cannot use the __builtin_ffsll, as it is way more expensive:
+// It always adds 1 to the result, which we then have to subtract again.
+// Not even -O3 can save us there
+#define bitscan( mask, index ) \
+asm \
+( \
+"bsfq %[" #mask "], %[" #index "]" \
+:[index] "=r" (index) \
+:[mask] "mr" (mask) \
+);
+
+
 #define popcount __builtin_popcountll
 
 #endif
