@@ -79,7 +79,28 @@ extern unsigned long long const possible_knight_moves[];
 
 namespace {
 
-// Adds the move if it does not result in a check
+void do_add_move( position const& p, color::type c, int const current_evaluation, move_info*& moves, killer_moves const& killers, unsigned char const& pi, piece const& pp, unsigned char const& new_col, unsigned char const& new_row, int target )
+{
+	move_info mi;
+
+	mi.m.source_col = pp.column;
+	mi.m.source_row = pp.row;
+	mi.m.target_col = new_col;
+	mi.m.target_row = new_row;
+
+	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m, mi.pawns );
+	mi.sort = mi.evaluation;
+	if( target != pieces::nil ) {
+		mi.sort += get_material_value( p, static_cast<color::type>(1-c), target & 0x0f ) * 1000000 - get_material_value( p, c, pi );
+	}
+	else if( killers.is_killer( mi.m ) ) {
+		mi.sort += 500000;
+	}
+
+	*(moves++) = mi;
+}
+
+// Adds the move if it does not result in self getting into check
 void add_if_legal( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers, unsigned char const& pi, unsigned char const& new_col, unsigned char const& new_row, int target )
 {
 	piece const& pp = p.pieces[c][pi];
@@ -101,23 +122,7 @@ void add_if_legal( position const& p, color::type c, int const current_evaluatio
 		}
 	}
 
-	move_info mi;
-
-	mi.m.source_col = pp.column;
-	mi.m.source_row = pp.row;
-	mi.m.target_col = new_col;
-	mi.m.target_row = new_row;
-
-	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m, mi.pawns );
-	mi.sort = mi.evaluation;
-	if( target != pieces::nil ) {
-		mi.sort += get_material_value( p, static_cast<color::type>(1-c), target & 0x0f ) * 1000000 - get_material_value( p, c, pi );
-	}
-	else if( killers.is_killer( mi.m ) ) {
-		mi.sort += 500000;
-	}
-
-	*(moves++) = mi;
+	do_add_move( p, c, current_evaluation, moves, killers, pi, pp, new_col, new_row, target );
 }
 
 void add_if_legal_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, killer_moves const& killers, unsigned char new_col, unsigned char new_row, int target )
@@ -127,22 +132,7 @@ void add_if_legal_king( position const& p, color::type c, int const current_eval
 		return;
 	}
 
-	move_info mi;
-	mi.m.source_col = kp.column;
-	mi.m.source_row = kp.row;
-	mi.m.target_col = new_col;
-	mi.m.target_row = new_row;
-
-	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m, mi.pawns );
-	mi.sort = mi.evaluation;
-	if( target != pieces::nil ) {
-		mi.sort += get_material_value( p, static_cast<color::type>(1-c), target & 0x0f ) * 100000 - get_material_value( p, c, pieces::king );
-	}
-	else if( killers.is_killer( mi.m ) ) {
-		mi.sort += 500000;
-	}
-	
-	*(moves++) = mi;
+	do_add_move( p, c, current_evaluation, moves, killers, pieces::king, kp, new_col, new_row, target );
 }
 
 void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers, piece const& pp, unsigned char new_col, unsigned char new_row )
@@ -370,8 +360,27 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 			piece const& ep = p.pieces[1-c][p.can_en_passant & 0x0f];
 			ASSERT( ep.alive );
 			if( ep.column == new_col && ep.row == pp.row ) {
-
 				// Capture en-passant
+
+				// Special case: Cannot use normal check from add_if_legal as target square is not piece square and if captured pawn gives check, bad things happen.
+				piece const& pp = p.pieces[c][pi];
+				unsigned char const& cv_old = check.board[pp.column][pp.row];
+				unsigned char const& cv_new = check.board[new_col][new_row];
+				if( check.check ) {
+					if( cv_old ) {
+						// Can't come to rescue, this piece is already blocking yet another check.
+						return;
+					}
+					if( cv_new != check.check && check.check != (0x80 + new_col * 8 + pp.row ) ) {
+						// Target position does capture checking piece nor blocks check
+						return;
+					}
+				}
+				else {
+					if( cv_old && cv_old != cv_new ) {
+						return;
+					}
+				}
 
 				// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
 				piece const& kp = p.pieces[c][pieces::king];
@@ -418,7 +427,8 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 						break;
 					}
 				}
-				add_if_legal( p, c, current_evaluation, moves, check, killers, pi, new_col, new_row, p.can_en_passant );
+
+				do_add_move( p, c, current_evaluation, moves, killers, pi, pp, new_col, new_row, target );
 			}
 		}
 	}

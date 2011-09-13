@@ -642,6 +642,20 @@ void xboard()
 			// TODO: clocks...
 			go( thread, state );
 		}
+		else if( line == "~moves" ) {
+			check_map check;
+			calc_check_map( state.p, state.c, check );
+
+			move_info moves[200];
+			move_info* pm = moves;
+			calculate_moves( state.p, state.c, 0, pm, check, killer_moves() );
+
+			std::cout << "Possible moves:" << std::endl;
+			move_info* it = &moves[0];
+			for( ; it != pm; ++it ) {
+				std::cout << " " << move_to_string( state.p, state.c, it->m ) << std::endl;
+			}
+		}
 		else {
 			move m;
 			if( parse_move( state.p, state.c, line, m ) ) {

@@ -73,7 +73,7 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 		}
 		return true;
 	}
-	unsigned char piece = 0;
+	unsigned char piecetype = 0;
 
 	if( len && str[len - 1] == 'Q' ) {
 		--len;
@@ -82,7 +82,7 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 			--len;
 			str = str.substr(0, len);
 		}
-		piece = 'P';
+		piecetype = 'P';
 	}
 
 	const char* s = str.c_str();
@@ -94,11 +94,11 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 	case 'R':
 	case 'N':
 	case 'P':
-		if( piece ) {
+		if( piecetype ) {
 			std::cout << "Error (unknown command): " << line << std::endl;
 			return false;
 		}
-		piece = *(s++);
+		piecetype = *(s++);
 		break;
 	}
 
@@ -153,8 +153,8 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 		++s;
 	}
 
-	if( !piece && (first_col == -1 || second_col == -1 || first_row == -1 || second_col == -1) ) {
-		piece = 'P';
+	if( !piecetype && (first_col == -1 || second_col == -1 || first_row == -1 || second_col == -1) ) {
+		piecetype = 'P';
 	}
 
 	if( !got_separator && second_col == -1 && second_row == -1 ) {
@@ -234,12 +234,20 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 			break;
 		}
 
-		if( piece && piece != source_piece ) {
+		if( piecetype && piecetype != source_piece ) {
 			continue;
 		}
 
 		if( capture && p.board[it->m.target_col][it->m.target_row] == pieces::nil ) {
-			continue;
+			// Could still be enpassant
+			if( source_piece != 'P' || p.can_en_passant == pieces::nil || (p.can_en_passant >> 4) == c ) {
+				continue;
+			}
+
+			piece const& ep = p.pieces[1-c][p.can_en_passant & 0x0f];
+			if( ep.row != it->m.source_row || ep.column != it->m.target_col ) {
+				continue;
+			}
 		}
 
 		if( first_col != -1 && first_col != it->m.source_col ) {
@@ -267,6 +275,7 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 
 	if( !match ) {
 		std::cout << "Illegal move (not valid): " << line << std::endl;
+		std::cerr << "Parsed: " << first_col << " " << first_row << " " << second_col << " " << second_row << ", capture=" << capture << std::endl;
 		return false;
 	}
 

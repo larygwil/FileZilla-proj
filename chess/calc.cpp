@@ -661,16 +661,6 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 		}
 	}
 
-//	{
-//		std::cerr << "Possible moves:";
-//		move* mbegin = &moves[0];
-//		move* mend = mbegin + count;
-//		for( ; mbegin != mend; ++mbegin ) { // Optimize this, compiler!
-//			std::cerr << " " << move_to_string( p, c, *mbegin );
-//		}
-//		std::cerr << std::endl;
-//	}
-
 	// Go through them sorted by previous evaluation. This way, if on time pressure,
 	// we can abort processing at high depths early if needed.
 	sorted_moves old_sorted;
