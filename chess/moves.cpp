@@ -2,6 +2,7 @@
 #include "moves.hpp"
 #include "eval.hpp"
 #include "util.hpp"
+#include "calc.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -79,7 +80,7 @@ extern unsigned long long const possible_knight_moves[];
 namespace {
 
 // Adds the move if it does not result in a check
-void add_if_legal( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, unsigned char const& pi, unsigned char const& new_col, unsigned char const& new_row )
+void add_if_legal( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers, unsigned char const& pi, unsigned char const& new_col, unsigned char const& new_row, int target )
 {
 	piece const& pp = p.pieces[c][pi];
 	unsigned char const& cv_old = check.board[pp.column][pp.row];
@@ -108,11 +109,18 @@ void add_if_legal( position const& p, color::type c, int const current_evaluatio
 	mi.m.target_row = new_row;
 
 	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m, mi.pawns );
+	mi.sort = mi.evaluation;
+	if( target != pieces::nil ) {
+		mi.sort += get_material_value( p, static_cast<color::type>(1-c), target & 0x0f ) * 1000000 - get_material_value( p, c, pi );
+	}
+	else if( killers.is_killer( mi.m ) ) {
+		mi.sort += 500000;
+	}
 
 	*(moves++) = mi;
 }
 
-void add_if_legal_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, unsigned char new_col, unsigned char new_row )
+void add_if_legal_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, killer_moves const& killers, unsigned char new_col, unsigned char new_row, int target )
 {
 	piece const& kp = p.pieces[c][pieces::king];
 	if( detect_check( p, c, new_col, new_row, kp.column, kp.row ) ) {
@@ -126,11 +134,18 @@ void add_if_legal_king( position const& p, color::type c, int const current_eval
 	mi.m.target_row = new_row;
 
 	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m, mi.pawns );
-
+	mi.sort = mi.evaluation;
+	if( target != pieces::nil ) {
+		mi.sort += get_material_value( p, static_cast<color::type>(1-c), target & 0x0f ) * 100000 - get_material_value( p, c, pieces::king );
+	}
+	else if( killers.is_killer( mi.m ) ) {
+		mi.sort += 500000;
+	}
+	
 	*(moves++) = mi;
 }
 
-void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, piece const& pp, unsigned char new_col, unsigned char new_row )
+void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers, piece const& pp, unsigned char new_col, unsigned char new_row )
 {
 	piece const& other_king = p.pieces[1-c][pieces::king];
 	if( possible_king_moves[new_row * 8 + new_col] & (1ull << (other_king.column + other_king.row * 8)) ) {
@@ -145,11 +160,11 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 		}
 	}
 
-	add_if_legal_king( p, c, current_evaluation, moves, new_col, new_row );
+	add_if_legal_king( p, c, current_evaluation, moves, killers, new_col, new_row, target_piece );
 }
 
 
-void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers )
 {
 	piece const& pp = p.pieces[c][pieces::king];
 
@@ -158,7 +173,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 	while( kings ) {
 		bitscan( kings, i );
 		kings ^= 1ull << i;
-		calc_moves_king( p, c, current_evaluation, moves, check, pp, i & 0x7, i >> 3 );
+		calc_moves_king( p, c, current_evaluation, moves, check, killers, pp, i & 0x7, i >> 3 );
 	}
 
 	if( check.check ) {
@@ -169,7 +184,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 	if( p.pieces[c][pieces::rook1].special ) {
 		if( p.board[1][pp.row] == pieces::nil && p.board[2][pp.row] == pieces::nil && p.board[3][pp.row] == pieces::nil ) {
 			if( !detect_check( p, c, 3, pp.row, 3, pp.row ) ) {
-				add_if_legal_king( p, c, current_evaluation, moves, 2, pp.row );
+				add_if_legal_king( p, c, current_evaluation, moves, killers, 2, pp.row, pieces::nil );
 			}
 		}
 	}
@@ -177,14 +192,14 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 	if( p.pieces[c][pieces::rook2].special ) {
 		if( p.board[5][pp.row] == pieces::nil && p.board[6][pp.row] == pieces::nil ) {
 			if( !detect_check( p, c, 5, pp.row, 5, pp.row ) ) {
-				add_if_legal_king( p, c, current_evaluation, moves, 6, pp.row );
+				add_if_legal_king( p, c, current_evaluation, moves, killers, 6, pp.row, pieces::nil );
 			}
 		}
 	}
 }
 
 
-void calc_moves_queen( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_queen( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers, pieces::type pi, piece const& pp )
 {
 	for( int cx = -1; cx <= 1; ++cx ) {
 		for( int cy = -1; cy <= 1; ++cy ) {
@@ -196,11 +211,11 @@ void calc_moves_queen( position const& p, color::type c, int const current_evalu
 			for( x = pp.column + cx, y = pp.row + cy; x >= 0 && x <= 7 && y >= 0 && y <= 7; x += cx, y += cy ) {
 				unsigned char target = p.board[x][y];
 				if( target == pieces::nil ) {
-					add_if_legal( p, c, current_evaluation, moves, check, pi, x, y );
+					add_if_legal( p, c, current_evaluation, moves, check, killers, pi, x, y, target );
 				}
 				else {
 					if( (target >> 4) != c ) {
-						add_if_legal( p, c, current_evaluation, moves, check, pi, x, y );
+						add_if_legal( p, c, current_evaluation, moves, check, killers, pi, x, y, target );
 					}
 					break;
 				}
@@ -210,15 +225,15 @@ void calc_moves_queen( position const& p, color::type c, int const current_evalu
 }
 
 
-void calc_moves_queen( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_queen( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers )
 {
 	piece const& pp = p.pieces[c][pieces::queen];
 	if( pp.alive ) {
-		calc_moves_queen( p, c, current_evaluation, moves, check, pieces::queen, pp );
+		calc_moves_queen( p, c, current_evaluation, moves, check, killers, pieces::queen, pp );
 	}
 }
 
-void calc_moves_bishop( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_bishop( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers, pieces::type pi, piece const& pp )
 {
 	for( int cx = -1; cx <= 1; cx += 2 ) {
 		for( int cy = -1; cy <= 1; cy += 2 ) {
@@ -226,11 +241,11 @@ void calc_moves_bishop( position const& p, color::type c, int const current_eval
 			for( x = pp.column + cx, y = pp.row + cy; x >= 0 && x <= 7 && y >= 0 && y <= 7; x += cx, y += cy ) {
 				unsigned char target = p.board[x][y];
 				if( target == pieces::nil ) {
-					add_if_legal( p, c, current_evaluation, moves, check, pi, x, y );
+					add_if_legal( p, c, current_evaluation, moves, check, killers, pi, x, y, target );
 				}
 				else {
 					if( (target >> 4) != c ) {
-						add_if_legal( p, c, current_evaluation, moves, check, pi, x, y );
+						add_if_legal( p, c, current_evaluation, moves, check, killers, pi, x, y, target );
 					}
 					break;
 				}
@@ -240,34 +255,34 @@ void calc_moves_bishop( position const& p, color::type c, int const current_eval
 }
 
 
-void calc_moves_bishops( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_bishops( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers )
 {
 	{
 		piece const& pp = p.pieces[c][pieces::bishop1];
 		if( pp.alive ) {
-			calc_moves_bishop( p, c, current_evaluation, moves, check, pieces::bishop1, pp );
+			calc_moves_bishop( p, c, current_evaluation, moves, check, killers, pieces::bishop1, pp );
 		}
 	}
 	{
 		piece const& pp = p.pieces[c][pieces::bishop2];
 		if( pp.alive ) {
-			calc_moves_bishop( p, c, current_evaluation, moves, check, pieces::bishop2, pp );
+			calc_moves_bishop( p, c, current_evaluation, moves, check, killers, pieces::bishop2, pp );
 		}
 	}
 }
 
 
-void calc_moves_rook( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_rook( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers, pieces::type pi, piece const& pp )
 {
 	for( int cx = -1; cx <= 1; cx += 2 ) {
 		for( int x = pp.column + cx; x >= 0 && x <= 7; x += cx ) {
 			unsigned char target = p.board[x][pp.row];
 			if( target == pieces::nil ) {
-				add_if_legal( p, c, current_evaluation, moves, check, pi, x, pp.row );
+				add_if_legal( p, c, current_evaluation, moves, check, killers, pi, x, pp.row, target );
 			}
 			else {
 				if( (target >> 4) != c ) {
-					add_if_legal( p, c, current_evaluation, moves, check, pi, x, pp.row );
+					add_if_legal( p, c, current_evaluation, moves, check, killers, pi, x, pp.row, target );
 				}
 				break;
 			}
@@ -277,11 +292,11 @@ void calc_moves_rook( position const& p, color::type c, int const current_evalua
 		for( int y = pp.row + cy; y >= 0 && y <= 7; y += cy ) {
 			unsigned char target = p.board[pp.column][y];
 			if( target == pieces::nil ) {
-					add_if_legal( p, c, current_evaluation, moves, check, pi, pp.column, y );
+				add_if_legal( p, c, current_evaluation, moves, check, killers, pi, pp.column, y, target );
 			}
 			else {
 				if( (target >> 4) != c ) {
-					add_if_legal( p, c, current_evaluation, moves, check, pi, pp.column, y );
+					add_if_legal( p, c, current_evaluation, moves, check, killers, pi, pp.column, y, target );
 				}
 				break;
 			}
@@ -290,64 +305,64 @@ void calc_moves_rook( position const& p, color::type c, int const current_evalua
 }
 
 
-void calc_moves_rooks( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_rooks( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers )
 {
 	{
 		piece const& pp = p.pieces[c][pieces::rook1];
 		if( pp.alive ) {
-			calc_moves_rook( p, c, current_evaluation, moves, check, pieces::rook1, pp );
+			calc_moves_rook( p, c, current_evaluation, moves, check, killers, pieces::rook1, pp );
 		}
 	}
 	{
 		piece const& pp = p.pieces[c][pieces::rook2];
 		if( pp.alive ) {
-			calc_moves_rook( p, c, current_evaluation, moves, check, pieces::rook2, pp );
+			calc_moves_rook( p, c, current_evaluation, moves, check, killers, pieces::rook2, pp );
 		}
 	}
 }
 
 
-void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp, int new_column, int new_row )
+void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers, pieces::type pi, piece const& pp, int new_column, int new_row )
 {
-	int new_target = p.board[new_column][new_row];
-	if( new_target != pieces::nil ) {
-		if( (new_target >> 4) == c ) {
+	int target = p.board[new_column][new_row];
+	if( target != pieces::nil ) {
+		if( (target >> 4) == c ) {
 			return;
 		}
 	}
 
-	add_if_legal( p, c, current_evaluation, moves, check, pi, new_column, new_row );
+	add_if_legal( p, c, current_evaluation, moves, check, killers, pi, new_column, new_row, target );
 }
 
-void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, pieces::type pi, piece const& pp )
+void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers, pieces::type pi, piece const& pp )
 {
 	unsigned long long knights = possible_knight_moves[pp.column + pp.row * 8];
 	unsigned long long knight;
 	while( knights ) {
 		bitscan( knights, knight );
 		knights ^= 1ull << knight;
-		calc_moves_knight( p, c, current_evaluation, moves, check, pi, pp, knight & 0x7, knight >> 3 );
+		calc_moves_knight( p, c, current_evaluation, moves, check, killers, pi, pp, knight & 0x7, knight >> 3 );
 	}
 }
 
 
-void calc_moves_knights( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_knights( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers )
 {
 	{
 		piece const& pp = p.pieces[c][pieces::knight1];
 		if( pp.alive ) {
-			calc_moves_knight( p, c, current_evaluation, moves, check, pieces::knight1, pp );
+			calc_moves_knight( p, c, current_evaluation, moves, check, killers, pieces::knight1, pp );
 		}
 	}
 	{
 		piece const& pp = p.pieces[c][pieces::knight2];
 		if( pp.alive ) {
-			calc_moves_knight( p, c, current_evaluation, moves, check, pieces::knight2, pp );
+			calc_moves_knight( p, c, current_evaluation, moves, check, killers, pieces::knight2, pp );
 		}
 	}
 }
 
-void calc_diagonal_pawn_move( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, unsigned int pi, piece const& pp, unsigned char new_col, unsigned char new_row )
+void calc_diagonal_pawn_move( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers, unsigned int pi, piece const& pp, unsigned char new_col, unsigned char new_row )
 {
 	unsigned char target = p.board[new_col][new_row];
 	if( target == pieces::nil ) {
@@ -403,17 +418,17 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 						break;
 					}
 				}
-				add_if_legal( p, c, current_evaluation, moves, check, pi, new_col, new_row );
+				add_if_legal( p, c, current_evaluation, moves, check, killers, pi, new_col, new_row, p.can_en_passant );
 			}
 		}
 	}
 	else if( (target >> 4) != c ) {
 		// Capture!
-		add_if_legal( p, c, current_evaluation, moves, check, pi, new_col, new_row );
+		add_if_legal( p, c, current_evaluation, moves, check, killers, pi, new_col, new_row, target );
 	}
 }
 
-void calc_moves_pawns( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calc_moves_pawns( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers )
 {
 	for( unsigned int pi = pieces::pawn1; pi <= pieces::pawn8; ++pi ) {
 		piece const& pp = p.pieces[c][pi];
@@ -424,16 +439,16 @@ void calc_moves_pawns( position const& p, color::type c, int const current_evalu
 
 				if( pp.column > 0 ) {
 					unsigned char new_col = pp.column - 1;
-					calc_diagonal_pawn_move( p, c, current_evaluation, moves, check, pi, pp, new_col, new_row );
+					calc_diagonal_pawn_move( p, c, current_evaluation, moves, check, killers, pi, pp, new_col, new_row );
 				}
 				if( pp.column < 7 ) {
 					unsigned char new_col = pp.column + 1;
-					calc_diagonal_pawn_move( p, c, current_evaluation, moves, check, pi, pp, new_col, new_row );
+					calc_diagonal_pawn_move( p, c, current_evaluation, moves, check, killers, pi, pp, new_col, new_row );
 				}
 
 				if( target == pieces::nil ) {
 
-					add_if_legal( p, c, current_evaluation, moves, check, pi, pp.column, new_row );
+					add_if_legal( p, c, current_evaluation, moves, check, killers, pi, pp.column, new_row, target );
 
 					if( pp.row == ( (c == color::white) ? 1 : 6) ) {
 						// Moving two rows from starting row
@@ -441,7 +456,7 @@ void calc_moves_pawns( position const& p, color::type c, int const current_evalu
 
 						unsigned char target = p.board[pp.column][new_row];
 						if( target == pieces::nil ) {
-							add_if_legal( p, c, current_evaluation, moves, check, pi, pp.column, new_row );
+							add_if_legal( p, c, current_evaluation, moves, check, killers, pi, pp.column, new_row, target );
 						}
 					}
 				}
@@ -450,16 +465,16 @@ void calc_moves_pawns( position const& p, color::type c, int const current_evalu
 				// Promoted piece
 				unsigned char promoted = (p.promotions[c] >> (2 * (pi - pieces::pawn1) ) ) & 0x03;
 				if( promoted == promotions::queen ) {
-					calc_moves_queen( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp );
+					calc_moves_queen( p, c, current_evaluation, moves, check, killers, static_cast<pieces::type>(pi), pp );
 				}
 				else if( promoted == promotions::rook ) {
-					calc_moves_rook( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp );
+					calc_moves_rook( p, c, current_evaluation, moves, check, killers, static_cast<pieces::type>(pi), pp );
 				}
 				else if( promoted == promotions::bishop ) {
-					calc_moves_bishop( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp );
+					calc_moves_bishop( p, c, current_evaluation, moves, check, killers, static_cast<pieces::type>(pi), pp );
 				}
 				else {//if( promoted == promotions::knight ) {
-					calc_moves_knight( p, c, current_evaluation, moves, check, static_cast<pieces::type>(pi), pp );
+					calc_moves_knight( p, c, current_evaluation, moves, check, killers, static_cast<pieces::type>(pi), pp );
 				}
 			}
 		}
@@ -467,16 +482,16 @@ void calc_moves_pawns( position const& p, color::type c, int const current_evalu
 }
 }
 
-void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check )
+void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers )
 {
-	calc_moves_king( p, c, current_evaluation, moves, check );
+	calc_moves_king( p, c, current_evaluation, moves, check, killers );
 
 	if( !check.check || !check.multiple() )
 	{
-		calc_moves_pawns( p, c, current_evaluation, moves, check );
-		calc_moves_queen( p, c, current_evaluation, moves, check );
-		calc_moves_rooks( p, c, current_evaluation, moves, check );
-		calc_moves_bishops( p, c, current_evaluation, moves, check );
-		calc_moves_knights( p, c, current_evaluation, moves, check );
+		calc_moves_pawns( p, c, current_evaluation, moves, check, killers );
+		calc_moves_queen( p, c, current_evaluation, moves, check, killers );
+		calc_moves_rooks( p, c, current_evaluation, moves, check, killers );
+		calc_moves_bishops( p, c, current_evaluation, moves, check, killers );
+		calc_moves_knights( p, c, current_evaluation, moves, check, killers );
 	}
 }

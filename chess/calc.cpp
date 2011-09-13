@@ -30,9 +30,15 @@ struct MoveSort {
 		return lhs.evaluation > rhs.evaluation;
 	}
 } moveSort;
+
+struct MoveSort2 {
+	bool operator()( move_info const& lhs, move_info const& rhs ) const {
+		return lhs.sort > rhs.sort;
+	}
+} moveSort2;
 }
 
-
+killer_moves const empty_killers;
 short quiescence_search( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, check_map const& check, color::type c, short alpha, short beta )
 {
 	if( do_abort ) {
@@ -117,8 +123,8 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 	move_info* moves = ctx.move_ptr;
 
 	if( check.check ) {
-		calculate_moves( p, c, current_evaluation, ctx.move_ptr, check );
-		std::sort( moves, ctx.move_ptr, moveSort );
+		calculate_moves( p, c, current_evaluation, ctx.move_ptr, check, empty_killers );
+		std::sort( moves, ctx.move_ptr, moveSort2 );
 	}
 	else {
 		inverse_check_map inverse_check;
@@ -135,7 +141,9 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 			continue;
 		}
 
-		short new_ev = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
+		if( !check.check ) {
+			it->evaluation = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
+		}
 
 		position new_pos = p;
 		bool captured;
@@ -153,13 +161,13 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 			ctx.seen.pos[ctx.seen.root_position + depth] = new_hash;
 
 			if( alpha != old_alpha ) {
-				value = -quiescence_search( depth, ctx, new_pos, new_hash, -new_ev, new_check, static_cast<color::type>(1-c), -alpha-1, -alpha );
+				value = -quiescence_search( depth, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -alpha-1, -alpha );
 				if( value > alpha && value < beta ) {
-					value = -quiescence_search( depth, ctx, new_pos, new_hash, -new_ev, new_check, static_cast<color::type>(1-c), -beta, -alpha );
+					value = -quiescence_search( depth, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
 				}
 			}
 			else {
-				value = -quiescence_search( depth, ctx, new_pos, new_hash, -new_ev, new_check, static_cast<color::type>(1-c), -beta, -alpha );
+				value = -quiescence_search( depth, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
 			}
 		}
 		if( value > alpha ) {
@@ -242,7 +250,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 			return result::loss + depth - 1;
 		}
 		else {
-			calculate_moves( p, c, current_evaluation, ctx.move_ptr, check );
+			calculate_moves( p, c, current_evaluation, ctx.move_ptr, check, empty_killers );
 			if( ctx.move_ptr != moves ) {
 				ctx.move_ptr = moves;
 				return full_eval;
@@ -378,7 +386,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 	}
 
 	move_info* moves = ctx.move_ptr;
-	calculate_moves( p, c, current_evaluation, ctx.move_ptr, check );
+	calculate_moves( p, c, current_evaluation, ctx.move_ptr, check, ctx.killers[c][depth] );
 
 	if( ctx.move_ptr == moves ) {
 		if( best_pv ) {
@@ -395,9 +403,9 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 
 	++depth;
 
-	std::sort( moves, ctx.move_ptr, moveSort );
+	std::sort( moves, ctx.move_ptr, moveSort2 );
 
-	for( move_info const* it = moves; it != ctx.move_ptr; ++it ) {
+	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
 		if( tt_move.other && tt_move == it->m ) {
 			continue;
 		}
@@ -433,6 +441,10 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 
 			if( alpha >= beta ) {
 				ctx.pv_pool.release(cpv);
+
+				if( !captured ) {
+					ctx.killers[c][depth - 1].add_killer( it->m );
+				}
 				break;
 			}
 			else {
@@ -625,7 +637,7 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 	move_info moves[200];
 	move_info* pm = moves;
 	int current_evaluation = evaluate_fast( p, c );
-	calculate_moves( p, c, current_evaluation, pm, check );
+	calculate_moves( p, c, current_evaluation, pm, check, empty_killers );
 
 	if( moves == pm ) {
 		if( check.check ) {
@@ -665,7 +677,7 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 
 	{
 		pv_entry_pool pool;
-		for( move_info const* it  = moves; it != pm; ++it ) {
+		for( move_info* it  = moves; it != pm; ++it ) {
 			pv_entry* pv = pool.get();
 			pool.append( pv, it->m, pool.get() );
 			// Initial order is random to get some variation into play

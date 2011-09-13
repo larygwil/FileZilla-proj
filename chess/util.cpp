@@ -20,7 +20,7 @@ bool validate_move( position const& p, move const& m, color::type c )
 	move_info moves[200];
 	move_info* pm = moves;
 	int ev = evaluate_fast( p, c );
-	calculate_moves( p, c, ev, pm, check );
+	calculate_moves( p, c, ev, pm, check, killer_moves() );
 
 	for( move_info* it = moves; it != pm; ++it ) {
 		if( it->m == m ) {
@@ -175,7 +175,7 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 	move_info moves[200];
 	move_info* pm = moves;
 	int ev = evaluate_fast( p, c );
-	calculate_moves( p, c, ev, pm, check );
+	calculate_moves( p, c, ev, pm, check, killer_moves() );
 
 	move_info* match = 0;
 

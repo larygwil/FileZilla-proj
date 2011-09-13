@@ -4,15 +4,18 @@
 #include "chess.hpp"
 #include "detect_check.hpp"
 
+class killer_moves;
+
 struct move_info {
 	move m;
 	short evaluation;
+	int sort;
 	position::pawn_structure pawns;
 };
 
 // Calculates all legal moves
 // Returned evaluation is fast_eval
-void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check );
+void calculate_moves( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers );
 
 // Returns all captures
 // Precondition: Own king not in check

@@ -672,7 +672,7 @@ void perft( int depth, position const& p, color::type c, unsigned long long& n )
 
 	check_map check;
 	calc_check_map( p, c, check );
-	calculate_moves( p, c, 0, pm, check );
+	calculate_moves( p, c, 0, pm, check, killer_moves() );
 
 	for( move_info* it = moves; it != pm; ++it ) {
 		position new_pos = p;

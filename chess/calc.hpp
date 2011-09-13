@@ -29,6 +29,24 @@ extern new_best_move_callback default_new_best_move_callback;
 // May modify seen_positions at indexes > root_position
 bool calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long time_remaining, int clock, seen_positions& seen, new_best_move_callback& new_best_cb = default_new_best_move_callback );
 
+class killer_moves
+{
+public:
+	void add_killer( move const& m ) {
+		if( m1 != m ) {
+			m2 = m1;
+			m1 = m;
+		}
+	}
+
+	bool is_killer( move const& m ) const {
+		return m == m1 || m == m2;
+	}
+
+	move m1;
+	move m2;
+};
+
 class context
 {
 public:
@@ -49,6 +67,8 @@ public:
 	move_info* move_ptr;
 
 	seen_positions seen;
+
+	killer_moves killers[2][MAX_DEPTH + 1];
 };
 
 short step( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv, bool last_was_null );
