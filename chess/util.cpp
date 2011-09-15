@@ -447,9 +447,6 @@ void init_board( position& p )
 	p.material[0] = material_values::initial;
 	p.material[1] = p.material[0];
 
-	p.tropism[0] = evaluate_tropism_side( p, color::white );
-	p.tropism[1] = evaluate_tropism_side( p, color::black );
-
 	p.calc_pawn_map();
 	p.evaluate_pawn_structure();
 }
@@ -504,8 +501,6 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 				p.pieces[c][pieces::rook2].special = 0;
 				p.can_en_passant = pieces::nil;
 				capture = false;
-				p.tropism[0] = evaluate_tropism_side( p, color::white );
-				p.tropism[1] = evaluate_tropism_side( p, color::black );
 				return true;
 			}
 			else if( m.target_col == 2 ) {
@@ -520,29 +515,17 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 				p.pieces[c][pieces::rook2].special = 0;
 				p.can_en_passant = pieces::nil;
 				capture = false;
-				p.tropism[0] = evaluate_tropism_side( p, color::white );
-				p.tropism[1] = evaluate_tropism_side( p, color::black );
 				return true;
 			}
 		}
 		p.pieces[c][pieces::rook1].special = 0;
 		p.pieces[c][pieces::rook2].special = 0;
-		p.tropism[c] -= evaluate_tropism_piece( p, c, source, m.source_col, m.source_row );
-		p.tropism[c] += evaluate_tropism_piece( p, c, source, m.target_col, m.target_row );
 	}
 	else if( source == pieces::rook1 ) {
 		pp.special = 0;
-		p.tropism[c] -= evaluate_tropism_piece( p, c, source, m.source_col, m.source_row );
-		p.tropism[c] += evaluate_tropism_piece( p, c, source, m.target_col, m.target_row );
 	}
 	else if( source == pieces::rook2 ) {
 		pp.special = 0;
-		p.tropism[c] -= evaluate_tropism_piece( p, c, source, m.source_col, m.source_row );
-		p.tropism[c] += evaluate_tropism_piece( p, c, source, m.target_col, m.target_row );
-	}
-	else {
-		p.tropism[c] -= evaluate_tropism_piece( p, c, source, m.source_col, m.source_row );
-		p.tropism[c] += evaluate_tropism_piece( p, c, source, m.target_col, m.target_row );
 	}
 
 	bool const is_pawn = source >= pieces::pawn1 && source <= pieces::pawn8 && !pp.special;
@@ -587,8 +570,6 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 		cp.alive = false;
 		cp.special = false;
 
-		p.tropism[1-c] -= evaluate_tropism_piece( p, static_cast<color::type>(1-c), source, m.target_col, m.target_row );
-
 		capture = true;
 	}
 	else if( is_pawn && p.pieces[c][source].column != m.target_col ) {
@@ -609,8 +590,6 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 		p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.source_row );
 		pawn_capture = true;
 		p.material[1-c] -= material_values::pawn;
-
-		p.tropism[1-c] -= evaluate_tropism_piece( p, static_cast<color::type>(1-c), source, m.target_col, m.source_row );
 
 		capture = true;
 	}
@@ -660,10 +639,6 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 		p.pawns.eval = pawn_eval;
 	}
 
-	if( source == pieces::king ) {
-		p.tropism[1-c] = evaluate_tropism_side( p, static_cast<color::type>(1-c) );
-	}
-
 	return true;
 }
 
@@ -702,8 +677,6 @@ bool apply_move( position& p, move_info const& mi, color::type c, bool& capture 
 				p.pieces[c][pieces::rook2].special = 0;
 				p.can_en_passant = pieces::nil;
 				capture = false;
-				p.tropism[0] = evaluate_tropism_side( p, color::white );
-				p.tropism[1] = evaluate_tropism_side( p, color::black );
 				return true;
 			}
 			else if( m.target_col == 2 ) {
@@ -718,8 +691,6 @@ bool apply_move( position& p, move_info const& mi, color::type c, bool& capture 
 				p.pieces[c][pieces::rook2].special = 0;
 				p.can_en_passant = pieces::nil;
 				capture = false;
-				p.tropism[0] = evaluate_tropism_side( p, color::white );
-				p.tropism[1] = evaluate_tropism_side( p, color::black );
 				return true;
 			}
 		}
@@ -728,17 +699,9 @@ bool apply_move( position& p, move_info const& mi, color::type c, bool& capture 
 	}
 	else if( source == pieces::rook1 ) {
 		pp.special = 0;
-		p.tropism[c] -= evaluate_tropism_piece( p, c, source, m.source_col, m.source_row );
-		p.tropism[c] += evaluate_tropism_piece( p, c, source, m.target_col, m.target_row );
 	}
 	else if( source == pieces::rook2 ) {
 		pp.special = 0;
-		p.tropism[c] -= evaluate_tropism_piece( p, c, source, m.source_col, m.source_row );
-		p.tropism[c] += evaluate_tropism_piece( p, c, source, m.target_col, m.target_row );
-	}
-	else {
-		p.tropism[c] -= evaluate_tropism_piece( p, c, source, m.source_col, m.source_row );
-		p.tropism[c] += evaluate_tropism_piece( p, c, source, m.target_col, m.target_row );
 	}
 
 	bool const is_pawn = source >= pieces::pawn1 && source <= pieces::pawn8 && !pp.special;
@@ -757,8 +720,6 @@ bool apply_move( position& p, move_info const& mi, color::type c, bool& capture 
 		cp.alive = false;
 		cp.special = false;
 
-		p.tropism[1-c] -= evaluate_tropism_piece( p, static_cast<color::type>(1-c), source, m.target_col, m.target_row );
-
 		capture = true;
 	}
 	else if( is_pawn && p.pieces[c][source].column != m.target_col ) {
@@ -776,8 +737,6 @@ bool apply_move( position& p, move_info const& mi, color::type c, bool& capture 
 		p.board[m.target_col][m.source_row] = pieces::nil;
 
 		p.material[1-c] -= material_values::pawn;
-
-		p.tropism[1-c] -= evaluate_tropism_piece( p, static_cast<color::type>(1-c), source, m.target_col, m.source_row );
 
 		capture = true;
 	}
@@ -811,10 +770,6 @@ bool apply_move( position& p, move_info const& mi, color::type c, bool& capture 
 
 	pp.column = m.target_col;
 	pp.row = m.target_row;
-
-	if( source == pieces::king ) {
-		p.tropism[1-c] = evaluate_tropism_side( p, static_cast<color::type>(1-c) );
-	}
 
 	return true;
 }

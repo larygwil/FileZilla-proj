@@ -25,8 +25,4 @@ enum type {
 
 short get_material_value( position const& p, color::type c, int pi );
 
-short evaluate_tropism_side( position const& p, color::type c );
-
-short evaluate_tropism_piece( position const& p, color::type c, int pi, int col, int row );
-
 #endif

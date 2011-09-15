@@ -19,6 +19,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "calc.hpp"
 #include "eval.hpp"
 #include "hash.hpp"
+#include "mobility.hpp"
 #include "moves.hpp"
 #include "util.hpp"
 #include "pawn_structure_hash_table.hpp"
@@ -90,6 +91,11 @@ void auto_play()
 		apply_move( p, m, c, captured );
 		int ev = evaluate_fast( p, color::white );
 		std::cerr << "Evaluation (for white): " << ev << " centipawns" << std::endl;
+
+		//bitboard bitboards[2];
+		//get_bitboards( p, bitboards );
+			
+		//std::cerr << explain_eval( p, color::white, bitboards );
 
 		c = static_cast<color::type>(1-c);
 
@@ -337,8 +343,13 @@ void xboard_thread::onRun()
 		state.apply( m );
 
 		{
-			int i = evaluate_fast( state.p, state.c );
-			std::cerr << "  ; Current evaluation " << i << " centipawns, forecast " << res << std::endl;
+			int i = evaluate_fast( state.p, static_cast<color::type>(1-state.c) );
+			std::cerr << "  ; Current evaluation: " << i << " centipawns, forecast " << res << std::endl;
+			
+			//bitboard bitboards[2];
+			//get_bitboards( state.p, bitboards );
+			
+			//std::cerr << explain_eval( state.p, static_cast<color::type>(1-state.c), bitboards );
 		}
 	}
 	else {

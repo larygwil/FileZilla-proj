@@ -86,8 +86,6 @@ struct position
 	} pawns;
 
 	short material[2];
-	short tropism[2];
-
 };
 
 

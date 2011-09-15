@@ -26,8 +26,8 @@ unsigned char const pawn_values[2][8][8] =
 			{ 0, 100, 102, 103, 104, 106, 145, 0 },
 			{ 0, 100, 102, 105, 108, 112, 150, 0 },
 			{ 0, 100, 102, 110, 117, 125, 155, 0 },
-			{ 0,  80, 102, 120, 127, 140, 160, 0 },
-			{ 0,  80, 102, 120, 127, 140, 160, 0 },
+			{ 0,  80, 105, 120, 127, 140, 160, 0 },
+			{ 0,  80, 105, 120, 127, 140, 160, 0 },
 			{ 0, 100, 102, 110, 117, 125, 155, 0 },
 			{ 0, 100, 102, 105, 108, 112, 150, 0 },
 			{ 0, 100, 102, 103, 104, 106, 145, 0 }
@@ -36,8 +36,8 @@ unsigned char const pawn_values[2][8][8] =
 			{ 0, 145, 106, 104, 103, 102, 100, 0 },
 			{ 0, 150, 112, 108, 105, 102, 100, 0 },
 			{ 0, 155, 125, 117, 110, 102, 100, 0 },
-			{ 0, 160, 140, 127, 120, 102,  80, 0 },
-			{ 0, 160, 140, 127, 120, 102,  80, 0 },
+			{ 0, 160, 140, 127, 120, 105,  80, 0 },
+			{ 0, 160, 140, 127, 120, 105,  80, 0 },
 			{ 0, 155, 125, 117, 110, 102, 100, 0 },
 			{ 0, 150, 112, 108, 105, 102, 100, 0 },
 			{ 0, 145, 106, 104, 103, 102, 100, 0 }
@@ -116,26 +116,27 @@ signed short const knight_values[2][8][8] = {
 	}
 };
 
+signed short const b = material_values::bishop;
 signed short const bishop_values[2][8][8] = {
 	{
-		{ 300, 310, 310, 310, 310, 310, 310, 300 },
-		{ 310, 325, 330, 320, 325, 320, 320, 310 },
-		{ 310, 320, 330, 330, 325, 325, 320, 310 },
-		{ 310, 320, 330, 330, 330, 330, 320, 310 },
-		{ 310, 320, 330, 330, 330, 330, 320, 310 },
-		{ 310, 320, 330, 330, 325, 325, 320, 310 },
-		{ 310, 325, 330, 320, 325, 320, 320, 310 },
-		{ 300, 310, 310, 310, 310, 310, 310, 300 }
+		{ b-10, b   , b+3 , b+5 , b+ 5, b+3 , b   , b   },
+		{ b-9 , b+10, b+6 , b+10, b+10, b+6 , b+10, b   },
+		{ b-7 , b+5 , b+15, b+12, b+12, b+15, b+5 , b+2 },
+		{ b-5 , b+10, b+12, b+20, b+20, b+12, b+10, b+5 },
+		{ b-5 , b+10, b+12, b+20, b+20, b+12, b+10, b+5 },
+		{ b-7 , b+5 , b+15, b+12, b+12, b+15, b+5 , b+2 },
+		{ b-9 , b+10, b+6 , b+10, b+10, b+6 , b+10, b   },
+		{ b-10, b   , b+3 , b+5 , b+ 5, b+3 , b   , b   }
 	},
 	{
-		{ 300, 310, 310, 310, 310, 310, 310, 300 },
-		{ 310, 320, 320, 325, 320, 330, 325, 310 },
-		{ 310, 320, 325, 325, 330, 330, 320, 310 },
-		{ 310, 320, 330, 330, 330, 330, 320, 310 },
-		{ 310, 320, 330, 330, 330, 330, 320, 310 },
-		{ 310, 320, 325, 325, 330, 330, 320, 310 },
-		{ 310, 320, 320, 325, 320, 330, 325, 310 },
-		{ 300, 310, 310, 310, 310, 310, 310, 300 }
+		{ b  , b   , b+3 , b+5 , b+ 5, b+3 , b   , b-10 },
+		{ b  , b+10, b+6 , b+10, b+10, b+6 , b+10, b-9  },
+		{ b+2, b+5 , b+15, b+12, b+12, b+15, b+5 , b-7  },
+		{ b+5, b+10, b+12, b+20, b+20, b+12, b+10, b-5  },
+		{ b+5, b+10, b+12, b+20, b+20, b+12, b+10, b-5  },
+		{ b+2, b+5 , b+15, b+12, b+12, b+15, b+5 , b-7  },
+		{ b  , b+10, b+6 , b+10, b+10, b+6 , b+10, b-9  },
+		{ b  , b   , b+3 , b+5 , b+ 5, b+3 , b   , b-10 }
 	}
 };
 
@@ -960,90 +961,6 @@ short evaluate_pawn_shield( position const& p, color::type c )
 	return ev;
 }
 
-
-
-namespace {
-static unsigned char const distance_1d[8][8] = {
-	{ 0, 1, 2, 3, 4, 5, 6, 7 },
-	{ 1, 0, 1, 2, 3, 4, 5, 6 },
-	{ 2, 1, 0, 1, 2, 3, 4, 5 },
-	{ 3, 2, 1, 0, 1, 2, 3, 4 },
-	{ 4, 3, 2, 1, 0, 1, 2, 3 },
-	{ 5, 4, 3, 2, 1, 0, 1, 2 },
-	{ 6, 5, 4, 3, 2, 1, 0, 1 },
-	{ 7, 6, 5, 4, 3, 2, 1, 0 }
-};
-
-static unsigned char const tropism_min[8][8] = {
-	{ 7, 6, 5, 4, 3, 2, 1, 0 },
-	{ 6, 6, 5, 4, 3, 2, 1, 0 },
-	{ 5, 5, 5, 4, 3, 2, 1, 0 },
-	{ 4, 4, 4, 4, 3, 2, 1, 0 },
-	{ 3, 3, 3, 3, 3, 2, 1, 0 },
-	{ 2, 2, 2, 2, 2, 2, 1, 0 },
-	{ 1, 1, 1, 1, 1, 1, 1, 0 },
-	{ 0, 0, 0, 0, 0, 0, 0, 0 }
-};
-}
-
-
-static inline unsigned char tropism( unsigned char col1, unsigned char row1, unsigned char col2, unsigned char row2 ) {
-	return tropism_min[distance_1d[col1][col2]][ distance_1d[row1][row2]];
-}
-
-short evaluate_tropism_side( position const& p, color::type c )
-{
-	short ev = 0;
-
-	piece const& kp = p.pieces[1-c][pieces::king];
-
-	for( unsigned int i = 0; i < 16; ++i ) {
-		piece const& pp = p.pieces[c][i];
-		if( !pp.alive ) {
-			continue;
-		}
-
-		// FAST version of
-		// 7 - std::max( abs(static_cast<signed char>(pp.column) - kp.column), abs(static_cast<signed char>(pp.row) - kp.row) );
-		int dist = tropism( pp.column, pp.row, kp.column, kp.row );
-
-		ev += dist;
-	}
-
-	return ev;
-}
-
-short evaluate_tropism_piece( position const& p, color::type c, int /*pi*/, int col, int row )
-{
-	piece const& kp = p.pieces[1-c][pieces::king];
-
-	// FAST version of
-	// 7 - std::max( abs(static_cast<signed char>(pp.column) - kp.column), abs(static_cast<signed char>(pp.row) - kp.row) );
-	return tropism( col, row, kp.column, kp.row );
-}
-
-short evaluate_tropism( position const& p, color::type c )
-{
-	short own = p.tropism[c];
-	short other = p.tropism[1-c];
-
-	short ev = own - other;
-
-#if 0
-	if( own != evaluate_tropism_side( p, c ) ) {
-		std::cerr << c << " " << own << " " << evaluate_tropism_side( p, c ) << std::endl;
-		exit(1);
-	}
-	if( other != evaluate_tropism_side( p, static_cast<color::type>(1-c) ) ) {
-		std::cerr << c << " " << own << " " << evaluate_tropism_side( p, static_cast<color::type>(1-c) ) << std::endl;
-		exit(1);
-	}
-#endif
-
-	return ev;
-}
-
-
 short evaluate_full( position const& p, color::type c )
 {
 	short eval = evaluate_fast( p, c );
@@ -1052,37 +969,15 @@ short evaluate_full( position const& p, color::type c )
 }
 
 
-short evaluate_rooks_on_open_files( position const& p, color::type c, bitboard const* bitboards )
-{
-	short ev = 0;
-
-	unsigned long long rooks = bitboards[c].rooks;
-
-	unsigned long long rook;
-	while( rooks ) {
-		bitscan( rooks, rook );
-		rooks ^= 1ull << rook;
-
-		unsigned long long file = 0x0101010101010101ull << (rook % 8);
-		if( !(bitboards[c].pawns & file) ) {
-			if( bitboards[1-c].pawns & file ) {
-				ev += static_cast<short>(popcount(bitboards[c].pawns)) * 3;
-			}
-			else {
-				ev += static_cast<short>(popcount(bitboards[c].pawns)) * 6;
-			}
-		}
-	}
-
-	return ev;
-}
-
-
 short evaluate_full( position const& p, color::type c, short eval_fast )
 {
 	eval_fast += evaluate_pawn_shield( p, c );
-	eval_fast += evaluate_tropism( p, c );
 
+	bitboard bitboards[2];
+	get_bitboards( p, bitboards );
+
+	eval_fast += evaluate_mobility( p, c, bitboards );
+	
 	// Adjust score based on material. The basic idea is that,
 	// given two positions with equal, non-zero score,
 	// the position having fewer material is better.
@@ -1093,21 +988,6 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 	else if( eval_fast < 0 ) {
 		eval_fast -= v;
 	}
-
-	bitboard bitboards[2];
-	get_bitboards( p, bitboards );
-
-	short mobility = 0;
-	short pin = 0;
-
-	evaluate_mobility( p, c, bitboards, mobility, pin );
-	mobility /= 2;
-
-	eval_fast += mobility;
-	eval_fast += pin;
-
-	eval_fast += evaluate_rooks_on_open_files( p, c, bitboards );
-	eval_fast -= evaluate_rooks_on_open_files( p, static_cast<color::type>(1-c), bitboards );
 
 	return eval_fast;
 }

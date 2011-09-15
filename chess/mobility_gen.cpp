@@ -182,5 +182,39 @@ int main()
 	}
 
 
+	{
+		std::cout << "short proximity[64][64] = {" << std::endl;
+
+		for( int target = 0; target < 64; ++target ) {
+			std::cout << "\t{" << std::endl;
+			for( unsigned int source = 0; source < 64; ++source ) {
+				std::cout << "\t\t";
+
+				short v = 0;
+
+				int source_col = source % 8;
+				int source_row = source / 8;
+				int target_col = target % 8;
+				int target_row = target / 8;
+
+				v = 7 - std::max( abs(source_col - target_col), abs(source_row - target_row) );
+
+				std::cout << std::dec << v;
+
+				if( source != 63 ) {
+					std::cout << ",";
+				}
+				std::cout << std::endl;
+			}
+			if( target == 63 ) {
+				std::cout << "\t}" << std::endl;
+			}
+			else {
+				std::cout << "\t}," << std::endl;
+			}
+		}
+		std::cout << "};" << std::endl;
+	}
+
 	return 0;
 }
