@@ -381,7 +381,9 @@ static void do_evaluate_mobility( position const& p, color::type c, bitboard con
 	evaluate_bishops_mobility( p, c, bitboards, data_self, results_self );
 	evaluate_rooks_mobility( p, c, bitboards, data_self, results_self );
 	evaluate_queens_mobility( p, c, bitboards, data_self, results_self );
-	results_self.center_control += static_cast<short>(popcount(bitboards[c].all_pieces & center_squares));
+	
+	//Piece-square tables already contain this
+	//results_self.center_control += static_cast<short>(popcount(bitboards[c].all_pieces & center_squares));
 
 	eval_data data_other;
 	
@@ -394,7 +396,9 @@ static void do_evaluate_mobility( position const& p, color::type c, bitboard con
 	evaluate_bishops_mobility( p, static_cast<color::type>(1-c), bitboards, data_other, results_other );
 	evaluate_rooks_mobility( p, static_cast<color::type>(1-c), bitboards, data_other, results_other );
 	evaluate_queens_mobility( p, static_cast<color::type>(1-c), bitboards, data_other, results_other );
-	results_other.center_control += static_cast<short>(popcount(bitboards[1-c].all_pieces & center_squares));
+
+	//Piece-square tables already contain this
+	//results_other.center_control += static_cast<short>(popcount(bitboards[1-c].all_pieces & center_squares));
 }
 }
 
