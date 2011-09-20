@@ -843,7 +843,7 @@ void get_bitboards( position const& p, bitboard *bitboards )
 				continue;
 			}
 			if( pp.special ) {
-				unsigned short promoted = (p.promotions[1-c] >> (2 * (i - pieces::pawn1) ) ) & 0x03;
+				unsigned short promoted = (p.promotions[c] >> (2 * (i - pieces::pawn1) ) ) & 0x03;
 				if( promoted == promotions::queen ) {
 					bitboards[c].queens |= 1ull << (pp.column + pp.row * 8);
 				}
@@ -900,7 +900,7 @@ void get_bitboards( position const& p, bitboard *bitboards )
 		}
 
 		{
-			piece const& pp = p.pieces[c][pieces::bishop1];
+			piece const& pp = p.pieces[c][pieces::bishop2];
 			if( pp.alive ) {
 				bitboards[c].bishops |= 1ull << (pp.column + pp.row * 8);
 			}
