@@ -58,6 +58,20 @@ enum type {
 }
 
 
+struct bitboard
+{
+	unsigned long long all_pieces;
+	unsigned long long pawns;
+	unsigned long long knights;
+	unsigned long long bishops;
+	unsigned long long rooks;
+	unsigned long long queens;
+	unsigned long long king;
+
+	mutable unsigned long long pawn_control;
+};
+
+
 struct position
 {
 	// [color][piece]
@@ -86,20 +100,8 @@ struct position
 	} pawns;
 
 	short material[2];
-};
 
-
-struct bitboard
-{
-	unsigned long long all_pieces;
-	unsigned long long pawns;
-	unsigned long long knights;
-	unsigned long long bishops;
-	unsigned long long rooks;
-	unsigned long long queens;
-	unsigned long long king;
-
-	unsigned long long pawn_control;
+	bitboard bitboards[2];
 };
 
 

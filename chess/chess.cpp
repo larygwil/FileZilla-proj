@@ -92,10 +92,7 @@ void auto_play()
 		int ev = evaluate_fast( p, color::white );
 		std::cerr << "Evaluation (for white): " << ev << " centipawns" << std::endl;
 
-		//bitboard bitboards[2];
-		//get_bitboards( p, bitboards );
-			
-		//std::cerr << explain_eval( p, color::white, bitboards );
+		//std::cerr << explain_eval( p, color::white, p.bitboards );
 
 		c = static_cast<color::type>(1-c);
 
@@ -346,10 +343,7 @@ void xboard_thread::onRun()
 			int i = evaluate_fast( state.p, static_cast<color::type>(1-state.c) );
 			std::cerr << "  ; Current evaluation: " << i << " centipawns, forecast " << res << std::endl;
 			
-			//bitboard bitboards[2];
-			//get_bitboards( state.p, bitboards );
-			
-			//std::cerr << explain_eval( state.p, static_cast<color::type>(1-state.c), bitboards );
+			//std::cerr << explain_eval( state.p, static_cast<color::type>(1-state.c), p.bitboards );
 		}
 	}
 	else {
