@@ -27,6 +27,18 @@ enum type {
 };
 }
 
+namespace pieces2 {
+enum type {
+	none,
+	pawn,
+	knight,
+	bishop,
+	rook,
+	queen,
+	king
+};
+}
+
 namespace promotions {
 enum type {
 	queen,
@@ -80,21 +92,29 @@ struct position
 	// 2 bit for every pawn.
 	unsigned short promotions[2];
 
-	// pieces::nil if en-passant not possible.
-	// Otherwise piece of last-moved player that can be en-passanted in
-	// lower 4 bits, 5th bit color of pawn that is en-passantable.
+	// Bit 0: can castle kingside
+	// Bit 1: can castle queenside
+	// Bit 2: has castled
+	short castle[2];
+
+	// 0 if en-passant not possible.
+	// Otherwise board index of last-moved pawn that can be en-passanted in
+	// lower 6 bits, 7th bit color of pawn that is en-passantable.
 	unsigned char can_en_passant;
 
 	// board[column][row] as piece indexes in lower 4 bits, color in 5th bit.
 	// nil if square is empty.
+	// FIXME: remove
 	unsigned char board[8][8];
 
-	void calc_pawn_map();
+	// board[column][row] as piece type in lower 4 bits, color in 5th bit.
+	// nil if square is empty.
+	unsigned char board2[8][8];
 
-	void evaluate_pawn_structure();
+	// Call after initializing bitboards
+	void init_pawn_structure();
 
 	struct pawn_structure {
-		unsigned long long map[2];
 		unsigned short eval; // From white's point of view
 		unsigned long long hash;
 	} pawns;
@@ -105,21 +125,37 @@ struct position
 };
 
 
+namespace move_flags {
+enum type {
+	valid = 1,
+	enpassant = 2,
+	promotion = 4,
+	castle = 8
+};
+}
+
+
 struct move
 {
 	move()
-		: source_col()
+		: flags()
+		, piece()
+		, source_col()
 		, source_row()
 		, target_col()
 		, target_row()
-		, other()
+		, captured_piece()
+		, promotion()
 	{}
 
+	unsigned char flags;
+	pieces2::type piece;
 	unsigned char source_col;
 	unsigned char source_row;
 	unsigned char target_col;
 	unsigned char target_row;
-	unsigned char other;
+	pieces2::type captured_piece;
+	unsigned char promotion;
 
 	bool operator!=( move const& rhs ) const {
 		return source_col != rhs.source_col || source_row != rhs.source_row || target_col != rhs.target_col || target_row != rhs.target_row;

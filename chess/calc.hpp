@@ -32,6 +32,8 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 class killer_moves
 {
 public:
+	killer_moves() {}
+
 	void add_killer( move const& m ) {
 		if( m1 != m ) {
 			m2 = m1;

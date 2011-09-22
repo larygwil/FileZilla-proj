@@ -45,13 +45,13 @@
  * - 64 bit zobrist hash of position
  * - 16 bit score
  * -  2 bit node type
- * - 12 bit move (row/col for source and target, 4 * 3 bit)
+ * - 25 bit move (row/col for source and target: 4 * 3 bit, piece: 3 bit, flags: 5 bit, capture: 3 bit, promotion: 2 bit)
  * -  8 bit remaining depth
  * -  8 bit age
- * Total: 110 bits.
+ * Total: 123 bits.
  *
  * To avoid expensive calculations, we need to at the very least byte-align
- * the entries, so we have 112 bits. My CPUs (all of which are Intel Core i7)
+ * the entries, so we have 128 bits. My CPUs (all of which are Intel Core i7)
  * have cache lines of 64 bytes, so we could fit 4 entries in it.
  *
  * If we were to spare a few more bits, we could even squeeze another position

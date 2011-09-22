@@ -51,7 +51,7 @@ enum type {
 	age = 0,
 	depth = 8,
 	move = 16,
-	node_type = 32,
+	node_type = 46,
 	score = 48
 };
 }
@@ -60,7 +60,7 @@ namespace field_masks {
 enum type {
 	age = 0xff,
 	depth = 0xff,
-	move = 0x1fff,
+	move = 0x1ffffff,
 	node_type = 0x3,
 	score = 0xffff
 };
@@ -78,11 +78,14 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, sh
 	uint64_t v = static_cast<unsigned long long>(clock) << field_shifts::age;
 	v |= static_cast<unsigned long long>(remaining_depth) << field_shifts::depth;
 	v |= (
-				(static_cast<unsigned long long>(best_move.source_col)) |
-				(static_cast<unsigned long long>(best_move.source_row) << 3) |
-				(static_cast<unsigned long long>(best_move.target_col) << 6) |
-				(static_cast<unsigned long long>(best_move.target_row) << 9) |
-				(static_cast<unsigned long long>(best_move.other) << 12 ) ) << field_shifts::move;
+				(static_cast<unsigned long long>(best_move.flags) ) |
+				(static_cast<unsigned long long>(best_move.piece) << 5 ) |
+				(static_cast<unsigned long long>(best_move.source_col) << 8) |
+				(static_cast<unsigned long long>(best_move.source_row) << 11) |
+				(static_cast<unsigned long long>(best_move.target_col) << 14) |
+				(static_cast<unsigned long long>(best_move.target_row) << 17) |
+				(static_cast<unsigned long long>(best_move.captured_piece) << 20) |
+				(static_cast<unsigned long long>(best_move.promotion) << 23) ) << field_shifts::move;
 
 	if( eval >= beta ) {
 		v |= static_cast<unsigned long long>(score_type::lower_bound) << field_shifts::node_type;
@@ -160,11 +163,14 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 			continue;
 		}
 
-		best_move.source_col = (v >> field_shifts::move) & 0x07;
-		best_move.source_row = (v >> (field_shifts::move + 3)) & 0x07;
-		best_move.target_col = (v >> (field_shifts::move + 6)) & 0x07;
-		best_move.target_row = (v >> (field_shifts::move + 9)) & 0x07;
-		best_move.other = (v >> (field_shifts::move + 12)) & 0x01;
+		best_move.flags = (v >> (field_shifts::move)) & 0x1F;
+		best_move.piece = static_cast<pieces2::type>((v >> (field_shifts::move + 5)) & 0x07);
+		best_move.source_col = (v >> (field_shifts::move + 8)) & 0x07;
+		best_move.source_row = (v >> (field_shifts::move + 11)) & 0x07;
+		best_move.target_col = (v >> (field_shifts::move + 14)) & 0x07;
+		best_move.target_row = (v >> (field_shifts::move + 17)) & 0x07;
+		best_move.captured_piece = static_cast<pieces2::type>((v >> (field_shifts::move + 20)) & 0x07);
+		best_move.promotion = (v >> (field_shifts::move + 23)) & 0x03;
 
 		unsigned char depth = (v >> field_shifts::depth) & field_masks::depth;
 
@@ -185,7 +191,7 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 		}
 
 #if USE_STATISTICS
-		if( best_move.other ) {
+		if( best_move.flags & move_flags::valid ) {
 			++stats_.best_move;
 		}
 		else {
@@ -200,7 +206,7 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 	++stats_.misses;
 #endif
 
-	best_move.other = 0;
+	best_move.flags = 0;
 	return score_type::none;
 }
 

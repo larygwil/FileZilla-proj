@@ -68,83 +68,34 @@ extern unsigned long long const possible_knight_moves[64] = {
 	0x0020400000000000ull
 };
 
-bool detect_check_knight( position const& p, color::type c, int king_col, int king_row, piece const& pp, unsigned char pi )
-{
-	signed char cx = king_col - pp.column;
-	if( !cx ) {
-		return false;
-	}
-
-	signed char cy = king_row - pp.row;
-	if( !cy ) {
-		return false;
-	}
-
-	signed sum;
-	if( cx > 0 ) {
-		sum = cx;
-	}
-	else {
-		sum = -cx;
-	}
-	if( cy > 0 ) {
-		sum += cy;
-	}
-	else {
-		sum -= cy;
-	}
-	if( sum != 3 ) {
-		return false;
-	}
-
-	return true;
-}
-
 bool detect_check_knights( position const& p, color::type c, int king_col, int king_row )
 {
 	unsigned long long knights = possible_knight_moves[ king_col + king_row * 8 ];
+	knights &= p.bitboards[1-c].knights;
 
-	bool ret = false;
-	{
-		piece const& pp = p.pieces[1-c][pieces::knight1];
-		if( pp.alive ) {
-			ret |= knights & (1ull << (pp.column + pp.row * 8) );
-		}
-	}
-	{
-		piece const& pp = p.pieces[1-c][pieces::knight2];
-		if( pp.alive ) {
-			ret |= knights & (1ull << (pp.column + pp.row * 8) );
-		}
-	}
-	for( unsigned char pi = pieces::pawn1; pi <= pieces::pawn8; ++pi ) {
-		piece const& pp = p.pieces[1-c][pi];
-		if( !pp.alive || !pp.special ) {
-			continue;
-		}
-		unsigned short promoted = (p.promotions[1-c] >> (2 * (pi - pieces::pawn1) ) ) & 0x03;
-		if( promoted == promotions::knight ) {
-			ret |= knights & (1ull << (pp.column + pp.row * 8) );
-		}
-	}
-
-	return ret;
+	return knights != 0;
 }
 
-bool detect_check_from_queen( position const& p, color::type c, unsigned char king_col, unsigned char king_row, piece const& pp, unsigned char ignore_col, unsigned char ignore_row )
+bool detect_check_from_queen( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row, unsigned long long queen )
 {
-	signed char cx = static_cast<signed char>(king_col) - pp.column;
-	signed char cy = static_cast<signed char>(king_row) - pp.row;
+	signed char queen_col = static_cast<signed char>(queen % 8);
+	signed char queen_row = static_cast<signed char>(queen / 8);
+
+	signed char cx = static_cast<signed char>(king_col) - queen_col;
+	signed char cy = static_cast<signed char>(king_row) - queen_row;
+	if( !cx && !cy ) {
+		return false;
+	}
 
 	if( !cx ) {
 		cy = (cy > 0) ? 1 : -1;
 
 		unsigned char row;
-		for( row = pp.row + cy; row != king_row; row += cy ) {
+		for( row = queen_row + cy; row != king_row; row += cy ) {
 			if( king_col == ignore_col && row == ignore_row ) {
 				continue;
 			}
-			if( p.board[king_col][row] != pieces::nil ) {
+			if( p.board2[king_col][row] ) {
 				break;
 			}
 		}
@@ -156,11 +107,11 @@ bool detect_check_from_queen( position const& p, color::type c, unsigned char ki
 		cx = (cx > 0) ? 1 : -1;
 
 		unsigned char col;
-		for( col = pp.column + cx; col != king_col; col += cx ) {
+		for( col = queen_col + cx; col != king_col; col += cx ) {
 			if( col == ignore_col && king_row == ignore_row ) {
 				continue;
 			}
-			if( p.board[col][king_row] != pieces::nil ) {
+			if( p.board2[col][king_row] ) {
 				break;
 			}
 		}
@@ -174,11 +125,11 @@ bool detect_check_from_queen( position const& p, color::type c, unsigned char ki
 
 		unsigned char row;
 		unsigned char col;
-		for( col = pp.column + cx, row = pp.row + cy; col != king_col; col += cx, row += cy ) {
+		for( col = queen_col + cx, row = queen_row + cy; col != king_col; col += cx, row += cy ) {
 			if( col == ignore_col && row == ignore_row ) {
 				continue;
 			}
-			if( p.board[col][row] != pieces::nil ) {
+			if( p.board2[col][row] ) {
 				break;
 			}
 		}
@@ -193,29 +144,41 @@ bool detect_check_from_queen( position const& p, color::type c, unsigned char ki
 
 bool detect_check_from_queen( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
 {
-	piece const& pp = p.pieces[1-c][pieces::queen];
-	if( pp.alive ) {
-		return detect_check_from_queen( p, c, king_col, king_row, pp, ignore_col, ignore_row );
+	unsigned long long queens = p.bitboards[1-c].queens;
+	while( queens ) {
+		unsigned long long queen;
+		bitscan( queens, queen );
+		queens ^= 1ull << queen;
+
+		if( detect_check_from_queen( p, c, king_col, king_row, ignore_col, ignore_row, queen ) ) {
+			return true;
+		}
 	}
 
 	return false;
 }
 
 
-bool detect_check_from_rook( position const& p, color::type c, unsigned char king_col, unsigned char king_row, piece const& pp, unsigned char ignore_col, unsigned char ignore_row )
+bool detect_check_from_rook( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row, unsigned long long rook )
 {
-	signed char cx = static_cast<signed char>(king_col) - pp.column;
-	signed char cy = static_cast<signed char>(king_row) - pp.row;
+	signed char rook_col = static_cast<signed char>(rook % 8);
+	signed char rook_row = static_cast<signed char>(rook / 8);
+
+	signed char cx = static_cast<signed char>(king_col) - rook_col;
+	signed char cy = static_cast<signed char>(king_row) - rook_row;
+	if( !cx && !cy ) {
+		return false;
+	}
 
 	if( !cx ) {
 		cy = (cy > 0) ? 1 : -1;
 
 		unsigned char row;
-		for( row = pp.row + cy; row != king_row; row += cy ) {
+		for( row = rook_row + cy; row != king_row; row += cy ) {
 			if( king_col == ignore_col && row == ignore_row ) {
 				continue;
 			}
-			if( p.board[king_col][row] != pieces::nil ) {
+			if( p.board2[king_col][row] ) {
 				break;
 			}
 		}
@@ -227,11 +190,11 @@ bool detect_check_from_rook( position const& p, color::type c, unsigned char kin
 		cx = (cx > 0) ? 1 : -1;
 
 		unsigned char col;
-		for( col = pp.column + cx; col != king_col; col += cx ) {
+		for( col = rook_col + cx; col != king_col; col += cx ) {
 			if( col == ignore_col && king_row == ignore_row ) {
 				continue;
 			}
-			if( p.board[col][king_row] != pieces::nil ) {
+			if( p.board2[col][king_row] ) {
 				break;
 			}
 		}
@@ -246,31 +209,30 @@ bool detect_check_from_rook( position const& p, color::type c, unsigned char kin
 
 bool detect_check_from_rooks( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
 {
-	{
-		piece const& pp = p.pieces[1-c][pieces::rook1];
-		if( pp.alive ) {
-			if( detect_check_from_rook( p, c, king_col, king_row, pp, ignore_col, ignore_row ) ) {
-				return true;
-			}
-		}
-	}
-	{
-		piece const& pp = p.pieces[1-c][pieces::rook2];
-		if( pp.alive ) {
-			if( detect_check_from_rook( p, c, king_col, king_row, pp, ignore_col, ignore_row ) ) {
-				return true;
-			}
+	unsigned long long rooks = p.bitboards[1-c].rooks;
+	while( rooks ) {
+		unsigned long long rook;
+		bitscan( rooks, rook );
+		rooks ^= 1ull << rook;
+
+		if( detect_check_from_rook( p, c, king_col, king_row, ignore_col, ignore_row, rook ) ) {
+			return true;
 		}
 	}
 
 	return false;
 }
 
-
-bool detect_check_from_bishop( position const& p, color::type c, unsigned char king_col, unsigned char king_row, piece const& pp, unsigned char ignore_col, unsigned char ignore_row )
+bool detect_check_from_bishop( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row, unsigned long long bishop )
 {
-	signed char cx = static_cast<signed char>(king_col) - pp.column;
-	signed char cy = static_cast<signed char>(king_row) - pp.row;
+	signed char bishop_col = static_cast<signed char>(bishop % 8);
+	signed char bishop_row = static_cast<signed char>(bishop / 8);
+
+	signed char cx = static_cast<signed char>(king_col) - bishop_col;
+	signed char cy = static_cast<signed char>(king_row) - bishop_row;
+	if( !cx ) {
+		return false;
+	}
 
 	if( cx == cy || cx == -cy ) {
 		cx = (cx > 0) ? 1 : -1;
@@ -278,11 +240,11 @@ bool detect_check_from_bishop( position const& p, color::type c, unsigned char k
 
 		unsigned char row;
 		unsigned char col;
-		for( col = pp.column + cx, row = pp.row + cy; col != king_col; col += cx, row += cy ) {
+		for( col = bishop_col + cx, row = bishop_row + cy; col != king_col; col += cx, row += cy ) {
 			if( col == ignore_col && row == ignore_row ) {
 				continue;
 			}
-			if( p.board[col][row] != pieces::nil ) {
+			if( p.board2[col][row] ) {
 				break;
 			}
 		}
@@ -297,20 +259,14 @@ bool detect_check_from_bishop( position const& p, color::type c, unsigned char k
 
 bool detect_check_from_bishops( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
 {
-	{
-		piece const& pp = p.pieces[1-c][pieces::bishop1];
-		if( pp.alive ) {
-			if( detect_check_from_bishop( p, c, king_col, king_row, pp, ignore_col, ignore_row ) ) {
-				return true;
-			}
-		}
-	}
-	{
-		piece const& pp = p.pieces[1-c][pieces::bishop2];
-		if( pp.alive ) {
-			if( detect_check_from_bishop( p, c, king_col, king_row, pp, ignore_col, ignore_row ) ) {
-				return true;
-			}
+	unsigned long long bishops = p.bitboards[1-c].bishops;
+	while( bishops ) {
+		unsigned long long bishop;
+		bitscan( bishops, bishop );
+		bishops ^= 1ull << bishop;
+
+		if( detect_check_from_bishop( p, c, king_col, king_row, ignore_col, ignore_row, bishop ) ) {
+			return true;
 		}
 	}
 
@@ -318,20 +274,23 @@ bool detect_check_from_bishops( position const& p, color::type c, unsigned char 
 }
 
 
-bool detect_check_from_pawn( position const& p, color::type c, unsigned char king_col, unsigned char king_row, piece const& pp )
+bool detect_check_from_pawn( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned long long pawn )
 {
+	unsigned char pawn_col = static_cast<unsigned char>(pawn % 8);
+	unsigned char pawn_row = static_cast<unsigned char>(pawn / 8);
+
 	if( c == color::white ) {
-		if( pp.row != king_row + 1 ) {
+		if( pawn_row != king_row + 1 ) {
 			return false;
 		}
 	}
 	else {
-		if( pp.row + 1 != king_row ) {
+		if( pawn_row + 1 != king_row ) {
 			return false;
 		}
 	}
 
-	signed char cx = static_cast<signed char>(king_col) - pp.column;
+	signed char cx = static_cast<signed char>(king_col) - pawn_col;
 	if( cx != 1 && cx != -1 ) {
 		return false;
 	}
@@ -341,37 +300,14 @@ bool detect_check_from_pawn( position const& p, color::type c, unsigned char kin
 
 bool detect_check_from_pawns( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
 {
-	for( unsigned char i = pieces::pawn1; i <= pieces::pawn8; ++i ) {
-		piece const& pp = p.pieces[1-c][i];
-		if( pp.alive ) {
-			if( pp.special ) {
-				unsigned char promoted = ( p.promotions[1-c] >> (2 * (i - pieces::pawn1) ) ) & 0x03;
-				switch( promoted ) {
-				case promotions::queen:
-					if( detect_check_from_queen( p, c, king_col, king_row, pp, ignore_col, ignore_row ) ) {
-						return true;
-					}
-					break;
-				case promotions::rook:
-					if( detect_check_from_rook( p, c, king_col, king_row, pp, ignore_col, ignore_row ) ) {
-						return true;
-					}
-					break;
-				case promotions::bishop:
-					if( detect_check_from_bishop( p, c, king_col, king_row, pp, ignore_col, ignore_row ) ) {
-						return true;
-					}
-					break;
-				default:
-					// Knights are handled differently
-					break;
-				}
-			}
-			else {
-				if( detect_check_from_pawn( p, c, king_col, king_row, pp ) ) {
-					return true;
-				}
-			}
+	unsigned long long pawns = p.bitboards[1-c].pawns;
+	while( pawns ) {
+		unsigned long long pawn;
+		bitscan( pawns, pawn );
+		pawns ^= 1ull << pawn;
+
+		if( detect_check_from_pawn( p, c, king_col, king_row, pawn ) ) {
+			return true;
 		}
 	}
 	return false;
@@ -389,8 +325,12 @@ bool detect_check( position const& p, color::type c, unsigned char king_col, uns
 
 bool detect_check( position const& p, color::type c )
 {
-	unsigned char king_col = p.pieces[c][pieces::king].column;
-	unsigned char king_row = p.pieces[c][pieces::king].row;
+	unsigned long long kings = p.bitboards[c].king;
+	unsigned long long king;
+	bitscan( kings, king );
+
+	unsigned char king_col = static_cast<unsigned char>( king % 8 );
+	unsigned char king_row = static_cast<unsigned char>( king / 8 );
 
 	return detect_check( p, c, king_col, king_row, king_col, king_row );
 }
@@ -398,11 +338,10 @@ bool detect_check( position const& p, color::type c )
 
 void calc_check_map_knight( position const& p, color::type c, check_map& map, signed char king_col, signed char king_row, int col, int row )
 {
-	unsigned char index = p.board[col][row];
-	if( index == pieces::nil ) {
+	unsigned char index = p.board2[col][row];
+	if( !index ) {
 		return;
 	}
-
 
 	unsigned char piece_color = (index >> 4) & 0x1;
 	if( piece_color == c ) {
@@ -410,25 +349,10 @@ void calc_check_map_knight( position const& p, color::type c, check_map& map, si
 	}
 
 	// Enemy piece
-	unsigned char pi = index & 0x0f;
+	pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
 
-	bool check = false;
-	if( pi == pieces::knight1 || pi == pieces::knight2 ) {
-		check = true;
-	}
-	else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
-		// Check for promoted queens
-		piece const& pp = p.pieces[1 - c][pi];
-		if( pp.special ) {
-			unsigned short promoted = (p.promotions[1 - c] >> ((pi - pieces::pawn1) * 2) ) & 0x03;
-			if( promoted == promotions::knight ) {
-				check = true;
-			}
-		}
-	}
-
-	if( check ) {
-		unsigned char v = 0x80 | (col << 3) | row;
+	if( pi == pieces2::knight ) {
+		unsigned char v = 0x80 | (row << 3) | col;
 		map.board[col][row] = v;
 
 		if( !map.board[king_col][king_row] ) {
@@ -442,11 +366,14 @@ void calc_check_map_knight( position const& p, color::type c, check_map& map, si
 
 void calc_check_map( position const& p, color::type c, check_map& map )
 {
-	// Only thing this function is missing is a goto 10
 	memset( &map, 0, sizeof(check_map) );
 
-	signed char king_col = p.pieces[c][pieces::king].column;
-	signed char king_row = p.pieces[c][pieces::king].row;
+	unsigned long long kings = p.bitboards[c].king;
+	unsigned long long king;
+	bitscan( kings, king );
+
+	signed char king_col = static_cast<signed char>( king % 8 );
+	signed char king_row = static_cast<signed char>( king / 8 );
 
 	// Check diagonals
 	signed char col, row;
@@ -458,12 +385,12 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 			for( col = king_col + cx, row = king_row + cy;
 				   col >= 0 && col < 8 && row >= 0 && row < 8; col += cx, row += cy ) {
 
-				unsigned char index = p.board[col][row];
-				if( index == pieces::nil ) {
+				unsigned char index = p.board2[col][row];
+				if( !index ) {
 					continue;
 				}
 
-				unsigned char piece_color = (index >> 4) & 0x1;
+				unsigned char piece_color = (index >> 4);
 				if( piece_color == c ) {
 					if( found_own ) {
 						break; // Two own pieces blocking check
@@ -472,23 +399,15 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 					continue;
 				}
 
-				unsigned char pi = index & 0x0f;
+				pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
 
 				// Enemy piece
 				bool check = false;
-				if( pi == pieces::queen || pi == pieces::bishop1 || pi == pieces::bishop2 ) {
+				if( pi == pieces2::queen || pi == pieces2::bishop ) {
 					check = true;
 				}
-				else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
-					// Check for promoted queens
-					piece const& pp = p.pieces[1 - c][pi];
-					if( pp.special ) {
-						unsigned short promoted = (p.promotions[1 - c] >> ((pi - pieces::pawn1) * 2) ) & 0x03;
-						if( promoted == promotions::queen || promoted == promotions::bishop ) {
-							check = true;
-						}
-					}
-					else if( c && static_cast<signed char>(king_row) == (row + 1) ) {
+				else if( pi == pieces2::pawn ) {
+					if( c && static_cast<signed char>(king_row) == (row + 1) ) {
 						// The pawn itself giving chess
 						check = true;
 					}
@@ -500,7 +419,7 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 
 				if( check ) {
 					// Backtrack
-					unsigned char v = 0x80 | (col << 3) | row;
+					unsigned char v = 0x80 | (row << 3) | col;
 					signed char bcol = col;
 					signed char brow = row;
 					for( ; bcol != king_col && brow != king_row; bcol -= cx, brow -= cy ) {
@@ -527,12 +446,12 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 
 		for( col = king_col + cx; col >= 0 && col < 8; col += cx ) {
 
-			unsigned char index = p.board[col][king_row];
-			if( index == pieces::nil ) {
+			unsigned char index = p.board2[col][king_row];
+			if( !index ) {
 				continue;
 			}
 
-			unsigned char piece_color = (index >> 4) & 0x1;
+			unsigned char piece_color = (index >> 4);
 			if( piece_color == c ) {
 				if( found_own ) {
 					break; // Two own pieces blocking check
@@ -541,27 +460,17 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 				continue;
 			}
 
-			unsigned char pi = index & 0x0f;
+			pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
 
 			// Enemy piece
 			bool check = false;
-			if( pi == pieces::queen || pi == pieces::rook1 || pi == pieces::rook2 ) {
+			if( pi == pieces2::queen || pi == pieces2::rook ) {
 				check = true;
 			}
-			else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
-				// Check for promoted queens
-				piece const& pp = p.pieces[1 - c][pi];
-				if( pp.special ) {
-					unsigned short promoted = (p.promotions[1 - c] >> ((pi - pieces::pawn1) * 2) ) & 0x03;
-					if( promoted == promotions::queen || promoted == promotions::rook ) {
-						check = true;
-					}
-				}
-			}
-
+		
 			if( check ) {
 				// Backtrack
-				unsigned char v = 0x80 | (col << 3) | king_row;
+				unsigned char v = 0x80 | (king_row << 3) | col;
 				signed char bcol = col;
 				for( ; bcol != king_col; bcol -= cx ) {
 					map.board[bcol][king_row] = v;
@@ -587,12 +496,12 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 
 		for( row = king_row + cy; row >= 0 && row < 8; row += cy ) {
 
-			unsigned char index = p.board[king_col][row];
-			if( index == pieces::nil ) {
+			unsigned char index = p.board2[king_col][row];
+			if( !index ) {
 				continue;
 			}
 
-			unsigned char piece_color = (index >> 4) & 0x1;
+			unsigned char piece_color = (index >> 4);
 			if( piece_color == c ) {
 				if( found_own ) {
 					break; // Two own pieces blocking check
@@ -601,27 +510,17 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 				continue;
 			}
 
-			unsigned char pi = index & 0x0f;
+			pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
 
 			// Enemy piece
 			bool check = false;
-			if( pi == pieces::queen || pi == pieces::rook1 || pi == pieces::rook2 ) {
+			if( pi == pieces2::queen || pi == pieces2::rook ) {
 				check = true;
 			}
-			else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
-				// Check for promoted queens
-				piece const& pp = p.pieces[1 - c][pi];
-				if( pp.special ) {
-					unsigned short promoted = (p.promotions[1 - c] >> ((pi - pieces::pawn1) * 2) ) & 0x03;
-					if( promoted == promotions::queen || promoted == promotions::rook ) {
-						check = true;
-					}
-				}
-			}
-
+			
 			if( check ) {
 				// Backtrack
-				unsigned char v = 0x80 | (king_col << 3) | row;
+				unsigned char v = 0x80 | (row << 3) | king_col;
 				signed char brow = row;
 				for( ; brow != king_row; brow -= cy ) {
 					map.board[king_col][brow] = v;
@@ -645,7 +544,7 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 	while( knights ) {
 		bitscan( knights, knight );
 		knights ^= 1ull << knight;
-		calc_check_map_knight( p, c, map, king_col, king_row, knight & 0x7, knight >> 3 );
+		calc_check_map_knight( p, c, map, king_col, king_row, static_cast<int>(knight % 8), static_cast<int>(knight / 8) );
 	}
 
 	unsigned char cv = map.board[king_col][king_row];
@@ -655,11 +554,16 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 
 void calc_inverse_check_map( position const& p, color::type c, inverse_check_map& map )
 {
-	// Only thing this function is missing is a goto 10
 	memset( &map, 0, sizeof(inverse_check_map) );
 
-	signed char king_col = p.pieces[1-c][pieces::king].column;
-	signed char king_row = p.pieces[1-c][pieces::king].row;
+	unsigned long long kings = p.bitboards[1-c].king;
+	unsigned long long king;
+	bitscan( kings, king );
+
+	signed char king_col = static_cast<signed char>( king % 8 );
+	signed char king_row = static_cast<signed char>( king / 8 );
+	map.enemy_king_col = static_cast<unsigned char>(king_col);
+	map.enemy_king_row = static_cast<unsigned char>(king_row);
 
 	// Check diagonals
 	signed char col, row;
@@ -672,8 +576,8 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 			for( col = king_col + cx, row = king_row + cy;
 				   col >= 0 && col < 8 && row >= 0 && row < 8; col += cx, row += cy ) {
 
-				unsigned char index = p.board[col][row];
-				if( index == pieces::nil ) {
+				unsigned char index = p.board2[col][row];
+				if( !index ) {
 					if( own_col == 8 ) {
 						map.board[col][row] = 0xc0;
 					}
@@ -693,26 +597,11 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 					continue;
 				}
 
-				unsigned char pi = index & 0x0f;
+				pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
 
-				// Own piece on enemy king ray blocked by one other own piece
-				bool blocked_check = false;
-				if( pi == pieces::queen || pi == pieces::bishop1 || pi == pieces::bishop2 ) {
-					blocked_check = true;
-				}
-				else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
-					// Check for promoted queens
-					piece const& pp = p.pieces[c][pi];
-					if( pp.special ) {
-						unsigned short promoted = (p.promotions[c] >> ((pi - pieces::pawn1) * 2) ) & 0x03;
-						if( promoted == promotions::queen || promoted == promotions::bishop ) {
-							blocked_check = true;
-						}
-					}
-				}
-
-				if( blocked_check ) {
-					unsigned char v = 0x80 | (col << 3) | row;
+				if( pi == pieces2::queen || pi == pieces2::bishop ) {
+					// Own piece on enemy king ray blocked by one other own piece
+					unsigned char v = 0x80 | (row << 3) | col;
 					map.board[own_col][own_row] = v;
 				}
 
@@ -728,8 +617,8 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 
 		for( col = king_col + cx; col >= 0 && col < 8; col += cx ) {
 
-			unsigned char index = p.board[col][king_row];
-			if( index == pieces::nil ) {
+			unsigned char index = p.board2[col][king_row];
+			if( !index ) {
 				if( own_col == 8 ) {
 					map.board[col][king_row] = 0x80;
 				}
@@ -748,26 +637,11 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 				continue;
 			}
 
-			unsigned char pi = index & 0x0f;
+			pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
 
 			// Own piece on enemy king ray blocked by one other own piece
-			bool blocked_check = false;
-			if( pi == pieces::queen || pi == pieces::rook1 || pi == pieces::rook2 ) {
-				blocked_check = true;
-			}
-			else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
-				// Check for promoted queens
-				piece const& pp = p.pieces[c][pi];
-				if( pp.special ) {
-					unsigned short promoted = (p.promotions[c] >> ((pi - pieces::pawn1) * 2) ) & 0x03;
-					if( promoted == promotions::queen || promoted == promotions::rook ) {
-						blocked_check = true;
-					}
-				}
-			}
-
-			if( blocked_check ) {
-				unsigned char v = 0x80 | (col << 3) | king_row;
+			if( pi == pieces2::queen || pi == pieces2::rook ) {
+				unsigned char v = 0x80 | (king_row << 3) | col;
 				map.board[own_col][king_row] = v;
 			}
 
@@ -782,8 +656,8 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 
 		for( row = king_row + cy; row >= 0 && row < 8; row += cy ) {
 
-			unsigned char index = p.board[king_col][row];
-			if( index == pieces::nil ) {
+			unsigned char index = p.board2[king_col][row];
+			if( !index ) {
 				if( own_row == 8 ) {
 					map.board[king_col][row] = 0x80;
 				}
@@ -802,25 +676,10 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 				continue;
 			}
 
-			unsigned char pi = index & 0x0f;
+			pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
 
 			// Own piece on enemy king ray blocked by one other own piece
-			bool blocked_check = false;
-			if( pi == pieces::queen || pi == pieces::rook1 || pi == pieces::rook2 ) {
-				blocked_check = true;
-			}
-			else if( pi >= pieces::pawn1 && pi <= pieces::pawn8 ) {
-				// Check for promoted queens
-				piece const& pp = p.pieces[c][pi];
-				if( pp.special ) {
-					unsigned short promoted = (p.promotions[c] >> ((pi - pieces::pawn1) * 2) ) & 0x03;
-					if( promoted == promotions::queen || promoted == promotions::rook ) {
-						blocked_check = true;
-					}
-				}
-			}
-
-			if( blocked_check ) {
+			if( pi == pieces2::queen || pi == pieces2::rook ) {
 				unsigned char v = 0x80 | (row << 3) | king_col;
 				map.board[king_col][own_row] = v;
 			}

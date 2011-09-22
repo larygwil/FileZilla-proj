@@ -53,7 +53,7 @@ bool pawn_structure_hash_table::lookup( uint64_t key, short& eval ) const
 		return false;
 	}
 
-	eval = static_cast<unsigned long long>(v);
+	eval = static_cast<short>(v);
 
 #if USE_STATISTICS
 	stats_.hits++;

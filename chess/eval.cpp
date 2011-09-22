@@ -543,133 +543,91 @@ unsigned long long const connected_pawns[2][64] = {
 	}
 };
 
-void get_pawn_map( position const& p, unsigned long long pawns[] )
-{
-	pawns[0] = 0;
-	pawns[1] = 0;
-	for( int c = 0; c < 2; ++c ) {
-		for( int i = pieces::pawn1; i <= pieces::pawn8; ++i ) {
-			piece const& pp = p.pieces[c][i];
-			if( pp.alive && !pp.special ) {
-				pawns[c] |= 1ull << (pp.row * 8 + pp.column);
-			}
-		}
-	}
-}
 
-short evaluate_pawn( unsigned long long const* pawns, color::type c, unsigned int index )
+short evaluate_pawn( unsigned long long own_pawns, unsigned long long foreign_pawns, color::type c, unsigned long long pawn )
 {
 	short ret = 0;
-	if( doubled_pawns[c][index] & pawns[c] ) {
+	if( doubled_pawns[c][pawn] & own_pawns ) {
 		ret += special_values::doubled_pawn;
 	}
-	else if( !(passed_pawns[c][index] & pawns[1-c]) ) {
+	else if( !(passed_pawns[c][pawn] & foreign_pawns) ) {
 		ret += special_values::passed_pawn;
 	}
-	if( connected_pawns[c][index] & pawns[c] ) {
+	if( connected_pawns[c][pawn] & own_pawns ) {
 		ret += special_values::connected_pawn;
 	}
 	return ret;
 }
-
-
-short evaluate_pawn( unsigned long long const* pawns, color::type c, unsigned int col, unsigned int row )
-{
-	return evaluate_pawn( pawns, c, row * 8 + col );
 }
 
-
-short evaluate_pawn( position const& p, color::type c, piece const& pp )
-{
-	unsigned long long pawns[2];
-	get_pawn_map( p, pawns );
-
-	return evaluate_pawn( pawns, c, pp.column, pp.row );
-}
-}
-
-short evaluate_pawns( unsigned long long const* pawns, color::type c )
+short evaluate_pawns( unsigned long long white_pawns, unsigned long long black_pawns )
 {
 	short ret = 0;
 
-	unsigned long long p = pawns[c];
+	{
+		unsigned long long pawns = white_pawns;
+		while( pawns ) {
+			unsigned long long pawn;
+			bitscan( pawns, pawn );
+			pawns ^= 1ull << pawn;
 
-	unsigned long long pi;
-	while( p ) {
-		bitscan( p, pi );
-		p ^= 1ull << pi;
-		ret += evaluate_pawn( pawns, c, pi );
+			ret += evaluate_pawn( white_pawns, black_pawns, color::white, pawn );
+		}
+	}
+
+
+	{
+		unsigned long long pawns = black_pawns;
+		while( pawns ) {
+			unsigned long long pawn;
+			bitscan( pawns, pawn );
+			pawns ^= 1ull << pawn;
+
+			ret -= evaluate_pawn( black_pawns, white_pawns, color::black, pawn );
+		}
 	}
 
 	return ret;
 }
 
 
-short evaluate_side( position const& p, color::type c, unsigned long long* pawns )
+short evaluate_side( position const& p, color::type c )
 {
 	short result = 0;
 
-	// To start: Count material in centipawns
-	for( unsigned int i = 0; i < 16; ++i) {
-		piece const& pp = p.pieces[c][i];
-		if( pp.alive ) {
-			switch( i ) {
-			case pieces::pawn1:
-			case pieces::pawn2:
-			case pieces::pawn3:
-			case pieces::pawn4:
-			case pieces::pawn5:
-			case pieces::pawn6:
-			case pieces::pawn7:
-			case pieces::pawn8:
-				if (pp.special) {
-					// Promoted pawn
-					unsigned short promoted = (p.promotions[c] >> ((i - pieces::pawn1) * 2)) & 0x03;
-					switch( promoted ) {
-					case promotions::queen:
-						result += queen_values[c][pp.column][pp.row];
-						break;
-					case promotions::rook:
-						result += rook_values[c][pp.column][pp.row];
-						break;
-					case promotions::bishop:
-						result += bishop_values[c][pp.column][pp.row];
-						break;
-					case promotions::knight:
-						result += knight_values[c][pp.column][pp.row];
-						break;
-					}
-				}
-				else {
-					result += pawn_values[c][pp.column][pp.row];
-					result += evaluate_pawn( pawns, c, pp.column, pp.row );
-				}
-				break;
-			case pieces::king:
-				break;
-			case pieces::queen:
-				result += queen_values[c][pp.column][pp.row];
-				break;
-			case pieces::rook1:
-			case pieces::rook2:
-				result += rook_values[c][pp.column][pp.row];
-				break;
-			case pieces::bishop1:
-			case pieces::bishop2:
-				result += bishop_values[c][pp.column][pp.row];
-				break;
-			case pieces::knight1:
-			case pieces::knight2:
-				result += knight_values[c][pp.column][pp.row];
-				break;
-			}
+	unsigned long long pieces = p.bitboards[c].all_pieces;
+	while( pieces ) {
+		unsigned long long piece;
+		bitscan( pieces, piece );
+
+		unsigned long long bpiece = 1ull << piece;
+		pieces ^= bpiece;
+
+		unsigned long long col = piece % 8;
+		unsigned long long row = piece / 8;
+
+		if( p.bitboards[c].pawns & bpiece ) {
+			result += pawn_values[c][col][row];
+		}
+		else if( p.bitboards[c].knights & bpiece ) {
+			result += knight_values[c][col][row];
+		}
+		else if( p.bitboards[c].bishops & bpiece ) {
+			result += bishop_values[c][col][row];
+		}
+		else if( p.bitboards[c].rooks & bpiece ) {
+			result += rook_values[c][col][row];
+		}
+		else if( p.bitboards[c].queens & bpiece ) {
+			result += queen_values[c][col][row];
 		}
 	}
 
-	if( p.pieces[c][pieces::bishop1].alive && p.pieces[c][pieces::bishop2].alive ) {
+	if( popcount( p.bitboards[c].bishops ) >= 2 ) {
 		result += special_values::double_bishop;
 	}
-	if( p.pieces[c][pieces::king].special ) {
+
+	if( p.castle[c] & 0x4 ) {
 		result += special_values::castled;
 	}
 
@@ -678,9 +636,14 @@ short evaluate_side( position const& p, color::type c, unsigned long long* pawns
 
 short evaluate_fast( position const& p, color::type c )
 {
-	unsigned long long pawns[2];
-	get_pawn_map( p, pawns );
-	int value = evaluate_side( p, c, pawns ) - evaluate_side( p, static_cast<color::type>(1-c), pawns );
+	int value = evaluate_side( p, c ) - evaluate_side( p, static_cast<color::type>(1-c) );
+
+	if( c ) {
+		value -= evaluate_pawns( p.bitboards[0].pawns, p.bitboards[1].pawns );
+	}
+	else {
+		value += evaluate_pawns( p.bitboards[0].pawns, p.bitboards[1].pawns );
+	}
 
 	ASSERT( value > result::loss && value < result::win );
 
@@ -688,62 +651,23 @@ short evaluate_fast( position const& p, color::type c )
 }
 
 namespace {
-static short get_piece_value( position const& p, color::type c, int target, int col, int row )
+static short get_piece_value( color::type c, pieces2::type target, int col, int row )
 {
-	short eval = 0;
 	switch( target ) {
-	case pieces::pawn1:
-	case pieces::pawn2:
-	case pieces::pawn3:
-	case pieces::pawn4:
-	case pieces::pawn5:
-	case pieces::pawn6:
-	case pieces::pawn7:
-	case pieces::pawn8:
-	{
-		piece const& pp = p.pieces[c][target];
-		if( pp.special ) {
-			unsigned short promoted = (p.promotions[c] >> ( 2 * (target - pieces::pawn1) ) ) & 0x03;
-			switch( promoted ) {
-			case promotions::queen:
-				eval += queen_values[c][col][row];
-				break;
-			case promotions::rook:
-				eval += rook_values[c][col][row];
-				break;
-			case promotions::bishop:
-				eval += bishop_values[c][col][row];
-				break;
-			case promotions::knight:
-				eval += knight_values[c][col][row];
-				break;
-			}
-		}
-		else {
-			eval += pawn_values[c][col][row];
-		}
-		break;
+	case pieces2::pawn:
+		return pawn_values[c][col][row];
+	case pieces2::knight:
+		return knight_values[c][col][row];
+	case pieces2::bishop:
+		return bishop_values[c][col][row];
+	case pieces2::rook:
+		return rook_values[c][col][row];
+	case pieces2::queen:
+		return queen_values[c][col][row];
+	default:
+	case pieces2::king:
+		return 0;
 	}
-	case pieces::king:
-		break;
-	case pieces::queen:
-		eval += queen_values[c][col][row];
-		break;
-	case pieces::rook1:
-	case pieces::rook2:
-		eval += rook_values[c][col][row];
-		break;
-	case pieces::bishop1:
-	case pieces::bishop2:
-		eval += bishop_values[c][col][row];
-		break;
-	case pieces::knight1:
-	case pieces::knight2:
-		eval += knight_values[c][col][row];
-		break;
-	}
-
-	return eval;
 }
 }
 
@@ -751,112 +675,85 @@ static short get_piece_value( position const& p, color::type c, int target, int 
 short evaluate_move( position const& p, color::type c, short current_evaluation, move const& m, position::pawn_structure& outPawns )
 {
 #if 0
+	short old_eval = current_evaluation;
 	{
-		position p2 = p;
-		p2.calc_pawn_map();
-		if( p.pawns.hash != p2.pawns.hash ) {
-			std::cerr << "Pre-eval pawn hash mismatch: " << p.pawns.hash << " " << p2.pawns.hash << " " << move_to_string( p, c, m ) << std::endl;
-			exit(1);
-		}
-		if( evaluate(p2, c) != current_evaluation ) {
-			std::cerr << "Pre-eval mismatch: " << current_evaluation << " " << evaluate(p2, c ) << std::endl;
-			exit(1);
+		short fresh_eval = evaluate_fast( p, c );
+		if( fresh_eval != current_evaluation ) {
+			std::cerr << "BAD" << std::endl;
 		}
 	}
 #endif
-	int pawn_move = 0;
-	int captured_pawn_index = -1;
 
-	int target = p.board[m.target_col][m.target_row];
-	if( target != pieces::nil ) {
-		target &= 0x0f;
-		current_evaluation += get_piece_value( p, static_cast<color::type>(1-c), target, m.target_col, m.target_row );
-		if( target == pieces::bishop1 ) {
-			if( p.pieces[1-c][pieces::bishop2].alive ) {
-				current_evaluation += special_values::double_bishop;
-			}
-		}
-		else if( target == pieces::bishop2 ) {
-			if( p.pieces[1-c][pieces::bishop1].alive ) {
-				current_evaluation += special_values::double_bishop;
-			}
-		}
-		else if( target >= pieces::pawn1 && target <= pieces::pawn8 ) {
-			piece const& pp = p.pieces[1-c][target];
-			if( !pp.special ) {
-				captured_pawn_index = m.target_row * 8 + m.target_col;
-			}
-		}
-	}
+	if( m.flags & move_flags::castle ) {
+		
+		current_evaluation += special_values::castled;
 
-	int source = p.board[m.source_col][m.source_row] & 0x0f;
-
-	if( source >= pieces::pawn1 && source <= pieces::pawn8 ) {
-		piece const& pp = p.pieces[c][source];
-		if( pp.special ) {
-			current_evaluation -= get_piece_value( p, c, source, pp.column, pp.row );
-			current_evaluation += get_piece_value( p, c, source, m.target_col, m.target_row );
+		if( m.target_col == 6 ) {
+			// Kingside
+			current_evaluation -= rook_values[c][7][m.source_row];
+			current_evaluation += rook_values[c][5][m.source_row];
 		}
 		else {
-			if( m.target_col != pp.column && target == pieces::nil ) {
-				// Was en-passant
-				current_evaluation += pawn_values[1-c][m.target_col][pp.row];
-				current_evaluation -= pawn_values[c][pp.column][pp.row];
-				current_evaluation += pawn_values[c][m.target_col][m.target_row];
-				captured_pawn_index = pp.row * 8 + m.target_col;
-				pawn_move = 1;
-			}
-			else if( m.target_row == 0 || m.target_row == 7 ) {
-				current_evaluation -= pawn_values[c][pp.column][pp.row];
-				current_evaluation += queen_values[c][m.target_col][m.target_row];
-				pawn_move = 2;
-			}
-			else {
-				current_evaluation -= pawn_values[c][pp.column][pp.row];
-				current_evaluation += pawn_values[c][m.target_col][m.target_row];
-				pawn_move = 1;
-			}
+			// Queenside
+			current_evaluation -= rook_values[c][0][m.source_row];
+			current_evaluation += rook_values[c][3][m.source_row];
+		}
+
+		outPawns = p.pawns;
+
+		return current_evaluation;
+	}
+
+	if( m.captured_piece != pieces2::none ) {
+		if( m.flags & move_flags::enpassant ) {
+			current_evaluation += pawn_values[1-c][m.target_col][m.source_row];
+		}
+		else {
+			current_evaluation += get_piece_value( static_cast<color::type>(1-c), m.captured_piece, m.target_col, m.target_row );
+		}
+
+		if( m.captured_piece == pieces2::bishop && popcount( p.bitboards[1-c].bishops ) == 2 ) {
+			current_evaluation += special_values::double_bishop;
 		}
 	}
-	else if( source == pieces::king ) {
-		piece const& pp = p.pieces[c][source];
-		if( pp.column == m.target_col + 2 ) {
-			// Queenside
-			current_evaluation += special_values::castled;
-			current_evaluation -= get_piece_value( p, c, pieces::rook1, 0, pp.row );
-			current_evaluation += get_piece_value( p, c, pieces::rook1, 3, m.target_row );
-		}
-		else if( pp.column + 2 == m.target_col ) {
-			// Kingside
-			current_evaluation += special_values::castled;
-			current_evaluation -= get_piece_value( p, c, pieces::rook2, 7, pp.row );
-			current_evaluation += get_piece_value( p, c, pieces::rook2, 5, m.target_row );
-		}
+
+	if( m.flags & move_flags::promotion ) {
+		current_evaluation -= pawn_values[c][m.source_col][m.source_row];
+		current_evaluation += queen_values[c][m.target_col][m.target_row];
 	}
 	else {
-		piece const& pp = p.pieces[c][source];
-		current_evaluation -= get_piece_value( p, c, source, pp.column, pp.row );
-		current_evaluation += get_piece_value( p, c, source, m.target_col, m.target_row );
+		current_evaluation -= get_piece_value( c, m.piece, m.source_col, m.source_row );
+		current_evaluation += get_piece_value( c, m.piece, m.target_col, m.target_row );
 	}
 
 	outPawns = p.pawns;
-	if( pawn_move || captured_pawn_index != -1 ) {
-		if( captured_pawn_index != -1 ) {
-			outPawns.map[1-c] &= ~(1ull << captured_pawn_index);
-			outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), captured_pawn_index % 8, captured_pawn_index / 8 );
+	if( m.piece == pieces2::pawn || m.captured_piece == pieces2::pawn ) {
+		unsigned long long pawnMap[2];
+		pawnMap[0] = p.bitboards[0].pawns;
+		pawnMap[1] = p.bitboards[1].pawns;
+
+		if( m.captured_piece == pieces2::pawn ) {
+			if( m.flags & move_flags::enpassant ) {
+				pawnMap[1-c] &= ~(1ull << (m.target_col + m.source_row * 8) );
+				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.source_row );
+			}
+			else {
+				pawnMap[1-c] &= ~(1ull << (m.target_col + m.target_row * 8) );
+				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.target_row );
+			}
 		}
-		if( pawn_move ) {
-			outPawns.map[c] &= ~(1ull << (m.source_row * 8 + m.source_col) );
+		if( m.piece == pieces2::pawn ) {
+			pawnMap[c] &= ~(1ull << (m.source_row * 8 + m.source_col) );
 			outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.source_col, m.source_row );
-			if( pawn_move == 1 ) {
+			if( !(m.flags & move_flags::promotion) ) {
 				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.target_col, m.target_row );
-				outPawns.map[c] |= 1ull << (m.target_row * 8 + m.target_col);
+				pawnMap[c] |= 1ull << (m.target_row * 8 + m.target_col);
 			}
 		}
 
 		short pawn_eval;
 		if( !pawn_hash_table.lookup( outPawns.hash, pawn_eval ) ) {
-			pawn_eval = evaluate_pawns(outPawns.map, color::white) - evaluate_pawns(outPawns.map, color::black);
+			pawn_eval = evaluate_pawns(pawnMap[0], pawnMap[1]);
 			pawn_hash_table.store( outPawns.hash, pawn_eval );
 		}
 
@@ -872,26 +769,20 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 	}
 
 #if 0
-	position p2 = p;
-	bool capture;
-	apply_move( p2, m, c, capture );
-	p2.calc_pawn_map();
-	short ev2 = evaluate( p2, c );
-	if( outPawns.hash != p2.pawns.hash ) {
-		std::cerr << "Pawn hash mismatch: " << p.pawns.hash << " " << p2.pawns.hash << " " << move_to_string( p, c, m ) << std::endl;
-		exit(1);
-	}
-	if( outPawns.map[0] != p2.pawns.map[0] || outPawns.map[1] != p2.pawns.map[1] ) {
-		std::cerr << "Pawn map mismatch: " << outPawns.map[0] << " " << outPawns.map[1] << " " << p2.pawns.map[0] << " " << p2.pawns.map[1] << std::endl;
-		exit(1);
-	}
-	if( outPawns.eval != p2.pawns.eval ) {
-		std::cerr << "Pawn eval mismatch: " << outPawns.eval << " " << p2.pawns.eval << std::endl;
-		exit(1);
-	}
-	if( ev2 != current_evaluation ) {
-		std::cerr << current_evaluation << " " << ev2 << " " << outPawns.eval << " " << p2.pawns.eval << " " << move_to_string( p, c, m ) << " " << captured_pawn_index << " " << pawn_move << std::endl;
-		exit(1);
+	{
+		position p2 = p;
+		bool captured;
+		apply_move( p2, m, c, captured );
+		short fresh_eval = evaluate_fast( p2, c );
+		if( fresh_eval != current_evaluation ) {
+			std::cerr << "BAD" << std::endl;
+
+			position p3 = p;
+			bool captured;
+			apply_move( p3, m, c, captured );
+
+			evaluate_move( p, c, evaluate_fast( p, c ), m, outPawns );
+		}
 	}
 #endif
 
@@ -917,16 +808,20 @@ short evaluate_pawn_shield_side( position const& p, color::type c )
 
 	int const y = c ? 40 : 8;
 
-	int row = p.pieces[c][pieces::king].row;
-	if( row == (c ? 7 : 0) ) {
-		int col = p.pieces[c][pieces::king].column;
+	unsigned long long kings = p.bitboards[c].king;
+	unsigned long long king;
+	bitscan( kings, king );
 
-		if( p.pawns.map[c] & (9ull << (col + y) ) ) {
+	unsigned char king_col = static_cast<unsigned char>( king % 8 );
+	unsigned char king_row = static_cast<unsigned char>( king / 8 );
+
+	if( king_row == (c ? 7 : 0) ) {
+		if( p.bitboards[c].pawns & (9ull << (king_col + y) ) ) {
 			ev += special_values::pawn_shield * 2;
 		}
-		if( col ) {
-			if( p.pawns.map[c] & (9ull << (col - 1 + y) ) ) {
-				if( col == 7 ) {
+		if( king_col ) {
+			if( p.bitboards[c].pawns & (9ull << (king_col - 1 + y) ) ) {
+				if( king_col == 7 ) {
 					ev += special_values::pawn_shield * 2;
 				}
 				else {
@@ -934,9 +829,9 @@ short evaluate_pawn_shield_side( position const& p, color::type c )
 				}
 			}
 		}
-		if( col != 7 ) {
-			if( p.pawns.map[c] & (9ull << (col + 1 + y) ) ) {
-				if( col == 0 ) {
+		if( king_col != 7 ) {
+			if( p.bitboards[c].pawns & (9ull << (king_col + 1 + y) ) ) {
+				if( king_col == 0 ) {
 					ev += special_values::pawn_shield * 2;
 				}
 				else {
@@ -1047,4 +942,57 @@ short get_material_value( position const& p, color::type c, int pi )
 	}
 
 	return 0;
+}
+
+short get_material_value( pieces2::type pi )
+{
+	return static_cast<material_values::type>(pi);
+}
+
+pieces2::type convert_type( position const& p, int c, int pi )
+{
+	pi &= 0x0f;
+	switch( pi ) {
+	case pieces::pawn1:
+	case pieces::pawn2:
+	case pieces::pawn3:
+	case pieces::pawn4:
+	case pieces::pawn5:
+	case pieces::pawn6:
+	case pieces::pawn7:
+	case pieces::pawn8:
+	{
+		piece const& pp = p.pieces[c][pi];
+		if( pp.special ) {
+			unsigned short promoted = (p.promotions[c] >> ( 2 * (pi - pieces::pawn1) ) ) & 0x03;
+			switch( promoted ) {
+			case promotions::queen:
+				return pieces2::queen;
+			case promotions::rook:
+				return pieces2::rook;
+			case promotions::bishop:
+				return pieces2::bishop;
+			case promotions::knight:
+				return pieces2::knight;
+			}
+		}
+		else {
+			return pieces2::pawn;
+		}
+	}
+	default:
+	case pieces::king:
+		return pieces2::king;
+	case pieces::queen:
+		return pieces2::queen;
+	case pieces::rook1:
+	case pieces::rook2:
+		return pieces2::rook;
+	case pieces::bishop1:
+	case pieces::bishop2:
+		return pieces2::bishop;
+	case pieces::knight1:
+	case pieces::knight2:
+		return pieces2::knight;
+	}
 }

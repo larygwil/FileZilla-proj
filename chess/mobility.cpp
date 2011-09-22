@@ -372,7 +372,12 @@ static void do_evaluate_mobility( position const& p, color::type c, bitboard con
 {
 	eval_data data_self;
 	
-	bitscan( bitboards[1-c].king, data_self.other_king_pos );
+	{
+		unsigned long long kings = bitboards[1-c].king;
+		unsigned long long king;
+		bitscan( kings, king );
+		data_self.other_king_pos = king;
+	}
 	data_self.king_vicinity = possible_king_moves[data_self.other_king_pos];
 	
 	evaluate_tropism( p, c, bitboards, data_self, results_self );
@@ -387,7 +392,12 @@ static void do_evaluate_mobility( position const& p, color::type c, bitboard con
 
 	eval_data data_other;
 	
-	bitscan( bitboards[c].king, data_other.other_king_pos );
+	{
+		unsigned long long kings = bitboards[c].king;
+		unsigned long long king;
+		bitscan( kings, king );
+		data_other.other_king_pos = king;
+	}
 	data_other.king_vicinity = possible_king_moves[data_other.other_king_pos];
 	
 	evaluate_tropism( p, static_cast<color::type>(1-c), bitboards, data_other, results_other );

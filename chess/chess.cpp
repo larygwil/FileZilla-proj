@@ -374,7 +374,7 @@ void xboard_thread::start( unsigned long long t )
 	join();
 	do_abort = false;
 	abort = false;
-	best_move.other = false;
+	best_move.flags = 0;
 
 	starttime = t;
 
@@ -388,7 +388,7 @@ move xboard_thread::stop()
 	abort = true;
 	join();
 	move m = best_move;
-	best_move.other = false;
+	best_move.flags = 0;
 
 	return m;
 }
@@ -509,7 +509,7 @@ void xboard()
 			break;
 		}
 		else if( line == "?" ) {
-			if( best_move.other ) {
+			if( best_move.flags & move_flags::valid ) {
 				std::cout << "move " << move_to_string( state.p, state.c, best_move ) << std::endl;
 				state.apply( best_move );
 			}

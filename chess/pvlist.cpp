@@ -39,7 +39,7 @@ pv_entry* pv_entry_pool::get()
 			last_free_ = 0;
 		}
 		ret->next_ = 0;
-		ret->best_move_.other = 0;
+		ret->best_move_.flags = 0;
 	}
 	else {
 		ret = new pv_entry();
@@ -69,7 +69,6 @@ void pv_entry_pool::append( pv_entry* parent, move const& best_move, pv_entry* c
 		release( parent->next_ );
 	}
 	parent->best_move_ = best_move;
-	parent->best_move_.other = 1;
 	parent->next_ = child;
 }
 
@@ -80,12 +79,11 @@ void pv_entry_pool::set_pv_move( pv_entry* pv, move const& m )
 		pv->next_ = 0;
 	}
 	pv->best_move_ = m;
-	pv->best_move_.other = 1;
 }
 
 void pv_entry_pool::clear_pv_move( pv_entry* pv )
 {
-	pv->best_move_.other = 0;
+	pv->best_move_.flags = 0;
 	if( pv->next() ) {
 		release( pv->next_ );
 		pv->next_ = 0;
@@ -100,12 +98,12 @@ void print_pv( pv_entry const* pv, position p, color::type c )
 std::string pv_to_string( pv_entry const* pv, position p, color::type c )
 {
 	std::stringstream ss;
-	while( pv && pv->get_best_move().other ) {
+	while( pv && pv->get_best_move().flags & move_flags::valid ) {
 		ss << move_to_string( p, c, pv->get_best_move() ) << " ";
 		bool captured;
 		if( !apply_move( p, pv->get_best_move(), c, captured ) ) {
 			ss << "FAIL! Invalid mode in pv: "
-					  << static_cast<int>(pv->get_best_move().other) << " "
+					  << static_cast<int>(pv->get_best_move().flags) << " "
 					  << static_cast<int>(pv->get_best_move().source_col) << " "
 					  << static_cast<int>(pv->get_best_move().source_row) << " "
 					  << static_cast<int>(pv->get_best_move().target_col) << " "
@@ -128,12 +126,12 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 	// thus recover a more complete pv.
 	int depth = 0;
 	pv_entry* prev = 0;
-	while( pv && pv->get_best_move().other ) {
+	while( pv && pv->get_best_move().flags & move_flags::valid ) {
 		++depth;
 		bool captured;
 		if( !apply_move( p, pv->get_best_move(), c, captured ) ) {
 			std::cerr << "FAIL! Invalid mode in pv: "
-					  << static_cast<int>(pv->get_best_move().other) << " "
+					  << static_cast<int>(pv->get_best_move().flags) << " "
 					  << static_cast<int>(pv->get_best_move().source_col) << " "
 					  << static_cast<int>(pv->get_best_move().source_row) << " "
 					  << static_cast<int>(pv->get_best_move().target_col) << " "
@@ -164,7 +162,7 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 		move best;
 		short ev;
 		score_type::type s = transposition_table.lookup( hash, c, r, result::loss, result::win, ev, best, 0 );
-		if( s != score_type::exact || !best.other ) {
+		if( s != score_type::exact || !(best.flags & move_flags::valid) ) {
 			break;
 		}
 

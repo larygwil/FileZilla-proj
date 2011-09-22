@@ -59,8 +59,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		if( t != score_type::none ) {
 			return eval;
 		}
-		tt_move.other = 0;
-
+		tt_move.flags = 0; // Is this ideal?
 	}
 
 	short full_eval = evaluate_full( p, c, current_evaluation );
@@ -78,7 +77,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		alpha = full_eval;
 	}
 
-	if( tt_move.other ) {
+	if( tt_move.flags & move_flags::valid ) {
 		position new_pos = p;
 		bool captured;
 		if( apply_move( new_pos, tt_move, c, captured ) ) {
@@ -116,7 +115,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		}
 		else {
 			std::cerr << "Possible type-1 collision in quiesence search" << std::endl;
-			tt_move.other = 0;
+			tt_move.flags = 0;
 		}
 	}
 
@@ -137,7 +136,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 
 	++depth;
 	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
-		if( tt_move.other && tt_move == it->m ) {
+		if( tt_move.flags & move_flags::valid && tt_move == it->m ) {
 			continue;
 		}
 
@@ -172,7 +171,6 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		}
 		if( value > alpha ) {
 			tt_move = it->m;
-			tt_move.other = 1;
 
 			alpha = value;
 
@@ -196,7 +194,7 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		got_moves |= moves != ctx.move_ptr;
 
 		for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
-			if( tt_move.other && tt_move == it->m ) {
+			if( tt_move.flags & move_flags::valid && tt_move == it->m ) {
 				continue;
 			}
 
@@ -232,7 +230,6 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 			}
 			if( value > alpha ) {
 				tt_move = it->m;
-				tt_move.other = 1;
 
 				alpha = value;
 
@@ -324,7 +321,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 	}
 #endif
 
-	if( !tt_move.other && depth + 2 < ctx.max_depth ) {
+	if( !(tt_move.flags & move_flags::valid) && depth + 2 < ctx.max_depth ) {
 
 		ctx.max_depth -= 2;
 		step( depth, ctx, p, hash, current_evaluation, c, alpha, beta, pv, false );
@@ -338,7 +335,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 
 	pv_entry* best_pv = 0;
 
-	if( tt_move.other ) {
+	if( tt_move.flags & move_flags::valid ) {
 		position new_pos = p;
 		bool captured;
 		if( apply_move( new_pos, tt_move, c, captured ) ) {
@@ -380,7 +377,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 		else {
 			// Unfortunate type-1 collision
 			std::cerr << "Possible type-1 collision in full-width search" << std::endl;
-			tt_move.other = 0;
+			tt_move.flags = 0;
 			//goto retry_after_type1_collision;
 		}
 	}
@@ -406,7 +403,7 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 	std::sort( moves, ctx.move_ptr, moveSort2 );
 
 	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
-		if( tt_move.other && tt_move == it->m ) {
+		if( tt_move.flags & move_flags::valid && tt_move == it->m ) {
 			continue;
 		}
 
@@ -437,7 +434,6 @@ short step( int depth, context& ctx, position const& p, unsigned long long hash,
 		if( value > alpha ) {
 			alpha = value;
 			tt_move = it->m;
-			tt_move.other = 1;
 
 			if( alpha >= beta ) {
 				ctx.pv_pool.release(cpv);
@@ -573,19 +569,21 @@ void processing_thread::onRun()
 
 	// Search using aspiration window:
 	short value;
-	if( alpha_at_prev_depth_ != result::loss ) {
+	if( alpha_ == result::loss && alpha_at_prev_depth_ != result::loss ) {
 		// Windows headers unfortunately create some defines called max and min :(
 		short alpha = (std::max)( alpha_, static_cast<short>(alpha_at_prev_depth_ - ASPIRATION) );
 		short beta = (std::min)( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next(), false );
-		if( value > alpha && value < beta ) {
-			// Aspiration search found something sensible
-			scoped_lock l( mutex_ );
-			result_ = value;
-			finished_ = true;
-			cond_.signal( l );
-			return;
+		if( alpha < beta ) {
+			value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next(), false );
+			if( value > alpha && value < beta ) {
+				// Aspiration search found something sensible
+				scoped_lock l( mutex_ );
+				result_ = value;
+				finished_ = true;
+				cond_.signal( l );
+				return;
+			}
 		}
 	}
 
