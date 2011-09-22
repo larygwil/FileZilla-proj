@@ -84,7 +84,7 @@ void do_add_move( position const& p, color::type c, int const current_evaluation
 				  unsigned char const& new_col, unsigned char const& new_row,
 				  int flags, pieces2::type target, promotions::type promotion = promotions::queen )
 {
-	move_info mi;
+	move_info& mi= *(moves++);
 
 	mi.m.flags = flags;
 	mi.m.piece = pi;
@@ -103,8 +103,6 @@ void do_add_move( position const& p, color::type c, int const current_evaluation
 	else if( killers.is_killer( mi.m ) ) {
 		mi.sort += 500000;
 	}
-
-	*(moves++) = mi;
 }
 
 // Adds the move if it does not result in self getting into check
