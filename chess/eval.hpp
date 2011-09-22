@@ -28,7 +28,4 @@ enum type {
 short get_material_value( position const& p, color::type c, int pi );
 short get_material_value( pieces2::type pi );
 
-//FIXME: Get rid of
-pieces2::type convert_type( position const& p, int c, int pi );
-
 #endif

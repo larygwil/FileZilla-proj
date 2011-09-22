@@ -5,28 +5,6 @@
 
 #include "platform.hpp"
 
-namespace pieces {
-enum type {
-	pawn1,
-	pawn2,
-	pawn3,
-	pawn4,
-	pawn5,
-	pawn6,
-	pawn7,
-	pawn8,
-	king,
-	queen,
-	rook1,
-	rook2,
-	bishop1,
-	bishop2,
-	knight1,
-	knight2,
-	nil = 255
-};
-}
-
 namespace pieces2 {
 enum type {
 	none,
@@ -39,6 +17,7 @@ enum type {
 };
 }
 
+
 namespace promotions {
 enum type {
 	queen,
@@ -47,19 +26,6 @@ enum type {
 	bishop
 };
 }
-
-struct piece
-{
-	unsigned char alive;
-	unsigned char column;
-	unsigned char row;
-
-	// For knights, indicates whether they can castle.
-	// For king, indicates whether it has castled
-	// For pawns:
-	//   Alive set: promoted
-	unsigned char special;
-};
 
 
 namespace color {
@@ -86,12 +52,6 @@ struct bitboard
 
 struct position
 {
-	// [color][piece]
-	piece pieces[2][16];
-
-	// 2 bit for every pawn.
-	unsigned short promotions[2];
-
 	// Bit 0: can castle kingside
 	// Bit 1: can castle queenside
 	// Bit 2: has castled
@@ -102,11 +62,6 @@ struct position
 	// lower 6 bits, 7th bit color of pawn that is en-passantable.
 	unsigned char can_en_passant;
 
-	// board[column][row] as piece indexes in lower 4 bits, color in 5th bit.
-	// nil if square is empty.
-	// FIXME: remove
-	unsigned char board[8][8];
-
 	// board[column][row] as piece type in lower 4 bits, color in 5th bit.
 	// nil if square is empty.
 	unsigned char board2[8][8];
@@ -115,7 +70,7 @@ struct position
 	void init_pawn_structure();
 
 	struct pawn_structure {
-		unsigned short eval; // From white's point of view
+		short eval; // From white's point of view
 		unsigned long long hash;
 	} pawns;
 

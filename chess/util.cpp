@@ -180,57 +180,28 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 	move_info* match = 0;
 
 	for( move_info* it = moves; it != pm; ++it ) {
-		unsigned char source = p.board[it->m.source_col][it->m.source_row] & 0xf;
+		unsigned char source = p.board2[it->m.source_col][it->m.source_row] & 0xf;
 
 		char source_piece = 0;
 
 		switch( source ) {
-		case pieces::king:
+		case pieces2::king:
 			source_piece = 'K';
 			break;
-		case pieces::queen:
+		case pieces2::queen:
 			source_piece = 'Q';
 			break;
-		case pieces::rook1:
-		case pieces::rook2:
+		case pieces2::rook:
 			source_piece = 'R';
 			break;
-		case pieces::bishop1:
-		case pieces::bishop2:
+		case pieces2::bishop:
 			source_piece = 'B';
 			break;
-		case pieces::knight1:
-		case pieces::knight2:
+		case pieces2::knight:
 			source_piece = 'N';
 			break;
-		case pieces::pawn1:
-		case pieces::pawn2:
-		case pieces::pawn3:
-		case pieces::pawn4:
-		case pieces::pawn5:
-		case pieces::pawn6:
-		case pieces::pawn7:
-		case pieces::pawn8:
-			if( p.pieces[c][source].special ) {
-				unsigned short promoted = (p.promotions[c] >> (2 * (source - pieces::pawn1) ) ) & 0x03;
-				switch( promoted ) {
-				case promotions::queen:
-					source_piece = 'Q';
-					break;
-				case promotions::rook:
-					source_piece = 'R';
-					break;
-				case promotions::bishop:
-					source_piece = 'B';
-					break;
-				case promotions::knight:
-					source_piece = 'N';
-					break;
-				}
-			}
-			else {
-				source_piece = 'P';
-			}
+		case pieces2::pawn:
+			source_piece = 'P';
 			break;
 		}
 
@@ -238,17 +209,8 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 			continue;
 		}
 
-		if( capture && p.board[it->m.target_col][it->m.target_row] == pieces::nil ) {
-			// Could still be enpassant
-			if( source_piece != 'P' || !p.can_en_passant || (p.can_en_passant >> 6) == c ) {
-				continue;
-			}
-
-			unsigned short ep_col = p.can_en_passant % 8;
-			unsigned short ep_row = (p.can_en_passant / 8) & 7;
-			if( ep_row != it->m.source_row || ep_col != it->m.target_col ) {
-				continue;
-			}
+		if( capture && !it->m.captured_piece ) {
+			continue;
 		}
 
 		if( first_col != -1 && first_col != it->m.source_col ) {
@@ -293,7 +255,7 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 {
 	std::string ret;
 
-	unsigned char source = p.board[m.source_col][m.source_row];
+	unsigned char source = p.board2[m.source_col][m.source_row];
 
 	if( (source >> 4 ) != c ) {
 		std::cerr << "FAIL! Invalid move: "
@@ -308,76 +270,42 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 	}
 
 	source &= 0x0f;
-	if( source == pieces::king ) {
-		if( m.target_col == 6 && p.pieces[c][source].column == 4 ) {
+	if( source == pieces2::king ) {
+		if( m.target_col == 6 && m.source_col == 4 ) {
 			return "   O-O  ";
 		}
-		else if( m.target_col == 2 && p.pieces[c][source].column == 4 ) {
+		else if( m.target_col == 2 && m.source_col == 4 ) {
 			return " O-O-O  ";
 		}
 	}
 
 	switch( source ) {
-		case pieces::bishop1:
-		case pieces::bishop2:
+		case pieces2::bishop:
 			ret += 'B';
 			break;
-		case pieces::knight1:
-		case pieces::knight2:
+		case pieces2::knight:
 			ret += 'N';
 			break;
-		case pieces::queen:
+		case pieces2::queen:
 			ret += 'Q';
 			break;
-		case pieces::king:
+		case pieces2::king:
 			ret += 'K';
 			break;
-		case pieces::rook1:
-		case pieces::rook2:
+		case pieces2::rook:
 			ret += 'R';
 			break;
-		case pieces::pawn1:
-		case pieces::pawn2:
-		case pieces::pawn3:
-		case pieces::pawn4:
-		case pieces::pawn5:
-		case pieces::pawn6:
-		case pieces::pawn7:
-		case pieces::pawn8:
-			if( p.pieces[c][source].special ) {
-				switch( p.promotions[c] >> (2 * (source - pieces::pawn1) ) & 0x03 ) {
-					case promotions::queen:
-						ret += 'Q';
-						break;
-					case promotions::rook:
-						ret += 'R';
-						break;
-					case promotions::bishop:
-						ret += 'B';
-						break;
-					case promotions::knight:
-						ret += 'N';
-						break;
-				}
-			}
-			else {
-				ret += ' ';
-			}
+		case pieces2::pawn:
+			ret += ' ';
 			break;
 		default:
 			break;
 	}
 
-	ret += 'a' + p.pieces[c][source].column;
-	ret += '1' + p.pieces[c][source].row;
+	ret += 'a' + m.source_col;
+	ret += '1' + m.source_row;
 
-	if( p.board[m.target_col][m.target_row] != pieces::nil ) {
-		ret += 'x';
-	}
-	else if( source >= pieces::pawn1 && source <= pieces::pawn8
-		&& p.pieces[c][source].column != m.target_col && !p.pieces[c][source].special )
-	{
-		// Must be en-passant
+	if( m.captured_piece ) {
 		ret += 'x';
 	}
 	else {
@@ -387,13 +315,8 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 	ret += 'a' + m.target_col;
 	ret += '1' + m.target_row;
 
-	if( source >= pieces::pawn1 && source <= pieces::pawn8 && !p.pieces[c][source].special ) {
-		if( m.target_row == 0 || m.target_row == 7 ) {
-			ret += "=Q";
-		}
-		else {
-			ret += "  ";
-		}
+	if( m.flags & move_flags::promotion ) {
+		ret += "=Q";
 	}
 	else {
 		ret += "  ";
@@ -406,45 +329,34 @@ void init_bitboards( position& p );
 
 void init_board( position& p )
 {
-	for( unsigned int c = 0; c <= 1; ++c ) {
-		for( unsigned int i = 0; i < 8; ++i ) {
-			p.pieces[c][pieces::pawn1 + i].column = i;
-			p.pieces[c][pieces::pawn1 + i].row = (c == color::black) ? 6 : 1;
+	memset( p.board2, 0, 64 );
 
-			p.pieces[c][pieces::pawn8 + 1 + i].row = (c == color::black) ? 7 : 0;
-		}
+	p.board2[0][0] = pieces2::rook;
+	p.board2[1][0] = pieces2::knight;
+	p.board2[2][0] = pieces2::bishop;
+	p.board2[3][0] = pieces2::queen;
+	p.board2[4][0] = pieces2::king;
+	p.board2[5][0] = pieces2::bishop;
+	p.board2[6][0] = pieces2::knight;
+	p.board2[7][0] = pieces2::rook;
 
-		p.pieces[c][pieces::rook1].column = 0;
-		p.pieces[c][pieces::rook2].column = 7;
-		p.pieces[c][pieces::bishop1].column = 2;
-		p.pieces[c][pieces::bishop2].column = 5;
-		p.pieces[c][pieces::knight1].column = 1;
-		p.pieces[c][pieces::knight2].column = 6;
-		p.pieces[c][pieces::king].column = 4;
-		p.pieces[c][pieces::queen].column = 3;
+	p.board2[0][7] = pieces2::rook | (1 << 4);
+	p.board2[1][7] = pieces2::knight | (1 << 4);
+	p.board2[2][7] = pieces2::bishop | (1 << 4);
+	p.board2[3][7] = pieces2::queen | (1 << 4);
+	p.board2[4][7] = pieces2::king | (1 << 4);
+	p.board2[5][7] = pieces2::bishop | (1 << 4);
+	p.board2[6][7] = pieces2::knight | (1 << 4);
+	p.board2[7][7] = pieces2::rook | (1 << 4);
+
+	for( int i = 0; i < 8; ++i ) {
+		p.board2[i][1] = pieces2::pawn;
+		p.board2[i][6] = pieces2::pawn | (1 << 4);
 	}
 
-	for( unsigned int x = 0; x < 8; ++x ) {
-		for( unsigned int y = 0; y < 8; ++y ) {
-			p.board[x][y] = pieces::nil;
-			p.board2[x][y] = 0;
-		}
-	}
-
 	for( unsigned int c = 0; c <= 1; ++c ) {
-		for( unsigned int i = 0; i < 16; ++i ) {
-			p.pieces[c][i].alive = true;
-			p.pieces[c][i].special = false;
-
-			p.board[p.pieces[c][i].column][p.pieces[c][i].row] = i | (c << 4);
-			p.board2[p.pieces[c][i].column][p.pieces[c][i].row] = convert_type( p, c, i ) | (c << 4);
-		}
-
 		p.castle[c] = 0x3;
 	}
-
-	p.promotions[0] = 0;
-	p.promotions[1] = 0;
 
 	p.can_en_passant = 0;
 
@@ -456,557 +368,183 @@ void init_board( position& p )
 	p.init_pawn_structure();
 }
 
-void init_board_from_pieces( position& p )
-{
-	for( unsigned int x = 0; x < 8; ++x ) {
-		for( unsigned int y = 0; y < 8; ++y ) {
-			p.board[x][y] = pieces::nil;
-			p.board2[x][y] = 0;
-		}
-	}
+extern unsigned long long pawn_control[2][64];
 
-	for( unsigned int c = 0; c <= 1; ++c ) {
-		for( unsigned int i = 0; i < 16; ++i ) {
-			if( p.pieces[c][i].alive ) {
-				p.board[p.pieces[c][i].column][p.pieces[c][i].row] = i | (c << 4);
-				p.board2[p.pieces[c][i].column][p.pieces[c][i].row] = convert_type( p, c, i ) | (c << 4);
-			}
-		}
+unsigned long long& get_bitboard_for_piece( position& p, pieces2::type pi, color::type c )
+{
+	switch( pi ) {
+	default:
+	case pieces2::pawn:
+		return p.bitboards[c].pawns;
+	case pieces2::king:
+		return p.bitboards[c].king;
+	case pieces2::queen:
+		return p.bitboards[c].queens;
+	case pieces2::rook:
+		return p.bitboards[c].rooks;
+	case pieces2::bishop:
+		return p.bitboards[c].bishops;
+	case pieces2::knight:
+		return p.bitboards[c].knights;
 	}
 }
-
-extern unsigned long long pawn_control[2][64];
 
 void init_bitboards( position& p )
 {
 	memset( p.bitboards, 0, sizeof(bitboard) * 2 );
 
-	for( int c = 0; c < 2; ++c ) {
-		for( int i = pieces::pawn1; i <= pieces::pawn8; ++i ) {
-			piece const& pp = p.pieces[c][i];
-			if( !pp.alive ) {
+	for( unsigned int col = 0; col < 8; ++col ) {
+		for( unsigned int row = 0; row < 8; ++row ) {
+			if( !p.board2[col][row] ) {
 				continue;
 			}
-			if( pp.special ) {
-				unsigned short promoted = (p.promotions[c] >> (2 * (i - pieces::pawn1) ) ) & 0x03;
-				if( promoted == promotions::queen ) {
-					p.bitboards[c].queens |= 1ull << (pp.column + pp.row * 8);
-				}
-				else if( promoted == promotions::bishop ) {
-					p.bitboards[c].bishops |= 1ull << (pp.column + pp.row * 8);
-				}
-				else if( promoted == promotions::rook ) {
-					p.bitboards[c].rooks |= 1ull << (pp.column + pp.row * 8);
-				}
-				else if( promoted == promotions::knight ) {
-					p.bitboards[c].knights |= 1ull << (pp.column + pp.row * 8);
-				}
-			}
-			else {
-				p.bitboards[c].pawns |= 1ull << (pp.column + pp.row * 8);
-				p.bitboards[c].pawn_control |= pawn_control[c][pp.column + pp.row * 8];
-			}
+
+			color::type c = static_cast<color::type>(p.board2[col][row] >> 4);
+			pieces2::type pi = static_cast<pieces2::type>(p.board2[col][row] & 0x0f);
+
+			get_bitboard_for_piece( p, pi, c ) |= 1ull << (col + row * 8);
 		}
+	}
 
-
-		{
-			piece const& pp = p.pieces[c][pieces::rook1];
-			if( pp.alive ) {
-				p.bitboards[c].rooks |= 1ull << (pp.column + pp.row * 8);
-			}
-		}
-
-		{
-			piece const& pp = p.pieces[c][pieces::rook2];
-			if( pp.alive ) {
-				p.bitboards[c].rooks |= 1ull << (pp.column + pp.row * 8);
-			}
-		}
-
-		{
-			piece const& pp = p.pieces[c][pieces::knight1];
-			if( pp.alive ) {
-				p.bitboards[c].knights |= 1ull << (pp.column + pp.row * 8);
-			}
-		}
-
-		{
-			piece const& pp = p.pieces[c][pieces::knight2];
-			if( pp.alive ) {
-				p.bitboards[c].knights |= 1ull << (pp.column + pp.row * 8);
-			}
-		}
-
-		{
-			piece const& pp = p.pieces[c][pieces::bishop1];
-			if( pp.alive ) {
-				p.bitboards[c].bishops |= 1ull << (pp.column + pp.row * 8);
-			}
-		}
-
-		{
-			piece const& pp = p.pieces[c][pieces::bishop2];
-			if( pp.alive ) {
-				p.bitboards[c].bishops |= 1ull << (pp.column + pp.row * 8);
-			}
-		}
-
-		{
-			piece const& pp = p.pieces[c][pieces::queen];
-			if( pp.alive ) {
-				p.bitboards[c].queens |= 1ull << (pp.column + pp.row * 8);
-			}
-		}
-
-		{
-			piece const& pp = p.pieces[c][pieces::king];
-			p.bitboards[c].king |= 1ull << (pp.column + pp.row * 8);
-		}
-
+	for( int c = 0; c < 2; ++c ) {
 		p.bitboards[c].all_pieces = p.bitboards[c].pawns | p.bitboards[c].knights | p.bitboards[c].bishops | p.bitboards[c].rooks | p.bitboards[c].queens | p.bitboards[c].king;
 	}
 }
 
-
-unsigned long long& get_bitboard_for_piece( position& p, int pi, color::type c )
+namespace {
+static bool do_apply_move( position& p, move const& m, color::type c, bool& capture )
 {
-	switch( pi ) {
-	default:
-	case pieces::pawn1:
-	case pieces::pawn2:
-	case pieces::pawn3:
-	case pieces::pawn4:
-	case pieces::pawn5:
-	case pieces::pawn6:
-	case pieces::pawn7:
-	case pieces::pawn8:
-	{
-		piece const& pp = p.pieces[c][pi];
-		if( pp.special ) {
-			unsigned short promoted = (p.promotions[c] >> ( 2 * (pi - pieces::pawn1) ) ) & 0x03;
-			switch( promoted ) {
-			case promotions::queen:
-				return p.bitboards[c].queens;
-			case promotions::rook:
-				return p.bitboards[c].rooks;
-			case promotions::bishop:
-				return p.bitboards[c].bishops;
-			case promotions::knight:
-				return p.bitboards[c].knights;
-			}
+	capture = m.captured_piece != 0;
+
+	p.board2[m.source_col][m.source_row] = 0;
+
+	if( m.flags & move_flags::castle ) {
+		if( m.target_col == 6 ) {
+			// Kingside
+			p.bitboards[c].all_pieces ^= 0xf0ull << (m.source_row * 8);
+			p.bitboards[c].king ^= 0x50ull << (m.source_row * 8);
+			p.bitboards[c].rooks ^= 0xa0ull << (m.source_row * 8);
+			p.board2[6][m.source_row] = pieces2::king | (c << 4);
+			p.board2[7][m.source_row] = 0;
+			p.board2[5][m.source_row] = pieces2::rook | (c << 4);
 		}
 		else {
-			return p.bitboards[c].pawns;
+			// Queenside
+			p.bitboards[c].all_pieces ^= 0x1dull << (m.source_row * 8);
+			p.bitboards[c].king ^= 0x14ull << (m.source_row * 8);
+			p.bitboards[c].rooks ^= 0x09ull << (m.source_row * 8);
+			p.board2[2][m.source_row] = pieces2::king | (c << 4);
+			p.board2[0][m.source_row] = 0;
+			p.board2[3][m.source_row] = pieces2::rook | (c << 4);
+		}
+		p.can_en_passant = 0;
+		p.castle[c] = 0x4;
+		return true;
+	}
+
+	get_bitboard_for_piece( p, m.piece, c ) ^= 1ull << (m.source_col + m.source_row * 8);
+	p.bitboards[c].all_pieces ^= 1ull << (m.source_col + m.source_row * 8);
+
+	if( m.captured_piece != pieces2::none ) {
+		if( m.flags & move_flags::enpassant ) {
+			p.bitboards[1-c].pawns ^= 1ull << (m.target_col + m.source_row * 8);
+			p.bitboards[1-c].all_pieces ^= 1ull << (m.target_col + m.source_row * 8);
+			p.board2[m.target_col][m.source_row] = 0;
+		}
+		else {
+			get_bitboard_for_piece( p, m.captured_piece, static_cast<color::type>(1-c) ) ^= 1ull << (m.target_col + m.target_row * 8);
+			p.bitboards[1-c].all_pieces ^= 1ull << (m.target_col + m.target_row * 8);
+
+			if( m.captured_piece == pieces2::rook ) {
+				if( !m.target_col && m.target_row == (c ? 0 : 7) ) {
+					p.castle[1-c] &= 0x5;
+				}
+				else if( m.target_col == 7 && m.target_row == (c ? 0 : 7) ) {
+					p.castle[1-c] &= 0x6;
+				}
+			}
 		}
 	}
-	case pieces::king:
-		return p.bitboards[c].king;
-	case pieces::queen:
-		return p.bitboards[c].queens;
-	case pieces::rook1:
-	case pieces::rook2:
-		return p.bitboards[c].rooks;
-	case pieces::bishop1:
-	case pieces::bishop2:
-		return p.bitboards[c].bishops;
-	case pieces::knight1:
-	case pieces::knight2:
-		return p.bitboards[c].knights;
+
+	if( m.piece == pieces2::rook ) {
+		if( !m.source_col && m.source_row == (c ? 7 : 0) ) {
+			p.castle[c] &= 0x5;
+		}
+		else if( m.source_col == 7 && m.source_row == (c ? 7 : 0) ) {
+			p.castle[c] &= 0x6;
+		}
 	}
+	else if( m.piece == pieces2::king ) {
+		p.castle[c] &= 0x4;
+	}
+
+	if( m.piece == pieces2::pawn && (m.source_row + 2 == m.target_row || m.source_row == m.target_row + 2) ) {
+		p.can_en_passant = (c << 6) + m.target_row * 8 + m.target_col;
+	}
+	else {
+		p.can_en_passant = 0;
+	}
+
+	if( m.flags & move_flags::promotion ) {
+		p.board2[m.target_col][m.target_row] = pieces2::queen | (c << 4);
+		p.bitboards[c].queens ^= 1ull << (m.target_col + m.target_row * 8);
+	}
+	else {
+		p.board2[m.target_col][m.target_row] = m.piece | (c << 4);
+		get_bitboard_for_piece( p, m.piece, c ) ^= 1ull << (m.target_col + m.target_row * 8);
+	}
+	p.bitboards[c].all_pieces ^= 1ull << (m.target_col + m.target_row * 8);
+	
+	return true;
+}
 }
 
 
 bool apply_move( position& p, move const& m, color::type c, bool& capture )
 {
-	unsigned char source = p.board[m.source_col][m.source_row];
-	if( source == pieces::nil ) {
-		// Happens in case of hash collisions. Sad but unavoidable.
-		//std::cerr << "FAIL, moving dead piece!" << (int)source << " " << (int)m.target_col << " " << (int)m.target_row << std::endl;
-		capture = false;
-		return false;
-	}
-	source &= 0x0f;
-	piece& pp = p.pieces[c][source];
-	ASSERT( pp.alive );
+	bool ret = do_apply_move( p, m, c, capture );
 
-	p.board[m.source_col][m.source_row] = pieces::nil;
-	p.board2[m.source_col][m.source_row] = 0;
-
-	get_bitboard_for_piece( p, source, c ) ^= 1ull << (m.source_row * 8 + m.source_col);
-	p.bitboards[c].all_pieces ^= 1ull << (m.source_row * 8 + m.source_col);
-
-	// Handle castling
-	if( source == pieces::king ) {
-		if( m.source_col == 4 ) {
-			if( m.target_col == 6 ) {
-				// Kingside
-				ASSERT( !pp.special );
-				ASSERT( p.pieces[c][pieces::rook2].special );
-				ASSERT( p.pieces[c][pieces::rook2].alive );
-				pp.column = 6;
-				p.board[6][m.target_row] = pieces::king | (c << 4);
-				p.board[7][m.target_row] = pieces::nil;
-				p.board[5][m.target_row] = pieces::rook2 | (c << 4);
-				p.board2[6][m.target_row] = pieces2::king | (c << 4);
-				p.board2[7][m.target_row] = 0;
-				p.board2[5][m.target_row] = pieces2::rook | (c << 4);
-				p.pieces[c][pieces::rook2].column = 5;
-				p.can_en_passant = 0;
-				capture = false;
-				p.bitboards[c].king ^= 1ull << (m.target_row * 8 + m.target_col);
-				p.bitboards[c].rooks ^= 1ull << (m.target_row * 8 + 7);
-				p.bitboards[c].rooks ^= 1ull << (m.target_row * 8 + 5);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + 7);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + 5);
-				p.castle[c] = 0x4;
-				return true;
-			}
-			else if( m.target_col == 2 ) {
-				// Queenside
-				pp.column = 2;
-				p.board[2][m.target_row] = pieces::king | (c << 4);
-				p.board[0][m.target_row] = pieces::nil;
-				p.board[3][m.target_row] = pieces::rook1 | (c << 4);
-				p.board2[2][m.target_row] = pieces2::king | (c << 4);
-				p.board2[0][m.target_row] = 0;
-				p.board2[3][m.target_row] = pieces2::rook | (c << 4);
-				p.pieces[c][pieces::rook1].column = 3;
-				p.can_en_passant = 0;
-				capture = false;
-				p.bitboards[c].king ^= 1ull << (m.target_row * 8 + m.target_col);
-				p.bitboards[c].rooks ^= 1ull << (m.target_row * 8 + 0);
-				p.bitboards[c].rooks ^= 1ull << (m.target_row * 8 + 3);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + 0);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + 3);
-				p.castle[c] = 0x4;
-				return true;
-			}
-		}
-		p.castle[c] &= 0x4;
-	}
-	else if( source == pieces::rook1 ) {
-		p.castle[c] &= 0x5;
-	}
-	else if( source == pieces::rook2 ) {
-		p.castle[c] &= 0x6;
-	}
-
-	bool const is_pawn = source >= pieces::pawn1 && source <= pieces::pawn8 && !pp.special;
-
-	bool pawn_capture = false;
-
-	unsigned char old_piece = p.board[m.target_col][m.target_row];
-	if( old_piece != pieces::nil ) {
-		// Ordinary capture
-		ASSERT( (old_piece >> 4) != c );
-		old_piece &= 0x0f;
-		ASSERT( old_piece != pieces::king );
-
-		piece& cp = p.pieces[1-c][old_piece];
-
-		if( old_piece >= pieces::pawn1 && old_piece <= pieces::pawn8 ) {
-			if( !p.pieces[1-c][old_piece].special ) {
-				p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.target_row );
-				pawn_capture = true;
-				p.material[1-c] -= material_values::pawn;
+	if( m.piece == pieces2::pawn || m.captured_piece == pieces2::pawn ) {
+		if( m.captured_piece == pieces2::pawn ) {
+			if( m.flags & move_flags::enpassant ) {
+				p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.source_row );
 			}
 			else {
-				unsigned short promoted = (p.promotions[1-c] >> (2 * (old_piece - pieces::pawn1) ) ) & 0x03;
-				switch( promoted ) {
-				case promotions::queen:
-					p.material[1-c] -= material_values::queen;
-					break;
-				case promotions::rook:
-					p.material[1-c] -= material_values::rook;
-					break;
-				case promotions::bishop:
-					p.material[1-c] -= material_values::bishop;
-					break;
-				case promotions::knight:
-					p.material[1-c] -= material_values::knight;
-					break;
-				}
+				p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.target_row );
+			}
+		}
+		if( m.piece == pieces2::pawn ) {
+			p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.source_col, m.source_row );
+			if( !(m.flags & move_flags::promotion) ) {
+				p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.target_col, m.target_row );
 			}
 		}
 
-		get_bitboard_for_piece( p, old_piece, static_cast<color::type>(1-c) ) ^= 1ull << (m.target_row * 8 + m.target_col);
-		p.bitboards[1-c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-
-		cp.alive = false;
-		
-		capture = true;
-
-		if( m.captured_piece == pieces2::rook ) {
-			if( !m.target_col && m.target_row == (c ? 0 : 7) ) {
-				p.castle[1-c] &= 0x5;
-			}
-			else if( m.target_col == 7 && m.target_row == (c ? 0 : 7) ) {
-				p.castle[1-c] &= 0x6;
-			}
+		if( !pawn_hash_table.lookup( p.pawns.hash, p.pawns.eval ) ) {
+			p.pawns.eval = evaluate_pawns(p.bitboards[0].pawns, p.bitboards[1].pawns);
+			pawn_hash_table.store( p.pawns.hash, p.pawns.eval );
 		}
 	}
-	else if( is_pawn && p.pieces[c][source].column != m.target_col ) {
-		// Must be en-passant
-		old_piece = p.board[m.target_col][m.source_row];
-		ASSERT( (old_piece >> 4) != c );
-		old_piece &= 0x0f;
-		ASSERT( old_piece >= pieces::pawn1 && old_piece <= pieces::pawn8 );
-		ASSERT( old_piece != pieces::king );
-		piece& cp = p.pieces[1-c][old_piece];
 
-		p.bitboards[1-c].pawns ^= 1ull << (m.source_row * 8 + m.target_col);
-		p.bitboards[1-c].all_pieces ^= 1ull << (m.source_row * 8 + m.target_col);
-
-		cp.alive = false;
-		cp.special = false;
-		p.board[m.target_col][m.source_row] = pieces::nil;
-		p.board2[m.target_col][m.source_row] = 0;
-
-		p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.source_row );
-		pawn_capture = true;
-		p.material[1-c] -= material_values::pawn;
-
-		capture = true;
-	}
-	else {
-		capture = false;
-	}
-
-	if( is_pawn ) {
-		p.pawns.hash ^= get_pawn_structure_hash( c, m.source_col, m.source_row );
-		if( m.target_row == 0 || m.target_row == 7) {
-			pp.special = true;
-			p.promotions[c] |= promotions::queen << (2 * (source - pieces::pawn1) );
-			p.can_en_passant = 0;
-			p.material[c] -= material_values::pawn;
-			p.material[c] += material_values::queen;
-			p.bitboards[c].queens ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.board2[m.target_col][m.target_row] = pieces2::queen | (c << 4);
-		}
-		else if( (c == color::white) ? (pp.row + 2 == m.target_row) : (m.target_row + 2 == pp.row) ) {
-			p.can_en_passant = m.target_col + m.target_row * 8 + (c ? 64 : 0);
-			p.pawns.hash ^= get_pawn_structure_hash( c, m.target_col, m.target_row );
-			p.bitboards[c].pawns ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.board2[m.target_col][m.target_row] = convert_type( p, c, source ) | (c << 4);
-		}
-		else {
-			p.can_en_passant = 0;
-			p.pawns.hash ^= get_pawn_structure_hash( c, m.target_col, m.target_row );
-			p.bitboards[c].pawns ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.board2[m.target_col][m.target_row] = convert_type( p, c, source ) | (c << 4);
-		}
-	}
-	else {
-		p.can_en_passant = 0;
-		get_bitboard_for_piece( p, source, c ) ^= 1ull << (m.target_row * 8 + m.target_col);
-		p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-		p.board2[m.target_col][m.target_row] = convert_type( p, c, source ) | (c << 4);
-	}
-
-	p.board[m.target_col][m.target_row] = source | (c << 4);
-
-	pp.column = m.target_col;
-	pp.row = m.target_row;
-
-	if( is_pawn || pawn_capture ) {
-		short pawn_eval;
-		if( !pawn_hash_table.lookup( p.pawns.hash, pawn_eval ) ) {
-			pawn_eval = evaluate_pawns( p.bitboards[0].pawns, p.bitboards[1].pawns );
-			pawn_hash_table.store( p.pawns.hash, pawn_eval );
-		}
-		p.pawns.eval = pawn_eval;
-	}
-
-	return true;
+	return ret;
 }
 
 
 bool apply_move( position& p, move_info const& mi, color::type c, bool& capture )
 {
-	move const& m = mi.m;
-	unsigned char source = p.board[m.source_col][m.source_row];
-	if( source == pieces::nil ) {
-		// Happens in case of hash collisions. Sad but unavoidable.
-		//std::cerr << "FAIL, moving dead piece!" << (int)source << " " << (int)m.target_col << " " << (int)m.target_row << std::endl;
-		capture = false;
-		return false;
-	}
-	source &= 0x0f;
-	piece& pp = p.pieces[c][source];
-	ASSERT( pp.alive );
-
-	p.board[m.source_col][m.source_row] = pieces::nil;
-	p.board2[m.source_col][m.source_row] = 0;
+	bool ret = do_apply_move( p, mi.m, c, capture );
 	p.pawns = mi.pawns;
-
-	get_bitboard_for_piece( p, source, c ) ^= 1ull << (m.source_row * 8 + m.source_col);
-	p.bitboards[c].all_pieces ^= 1ull << (m.source_row * 8 + m.source_col);
-
-	// Handle castling
-	if( source == pieces::king ) {
-		if( m.source_col == 4 ) {
-			if( m.target_col == 6 ) {
-				// Kingside
-				ASSERT( !pp.special );
-				ASSERT( p.pieces[c][pieces::rook2].special );
-				ASSERT( p.pieces[c][pieces::rook2].alive );
-				pp.column = 6;
-				p.board[6][m.target_row] = pieces::king | (c << 4);
-				p.board[7][m.target_row] = pieces::nil;
-				p.board[5][m.target_row] = pieces::rook2 | (c << 4);
-				p.board2[6][m.target_row] = pieces2::king | (c << 4);
-				p.board2[7][m.target_row] = 0;
-				p.board2[5][m.target_row] = pieces2::rook | (c << 4);
-				p.pieces[c][pieces::rook2].column = 5;
-				p.can_en_passant = 0;
-				capture = false;
-				p.bitboards[c].king ^= 1ull << (m.target_row * 8 + m.target_col);
-				p.bitboards[c].rooks ^= 1ull << (m.target_row * 8 + 7);
-				p.bitboards[c].rooks ^= 1ull << (m.target_row * 8 + 5);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + 7);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + 5);
-				p.castle[c] = 0x4;
-				return true;
-			}
-			else if( m.target_col == 2 ) {
-				// Queenside
-				pp.column = 2;
-				p.board[2][m.target_row] = pieces::king | (c << 4);
-				p.board[0][m.target_row] = pieces::nil;
-				p.board[3][m.target_row] = pieces::rook1 | (c << 4);
-				p.board2[2][m.target_row] = pieces2::king | (c << 4);
-				p.board2[0][m.target_row] = 0;
-				p.board2[3][m.target_row] = pieces2::rook | (c << 4);
-				p.pieces[c][pieces::rook1].column = 3;
-				p.can_en_passant = 0;
-				capture = false;
-				p.bitboards[c].king ^= 1ull << (m.target_row * 8 + m.target_col);
-				p.bitboards[c].rooks ^= 1ull << (m.target_row * 8 + 0);
-				p.bitboards[c].rooks ^= 1ull << (m.target_row * 8 + 3);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + 0);
-				p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + 3);
-				p.castle[c] = 0x4;
-				return true;
-			}
-		}
-		p.castle[c] &= 0x4;
-	}
-	else if( source == pieces::rook1 ) {
-		p.castle[c] &= 0x5;
-	}
-	else if( source == pieces::rook2 ) {
-		p.castle[c] &= 0x6;
-	}
-
-	bool const is_pawn = source >= pieces::pawn1 && source <= pieces::pawn8 && !pp.special;
-
-	unsigned char old_piece = p.board[m.target_col][m.target_row];
-	if( old_piece != pieces::nil ) {
-		// Ordinary capture
-		ASSERT( (old_piece >> 4) != c );
-		old_piece &= 0x0f;
-		ASSERT( old_piece != pieces::king );
-
-		p.material[1-c] -= get_material_value( p, static_cast<color::type>(1-c), old_piece );
-
-		piece& cp = p.pieces[1-c][old_piece];
-
-		get_bitboard_for_piece( p, old_piece, static_cast<color::type>(1-c) ) ^= 1ull << (m.target_row * 8 + m.target_col);
-		p.bitboards[1-c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-
-		cp.alive = false;
-		cp.special = false;
-
-		capture = true;
-
-		if( m.captured_piece == pieces2::rook ) {
-			if( !m.target_col && m.target_row == (c ? 0 : 7) ) {
-				p.castle[1-c] &= 0x5;
-			}
-			else if( m.target_col == 7 && m.target_row == (c ? 0 : 7) ) {
-				p.castle[1-c] &= 0x6;
-			}
-		}
-	}
-	else if( is_pawn && p.pieces[c][source].column != m.target_col ) {
-		// Must be en-passant
-		old_piece = p.board[m.target_col][m.source_row];
-		ASSERT( (old_piece >> 4) != c );
-		old_piece &= 0x0f;
-		ASSERT( old_piece >= pieces::pawn1 && old_piece <= pieces::pawn8 );
-		ASSERT( old_piece != pieces::king );
-		piece& cp = p.pieces[1-c][old_piece];
-
-		p.bitboards[1-c].pawns ^= 1ull << (m.source_row * 8 + m.target_col);
-		p.bitboards[1-c].all_pieces ^= 1ull << (m.source_row * 8 + m.target_col);
-
-		cp.alive = false;
-		cp.special = false;
-		p.board[m.target_col][m.source_row] = pieces::nil;
-		p.board2[m.target_col][m.source_row] = 0;
-
-		p.material[1-c] -= material_values::pawn;
-
-		capture = true;
-	}
-	else {
-		capture = false;
-	}
-
-	if( is_pawn ) {
-		if( m.target_row == 0 || m.target_row == 7) {
-			pp.special = true;
-			p.promotions[c] |= promotions::queen << (2 * (source - pieces::pawn1) );
-			p.can_en_passant = 0;
-			p.material[c] -= material_values::pawn;
-			p.material[c] += material_values::queen;
-			p.bitboards[c].queens ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.board2[m.target_col][m.target_row] = pieces2::queen | (c << 4);
-		}
-		else if( (c == color::white) ? (pp.row + 2 == m.target_row) : (m.target_row + 2 == pp.row) ) {
-			p.can_en_passant = m.target_col + m.target_row * 8 + (c ? 64 : 0);;
-			p.bitboards[c].pawns ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.board2[m.target_col][m.target_row] = convert_type(p, c, source) | (c << 4);
-		}
-		else {
-			p.can_en_passant = 0;
-			p.bitboards[c].pawns ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-			p.board2[m.target_col][m.target_row] = convert_type(p, c, source) | (c << 4);
-		}
-	}
-	else {
-		p.can_en_passant = 0;
-		get_bitboard_for_piece( p, source, c ) ^= 1ull << (m.target_row * 8 + m.target_col);
-		p.bitboards[c].all_pieces ^= 1ull << (m.target_row * 8 + m.target_col);
-		p.board2[m.target_col][m.target_row] = convert_type(p, c, source) | (c << 4);
-	}
-
-	p.board[m.target_col][m.target_row] = source | (c << 4);
-
-	pp.column = m.target_col;
-	pp.row = m.target_row;
-
-	return true;
+	return ret;
 }
 
 
 namespace {
 static mutex m;
-static unsigned int random_unsigned_long_long_pos = 0;
-static unsigned int random_unsigned_char = 0;
+static unsigned long long random_unsigned_long_long_pos = 0;
+static unsigned long long random_unsigned_char = 0;
 }
 
-void init_random( int seed )
+void init_random( unsigned long long seed )
 {
 	random_unsigned_char = seed;
 	random_unsigned_long_long_pos = (seed + 0xf00) % sizeof(precomputed_random_data);

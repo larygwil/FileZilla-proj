@@ -771,6 +771,11 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 #if 0
 	{
 		position p2 = p;
+		p2.init_pawn_structure();
+
+		position p4 = p;
+		p4.init_pawn_structure();
+
 		bool captured;
 		apply_move( p2, m, c, captured );
 		short fresh_eval = evaluate_fast( p2, c );
@@ -896,103 +901,7 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 	return eval_fast;
 }
 
-short get_material_value( position const& p, color::type c, int pi )
-{
-	switch( pi ) {
-	case pieces::pawn1:
-	case pieces::pawn2:
-	case pieces::pawn3:
-	case pieces::pawn4:
-	case pieces::pawn5:
-	case pieces::pawn6:
-	case pieces::pawn7:
-	case pieces::pawn8:
-	{
-		piece const& pp = p.pieces[c][pi];
-		if( pp.special ) {
-			unsigned short promoted = (p.promotions[c] >> ( 2 * (pi - pieces::pawn1) ) ) & 0x03;
-			switch( promoted ) {
-			case promotions::queen:
-				return material_values::queen;
-			case promotions::rook:
-				return material_values::rook;
-			case promotions::bishop:
-				return material_values::bishop;
-			case promotions::knight:
-				return material_values::knight;
-			}
-		}
-		else {
-			return material_values::pawn;
-		}
-	}
-	case pieces::king:
-		return 0;
-	case pieces::queen:
-		return material_values::queen;
-	case pieces::rook1:
-	case pieces::rook2:
-		return material_values::rook;
-	case pieces::bishop1:
-	case pieces::bishop2:
-		return material_values::bishop;
-	case pieces::knight1:
-	case pieces::knight2:
-		return material_values::knight;
-	}
-
-	return 0;
-}
-
 short get_material_value( pieces2::type pi )
 {
 	return static_cast<material_values::type>(pi);
-}
-
-pieces2::type convert_type( position const& p, int c, int pi )
-{
-	pi &= 0x0f;
-	switch( pi ) {
-	case pieces::pawn1:
-	case pieces::pawn2:
-	case pieces::pawn3:
-	case pieces::pawn4:
-	case pieces::pawn5:
-	case pieces::pawn6:
-	case pieces::pawn7:
-	case pieces::pawn8:
-	{
-		piece const& pp = p.pieces[c][pi];
-		if( pp.special ) {
-			unsigned short promoted = (p.promotions[c] >> ( 2 * (pi - pieces::pawn1) ) ) & 0x03;
-			switch( promoted ) {
-			case promotions::queen:
-				return pieces2::queen;
-			case promotions::rook:
-				return pieces2::rook;
-			case promotions::bishop:
-				return pieces2::bishop;
-			case promotions::knight:
-				return pieces2::knight;
-			}
-		}
-		else {
-			return pieces2::pawn;
-		}
-	}
-	default:
-	case pieces::king:
-		return pieces2::king;
-	case pieces::queen:
-		return pieces2::queen;
-	case pieces::rook1:
-	case pieces::rook2:
-		return pieces2::rook;
-	case pieces::bishop1:
-	case pieces::bishop2:
-		return pieces2::bishop;
-	case pieces::knight1:
-	case pieces::knight2:
-		return pieces2::knight;
-	}
 }

@@ -82,8 +82,7 @@ void auto_play()
 		}
 
 		bool reset_seen = false;
-		int pi = p.board[m.source_col][m.source_row] & 0x0f;
-		if( (pi >= pieces::pawn1 && pi <= pieces::pawn8 && !p.pieces[c][pi].special) || p.board[m.target_col][m.target_row] != pieces::nil ) {
+		if( m.piece == pieces2::pawn || m.captured_piece ) {
 			reset_seen = true;
 		}
 
@@ -167,8 +166,7 @@ struct xboard_state
 	{
 		history.push_back( p );
 		bool reset_seen = false;
-		int pi = p.board[m.source_col][m.source_row] & 0x0f;
-		if( (pi >= pieces::pawn1 && pi <= pieces::pawn8 && !p.pieces[c][pi].special) || p.board[m.target_col][m.target_row] != pieces::nil ) {
+		if( m.piece == pieces2::pawn || m.captured_piece ) {
 			reset_seen = true;
 		}
 
@@ -305,7 +303,7 @@ void xboard_thread::onRun()
 		state.bonus_time = 0;
 	}
 
-	int remaining_moves;
+	unsigned long long remaining_moves;
 	if( !state.time_control ) {
 		remaining_moves = (std::max)( 15, (80 - state.clock) / 2 );
 	}
@@ -706,28 +704,46 @@ void perft()
 {
 	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
 
-	position p;
-	init_board( p );
+	unsigned long long const perft_results[] = {
+		20ull,
+		400ull,
+		8902ull,
+		197281ull,
+		4865609ull,
+		119060324ull,
+		3195901860ull,
+		84998978956ull
+	};
 
-	unsigned long long ret = 0;
+	for( int i = 0; i < sizeof(perft_results)/sizeof(unsigned long long); ++i ) {
+		std::cerr << "Calculating number of possible moves in " << (i + 1) << " plies:" << std::endl;
 
-	int max_depth = 6;
+		position p;
+		init_board( p );
 
-	unsigned long long start = get_time();
-	perft( max_depth, p, color::white, ret );
-	unsigned long long stop = get_time();
+		unsigned long long ret = 0;
+
+		int max_depth = i + 1;
+
+		unsigned long long start = get_time();
+		perft( max_depth, p, color::white, ret );
+		unsigned long long stop = get_time();
 
 
-	std::cerr << "Moves: "     << ret << std::endl;
-	std::cerr << "Took:  "     << (stop - start) * 1000 / timer_precision() << " ms" << std::endl;
-	std::cerr << "Time/move: " << ((stop - start) * 1000 * 1000 * 1000) / ret / timer_precision() << " ns" << std::endl;
+		std::cerr << "Moves: "     << ret << std::endl;
+		std::cerr << "Took:  "     << (stop - start) * 1000 / timer_precision() << " ms" << std::endl;
+		std::cerr << "Time/move: " << ((stop - start) * 1000 * 1000 * 1000) / ret / timer_precision() << " ns" << std::endl;
 
-	if( ret != 119060324 ) {
-		std::cerr << "FAIL! Expected 119060324 moves." << std::endl;
+		if( ret != perft_results[i] ) {
+			std::cerr << "FAIL! Expected " << perft_results[i] << " moves." << std::endl;
+			break;
+		}
+		else {
+			std::cerr << "PASS" << std::endl;
+		}
+		std::cerr << std::endl;
 	}
-	else {
-		std::cerr << "PASS" << std::endl;
-	}
+	
 }
 
 

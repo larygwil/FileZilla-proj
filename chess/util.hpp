@@ -12,14 +12,13 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m );
 
 std::string move_to_string( position const& p, color::type c, move const& m );
 
-void init_board_from_pieces( position& p );
 void init_board( position& p );
 
 bool apply_move( position& p, move const& m, color::type c, bool& capture );
 bool apply_move( position& p, move_info const& m, color::type c, bool& capture );
 
 
-void init_random( int seed );
+void init_random( unsigned long long seed );
 
 unsigned char get_random_unsigned_char();
 
