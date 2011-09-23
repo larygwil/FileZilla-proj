@@ -5,8 +5,7 @@
 
 int main()
 {
-	std::cout << "namespace {" << std::endl;
-	std::cout << "static unsigned long long mobility_block[64][64] = {" << std::endl;
+	std::cout << "unsigned long long mobility_block[64][64] = {" << std::endl;
 
 	for( unsigned int source = 0; source < 64; ++source ) {
 		std::cout << "\t{" << std::endl;
@@ -66,7 +65,7 @@ int main()
 	}
 	std::cout << "};" << std::endl << std::endl << std::endl;
 
-	std::cout << "static unsigned long long visibility_bishop[64] = {" << std::endl;
+	std::cout << "unsigned long long visibility_bishop[64] = {" << std::endl;
 
 	for( unsigned int source = 0; source < 64; ++source ) {
 		std::cout << "\t0x";
@@ -98,7 +97,7 @@ int main()
 	std::cout << "};" << std::endl << std::endl << std::endl;
 
 	{
-		std::cout << "static unsigned long long visibility_rook[64] = {" << std::endl;
+		std::cout << "unsigned long long visibility_rook[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
@@ -133,7 +132,7 @@ int main()
 		std::cout << "};" << std::endl;
 	}
 
-	std::cout << "}" << std::endl;
+	std::cout << std::endl;
 
 	{
 		std::cout << "unsigned long long pawn_control[2][64] = {" << std::endl;
@@ -216,6 +215,226 @@ int main()
 			}
 		}
 		std::cout << "};" << std::endl;
+	}
+
+	{
+		std::cout << "unsigned long long ray_n[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			unsigned long long v = 0;
+
+			int source_col = source % 8;
+			int source_row = source / 8;
+
+
+			for( int y = source_row + 1; y < 8; ++y ) {
+				v |= 1ull << (source_col + y * 8);
+			}
+
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
+	}
+
+	{
+		std::cout << "unsigned long long ray_e[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			unsigned long long v = 0;
+
+			int source_col = source % 8;
+			int source_row = source / 8;
+
+
+			for( int x = source_col + 1; x < 8; ++x ) {
+				v |= 1ull << (x + source_row * 8);
+			}
+
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
+	}
+
+	{
+		std::cout << "unsigned long long ray_s[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			unsigned long long v = 0;
+
+			int source_col = source % 8;
+			int source_row = source / 8;
+
+
+			for( int y = source_row - 1; y >= 0; --y ) {
+				v |= 1ull << (source_col + y * 8);
+			}
+
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
+	}
+
+	{
+		std::cout << "unsigned long long ray_w[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			unsigned long long v = 0;
+
+			int source_col = source % 8;
+			int source_row = source / 8;
+
+
+			for( int x = source_col - 1; x >= 0; --x ) {
+				v |= 1ull << (x + source_row * 8);
+			}
+
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
+	}
+
+	{
+		std::cout << "unsigned long long ray_ne[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			unsigned long long v = 0;
+
+			int source_col = source % 8;
+			int source_row = source / 8;
+
+			int x = source_col + 1;
+			int y = source_row + 1;
+			for( ; x < 8 && y < 8; ++x, ++y ) {
+				v |= 1ull << (x + y * 8);
+			}
+
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
+	}
+
+	{
+		std::cout << "unsigned long long ray_se[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			unsigned long long v = 0;
+
+			int source_col = source % 8;
+			int source_row = source / 8;
+
+			int x = source_col + 1;
+			int y = source_row - 1;
+			for( ; x < 8 && y >= 0; ++x, --y ) {
+				v |= 1ull << (x + y * 8);
+			}
+
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
+	}
+
+	{
+		std::cout << "unsigned long long ray_sw[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			unsigned long long v = 0;
+
+			int source_col = source % 8;
+			int source_row = source / 8;
+
+			int x = source_col - 1;
+			int y = source_row - 1;
+			for( ; x >= 0 && y >= 0; --x, --y ) {
+				v |= 1ull << (x + y * 8);
+			}
+
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
+	}
+
+	{
+		std::cout << "unsigned long long ray_nw[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			unsigned long long v = 0;
+
+			int source_col = source % 8;
+			int source_row = source / 8;
+
+			int x = source_col - 1;
+			int y = source_row + 1;
+			for( ; x >= 0 && y < 8; --x, ++y ) {
+				v |= 1ull << (x + y * 8);
+			}
+
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
 	}
 
 	return 0;

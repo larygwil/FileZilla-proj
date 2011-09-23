@@ -569,7 +569,7 @@ short evaluate_pawns( unsigned long long white_pawns, unsigned long long black_p
 		while( pawns ) {
 			unsigned long long pawn;
 			bitscan( pawns, pawn );
-			pawns ^= 1ull << pawn;
+			pawns &= pawns - 1;
 
 			ret += evaluate_pawn( white_pawns, black_pawns, color::white, pawn );
 		}
@@ -581,7 +581,7 @@ short evaluate_pawns( unsigned long long white_pawns, unsigned long long black_p
 		while( pawns ) {
 			unsigned long long pawn;
 			bitscan( pawns, pawn );
-			pawns ^= 1ull << pawn;
+			pawns &= pawns - 1;
 
 			ret -= evaluate_pawn( black_pawns, white_pawns, color::black, pawn );
 		}
@@ -600,12 +600,12 @@ short evaluate_side( position const& p, color::type c )
 		unsigned long long piece;
 		bitscan( pieces, piece );
 
-		unsigned long long bpiece = 1ull << piece;
-		pieces ^= bpiece;
+		pieces &= pieces - 1;
 
 		unsigned long long col = piece % 8;
 		unsigned long long row = piece / 8;
 
+		unsigned long long bpiece = 1ull << piece;
 		if( p.bitboards[c].b[bb_type::pawns] & bpiece ) {
 			result += pawn_values[c][col][row];
 		}

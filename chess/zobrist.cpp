@@ -66,9 +66,9 @@ unsigned long long get_zobrist_hash( position const& p, color::type c ) {
 			unsigned long long piece;
 			bitscan( pieces, piece );
 
-			unsigned long long bpiece = 1ull << piece;
-			pieces ^= bpiece;
+			pieces &= pieces - 1;
 
+			unsigned long long bpiece = 1ull << piece;
 			if( p.bitboards[c].b[bb_type::pawns] & bpiece ) {
 				ret ^= pawns[c][piece];
 			}

@@ -25,7 +25,6 @@ enum type {
 };
 }
 
-short get_material_value( position const& p, color::type c, int pi );
 short get_material_value( pieces2::type pi );
 
 #endif

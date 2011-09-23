@@ -111,6 +111,15 @@ asm \
 );
 
 
+#define bitscan_reverse( mask, index ) \
+asm \
+( \
+"bsrq %[" #mask "], %[" #index "]" \
+:[index] "=r" (index) \
+:[mask] "mr" (mask) \
+);
+
+
 #define popcount __builtin_popcountll
 
 #endif

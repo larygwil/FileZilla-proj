@@ -3,6 +3,7 @@
 #include "eval.hpp"
 #include "util.hpp"
 #include "calc.hpp"
+#include "sliding_piece_attacks.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -133,26 +134,23 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 
 void calc_moves_queen( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, unsigned long long queen )
 {
-	for( int cx = -1; cx <= 1; ++cx ) {
-		for( int cy = -1; cy <= 1; ++cy ) {
-			if( !cx && !cy ) {
-				continue;
-			}
+	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
 
-			int old_col = static_cast<int>(queen % 8);
-			int old_row = static_cast<int>(queen / 8);
+	unsigned long long possible_moves = rook_attacks( queen, all_blockers ) | bishop_attacks( queen, all_blockers );
+	possible_moves &= ~all_blockers;
 
-			int x, y;
-			for( x = old_col + cx, y = old_row + cy; x >= 0 && x <= 7 && y >= 0 && y <= 7; x += cx, y += cy ) {
-				unsigned char target = p.board2[x][y];
-				if( !target ) {
-					add_if_legal( p, c, current_evaluation, moves, check, pieces2::queen, old_col, old_row, x, y, move_flags::valid );
-				}
-				else {
-					break;
-				}
-			}
-		}
+	unsigned char old_col = static_cast<unsigned char>(queen % 8);
+	unsigned char old_row = static_cast<unsigned char>(queen / 8);
+
+	unsigned long long queen_move;
+	while( possible_moves ) {
+		bitscan( possible_moves, queen_move );
+		possible_moves &= possible_moves - 1;
+
+		unsigned char new_col = static_cast<unsigned char>(queen_move % 8);
+		unsigned char new_row = static_cast<unsigned char>(queen_move / 8);
+
+		add_if_legal( p, c, current_evaluation, moves, check, pieces2::queen, old_col, old_row, new_col, new_row, move_flags::valid );
 	}
 }
 
@@ -172,21 +170,23 @@ void calc_moves_queens( position const& p, color::type c, int const current_eval
 void calc_moves_bishop( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
 					    unsigned long long bishop )
 {
-	int old_col = static_cast<int>(bishop % 8);
-	int old_row = static_cast<int>(bishop / 8);
-	for( int cx = -1; cx <= 1; cx += 2 ) {
-		for( int cy = -1; cy <= 1; cy += 2 ) {
-			int x, y;
-			for( x = old_col + cx, y = old_row + cy; x >= 0 && x <= 7 && y >= 0 && y <= 7; x += cx, y += cy ) {
-				unsigned char target = p.board2[x][y];
-				if( !target ) {
-					add_if_legal( p, c, current_evaluation, moves, check, pieces2::bishop, old_col, old_row, x, y, move_flags::valid );
-				}
-				else {
-					break;
-				}
-			}
-		}
+	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+
+	unsigned long long possible_moves = bishop_attacks( bishop, all_blockers );
+	possible_moves &= ~all_blockers;
+
+	unsigned char old_col = static_cast<unsigned char>(bishop % 8);
+	unsigned char old_row = static_cast<unsigned char>(bishop / 8);
+
+	unsigned long long bishop_move;
+	while( possible_moves ) {
+		bitscan( possible_moves, bishop_move );
+		possible_moves &= possible_moves - 1;
+
+		unsigned char new_col = static_cast<unsigned char>(bishop_move % 8);
+		unsigned char new_row = static_cast<unsigned char>(bishop_move / 8);
+
+		add_if_legal( p, c, current_evaluation, moves, check, pieces2::bishop, old_col, old_row, new_col, new_row, move_flags::valid );
 	}
 }
 
@@ -206,30 +206,23 @@ void calc_moves_bishops( position const& p, color::type c, int const current_eva
 void calc_moves_rook( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
 					  unsigned long long rook )
 {
-	int old_col = static_cast<int>(rook % 8);
-	int old_row = static_cast<int>(rook / 8);
+	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
 
-	for( int cx = -1; cx <= 1; cx += 2 ) {
-		for( int x = old_col + cx; x >= 0 && x <= 7; x += cx ) {
-			unsigned char target = p.board2[x][old_row];
-			if( !target ) {
-				add_if_legal( p, c, current_evaluation, moves, check, pieces2::rook, old_col, old_row, x, old_row, move_flags::valid );
-			}
-			else {
-				break;
-			}
-		}
-	}
-	for( int cy = -1; cy <= 1; cy += 2 ) {
-		for( int y = old_row + cy; y >= 0 && y <= 7; y += cy ) {
-			unsigned char target = p.board2[old_col][y];
-			if( !target ) {
-				add_if_legal( p, c, current_evaluation, moves, check, pieces2::rook, old_col, old_row, old_col, y, move_flags::valid );
-			}
-			else {
-				break;
-			}
-		}
+	unsigned long long possible_moves = rook_attacks( rook, all_blockers );
+	possible_moves &= ~all_blockers;
+
+	unsigned char old_col = static_cast<unsigned char>(rook % 8);
+	unsigned char old_row = static_cast<unsigned char>(rook / 8);
+
+	unsigned long long rook_move;
+	while( possible_moves ) {
+		bitscan( possible_moves, rook_move );
+		possible_moves &= possible_moves - 1;
+
+		unsigned char new_col = static_cast<unsigned char>(rook_move % 8);
+		unsigned char new_row = static_cast<unsigned char>(rook_move / 8);
+
+		add_if_legal( p, c, current_evaluation, moves, check, pieces2::rook, old_col, old_row, new_col, new_row, move_flags::valid );
 	}
 }
 

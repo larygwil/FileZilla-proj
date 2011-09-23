@@ -148,7 +148,7 @@ bool detect_check_from_queen( position const& p, color::type c, unsigned char ki
 	while( queens ) {
 		unsigned long long queen;
 		bitscan( queens, queen );
-		queens ^= 1ull << queen;
+		queens &= queens - 1;
 
 		if( detect_check_from_queen( p, c, king_col, king_row, ignore_col, ignore_row, queen ) ) {
 			return true;
@@ -213,7 +213,7 @@ bool detect_check_from_rooks( position const& p, color::type c, unsigned char ki
 	while( rooks ) {
 		unsigned long long rook;
 		bitscan( rooks, rook );
-		rooks ^= 1ull << rook;
+		rooks &= rooks - 1;
 
 		if( detect_check_from_rook( p, c, king_col, king_row, ignore_col, ignore_row, rook ) ) {
 			return true;
@@ -263,7 +263,7 @@ bool detect_check_from_bishops( position const& p, color::type c, unsigned char 
 	while( bishops ) {
 		unsigned long long bishop;
 		bitscan( bishops, bishop );
-		bishops ^= 1ull << bishop;
+		bishops &= bishops - 1;
 
 		if( detect_check_from_bishop( p, c, king_col, king_row, ignore_col, ignore_row, bishop ) ) {
 			return true;
@@ -304,7 +304,7 @@ bool detect_check_from_pawns( position const& p, color::type c, unsigned char ki
 	while( pawns ) {
 		unsigned long long pawn;
 		bitscan( pawns, pawn );
-		pawns ^= 1ull << pawn;
+		pawns &= pawns - 1;
 
 		if( detect_check_from_pawn( p, c, king_col, king_row, pawn ) ) {
 			return true;
@@ -543,7 +543,7 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 	unsigned long long knight;
 	while( knights ) {
 		bitscan( knights, knight );
-		knights ^= 1ull << knight;
+		knights &= knights - 1;
 		calc_check_map_knight( p, c, map, king_col, king_row, static_cast<int>(knight % 8), static_cast<int>(knight / 8) );
 	}
 

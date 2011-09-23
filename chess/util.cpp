@@ -568,7 +568,7 @@ void position::init_pawn_structure()
 		while( cpawns ) {
 			unsigned long long pawn;
 			bitscan( cpawns, pawn );
-			cpawns ^= 1ull << pawn;
+			cpawns &= cpawns - 1;
 
 			pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), static_cast<unsigned char>(pawn % 8), static_cast<unsigned char>(pawn / 8) );
 		}
