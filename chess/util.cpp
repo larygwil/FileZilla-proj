@@ -389,6 +389,15 @@ void init_bitboards( position& p )
 
 	for( int c = 0; c < 2; ++c ) {
 		p.bitboards[c].b[bb_type::all_pieces] = p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::knights] | p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens] | p.bitboards[c].b[bb_type::king];
+
+		p.bitboards[c].b[bb_type::pawn_control] = 0;
+		unsigned long long pawn;
+		unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
+		while( pawns ) {
+			bitscan( pawns, pawn );
+			pawns &= pawns - 1;
+			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
+		}
 	}
 }
 
@@ -449,6 +458,17 @@ static bool do_apply_move( position& p, move const& m, color::type c, bool& capt
 				}
 			}
 		}
+
+		if( m.captured_piece == pieces2::pawn ) {
+			p.bitboards[1-c].b[bb_type::pawn_control] = 0;
+			unsigned long long pawn;
+			unsigned long long pawns = p.bitboards[1-c].b[bb_type::pawns];
+			while( pawns ) {
+				bitscan( pawns, pawn );
+				pawns &= pawns - 1;
+				p.bitboards[1-c].b[bb_type::pawn_control] |= pawn_control[1-c][pawn];
+			}
+		}
 		p.material[1-c] -= get_material_value( m.captured_piece );
 	}
 
@@ -481,6 +501,17 @@ static bool do_apply_move( position& p, move const& m, color::type c, bool& capt
 	}
 	p.bitboards[c].b[bb_type::all_pieces] ^= target_square;
 	
+	if( m.piece == pieces2::pawn ) {
+		p.bitboards[c].b[bb_type::pawn_control] = 0;
+		unsigned long long pawn;
+		unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
+		while( pawns ) {
+			bitscan( pawns, pawn );
+			pawns &= pawns - 1;
+			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
+		}
+	}
+
 	return true;
 }
 }

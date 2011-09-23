@@ -874,17 +874,6 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 {
 	eval_fast += evaluate_pawn_shield( p, c );
 
-	for( int i = 0; i < 2; ++i ) {
-		p.bitboards[i].b[bb_type::pawn_control] = 0;
-		unsigned long long pawn;
-		unsigned long long pawns = p.bitboards[i].b[bb_type::pawns];
-		while( pawns ) {
-			bitscan( pawns, pawn );
-			pawns &= pawns - 1;
-			p.bitboards[i].b[bb_type::pawn_control] |= pawn_control[i][pawn];
-		}
-	}
-
 	eval_fast += evaluate_mobility( p, c, p.bitboards );
 	
 	// Adjust score based on material. The basic idea is that,
