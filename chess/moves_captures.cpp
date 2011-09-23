@@ -105,7 +105,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 	unsigned long long i;
 	while( king_moves ) {
 		bitscan( king_moves, i );
-		king_moves ^= 1ull << i;
+		king_moves &= king_moves - 1;
 		calc_moves_king( p, c, moves, check,
 						 old_col, old_row,
 						 static_cast<unsigned char>(i % 8), static_cast<unsigned char>(i / 8) );
@@ -143,7 +143,7 @@ void calc_moves_queens( position const& p, color::type c, move_info*& moves, che
 	while( queens ) {
 		unsigned long long queen;
 		bitscan( queens, queen );	
-		queens ^= 1ull << queen;
+		queens &= queens - 1;
 		calc_moves_queen( p, c, moves, check, queen );
 	}
 }
@@ -180,7 +180,7 @@ void calc_moves_bishops( position const& p, color::type c, move_info*& moves, ch
 	while( bishops ) {
 		unsigned long long bishop;
 		bitscan( bishops, bishop );	
-		bishops ^= 1ull << bishop;
+		bishops &= bishops - 1;
 		calc_moves_bishop( p, c, moves, check, bishop );
 	}
 }
@@ -217,7 +217,7 @@ void calc_moves_rooks( position const& p, color::type c, move_info*& moves, chec
 	while( rooks ) {
 		unsigned long long rook;
 		bitscan( rooks, rook );
-		rooks ^= 1ull << rook;
+		rooks &= rooks - 1;
 		calc_moves_rook( p, c, moves, check, rook );
 	}
 }
@@ -247,7 +247,7 @@ void calc_moves_knight( position const& p, color::type c, move_info*& moves, che
 	while( new_knights ) {
 		unsigned long long new_knight;
 		bitscan( new_knights, new_knight );
-		new_knights ^= 1ull << new_knight;
+		new_knights &= new_knights - 1;
 		calc_moves_knight( p, c, moves, check,
 						   old_col, old_row,
 						   static_cast<unsigned char>(new_knight % 8), static_cast<unsigned char>(new_knight / 8) );
@@ -261,7 +261,7 @@ void calc_moves_knights( position const& p, color::type c, move_info*& moves, ch
 	while( knights ) {
 		unsigned long long knight;
 		bitscan( knights, knight );
-		knights ^= 1ull << knight;
+		knights &= knights - 1;
 		calc_moves_knight( p, c, moves, check, knight );
 	}
 }
@@ -373,7 +373,7 @@ void calc_moves_pawns( position const& p, color::type c, move_info*& moves, chec
 	while( pawns ) {
 		unsigned long long pawn;
 		bitscan( pawns, pawn );
-		pawns ^= 1ull << pawn;
+		pawns &= pawns - 1;
 
 		calc_moves_pawn( p, c, moves, check, pawn );
 	}

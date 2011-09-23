@@ -880,7 +880,7 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 		unsigned long long pawns = p.bitboards[i].b[bb_type::pawns];
 		while( pawns ) {
 			bitscan( pawns, pawn );
-			pawns ^= 1ull << pawn;
+			pawns &= pawns - 1;
 			p.bitboards[i].b[bb_type::pawn_control] |= pawn_control[i][pawn];
 		}
 	}
