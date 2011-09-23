@@ -449,6 +449,7 @@ static bool do_apply_move( position& p, move const& m, color::type c, bool& capt
 				}
 			}
 		}
+		p.material[1-c] -= get_material_value( m.captured_piece );
 	}
 
 	if( m.piece == pieces2::rook ) {
