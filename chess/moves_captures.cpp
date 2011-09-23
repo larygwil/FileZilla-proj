@@ -76,7 +76,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 					  unsigned char old_col, unsigned char old_row,
 					  unsigned char new_col, unsigned char new_row )
 {
-	if( possible_king_moves[new_row * 8 + new_col] & p.bitboards[1-c].king ) {
+	if( possible_king_moves[new_row * 8 + new_col] & p.bitboards[1-c].b[bb_type::king] ) {
 		// Other king too close
 		return;
 	}
@@ -93,7 +93,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 
 void calc_moves_king( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long kings = p.bitboards[c].king;
+	unsigned long long kings = p.bitboards[c].b[bb_type::king];
 	unsigned long long king;
 	bitscan(kings, king);
 
@@ -140,7 +140,7 @@ void calc_moves_queen( position const& p, color::type c, move_info*& moves, chec
 
 void calc_moves_queens( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long queens = p.bitboards[c].queens;
+	unsigned long long queens = p.bitboards[c].b[bb_type::queens];
 	while( queens ) {
 		unsigned long long queen;
 		bitscan( queens, queen );	
@@ -174,7 +174,7 @@ void calc_moves_bishop( position const& p, color::type c, move_info*& moves, che
 
 void calc_moves_bishops( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long bishops = p.bitboards[c].bishops;
+	unsigned long long bishops = p.bitboards[c].b[bb_type::bishops];
 	while( bishops ) {
 		unsigned long long bishop;
 		bitscan( bishops, bishop );	
@@ -217,7 +217,7 @@ void calc_moves_rook( position const& p, color::type c, move_info*& moves, check
 
 void calc_moves_rooks( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long rooks = p.bitboards[c].rooks;
+	unsigned long long rooks = p.bitboards[c].b[bb_type::rooks];
 	while( rooks ) {
 		unsigned long long rook;
 		bitscan( rooks, rook );
@@ -261,7 +261,7 @@ void calc_moves_knight( position const& p, color::type c, move_info*& moves, che
 
 void calc_moves_knights( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long knights = p.bitboards[c].knights;
+	unsigned long long knights = p.bitboards[c].b[bb_type::knights];
 	while( knights ) {
 		unsigned long long knight;
 		bitscan( knights, knight );
@@ -302,7 +302,7 @@ void calc_diagonal_pawn_move( position const& p, color::type c, move_info*& move
 				}
 
 				// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
-				unsigned long long kings = p.bitboards[c].king;
+				unsigned long long kings = p.bitboards[c].b[bb_type::king];
 				unsigned long long king;
 				bitscan(kings, king);
 				unsigned char king_col = static_cast<unsigned char>(king % 8);
@@ -373,7 +373,7 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 
 void calc_moves_pawns( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long pawns = p.bitboards[c].pawns;
+	unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
 	while( pawns ) {
 		unsigned long long pawn;
 		bitscan( pawns, pawn );

@@ -71,7 +71,7 @@ extern unsigned long long const possible_knight_moves[64] = {
 bool detect_check_knights( position const& p, color::type c, int king_col, int king_row )
 {
 	unsigned long long knights = possible_knight_moves[ king_col + king_row * 8 ];
-	knights &= p.bitboards[1-c].knights;
+	knights &= p.bitboards[1-c].b[bb_type::knights];
 
 	return knights != 0;
 }
@@ -144,7 +144,7 @@ bool detect_check_from_queen( position const& p, color::type c, unsigned char ki
 
 bool detect_check_from_queen( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
 {
-	unsigned long long queens = p.bitboards[1-c].queens;
+	unsigned long long queens = p.bitboards[1-c].b[bb_type::queens];
 	while( queens ) {
 		unsigned long long queen;
 		bitscan( queens, queen );
@@ -209,7 +209,7 @@ bool detect_check_from_rook( position const& p, color::type c, unsigned char kin
 
 bool detect_check_from_rooks( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
 {
-	unsigned long long rooks = p.bitboards[1-c].rooks;
+	unsigned long long rooks = p.bitboards[1-c].b[bb_type::rooks];
 	while( rooks ) {
 		unsigned long long rook;
 		bitscan( rooks, rook );
@@ -259,7 +259,7 @@ bool detect_check_from_bishop( position const& p, color::type c, unsigned char k
 
 bool detect_check_from_bishops( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
 {
-	unsigned long long bishops = p.bitboards[1-c].bishops;
+	unsigned long long bishops = p.bitboards[1-c].b[bb_type::bishops];
 	while( bishops ) {
 		unsigned long long bishop;
 		bitscan( bishops, bishop );
@@ -300,7 +300,7 @@ bool detect_check_from_pawn( position const& p, color::type c, unsigned char kin
 
 bool detect_check_from_pawns( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
 {
-	unsigned long long pawns = p.bitboards[1-c].pawns;
+	unsigned long long pawns = p.bitboards[1-c].b[bb_type::pawns];
 	while( pawns ) {
 		unsigned long long pawn;
 		bitscan( pawns, pawn );
@@ -325,7 +325,7 @@ bool detect_check( position const& p, color::type c, unsigned char king_col, uns
 
 bool detect_check( position const& p, color::type c )
 {
-	unsigned long long kings = p.bitboards[c].king;
+	unsigned long long kings = p.bitboards[c].b[bb_type::king];
 	unsigned long long king;
 	bitscan( kings, king );
 
@@ -368,7 +368,7 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 {
 	memset( &map, 0, sizeof(check_map) );
 
-	unsigned long long kings = p.bitboards[c].king;
+	unsigned long long kings = p.bitboards[c].b[bb_type::king];
 	unsigned long long king;
 	bitscan( kings, king );
 
@@ -556,7 +556,7 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 {
 	memset( &map, 0, sizeof(inverse_check_map) );
 
-	unsigned long long kings = p.bitboards[1-c].king;
+	unsigned long long kings = p.bitboards[1-c].b[bb_type::king];
 	unsigned long long king;
 	bitscan( kings, king );
 

@@ -61,7 +61,7 @@ unsigned long long get_zobrist_hash( position const& p, color::type c ) {
 	unsigned long long ret = 0;
 
 	for( unsigned int c = 0; c < 2; ++c ) {
-		unsigned long long pieces = p.bitboards[c].all_pieces;
+		unsigned long long pieces = p.bitboards[c].b[bb_type::all_pieces];
 		while( pieces ) {
 			unsigned long long piece;
 			bitscan( pieces, piece );
@@ -69,22 +69,22 @@ unsigned long long get_zobrist_hash( position const& p, color::type c ) {
 			unsigned long long bpiece = 1ull << piece;
 			pieces ^= bpiece;
 
-			if( p.bitboards[c].pawns & bpiece ) {
+			if( p.bitboards[c].b[bb_type::pawns] & bpiece ) {
 				ret ^= pawns[c][piece];
 			}
-			else if( p.bitboards[c].knights & bpiece ) {
+			else if( p.bitboards[c].b[bb_type::knights] & bpiece ) {
 				ret ^= knights[c][piece];
 			}
-			else if( p.bitboards[c].bishops & bpiece ) {
+			else if( p.bitboards[c].b[bb_type::bishops] & bpiece ) {
 				ret ^= bishops[c][piece];
 			}
-			else if( p.bitboards[c].rooks & bpiece ) {
+			else if( p.bitboards[c].b[bb_type::rooks] & bpiece ) {
 				ret ^= rooks[c][piece];
 			}
-			else if( p.bitboards[c].queens & bpiece ) {
+			else if( p.bitboards[c].b[bb_type::queens] & bpiece ) {
 				ret ^= queens[c][piece];
 			}
-			else {//if( p.bitboards[c].king & bpiece ) {
+			else {//if( p.bitboards[c].b[bb_type::king] & bpiece ) {
 				ret ^= kings[c][piece];
 			}
 		}

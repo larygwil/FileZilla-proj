@@ -595,7 +595,7 @@ short evaluate_side( position const& p, color::type c )
 {
 	short result = 0;
 
-	unsigned long long pieces = p.bitboards[c].all_pieces;
+	unsigned long long pieces = p.bitboards[c].b[bb_type::all_pieces];
 	while( pieces ) {
 		unsigned long long piece;
 		bitscan( pieces, piece );
@@ -606,24 +606,24 @@ short evaluate_side( position const& p, color::type c )
 		unsigned long long col = piece % 8;
 		unsigned long long row = piece / 8;
 
-		if( p.bitboards[c].pawns & bpiece ) {
+		if( p.bitboards[c].b[bb_type::pawns] & bpiece ) {
 			result += pawn_values[c][col][row];
 		}
-		else if( p.bitboards[c].knights & bpiece ) {
+		else if( p.bitboards[c].b[bb_type::knights] & bpiece ) {
 			result += knight_values[c][col][row];
 		}
-		else if( p.bitboards[c].bishops & bpiece ) {
+		else if( p.bitboards[c].b[bb_type::bishops] & bpiece ) {
 			result += bishop_values[c][col][row];
 		}
-		else if( p.bitboards[c].rooks & bpiece ) {
+		else if( p.bitboards[c].b[bb_type::rooks] & bpiece ) {
 			result += rook_values[c][col][row];
 		}
-		else if( p.bitboards[c].queens & bpiece ) {
+		else if( p.bitboards[c].b[bb_type::queens] & bpiece ) {
 			result += queen_values[c][col][row];
 		}
 	}
 
-	if( popcount( p.bitboards[c].bishops ) >= 2 ) {
+	if( popcount( p.bitboards[c].b[bb_type::bishops] ) >= 2 ) {
 		result += special_values::double_bishop;
 	}
 
@@ -639,10 +639,10 @@ short evaluate_fast( position const& p, color::type c )
 	int value = evaluate_side( p, c ) - evaluate_side( p, static_cast<color::type>(1-c) );
 
 	if( c ) {
-		value -= evaluate_pawns( p.bitboards[0].pawns, p.bitboards[1].pawns );
+		value -= evaluate_pawns( p.bitboards[0].b[bb_type::pawns], p.bitboards[1].b[bb_type::pawns] );
 	}
 	else {
-		value += evaluate_pawns( p.bitboards[0].pawns, p.bitboards[1].pawns );
+		value += evaluate_pawns( p.bitboards[0].b[bb_type::pawns], p.bitboards[1].b[bb_type::pawns] );
 	}
 
 	ASSERT( value > result::loss && value < result::win );
@@ -712,7 +712,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 			current_evaluation += get_piece_value( static_cast<color::type>(1-c), m.captured_piece, m.target_col, m.target_row );
 		}
 
-		if( m.captured_piece == pieces2::bishop && popcount( p.bitboards[1-c].bishops ) == 2 ) {
+		if( m.captured_piece == pieces2::bishop && popcount( p.bitboards[1-c].b[bb_type::bishops] ) == 2 ) {
 			current_evaluation += special_values::double_bishop;
 		}
 	}
@@ -729,8 +729,8 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 	outPawns = p.pawns;
 	if( m.piece == pieces2::pawn || m.captured_piece == pieces2::pawn ) {
 		unsigned long long pawnMap[2];
-		pawnMap[0] = p.bitboards[0].pawns;
-		pawnMap[1] = p.bitboards[1].pawns;
+		pawnMap[0] = p.bitboards[0].b[bb_type::pawns];
+		pawnMap[1] = p.bitboards[1].b[bb_type::pawns];
 
 		if( m.captured_piece == pieces2::pawn ) {
 			if( m.flags & move_flags::enpassant ) {
@@ -813,7 +813,7 @@ short evaluate_pawn_shield_side( position const& p, color::type c )
 
 	int const y = c ? 40 : 8;
 
-	unsigned long long kings = p.bitboards[c].king;
+	unsigned long long kings = p.bitboards[c].b[bb_type::king];
 	unsigned long long king;
 	bitscan( kings, king );
 
@@ -821,11 +821,11 @@ short evaluate_pawn_shield_side( position const& p, color::type c )
 	unsigned char king_row = static_cast<unsigned char>( king / 8 );
 
 	if( king_row == (c ? 7 : 0) ) {
-		if( p.bitboards[c].pawns & (9ull << (king_col + y) ) ) {
+		if( p.bitboards[c].b[bb_type::pawns] & (9ull << (king_col + y) ) ) {
 			ev += special_values::pawn_shield * 2;
 		}
 		if( king_col ) {
-			if( p.bitboards[c].pawns & (9ull << (king_col - 1 + y) ) ) {
+			if( p.bitboards[c].b[bb_type::pawns] & (9ull << (king_col - 1 + y) ) ) {
 				if( king_col == 7 ) {
 					ev += special_values::pawn_shield * 2;
 				}
@@ -835,7 +835,7 @@ short evaluate_pawn_shield_side( position const& p, color::type c )
 			}
 		}
 		if( king_col != 7 ) {
-			if( p.bitboards[c].pawns & (9ull << (king_col + 1 + y) ) ) {
+			if( p.bitboards[c].b[bb_type::pawns] & (9ull << (king_col + 1 + y) ) ) {
 				if( king_col == 0 ) {
 					ev += special_values::pawn_shield * 2;
 				}
@@ -875,13 +875,13 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 	eval_fast += evaluate_pawn_shield( p, c );
 
 	for( int i = 0; i < 2; ++i ) {
-		p.bitboards[i].pawn_control = 0;
+		p.bitboards[i].b[bb_type::pawn_control] = 0;
 		unsigned long long pawn;
-		unsigned long long pawns = p.bitboards[i].pawns;
+		unsigned long long pawns = p.bitboards[i].b[bb_type::pawns];
 		while( pawns ) {
 			bitscan( pawns, pawn );
 			pawns ^= 1ull << pawn;
-			p.bitboards[i].pawn_control |= pawn_control[i][pawn];
+			p.bitboards[i].b[bb_type::pawn_control] |= pawn_control[i][pawn];
 		}
 	}
 

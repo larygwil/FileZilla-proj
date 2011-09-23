@@ -36,17 +36,25 @@ enum type {
 }
 
 
+namespace bb_type {
+enum type {
+	all_pieces,
+	pawns,
+	knights,
+	bishops,
+	rooks,
+	queens,
+	king,
+	pawn_control,
+
+	value_max
+};
+}
+
+
 struct bitboard
 {
-	unsigned long long all_pieces;
-	unsigned long long pawns;
-	unsigned long long knights;
-	unsigned long long bishops;
-	unsigned long long rooks;
-	unsigned long long queens;
-	unsigned long long king;
-
-	mutable unsigned long long pawn_control;
+	mutable unsigned long long b[bb_type::value_max];
 };
 
 

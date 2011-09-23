@@ -715,7 +715,7 @@ void perft()
 		84998978956ull
 	};
 
-	for( int i = 0; i < sizeof(perft_results)/sizeof(unsigned long long); ++i ) {
+	for( unsigned int i = 0; i < sizeof(perft_results)/sizeof(unsigned long long); ++i ) {
 		std::cerr << "Calculating number of possible moves in " << (i + 1) << " plies:" << std::endl;
 
 		position p;
