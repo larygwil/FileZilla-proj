@@ -5,7 +5,7 @@
 
 int main()
 {
-	std::cout << "unsigned long long mobility_block[64][64] = {" << std::endl;
+	/*std::cout << "unsigned long long mobility_block[64][64] = {" << std::endl;
 
 	for( unsigned int source = 0; source < 64; ++source ) {
 		std::cout << "\t{" << std::endl;
@@ -63,7 +63,7 @@ int main()
 			std::cout << "\t}" << std::endl;
 		}
 	}
-	std::cout << "};" << std::endl << std::endl << std::endl;
+	std::cout << "};" << std::endl << std::endl << std::endl;*/
 
 	std::cout << "unsigned long long visibility_bishop[64] = {" << std::endl;
 

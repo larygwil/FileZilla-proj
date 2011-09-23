@@ -77,16 +77,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 					  unsigned char old_col, unsigned char old_row,
 					  unsigned char new_col, unsigned char new_row )
 {
-	if( possible_king_moves[new_row * 8 + new_col] & p.bitboards[1-c].b[bb_type::king] ) {
-		// Other king too close
-		return;
-	}
-
-	unsigned char target = p.board2[new_col][new_row];
-	if( !target ) {
-		add_if_legal_king( p, c, current_evaluation, moves, old_col, old_row, new_col, new_row, move_flags::valid );
-	}
-
+	add_if_legal_king( p, c, current_evaluation, moves, old_col, old_row, new_col, new_row, move_flags::valid );
 }
 
 
@@ -99,9 +90,13 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 	unsigned char old_col = static_cast<unsigned char>(king % 8);
 	unsigned char old_row = static_cast<unsigned char>(king / 8);
 
-	unsigned long long king_moves = possible_king_moves[king];
-	unsigned long long i;
+	unsigned long long other_kings = p.bitboards[1-c].b[bb_type::king];
+	unsigned long long other_king;
+	bitscan(other_kings, other_king);
+
+	unsigned long long king_moves = possible_king_moves[king] & ~(p.bitboards[c].b[bb_type::all_pieces] | possible_king_moves[other_king] | p.bitboards[1-c].b[bb_type::all_pieces]);
 	while( king_moves ) {
+		unsigned long long i;
 		bitscan( king_moves, i );
 		king_moves &= king_moves - 1;
 		calc_moves_king( p, c, current_evaluation, moves, check,
@@ -243,10 +238,7 @@ void calc_moves_knight( position const& p, color::type c, int const current_eval
 					    unsigned char old_col, unsigned char old_row,
 						unsigned char new_col, unsigned char new_row )
 {
-	int target = p.board2[new_col][new_row];
-	if( !target ) {
-		add_if_legal( p, c, current_evaluation, moves, check, pieces2::knight, old_col, old_row, new_col, new_row, move_flags::valid );
-	}
+	add_if_legal( p, c, current_evaluation, moves, check, pieces2::knight, old_col, old_row, new_col, new_row, move_flags::valid );
 }
 
 void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
@@ -255,7 +247,7 @@ void calc_moves_knight( position const& p, color::type c, int const current_eval
 	unsigned char old_col = static_cast<unsigned char>(old_knight % 8);
 	unsigned char old_row = static_cast<unsigned char>(old_knight / 8);
 
-	unsigned long long new_knights = possible_knight_moves[old_knight];
+	unsigned long long new_knights = possible_knight_moves[old_knight] & ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
 	while( new_knights ) {
 		unsigned long long new_knight;
 		bitscan( new_knights, new_knight );
