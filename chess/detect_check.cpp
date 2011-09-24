@@ -79,251 +79,31 @@ bool detect_check_knights( position const& p, color::type c, int king_col, int k
 	return knights != 0;
 }
 
-bool detect_check_from_queen( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row, unsigned long long queen )
-{
-	signed char queen_col = static_cast<signed char>(queen % 8);
-	signed char queen_row = static_cast<signed char>(queen / 8);
-
-	signed char cx = static_cast<signed char>(king_col) - queen_col;
-	signed char cy = static_cast<signed char>(king_row) - queen_row;
-	if( !cx && !cy ) {
-		return false;
-	}
-
-	if( !cx ) {
-		cy = (cy > 0) ? 1 : -1;
-
-		unsigned char row;
-		for( row = queen_row + cy; row != king_row; row += cy ) {
-			if( king_col == ignore_col && row == ignore_row ) {
-				continue;
-			}
-			if( p.board[king_col][row] ) {
-				break;
-			}
-		}
-		if( row == king_row ) {
-			return true;
-		}
-	}
-	else if( !cy ) {
-		cx = (cx > 0) ? 1 : -1;
-
-		unsigned char col;
-		for( col = queen_col + cx; col != king_col; col += cx ) {
-			if( col == ignore_col && king_row == ignore_row ) {
-				continue;
-			}
-			if( p.board[col][king_row] ) {
-				break;
-			}
-		}
-		if( col == king_col ) {
-			return true;
-		}
-	}
-	else if( cx == cy || cx == -cy ) {
-		cx = (cx > 0) ? 1 : -1;
-		cy = (cy > 0) ? 1 : -1;
-
-		unsigned char row;
-		unsigned char col;
-		for( col = queen_col + cx, row = queen_row + cy; col != king_col; col += cx, row += cy ) {
-			if( col == ignore_col && row == ignore_row ) {
-				continue;
-			}
-			if( p.board[col][row] ) {
-				break;
-			}
-		}
-		if( row == king_row ) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-
-bool detect_check_from_queen( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
-{
-	unsigned long long queens = p.bitboards[1-c].b[bb_type::queens];
-	while( queens ) {
-		unsigned long long queen;
-		bitscan( queens, queen );
-		queens &= queens - 1;
-
-		if( detect_check_from_queen( p, c, king_col, king_row, ignore_col, ignore_row, queen ) ) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-
-bool detect_check_from_rook( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row, unsigned long long rook )
-{
-	signed char rook_col = static_cast<signed char>(rook % 8);
-	signed char rook_row = static_cast<signed char>(rook / 8);
-
-	signed char cx = static_cast<signed char>(king_col) - rook_col;
-	signed char cy = static_cast<signed char>(king_row) - rook_row;
-	if( !cx && !cy ) {
-		return false;
-	}
-
-	if( !cx ) {
-		cy = (cy > 0) ? 1 : -1;
-
-		unsigned char row;
-		for( row = rook_row + cy; row != king_row; row += cy ) {
-			if( king_col == ignore_col && row == ignore_row ) {
-				continue;
-			}
-			if( p.board[king_col][row] ) {
-				break;
-			}
-		}
-		if( row == king_row ) {
-			return true;
-		}
-	}
-	else if( !cy ) {
-		cx = (cx > 0) ? 1 : -1;
-
-		unsigned char col;
-		for( col = rook_col + cx; col != king_col; col += cx ) {
-			if( col == ignore_col && king_row == ignore_row ) {
-				continue;
-			}
-			if( p.board[col][king_row] ) {
-				break;
-			}
-		}
-		if( col == king_col ) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-
-bool detect_check_from_rooks( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
-{
-	unsigned long long rooks = p.bitboards[1-c].b[bb_type::rooks];
-	while( rooks ) {
-		unsigned long long rook;
-		bitscan( rooks, rook );
-		rooks &= rooks - 1;
-
-		if( detect_check_from_rook( p, c, king_col, king_row, ignore_col, ignore_row, rook ) ) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool detect_check_from_bishop( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row, unsigned long long bishop )
-{
-	signed char bishop_col = static_cast<signed char>(bishop % 8);
-	signed char bishop_row = static_cast<signed char>(bishop / 8);
-
-	signed char cx = static_cast<signed char>(king_col) - bishop_col;
-	signed char cy = static_cast<signed char>(king_row) - bishop_row;
-	if( !cx ) {
-		return false;
-	}
-
-	if( cx == cy || cx == -cy ) {
-		cx = (cx > 0) ? 1 : -1;
-		cy = (cy > 0) ? 1 : -1;
-
-		unsigned char row;
-		unsigned char col;
-		for( col = bishop_col + cx, row = bishop_row + cy; col != king_col; col += cx, row += cy ) {
-			if( col == ignore_col && row == ignore_row ) {
-				continue;
-			}
-			if( p.board[col][row] ) {
-				break;
-			}
-		}
-		if( row == king_row ) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-
-bool detect_check_from_bishops( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
-{
-	unsigned long long bishops = p.bitboards[1-c].b[bb_type::bishops];
-	while( bishops ) {
-		unsigned long long bishop;
-		bitscan( bishops, bishop );
-		bishops &= bishops - 1;
-
-		if( detect_check_from_bishop( p, c, king_col, king_row, ignore_col, ignore_row, bishop ) ) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-
-bool detect_check_from_pawn( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned long long pawn )
-{
-	unsigned char pawn_col = static_cast<unsigned char>(pawn % 8);
-	unsigned char pawn_row = static_cast<unsigned char>(pawn / 8);
-
-	if( c == color::white ) {
-		if( pawn_row != king_row + 1 ) {
-			return false;
-		}
-	}
-	else {
-		if( pawn_row + 1 != king_row ) {
-			return false;
-		}
-	}
-
-	signed char cx = static_cast<signed char>(king_col) - pawn_col;
-	if( cx != 1 && cx != -1 ) {
-		return false;
-	}
-
-	return true;
-}
-
-bool detect_check_from_pawns( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
-{
-	unsigned long long pawns = p.bitboards[1-c].b[bb_type::pawns];
-	while( pawns ) {
-		unsigned long long pawn;
-		bitscan( pawns, pawn );
-		pawns &= pawns - 1;
-
-		if( detect_check_from_pawn( p, c, king_col, king_row, pawn ) ) {
-			return true;
-		}
-	}
-	return false;
-}
-
-
+#include <iostream>
 bool detect_check( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row )
 {
-	return 	detect_check_from_pawns( p, c, king_col, king_row, ignore_col, ignore_row ) ||
-			detect_check_from_queen( p, c, king_col, king_row, ignore_col, ignore_row ) ||
-			detect_check_from_rooks( p, c, king_col, king_row, ignore_col, ignore_row ) ||
-			detect_check_from_bishops( p, c, king_col, king_row, ignore_col, ignore_row ) ||
-			detect_check_knights( p, c, king_col, king_row );
+	unsigned long long king = king_col + king_row * 8;
+
+	unsigned long long blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
+	blockers &= ~(1ull << (ignore_col + ignore_row * 8) );
+
+	unsigned long long unblocked_king_n = attack( king, blockers, ray_n );
+	unsigned long long unblocked_king_e = attack( king, blockers, ray_e );
+	unsigned long long unblocked_king_s = attackr( king, blockers, ray_s );
+	unsigned long long unblocked_king_w = attackr( king, blockers, ray_w );
+	unsigned long long unblocked_king_ne = attack( king, blockers, ray_ne );
+	unsigned long long unblocked_king_se = attackr( king, blockers, ray_se );
+	unsigned long long unblocked_king_sw = attackr( king, blockers, ray_sw );
+	unsigned long long unblocked_king_nw = attack( king, blockers, ray_nw );
+
+	unsigned long long rooks_and_queens = p.bitboards[1-c].b[bb_type::rooks] | p.bitboards[1-c].b[bb_type::queens];
+	unsigned long long bishops_and_queens = p.bitboards[1-c].b[bb_type::bishops] | p.bitboards[1-c].b[bb_type::queens];
+	bishops_and_queens |= pawn_control[c][king] & p.bitboards[1-c].b[bb_type::pawns];
+
+	unsigned long long rooks_and_queens_check = (unblocked_king_n|unblocked_king_e|unblocked_king_s|unblocked_king_w) & rooks_and_queens;
+	unsigned long long bishops_and_queens_check = (unblocked_king_ne|unblocked_king_se|unblocked_king_sw|unblocked_king_nw) & bishops_and_queens;
+
+	return rooks_and_queens_check | bishops_and_queens_check |detect_check_knights( p, c, king_col, king_row );
 }
 
 bool detect_check( position const& p, color::type c )
@@ -384,7 +164,7 @@ void process_ray( position const& p, color::type c, check_map& map, unsigned lon
 	}
 }
 
-#include <iostream>
+
 void calc_check_map( position const& p, color::type c, check_map& map )
 {
 	memset( &map, 0, sizeof(check_map) );
