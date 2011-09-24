@@ -1,5 +1,8 @@
 #include "chess.hpp"
 #include "detect_check.hpp"
+#include "sliding_piece_attacks.hpp"
+
+extern unsigned long long pawn_control[2][64];
 
 extern unsigned long long const possible_knight_moves[64] = {
 	0x0000000000020400ull,
@@ -338,32 +341,50 @@ bool detect_check( position const& p, color::type c )
 
 void calc_check_map_knight( position const& p, color::type c, check_map& map, signed char king_col, signed char king_row, int col, int row )
 {
-	unsigned char index = p.board[col][row];
-	if( !index ) {
-		return;
+	unsigned char v = 0x80 | (row << 3) | col;
+	map.board[col][row] = v;
+
+	if( !map.board[king_col][king_row] ) {
+		map.board[king_col][king_row] = v;
 	}
-
-	unsigned char piece_color = (index >> 4) & 0x1;
-	if( piece_color == c ) {
-		return;
+	else {
+		map.board[king_col][king_row] = 0x80 | 0x40;
 	}
+}
 
-	// Enemy piece
-	pieces::type pi = static_cast<pieces::type>(index & 0x0f);
 
-	if( pi == pieces::knight ) {
-		unsigned char v = 0x80 | (row << 3) | col;
-		map.board[col][row] = v;
+void process_ray( position const& p, color::type c, check_map& map, unsigned long long ray, unsigned long long potential_check_givers, unsigned char king_col, unsigned char king_row )
+{
+	potential_check_givers &= ray;
 
-		if( !map.board[king_col][king_row] ) {
-			map.board[king_col][king_row] = v;
-		}
-		else {
-			map.board[king_col][king_row] = 0x80 | 0x40;
+	if( potential_check_givers ) {
+		unsigned long long block_count = popcount( ray & p.bitboards[c].b[bb_type::all_pieces] );
+		if( block_count < 2 ) {
+			unsigned long long cpi;
+			bitscan( potential_check_givers, cpi );
+			cpi |= 0x80;
+
+			while( ray ) {
+				unsigned long long pi;
+				bitscan( ray, pi );
+				ray &= ray - 1;
+
+				map.board[pi % 8][pi / 8] = cpi;
+			}
+
+			if( !block_count ) {
+				if( !map.board[king_col][king_row] ) {
+					map.board[king_col][king_row] = cpi;
+				}
+				else {
+					map.board[king_col][king_row] = 0x80 | 0x40;
+				}
+			}
 		}
 	}
 }
 
+#include <iostream>
 void calc_check_map( position const& p, color::type c, check_map& map )
 {
 	memset( &map, 0, sizeof(check_map) );
@@ -375,171 +396,30 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 	signed char king_col = static_cast<signed char>( king % 8 );
 	signed char king_row = static_cast<signed char>( king / 8 );
 
-	// Check diagonals
-	signed char col, row;
-	for( signed char cx = -1; cx <= 1; cx += 2 ) {
-		for( signed char cy = -1; cy <= 1; cy += 2 ) {
+	unsigned long long blockers = p.bitboards[1-c].b[bb_type::all_pieces];
+	unsigned long long unblocked_king_n = attack( king, blockers, ray_n );
+	unsigned long long unblocked_king_e = attack( king, blockers, ray_e );
+	unsigned long long unblocked_king_s = attackr( king, blockers, ray_s );
+	unsigned long long unblocked_king_w = attackr( king, blockers, ray_w );
+	unsigned long long unblocked_king_ne = attack( king, blockers, ray_ne );
+	unsigned long long unblocked_king_se = attackr( king, blockers, ray_se );
+	unsigned long long unblocked_king_sw = attackr( king, blockers, ray_sw );
+	unsigned long long unblocked_king_nw = attack( king, blockers, ray_nw );
 
-			bool found_own = false;
+	unsigned long long rooks_and_queens = p.bitboards[1-c].b[bb_type::rooks] | p.bitboards[1-c].b[bb_type::queens];
+	process_ray( p, c, map, unblocked_king_n, rooks_and_queens, king_col, king_row );
+	process_ray( p, c, map, unblocked_king_s, rooks_and_queens, king_col, king_row );
+	process_ray( p, c, map, unblocked_king_e, rooks_and_queens, king_col, king_row );
+	process_ray( p, c, map, unblocked_king_w, rooks_and_queens, king_col, king_row );
 
-			for( col = king_col + cx, row = king_row + cy;
-				   col >= 0 && col < 8 && row >= 0 && row < 8; col += cx, row += cy ) {
+	unsigned long long bishops_and_queens = p.bitboards[1-c].b[bb_type::bishops] | p.bitboards[1-c].b[bb_type::queens];
+	bishops_and_queens |= pawn_control[c][king] & p.bitboards[1-c].b[bb_type::pawns];
+	process_ray( p, c, map, unblocked_king_ne, bishops_and_queens, king_col, king_row );
+	process_ray( p, c, map, unblocked_king_se, bishops_and_queens, king_col, king_row );
+	process_ray( p, c, map, unblocked_king_sw, bishops_and_queens, king_col, king_row );
+	process_ray( p, c, map, unblocked_king_nw, bishops_and_queens, king_col, king_row );
 
-				unsigned char index = p.board[col][row];
-				if( !index ) {
-					continue;
-				}
-
-				unsigned char piece_color = (index >> 4);
-				if( piece_color == c ) {
-					if( found_own ) {
-						break; // Two own pieces blocking check
-					}
-					found_own = true;
-					continue;
-				}
-
-				pieces::type pi = static_cast<pieces::type>(index & 0x0f);
-
-				// Enemy piece
-				bool check = false;
-				if( pi == pieces::queen || pi == pieces::bishop ) {
-					check = true;
-				}
-				else if( pi == pieces::pawn ) {
-					if( c && static_cast<signed char>(king_row) == (row + 1) ) {
-						// The pawn itself giving chess
-						check = true;
-					}
-					else if( !c && row == (static_cast<signed char>(king_row) + 1) ) {
-						// The pawn itself giving chess
-						check = true;
-					}
-				}
-
-				if( check ) {
-					// Backtrack
-					unsigned char v = 0x80 | (row << 3) | col;
-					signed char bcol = col;
-					signed char brow = row;
-					for( ; bcol != king_col && brow != king_row; bcol -= cx, brow -= cy ) {
-						map.board[bcol][brow] = v;
-					}
-					if( !found_own ) {
-						if( !map.board[king_col][king_row] ) {
-							map.board[king_col][king_row] = v;
-						}
-						else {
-							map.board[king_col][king_row] = 0x80 | 0x40;
-						}
-					}
-				}
-
-				break;
-			}
-		}
-	}
-
-	// Check horizontals
-	for( signed char cx = -1; cx <= 1; cx += 2 ) {
-		bool found_own = false;
-
-		for( col = king_col + cx; col >= 0 && col < 8; col += cx ) {
-
-			unsigned char index = p.board[col][king_row];
-			if( !index ) {
-				continue;
-			}
-
-			unsigned char piece_color = (index >> 4);
-			if( piece_color == c ) {
-				if( found_own ) {
-					break; // Two own pieces blocking check
-				}
-				found_own = true;
-				continue;
-			}
-
-			pieces::type pi = static_cast<pieces::type>(index & 0x0f);
-
-			// Enemy piece
-			bool check = false;
-			if( pi == pieces::queen || pi == pieces::rook ) {
-				check = true;
-			}
-		
-			if( check ) {
-				// Backtrack
-				unsigned char v = 0x80 | (king_row << 3) | col;
-				signed char bcol = col;
-				for( ; bcol != king_col; bcol -= cx ) {
-					map.board[bcol][king_row] = v;
-				}
-				if( !found_own ) {
-					if( !map.board[king_col][king_row] ) {
-						map.board[king_col][king_row] = v;
-					}
-					else {
-						map.board[king_col][king_row] = 0x80 | 0x40;
-					}
-				}
-			}
-
-			break;
-		}
-	}
-
-	// Check verticals
-	for( signed char cy = -1; cy <= 1; cy += 2 ) {
-
-		bool found_own = false;
-
-		for( row = king_row + cy; row >= 0 && row < 8; row += cy ) {
-
-			unsigned char index = p.board[king_col][row];
-			if( !index ) {
-				continue;
-			}
-
-			unsigned char piece_color = (index >> 4);
-			if( piece_color == c ) {
-				if( found_own ) {
-					break; // Two own pieces blocking check
-				}
-				found_own = true;
-				continue;
-			}
-
-			pieces::type pi = static_cast<pieces::type>(index & 0x0f);
-
-			// Enemy piece
-			bool check = false;
-			if( pi == pieces::queen || pi == pieces::rook ) {
-				check = true;
-			}
-			
-			if( check ) {
-				// Backtrack
-				unsigned char v = 0x80 | (row << 3) | king_col;
-				signed char brow = row;
-				for( ; brow != king_row; brow -= cy ) {
-					map.board[king_col][brow] = v;
-				}
-				if( !found_own ) {
-					if( !map.board[king_col][king_row] ) {
-						map.board[king_col][king_row] = v;
-					}
-					else {
-						map.board[king_col][king_row] = 0x80 | 0x40;
-					}
-				}
-			}
-
-			break;
-		}
-	}
-
-	unsigned long long knights = possible_knight_moves[king_col + king_row * 8];
+	unsigned long long knights = possible_knight_moves[king_col + king_row * 8] & p.bitboards[1-c].b[bb_type::knights];
 	unsigned long long knight;
 	while( knights ) {
 		bitscan( knights, knight );
