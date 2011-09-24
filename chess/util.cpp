@@ -485,7 +485,7 @@ static bool do_apply_move( position& p, move const& m, color::type c, bool& capt
 	}
 
 	if( m.piece == pieces::pawn && (m.source_row + 2 == m.target_row || m.source_row == m.target_row + 2) ) {
-		p.can_en_passant = (c << 6) + m.target_row * 8 + m.target_col;
+		p.can_en_passant = (m.target_row + m.source_row) * 4 + m.target_col;
 	}
 	else {
 		p.can_en_passant = 0;

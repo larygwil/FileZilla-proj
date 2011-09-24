@@ -399,7 +399,7 @@ void xboard_thread::on_new_best_move( position const& p, color::type c, int dept
 
 		unsigned long long elapsed = ( get_time() - starttime ) * 100 / timer_precision();
 		std::stringstream ss;
-		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << elapsed << " " << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
+		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(6) << elapsed << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
 		if( state.post ) {
 			std::cout << ss.str();
 		}

@@ -10,7 +10,7 @@ static unsigned long long rooks[2][64];
 static unsigned long long queens[2][64];
 static unsigned long long kings[2][64];
 
-unsigned long long enpassant[128];
+unsigned long long enpassant[64];
 
 unsigned long long castle[2][5];
 
@@ -42,8 +42,14 @@ void init_zobrist_tables()
 		}
 	}
 
-	for( unsigned int i = 0; i < 128; ++i ) {
-		enpassant[i] = get_random_unsigned_long_long();
+	enpassant[0] = 0;
+	for( unsigned int i = 1; i < 64; ++i ) {
+		if( i / 8 == 2 || i / 8 == 5 ) {
+			enpassant[i] = get_random_unsigned_long_long();
+		}
+		else {
+			enpassant[i] = 0;
+		}
 	}
 
 	for( unsigned int c = 0; c < 2; ++c ) {
@@ -92,9 +98,7 @@ unsigned long long get_zobrist_hash( position const& p, color::type c ) {
 		ret ^= castle[c][p.castle[c]];
 	}
 
-	if( p.can_en_passant ) {
-		ret ^= enpassant[p.can_en_passant];
-	}
+	ret ^= enpassant[p.can_en_passant];
 
 	return ret;
 }
@@ -122,9 +126,7 @@ static unsigned long long get_piece_hash( pieces::type pi, color::type c, int po
 
 unsigned long long update_zobrist_hash( position const& p, color::type c, unsigned long long hash, move const& m )
 {
-	if( p.can_en_passant ) {
-		hash ^= enpassant[p.can_en_passant];
-	}
+	hash ^= enpassant[p.can_en_passant];
 
 	int target = p.board[m.target_col][m.target_row];
 	if( target ) {
@@ -153,7 +155,7 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 		}
 		if( m.target_row == m.source_row + 2 || m.target_row + 2 == m.source_row ) {
 			// Becomes en-passantable
-			hash ^= enpassant[m.target_col + m.target_row * 8 + (c ? 64 : 0)];
+			hash ^= enpassant[m.target_col + (m.source_row + m.target_row) * 4];
 		}
 	}
 	else if( source == pieces::rook ) {
