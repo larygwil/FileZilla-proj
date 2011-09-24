@@ -129,10 +129,8 @@ int main()
 			}
 			std::cout << std::endl;
 		}
-		std::cout << "};" << std::endl;
+		std::cout << "};" << std::endl << std::endl;
 	}
-
-	std::cout << std::endl;
 
 	{
 		std::cout << "unsigned long long pawn_control[2][64] = {" << std::endl;
@@ -179,9 +177,8 @@ int main()
 				std::cout << "\t}," << std::endl;
 			}
 		}
-		std::cout << "};" << std::endl;
+		std::cout << "};" << std::endl << std::endl;
 	}
-
 
 	{
 		std::cout << "short proximity[64][64] = {" << std::endl;
