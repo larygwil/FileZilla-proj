@@ -147,7 +147,7 @@ int main()
 				int source_col = source % 8;
 				int source_row = source / 8;
 
-				int cy = c ? 1 : -1;
+				int cy = c ? -1 : 1;
 				int y = source_row + cy;
 
 				{
