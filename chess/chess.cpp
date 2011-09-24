@@ -732,7 +732,9 @@ void perft()
 
 		std::cerr << "Moves: "     << ret << std::endl;
 		std::cerr << "Took:  "     << (stop - start) * 1000 / timer_precision() << " ms" << std::endl;
-		std::cerr << "Time/move: " << ((stop - start) * 1000 * 1000 * 1000) / ret / timer_precision() << " ns" << std::endl;
+		if( ret ) {
+			std::cerr << "Time/move: " << ((stop - start) * 1000 * 1000 * 1000) / ret / timer_precision() << " ns" << std::endl;
+		}
 
 		if( ret != perft_results[i] ) {
 			std::cerr << "FAIL! Expected " << perft_results[i] << " moves." << std::endl;
