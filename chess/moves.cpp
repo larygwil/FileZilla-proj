@@ -80,10 +80,10 @@ extern unsigned long long const possible_knight_moves[];
 
 namespace {
 
-void do_add_move( position const& p, color::type c, int const current_evaluation, move_info*& moves, killer_moves const& killers, pieces2::type const& pi,
+void do_add_move( position const& p, color::type c, int const current_evaluation, move_info*& moves, killer_moves const& killers, pieces::type const& pi,
 				  unsigned char const& old_col, unsigned char const& old_row,
 				  unsigned char const& new_col, unsigned char const& new_row,
-				  int flags, pieces2::type target, promotions::type promotion = promotions::queen )
+				  int flags, pieces::type target, promotions::type promotion = promotions::queen )
 {
 	move_info& mi= *(moves++);
 
@@ -98,7 +98,7 @@ void do_add_move( position const& p, color::type c, int const current_evaluation
 
 	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m, mi.pawns );
 	mi.sort = mi.evaluation;
-	if( target != pieces2::none ) {
+	if( target != pieces::none ) {
 		mi.sort += get_material_value( target ) * 1000000 - get_material_value( pi );
 	}
 	else if( killers.is_killer( mi.m ) ) {
@@ -108,10 +108,10 @@ void do_add_move( position const& p, color::type c, int const current_evaluation
 
 // Adds the move if it does not result in self getting into check
 void add_if_legal( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
-				  killer_moves const& killers, pieces2::type const& pi,
+				  killer_moves const& killers, pieces::type const& pi,
 				  unsigned char const& old_col, unsigned char const& old_row,
 				  unsigned char const& new_col, unsigned char const& new_row,
-				  int flags, pieces2::type target, promotions::type promotion = promotions::queen )
+				  int flags, pieces::type target, promotions::type promotion = promotions::queen )
 {
 	unsigned char const& cv_old = check.board[old_col][old_row];
 	unsigned char const& cv_new = check.board[new_col][new_row];
@@ -137,20 +137,20 @@ void add_if_legal( position const& p, color::type c, int const current_evaluatio
 void add_if_legal_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, killer_moves const& killers,
 					    unsigned char const& old_col, unsigned char const& old_row,
 					    unsigned char new_col, unsigned char new_row,
-					    int flags, pieces2::type target )
+					    int flags, pieces::type target )
 {
 	if( detect_check( p, c, new_col, new_row, old_col, old_row ) ) {
 		return;
 	}
 
-	do_add_move( p, c, current_evaluation, moves, killers, pieces2::king, old_col, old_row, new_col, new_row, flags, target );
+	do_add_move( p, c, current_evaluation, moves, killers, pieces::king, old_col, old_row, new_col, new_row, flags, target );
 }
 
 void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers,
 					  unsigned char old_col, unsigned char old_row,
 					  unsigned char new_col, unsigned char new_row )
 {
-	pieces2::type target = static_cast<pieces2::type>(p.board2[new_col][new_row] & 0x0f);
+	pieces::type target = static_cast<pieces::type>(p.board[new_col][new_row] & 0x0f);
 	add_if_legal_king( p, c, current_evaluation, moves, killers, old_col, old_row, new_col, new_row, move_flags::valid, target );
 }
 
@@ -184,17 +184,17 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 
 	// Queenside castling
 	if( p.castle[c] & 0x2 ) {
-		if( !p.board2[1][old_row] && !p.board2[2][old_row] && !p.board2[3][old_row] ) {
+		if( !p.board[1][old_row] && !p.board[2][old_row] && !p.board[3][old_row] ) {
 			if( !detect_check( p, c, 3, old_row, 3, old_row ) ) {
-				add_if_legal_king( p, c, current_evaluation, moves, killers, 4, old_row, 2, old_row, move_flags::valid | move_flags::castle, pieces2::none );
+				add_if_legal_king( p, c, current_evaluation, moves, killers, 4, old_row, 2, old_row, move_flags::valid | move_flags::castle, pieces::none );
 			}
 		}
 	}
 	// Kingside castling
 	if( p.castle[c] & 0x1 ) {
-		if( !p.board2[5][old_row] && !p.board2[6][old_row] ) {
+		if( !p.board[5][old_row] && !p.board[6][old_row] ) {
 			if( !detect_check( p, c, 5, old_row, 5, old_row ) ) {
-				add_if_legal_king( p, c, current_evaluation, moves, killers, 4, old_row, 6, old_row, move_flags::valid | move_flags::castle, pieces2::none );
+				add_if_legal_king( p, c, current_evaluation, moves, killers, 4, old_row, 6, old_row, move_flags::valid | move_flags::castle, pieces::none );
 			}
 		}
 	}
@@ -219,8 +219,8 @@ void calc_moves_queen( position const& p, color::type c, int const current_evalu
 		unsigned char new_col = static_cast<unsigned char>(queen_move % 8);
 		unsigned char new_row = static_cast<unsigned char>(queen_move / 8);
 
-		pieces2::type target = static_cast<pieces2::type>(p.board2[new_col][new_row] & 0x0f);
-		add_if_legal( p, c, current_evaluation, moves, check, killers, pieces2::queen, old_col, old_row, new_col, new_row, move_flags::valid, target );
+		pieces::type target = static_cast<pieces::type>(p.board[new_col][new_row] & 0x0f);
+		add_if_legal( p, c, current_evaluation, moves, check, killers, pieces::queen, old_col, old_row, new_col, new_row, move_flags::valid, target );
 	}
 }
 
@@ -256,8 +256,8 @@ void calc_moves_bishop( position const& p, color::type c, int const current_eval
 		unsigned char new_col = static_cast<unsigned char>(bishop_move % 8);
 		unsigned char new_row = static_cast<unsigned char>(bishop_move / 8);
 
-		pieces2::type target = static_cast<pieces2::type>(p.board2[new_col][new_row] & 0x0f);
-		add_if_legal( p, c, current_evaluation, moves, check, killers, pieces2::bishop, old_col, old_row, new_col, new_row, move_flags::valid, target );
+		pieces::type target = static_cast<pieces::type>(p.board[new_col][new_row] & 0x0f);
+		add_if_legal( p, c, current_evaluation, moves, check, killers, pieces::bishop, old_col, old_row, new_col, new_row, move_flags::valid, target );
 	}
 }
 
@@ -293,8 +293,8 @@ void calc_moves_rook( position const& p, color::type c, int const current_evalua
 		unsigned char new_col = static_cast<unsigned char>(rook_move % 8);
 		unsigned char new_row = static_cast<unsigned char>(rook_move / 8);
 
-		pieces2::type target = static_cast<pieces2::type>(p.board2[new_col][new_row] & 0x0f);
-		add_if_legal( p, c, current_evaluation, moves, check, killers, pieces2::rook, old_col, old_row, new_col, new_row, move_flags::valid, target );
+		pieces::type target = static_cast<pieces::type>(p.board[new_col][new_row] & 0x0f);
+		add_if_legal( p, c, current_evaluation, moves, check, killers, pieces::rook, old_col, old_row, new_col, new_row, move_flags::valid, target );
 	}
 }
 
@@ -315,8 +315,8 @@ void calc_moves_knight( position const& p, color::type c, int const current_eval
 					    unsigned char old_col, unsigned char old_row,
 						unsigned char new_col, unsigned char new_row )
 {
-	pieces2::type target = static_cast<pieces2::type>(p.board2[new_col][new_row] & 0x0f);
-	add_if_legal( p, c, current_evaluation, moves, check, killers, pieces2::knight, old_col, old_row, new_col, new_row, move_flags::valid, target );
+	pieces::type target = static_cast<pieces::type>(p.board[new_col][new_row] & 0x0f);
+	add_if_legal( p, c, current_evaluation, moves, check, killers, pieces::knight, old_col, old_row, new_col, new_row, move_flags::valid, target );
 }
 
 void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
@@ -352,7 +352,7 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 							  unsigned char old_col, unsigned char old_row,
 							  unsigned char new_col, unsigned char new_row )
 {
-	unsigned char target = p.board2[new_col][new_row];
+	unsigned char target = p.board[new_col][new_row];
 	if( !target ) {
 		if( p.can_en_passant && (p.can_en_passant >> 6) != c ) {
 			unsigned char ep_col = p.can_en_passant % 8;
@@ -398,7 +398,7 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 						if( col == new_col ) {
 							continue;
 						}
-						unsigned char t = p.board2[col][old_row];
+						unsigned char t = p.board[col][old_row];
 						if( !t ) {
 							// Empty square
 							continue;
@@ -408,7 +408,7 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 							break;
 						}
 						t &= 0x0f;
-						if( t == pieces2::queen || t == pieces2::rook ) {
+						if( t == pieces::queen || t == pieces::rook ) {
 							// Not a legal move unfortunately
 							return;
 						}
@@ -418,7 +418,7 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 					}
 				}
 
-				do_add_move( p, c, current_evaluation, moves, killers, pieces2::pawn, old_col, old_row, new_col, new_row, move_flags::valid | move_flags::enpassant, pieces2::pawn );
+				do_add_move( p, c, current_evaluation, moves, killers, pieces::pawn, old_col, old_row, new_col, new_row, move_flags::valid | move_flags::enpassant, pieces::pawn );
 			}
 		}
 	}
@@ -428,7 +428,7 @@ void calc_diagonal_pawn_move( position const& p, color::type c, int const curren
 		if( new_row == 0 || new_row == 7 ) {
 			flags |= move_flags::promotion;
 		}
-		add_if_legal( p, c, current_evaluation, moves, check, killers, pieces2::pawn, old_col, old_row, new_col, new_row, flags, static_cast<pieces2::type>(target & 0x0f) );
+		add_if_legal( p, c, current_evaluation, moves, check, killers, pieces::pawn, old_col, old_row, new_col, new_row, flags, static_cast<pieces::type>(target & 0x0f) );
 	}
 }
 
@@ -448,22 +448,22 @@ void calc_moves_pawn( position const& p, color::type c, int const current_evalua
 		calc_diagonal_pawn_move( p, c, current_evaluation, moves, check, killers, old_col, old_row, new_col, new_row );
 	}
 
-	unsigned char target = p.board2[old_col][new_row];
+	unsigned char target = p.board[old_col][new_row];
 	if( !target ) {
 
 		int flags = move_flags::valid;
 		if( new_row == 0 || new_row == 7 ) {
 			flags |= move_flags::promotion;
 		}
-		add_if_legal( p, c, current_evaluation, moves, check, killers, pieces2::pawn, old_col, old_row, old_col, new_row, flags, pieces2::none );
+		add_if_legal( p, c, current_evaluation, moves, check, killers, pieces::pawn, old_col, old_row, old_col, new_row, flags, pieces::none );
 
 		if( old_row == ( (c == color::white) ? 1 : 6) ) {
 			// Moving two rows from starting row
 			new_row = (c == color::white) ? (old_row + 2) : (old_row - 2);
 
-			unsigned char target = p.board2[old_col][new_row];
+			unsigned char target = p.board[old_col][new_row];
 			if( !target ) {
-				add_if_legal( p, c, current_evaluation, moves, check, killers, pieces2::pawn, old_col, old_row, old_col, new_row, move_flags::valid, pieces2::none );
+				add_if_legal( p, c, current_evaluation, moves, check, killers, pieces::pawn, old_col, old_row, old_col, new_row, move_flags::valid, pieces::none );
 			}
 		}
 	}

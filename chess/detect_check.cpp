@@ -95,7 +95,7 @@ bool detect_check_from_queen( position const& p, color::type c, unsigned char ki
 			if( king_col == ignore_col && row == ignore_row ) {
 				continue;
 			}
-			if( p.board2[king_col][row] ) {
+			if( p.board[king_col][row] ) {
 				break;
 			}
 		}
@@ -111,7 +111,7 @@ bool detect_check_from_queen( position const& p, color::type c, unsigned char ki
 			if( col == ignore_col && king_row == ignore_row ) {
 				continue;
 			}
-			if( p.board2[col][king_row] ) {
+			if( p.board[col][king_row] ) {
 				break;
 			}
 		}
@@ -129,7 +129,7 @@ bool detect_check_from_queen( position const& p, color::type c, unsigned char ki
 			if( col == ignore_col && row == ignore_row ) {
 				continue;
 			}
-			if( p.board2[col][row] ) {
+			if( p.board[col][row] ) {
 				break;
 			}
 		}
@@ -178,7 +178,7 @@ bool detect_check_from_rook( position const& p, color::type c, unsigned char kin
 			if( king_col == ignore_col && row == ignore_row ) {
 				continue;
 			}
-			if( p.board2[king_col][row] ) {
+			if( p.board[king_col][row] ) {
 				break;
 			}
 		}
@@ -194,7 +194,7 @@ bool detect_check_from_rook( position const& p, color::type c, unsigned char kin
 			if( col == ignore_col && king_row == ignore_row ) {
 				continue;
 			}
-			if( p.board2[col][king_row] ) {
+			if( p.board[col][king_row] ) {
 				break;
 			}
 		}
@@ -244,7 +244,7 @@ bool detect_check_from_bishop( position const& p, color::type c, unsigned char k
 			if( col == ignore_col && row == ignore_row ) {
 				continue;
 			}
-			if( p.board2[col][row] ) {
+			if( p.board[col][row] ) {
 				break;
 			}
 		}
@@ -338,7 +338,7 @@ bool detect_check( position const& p, color::type c )
 
 void calc_check_map_knight( position const& p, color::type c, check_map& map, signed char king_col, signed char king_row, int col, int row )
 {
-	unsigned char index = p.board2[col][row];
+	unsigned char index = p.board[col][row];
 	if( !index ) {
 		return;
 	}
@@ -349,9 +349,9 @@ void calc_check_map_knight( position const& p, color::type c, check_map& map, si
 	}
 
 	// Enemy piece
-	pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
+	pieces::type pi = static_cast<pieces::type>(index & 0x0f);
 
-	if( pi == pieces2::knight ) {
+	if( pi == pieces::knight ) {
 		unsigned char v = 0x80 | (row << 3) | col;
 		map.board[col][row] = v;
 
@@ -385,7 +385,7 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 			for( col = king_col + cx, row = king_row + cy;
 				   col >= 0 && col < 8 && row >= 0 && row < 8; col += cx, row += cy ) {
 
-				unsigned char index = p.board2[col][row];
+				unsigned char index = p.board[col][row];
 				if( !index ) {
 					continue;
 				}
@@ -399,14 +399,14 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 					continue;
 				}
 
-				pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
+				pieces::type pi = static_cast<pieces::type>(index & 0x0f);
 
 				// Enemy piece
 				bool check = false;
-				if( pi == pieces2::queen || pi == pieces2::bishop ) {
+				if( pi == pieces::queen || pi == pieces::bishop ) {
 					check = true;
 				}
-				else if( pi == pieces2::pawn ) {
+				else if( pi == pieces::pawn ) {
 					if( c && static_cast<signed char>(king_row) == (row + 1) ) {
 						// The pawn itself giving chess
 						check = true;
@@ -446,7 +446,7 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 
 		for( col = king_col + cx; col >= 0 && col < 8; col += cx ) {
 
-			unsigned char index = p.board2[col][king_row];
+			unsigned char index = p.board[col][king_row];
 			if( !index ) {
 				continue;
 			}
@@ -460,11 +460,11 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 				continue;
 			}
 
-			pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
+			pieces::type pi = static_cast<pieces::type>(index & 0x0f);
 
 			// Enemy piece
 			bool check = false;
-			if( pi == pieces2::queen || pi == pieces2::rook ) {
+			if( pi == pieces::queen || pi == pieces::rook ) {
 				check = true;
 			}
 		
@@ -496,7 +496,7 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 
 		for( row = king_row + cy; row >= 0 && row < 8; row += cy ) {
 
-			unsigned char index = p.board2[king_col][row];
+			unsigned char index = p.board[king_col][row];
 			if( !index ) {
 				continue;
 			}
@@ -510,11 +510,11 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 				continue;
 			}
 
-			pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
+			pieces::type pi = static_cast<pieces::type>(index & 0x0f);
 
 			// Enemy piece
 			bool check = false;
-			if( pi == pieces2::queen || pi == pieces2::rook ) {
+			if( pi == pieces::queen || pi == pieces::rook ) {
 				check = true;
 			}
 			
@@ -576,7 +576,7 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 			for( col = king_col + cx, row = king_row + cy;
 				   col >= 0 && col < 8 && row >= 0 && row < 8; col += cx, row += cy ) {
 
-				unsigned char index = p.board2[col][row];
+				unsigned char index = p.board[col][row];
 				if( !index ) {
 					if( own_col == 8 ) {
 						map.board[col][row] = 0xc0;
@@ -597,9 +597,9 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 					continue;
 				}
 
-				pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
+				pieces::type pi = static_cast<pieces::type>(index & 0x0f);
 
-				if( pi == pieces2::queen || pi == pieces2::bishop ) {
+				if( pi == pieces::queen || pi == pieces::bishop ) {
 					// Own piece on enemy king ray blocked by one other own piece
 					unsigned char v = 0x80 | (row << 3) | col;
 					map.board[own_col][own_row] = v;
@@ -617,7 +617,7 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 
 		for( col = king_col + cx; col >= 0 && col < 8; col += cx ) {
 
-			unsigned char index = p.board2[col][king_row];
+			unsigned char index = p.board[col][king_row];
 			if( !index ) {
 				if( own_col == 8 ) {
 					map.board[col][king_row] = 0x80;
@@ -637,10 +637,10 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 				continue;
 			}
 
-			pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
+			pieces::type pi = static_cast<pieces::type>(index & 0x0f);
 
 			// Own piece on enemy king ray blocked by one other own piece
-			if( pi == pieces2::queen || pi == pieces2::rook ) {
+			if( pi == pieces::queen || pi == pieces::rook ) {
 				unsigned char v = 0x80 | (king_row << 3) | col;
 				map.board[own_col][king_row] = v;
 			}
@@ -656,7 +656,7 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 
 		for( row = king_row + cy; row >= 0 && row < 8; row += cy ) {
 
-			unsigned char index = p.board2[king_col][row];
+			unsigned char index = p.board[king_col][row];
 			if( !index ) {
 				if( own_row == 8 ) {
 					map.board[king_col][row] = 0x80;
@@ -676,10 +676,10 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 				continue;
 			}
 
-			pieces2::type pi = static_cast<pieces2::type>(index & 0x0f);
+			pieces::type pi = static_cast<pieces::type>(index & 0x0f);
 
 			// Own piece on enemy king ray blocked by one other own piece
-			if( pi == pieces2::queen || pi == pieces2::rook ) {
+			if( pi == pieces::queen || pi == pieces::rook ) {
 				unsigned char v = 0x80 | (row << 3) | king_col;
 				map.board[king_col][own_row] = v;
 			}

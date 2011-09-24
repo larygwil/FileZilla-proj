@@ -164,12 +164,12 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 		}
 
 		best_move.flags = (v >> (field_shifts::move)) & 0x1F;
-		best_move.piece = static_cast<pieces2::type>((v >> (field_shifts::move + 5)) & 0x07);
+		best_move.piece = static_cast<pieces::type>((v >> (field_shifts::move + 5)) & 0x07);
 		best_move.source_col = (v >> (field_shifts::move + 8)) & 0x07;
 		best_move.source_row = (v >> (field_shifts::move + 11)) & 0x07;
 		best_move.target_col = (v >> (field_shifts::move + 14)) & 0x07;
 		best_move.target_row = (v >> (field_shifts::move + 17)) & 0x07;
-		best_move.captured_piece = static_cast<pieces2::type>((v >> (field_shifts::move + 20)) & 0x07);
+		best_move.captured_piece = static_cast<pieces::type>((v >> (field_shifts::move + 20)) & 0x07);
 		best_move.promotion = (v >> (field_shifts::move + 23)) & 0x03;
 
 		unsigned char depth = (v >> field_shifts::depth) & field_masks::depth;

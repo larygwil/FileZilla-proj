@@ -651,21 +651,21 @@ short evaluate_fast( position const& p, color::type c )
 }
 
 namespace {
-static short get_piece_value( color::type c, pieces2::type target, int col, int row )
+static short get_piece_value( color::type c, pieces::type target, int col, int row )
 {
 	switch( target ) {
-	case pieces2::pawn:
+	case pieces::pawn:
 		return pawn_values[c][col][row];
-	case pieces2::knight:
+	case pieces::knight:
 		return knight_values[c][col][row];
-	case pieces2::bishop:
+	case pieces::bishop:
 		return bishop_values[c][col][row];
-	case pieces2::rook:
+	case pieces::rook:
 		return rook_values[c][col][row];
-	case pieces2::queen:
+	case pieces::queen:
 		return queen_values[c][col][row];
 	default:
-	case pieces2::king:
+	case pieces::king:
 		return 0;
 	}
 }
@@ -704,7 +704,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		return current_evaluation;
 	}
 
-	if( m.captured_piece != pieces2::none ) {
+	if( m.captured_piece != pieces::none ) {
 		if( m.flags & move_flags::enpassant ) {
 			current_evaluation += pawn_values[1-c][m.target_col][m.source_row];
 		}
@@ -712,7 +712,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 			current_evaluation += get_piece_value( static_cast<color::type>(1-c), m.captured_piece, m.target_col, m.target_row );
 		}
 
-		if( m.captured_piece == pieces2::bishop && popcount( p.bitboards[1-c].b[bb_type::bishops] ) == 2 ) {
+		if( m.captured_piece == pieces::bishop && popcount( p.bitboards[1-c].b[bb_type::bishops] ) == 2 ) {
 			current_evaluation += special_values::double_bishop;
 		}
 	}
@@ -727,12 +727,12 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 	}
 
 	outPawns = p.pawns;
-	if( m.piece == pieces2::pawn || m.captured_piece == pieces2::pawn ) {
+	if( m.piece == pieces::pawn || m.captured_piece == pieces::pawn ) {
 		unsigned long long pawnMap[2];
 		pawnMap[0] = p.bitboards[0].b[bb_type::pawns];
 		pawnMap[1] = p.bitboards[1].b[bb_type::pawns];
 
-		if( m.captured_piece == pieces2::pawn ) {
+		if( m.captured_piece == pieces::pawn ) {
 			if( m.flags & move_flags::enpassant ) {
 				pawnMap[1-c] &= ~(1ull << (m.target_col + m.source_row * 8) );
 				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.source_row );
@@ -742,7 +742,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.target_row );
 			}
 		}
-		if( m.piece == pieces2::pawn ) {
+		if( m.piece == pieces::pawn ) {
 			pawnMap[c] &= ~(1ull << (m.source_row * 8 + m.source_col) );
 			outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.source_col, m.source_row );
 			if( !(m.flags & move_flags::promotion) ) {
@@ -890,7 +890,7 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 	return eval_fast;
 }
 
-short get_material_value( pieces2::type pi )
+short get_material_value( pieces::type pi )
 {
 	return static_cast<material_values::type>(pi);
 }

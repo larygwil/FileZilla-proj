@@ -100,21 +100,21 @@ unsigned long long get_zobrist_hash( position const& p, color::type c ) {
 }
 
 namespace {
-static unsigned long long get_piece_hash( pieces2::type pi, color::type c, int pos )
+static unsigned long long get_piece_hash( pieces::type pi, color::type c, int pos )
 {
 	switch( pi ) {
-		case pieces2::pawn:
+		case pieces::pawn:
 			return pawns[c][pos];
-		case pieces2::knight:
+		case pieces::knight:
 			return knights[c][pos];
-		case pieces2::bishop:
+		case pieces::bishop:
 			return bishops[c][pos];
-		case pieces2::rook:
+		case pieces::rook:
 			return rooks[c][pos];
-		case pieces2::queen:
+		case pieces::queen:
 			return queens[c][pos];
 		default:
-		case pieces2::king:
+		case pieces::king:
 			return kings[c][pos];
 	}
 }
@@ -126,12 +126,12 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 		hash ^= enpassant[p.can_en_passant];
 	}
 
-	int target = p.board2[m.target_col][m.target_row];
+	int target = p.board[m.target_col][m.target_row];
 	if( target ) {
 		target &= 0x0f;
-		hash ^= get_piece_hash( static_cast<pieces2::type>(target), static_cast<color::type>(1-c), m.target_col + m.target_row * 8 );
+		hash ^= get_piece_hash( static_cast<pieces::type>(target), static_cast<color::type>(1-c), m.target_col + m.target_row * 8 );
 		
-		if( target == pieces2::rook ) {
+		if( target == pieces::rook ) {
 			if( !m.target_col && p.castle[1-c] & 0x2 && m.target_row == (c ? 0 : 7) ) {
 				hash ^= castle[1-c][p.castle[1-c]];
 				hash ^= castle[1-c][p.castle[1-c] & 0x5];
@@ -143,10 +143,10 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 		}
 	}
 
-	pieces2::type source = static_cast<pieces2::type>(p.board2[m.source_col][m.source_row] & 0x0f);
+	pieces::type source = static_cast<pieces::type>(p.board[m.source_col][m.source_row] & 0x0f);
 	hash ^= get_piece_hash( source, c, m.source_col + m.source_row * 8 );
 
-	if( source == pieces2::pawn ) {
+	if( source == pieces::pawn ) {
 		if( m.target_col != m.source_col && !target ) {
 			// Was en-passant
 			hash ^= pawns[1-c][m.target_col + m.source_row * 8];
@@ -156,7 +156,7 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 			hash ^= enpassant[m.target_col + m.target_row * 8 + (c ? 64 : 0)];
 		}
 	}
-	else if( source == pieces2::rook ) {
+	else if( source == pieces::rook ) {
 		if( !m.source_col && p.castle[c] & 0x2 && m.source_row == (c ? 7 : 0) ) {
 			hash ^= castle[c][p.castle[c]];
 			hash ^= castle[c][p.castle[c] & 0x5];
@@ -166,7 +166,7 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 			hash ^= castle[c][p.castle[c] & 0x6];
 		}
 	}
-	else if( source == pieces2::king ) {
+	else if( source == pieces::king ) {
 		if( (m.source_col == m.target_col + 2) || (m.source_col + 2 == m.target_col) ) {
 			// Was castling
 			if( m.target_col == 2 ) {

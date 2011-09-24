@@ -25,6 +25,6 @@ enum type {
 };
 }
 
-short get_material_value( pieces2::type pi );
+short get_material_value( pieces::type pi );
 
 #endif

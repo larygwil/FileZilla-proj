@@ -5,7 +5,7 @@
 
 #include "platform.hpp"
 
-namespace pieces2 {
+namespace pieces {
 enum type {
 	none,
 	pawn,
@@ -72,7 +72,7 @@ struct position
 
 	// board[column][row] as piece type in lower 4 bits, color in 5th bit.
 	// nil if square is empty.
-	unsigned char board2[8][8];
+	unsigned char board[8][8];
 
 	// Call after initializing bitboards
 	void init_pawn_structure();
@@ -112,12 +112,12 @@ struct move
 	{}
 
 	unsigned char flags;
-	pieces2::type piece;
+	pieces::type piece;
 	unsigned char source_col;
 	unsigned char source_row;
 	unsigned char target_col;
 	unsigned char target_row;
-	pieces2::type captured_piece;
+	pieces::type captured_piece;
 	unsigned char promotion;
 
 	bool operator!=( move const& rhs ) const {

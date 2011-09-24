@@ -82,7 +82,7 @@ void auto_play()
 		}
 
 		bool reset_seen = false;
-		if( m.piece == pieces2::pawn || m.captured_piece ) {
+		if( m.piece == pieces::pawn || m.captured_piece ) {
 			reset_seen = true;
 		}
 
@@ -166,7 +166,7 @@ struct xboard_state
 	{
 		history.push_back( p );
 		bool reset_seen = false;
-		if( m.piece == pieces2::pawn || m.captured_piece ) {
+		if( m.piece == pieces::pawn || m.captured_piece ) {
 			reset_seen = true;
 		}
 

@@ -14,7 +14,7 @@ extern unsigned long long const possible_knight_moves[];
 
 namespace {
 
-void do_add_move( position const& p, color::type c, int const current_evaluation, move_info*& moves, pieces2::type const& pi,
+void do_add_move( position const& p, color::type c, int const current_evaluation, move_info*& moves, pieces::type const& pi,
 				  unsigned char const& old_col, unsigned char const& old_row,
 				  unsigned char const& new_col, unsigned char const& new_row,
 				  int flags, promotions::type promotion = promotions::queen )
@@ -27,7 +27,7 @@ void do_add_move( position const& p, color::type c, int const current_evaluation
 	mi.m.source_row = old_row;
 	mi.m.target_col = new_col;
 	mi.m.target_row = new_row;
-	mi.m.captured_piece = pieces2::none;
+	mi.m.captured_piece = pieces::none;
 	mi.m.promotion = promotion;
 
 	mi.evaluation = evaluate_move( p, c, current_evaluation, mi.m, mi.pawns );
@@ -35,7 +35,7 @@ void do_add_move( position const& p, color::type c, int const current_evaluation
 
 // Adds the move if it does not result in self getting into check
 void add_if_legal( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
-				  pieces2::type const& pi2,
+				  pieces::type const& pi2,
 				  unsigned char const& old_col, unsigned char const& old_row,
 				  unsigned char const& new_col, unsigned char const& new_row,
 				  int flags, promotions::type promotion = promotions::queen )
@@ -70,7 +70,7 @@ void add_if_legal_king( position const& p, color::type c, int const current_eval
 		return;
 	}
 
-	do_add_move( p, c, current_evaluation, moves, pieces2::king, old_col, old_row, new_col, new_row, flags );
+	do_add_move( p, c, current_evaluation, moves, pieces::king, old_col, old_row, new_col, new_row, flags );
 }
 
 void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
@@ -110,7 +110,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 
 	// Queenside castling
 	if( p.castle[c] & 0x2 ) {
-		if( !p.board2[1][old_row] && !p.board2[2][old_row] && !p.board2[3][old_row] ) {
+		if( !p.board[1][old_row] && !p.board[2][old_row] && !p.board[3][old_row] ) {
 			if( !detect_check( p, c, 3, old_row, 3, old_row ) ) {
 				add_if_legal_king( p, c, current_evaluation, moves, 4, old_row, 2, old_row, move_flags::valid | move_flags::castle );
 			}
@@ -118,7 +118,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 	}
 	// Kingside castling
 	if( p.castle[c] & 0x1 ) {
-		if( !p.board2[5][old_row] && !p.board2[6][old_row] ) {
+		if( !p.board[5][old_row] && !p.board[6][old_row] ) {
 			if( !detect_check( p, c, 5, old_row, 5, old_row ) ) {
 				add_if_legal_king( p, c, current_evaluation, moves, 4, old_row, 6, old_row, move_flags::valid | move_flags::castle );
 			}
@@ -145,7 +145,7 @@ void calc_moves_queen( position const& p, color::type c, int const current_evalu
 		unsigned char new_col = static_cast<unsigned char>(queen_move % 8);
 		unsigned char new_row = static_cast<unsigned char>(queen_move / 8);
 
-		add_if_legal( p, c, current_evaluation, moves, check, pieces2::queen, old_col, old_row, new_col, new_row, move_flags::valid );
+		add_if_legal( p, c, current_evaluation, moves, check, pieces::queen, old_col, old_row, new_col, new_row, move_flags::valid );
 	}
 }
 
@@ -181,7 +181,7 @@ void calc_moves_bishop( position const& p, color::type c, int const current_eval
 		unsigned char new_col = static_cast<unsigned char>(bishop_move % 8);
 		unsigned char new_row = static_cast<unsigned char>(bishop_move / 8);
 
-		add_if_legal( p, c, current_evaluation, moves, check, pieces2::bishop, old_col, old_row, new_col, new_row, move_flags::valid );
+		add_if_legal( p, c, current_evaluation, moves, check, pieces::bishop, old_col, old_row, new_col, new_row, move_flags::valid );
 	}
 }
 
@@ -217,7 +217,7 @@ void calc_moves_rook( position const& p, color::type c, int const current_evalua
 		unsigned char new_col = static_cast<unsigned char>(rook_move % 8);
 		unsigned char new_row = static_cast<unsigned char>(rook_move / 8);
 
-		add_if_legal( p, c, current_evaluation, moves, check, pieces2::rook, old_col, old_row, new_col, new_row, move_flags::valid );
+		add_if_legal( p, c, current_evaluation, moves, check, pieces::rook, old_col, old_row, new_col, new_row, move_flags::valid );
 	}
 }
 
@@ -238,7 +238,7 @@ void calc_moves_knight( position const& p, color::type c, int const current_eval
 					    unsigned char old_col, unsigned char old_row,
 						unsigned char new_col, unsigned char new_row )
 {
-	add_if_legal( p, c, current_evaluation, moves, check, pieces2::knight, old_col, old_row, new_col, new_row, move_flags::valid );
+	add_if_legal( p, c, current_evaluation, moves, check, pieces::knight, old_col, old_row, new_col, new_row, move_flags::valid );
 }
 
 void calc_moves_knight( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
@@ -281,7 +281,7 @@ void calc_moves_pawn( position const& p, color::type c, int const current_evalua
 	signed char cy = (c == color::white) ? 1 : -1;
 	unsigned char new_row = cy + old_row;
 	
-	unsigned char target = p.board2[old_col][new_row];
+	unsigned char target = p.board[old_col][new_row];
 	if( !target ) {
 
 		int flags = move_flags::valid;
@@ -295,21 +295,21 @@ void calc_moves_pawn( position const& p, color::type c, int const current_evalua
 			  ((inverse_check.enemy_king_col == old_col + 1) || (inverse_check.enemy_king_col + 1 == old_col))
 			) )
 		{
-			add_if_legal( p, c, current_evaluation, moves, check, pieces2::pawn, old_col, old_row, old_col, new_row, flags );
+			add_if_legal( p, c, current_evaluation, moves, check, pieces::pawn, old_col, old_row, old_col, new_row, flags );
 		}
 		
 		if( old_row == ( (c == color::white) ? 1 : 6) ) {
 			// Moving two rows from starting row
 			new_row = (c == color::white) ? (old_row + 2) : (old_row - 2);
 
-			unsigned char target = p.board2[old_col][new_row];
+			unsigned char target = p.board[old_col][new_row];
 			if( !target ) {
 				if( inverse_check.board[old_col][old_row] ||
 					( (inverse_check.enemy_king_row == new_row + cy) &&
 					  ((inverse_check.enemy_king_col == old_col + 1) || (inverse_check.enemy_king_col + 1 == old_col))
 					) )
 				{
-					add_if_legal( p, c, current_evaluation, moves, check, pieces2::pawn, old_col, old_row, old_col, new_row, move_flags::valid );
+					add_if_legal( p, c, current_evaluation, moves, check, pieces::pawn, old_col, old_row, old_col, new_row, move_flags::valid );
 				}
 			}
 		}
