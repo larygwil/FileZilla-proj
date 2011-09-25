@@ -126,9 +126,6 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 		std::sort( moves, ctx.move_ptr, moveSort2 );
 	}
 	else {
-		inverse_check_map inverse_check;
-		calc_inverse_check_map( p, c, inverse_check );
-
 		calculate_moves_captures( p, c, ctx.move_ptr, check );
 		std::sort( moves, ctx.move_ptr, moveSort );
 	}

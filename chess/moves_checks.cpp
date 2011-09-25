@@ -74,10 +74,13 @@ void add_if_legal_king( position const& p, color::type c, int const current_eval
 }
 
 void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
+					  inverse_check_map const& inverse_check,
 					  unsigned char old_col, unsigned char old_row,
 					  unsigned char new_col, unsigned char new_row )
 {
-	add_if_legal_king( p, c, current_evaluation, moves, old_col, old_row, new_col, new_row, move_flags::valid );
+	if( inverse_check.board[old_col][old_row] ) {
+		add_if_legal_king( p, c, current_evaluation, moves, old_col, old_row, new_col, new_row, move_flags::valid );
+	}
 }
 
 
@@ -100,6 +103,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 		bitscan( king_moves, i );
 		king_moves &= king_moves - 1;
 		calc_moves_king( p, c, current_evaluation, moves, check,
+						 inverse_check,
 						 old_col, old_row,
 						 static_cast<unsigned char>(i % 8), static_cast<unsigned char>(i / 8) );
 	}
@@ -127,7 +131,9 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 }
 
 
-void calc_moves_queen( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, unsigned long long queen )
+void calc_moves_queen( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
+					   inverse_check_map const& inverse_check,
+					   unsigned long long queen )
 {
 	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
 
@@ -145,7 +151,9 @@ void calc_moves_queen( position const& p, color::type c, int const current_evalu
 		unsigned char new_col = static_cast<unsigned char>(queen_move % 8);
 		unsigned char new_row = static_cast<unsigned char>(queen_move / 8);
 
-		add_if_legal( p, c, current_evaluation, moves, check, pieces::queen, old_col, old_row, new_col, new_row, move_flags::valid );
+		if( inverse_check.board[old_col][old_row] || inverse_check.board[new_col][new_row] ) {
+			add_if_legal( p, c, current_evaluation, moves, check, pieces::queen, old_col, old_row, new_col, new_row, move_flags::valid );
+		}
 	}
 }
 
@@ -157,12 +165,13 @@ void calc_moves_queens( position const& p, color::type c, int const current_eval
 		unsigned long long queen;
 		bitscan( queens, queen );	
 		queens &= queens - 1;
-		calc_moves_queen( p, c, current_evaluation, moves, check, queen );
+		calc_moves_queen( p, c, current_evaluation, moves, check, inverse_check, queen );
 	}
 }
 
 
 void calc_moves_bishop( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
+						inverse_check_map const& inverse_check,
 					    unsigned long long bishop )
 {
 	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
@@ -181,7 +190,9 @@ void calc_moves_bishop( position const& p, color::type c, int const current_eval
 		unsigned char new_col = static_cast<unsigned char>(bishop_move % 8);
 		unsigned char new_row = static_cast<unsigned char>(bishop_move / 8);
 
-		add_if_legal( p, c, current_evaluation, moves, check, pieces::bishop, old_col, old_row, new_col, new_row, move_flags::valid );
+		if( inverse_check.board[old_col][old_row] || inverse_check.board[new_col][new_row] == 0xc0 ) {
+			add_if_legal( p, c, current_evaluation, moves, check, pieces::bishop, old_col, old_row, new_col, new_row, move_flags::valid );
+		}
 	}
 }
 
@@ -193,12 +204,13 @@ void calc_moves_bishops( position const& p, color::type c, int const current_eva
 		unsigned long long bishop;
 		bitscan( bishops, bishop );	
 		bishops &= bishops - 1;
-		calc_moves_bishop( p, c, current_evaluation, moves, check, bishop );
+		calc_moves_bishop( p, c, current_evaluation, moves, check, inverse_check, bishop );
 	}
 }
 
 
 void calc_moves_rook( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
+					  inverse_check_map const& inverse_check,
 					  unsigned long long rook )
 {
 	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
@@ -217,7 +229,9 @@ void calc_moves_rook( position const& p, color::type c, int const current_evalua
 		unsigned char new_col = static_cast<unsigned char>(rook_move % 8);
 		unsigned char new_row = static_cast<unsigned char>(rook_move / 8);
 
-		add_if_legal( p, c, current_evaluation, moves, check, pieces::rook, old_col, old_row, new_col, new_row, move_flags::valid );
+		if( inverse_check.board[old_col][old_row] || inverse_check.board[new_col][new_row] == 0x80 ) {
+			add_if_legal( p, c, current_evaluation, moves, check, pieces::rook, old_col, old_row, new_col, new_row, move_flags::valid );
+		}
 	}
 }
 
@@ -229,7 +243,7 @@ void calc_moves_rooks( position const& p, color::type c, int const current_evalu
 		unsigned long long rook;
 		bitscan( rooks, rook );
 		rooks &= rooks - 1;
-		calc_moves_rook( p, c, current_evaluation, moves, check, rook );
+		calc_moves_rook( p, c, current_evaluation, moves, check, inverse_check, rook );
 	}
 }
 
@@ -248,6 +262,12 @@ void calc_moves_knight( position const& p, color::type c, int const current_eval
 	unsigned char old_row = static_cast<unsigned char>(old_knight / 8);
 
 	unsigned long long new_knights = possible_knight_moves[old_knight] & ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
+
+	unsigned long long other_kings = p.bitboards[1-c].b[bb_type::king];
+	unsigned long long other_king;
+	bitscan(other_kings, other_king);
+	new_knights &= possible_knight_moves[other_king];
+
 	while( new_knights ) {
 		unsigned long long new_knight;
 		bitscan( new_knights, new_knight );
