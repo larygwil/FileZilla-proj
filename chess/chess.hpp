@@ -72,7 +72,7 @@ struct position
 
 	// board[column][row] as piece type in lower 4 bits, color in 5th bit.
 	// nil if square is empty.
-	unsigned char board[8][8];
+	unsigned char board[64];
 
 	// Call after initializing bitboards
 	void init_pawn_structure();
@@ -93,7 +93,8 @@ enum type {
 	valid = 1,
 	enpassant = 2,
 	promotion = 4,
-	castle = 8
+	castle = 8,
+	pawn_double_move = 16
 };
 }
 
@@ -103,28 +104,24 @@ struct move
 	move()
 		: flags()
 		, piece()
-		, source_col()
-		, source_row()
-		, target_col()
-		, target_row()
+		, source()
+		, target()
 		, captured_piece()
 		, promotion()
 	{}
 
 	unsigned char flags;
 	pieces::type piece;
-	unsigned char source_col;
-	unsigned char source_row;
-	unsigned char target_col;
-	unsigned char target_row;
+	unsigned char source;
+	unsigned char target;
 	pieces::type captured_piece;
 	unsigned char promotion;
 
 	bool operator!=( move const& rhs ) const {
-		return source_col != rhs.source_col || source_row != rhs.source_row || target_col != rhs.target_col || target_row != rhs.target_row;
+		return source != rhs.source || target != rhs.target;
 	}
 	bool operator==( move const& rhs ) const {
-		return source_col == rhs.source_col && source_row == rhs.source_row && target_col == rhs.target_col && target_row == rhs.target_row;
+		return source == rhs.source && target == rhs.target;
 	}
 };
 

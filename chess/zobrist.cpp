@@ -14,10 +14,17 @@ unsigned long long enpassant[64];
 
 unsigned long long castle[2][5];
 
-unsigned long long pawn_structure[2][8][8];
+unsigned long long pawn_structure[2][64];
 
 bool initialized = false;
 }
+
+extern unsigned char const queenside_rook_origin[2] = {
+	0, 56
+};
+extern unsigned char const kingside_rook_origin[2] = {
+	7, 63
+};
 
 void init_zobrist_tables()
 {
@@ -53,10 +60,8 @@ void init_zobrist_tables()
 	}
 
 	for( unsigned int c = 0; c < 2; ++c ) {
-		for( unsigned int col = 0; col < 8; ++col ) {
-			for( unsigned int row = 0; row < 8; ++row ) {
-				pawn_structure[c][col][row] = get_random_unsigned_long_long();
-			}
+		for( unsigned int pawn = 0; pawn < 64; ++pawn ) {
+			pawn_structure[c][pawn] = get_random_unsigned_long_long();
 		}
 	}
 
@@ -128,56 +133,62 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 {
 	hash ^= enpassant[p.can_en_passant];
 
-	int target = p.board[m.target_col][m.target_row];
-	if( target ) {
-		target &= 0x0f;
-		hash ^= get_piece_hash( static_cast<pieces::type>(target), static_cast<color::type>(1-c), m.target_col + m.target_row * 8 );
+	int captured = p.board[m.target];
+	if( captured ) {
+		captured &= 0x0f;
+		hash ^= get_piece_hash( static_cast<pieces::type>(captured), static_cast<color::type>(1-c), m.target );
 		
-		if( target == pieces::rook ) {
-			if( !m.target_col && p.castle[1-c] & 0x2 && m.target_row == (c ? 0 : 7) ) {
+		if( captured == pieces::rook ) {
+			if( m.target == queenside_rook_origin[1-c] && p.castle[1-c] & 0x2 ) {
 				hash ^= castle[1-c][p.castle[1-c]];
 				hash ^= castle[1-c][p.castle[1-c] & 0x5];
 			}
-			else if( m.target_col == 7 && p.castle[1-c] & 0x1 && m.target_row == (c ? 0 : 7) ) {
+			else if( m.target == kingside_rook_origin[1-c] && p.castle[1-c] & 0x1 ) {
 				hash ^= castle[1-c][p.castle[1-c]];
 				hash ^= castle[1-c][p.castle[1-c] & 0x6];
 			}
 		}
 	}
 
-	pieces::type source = static_cast<pieces::type>(p.board[m.source_col][m.source_row] & 0x0f);
-	hash ^= get_piece_hash( source, c, m.source_col + m.source_row * 8 );
+	pieces::type source = static_cast<pieces::type>(p.board[m.source] & 0x0f);
+	hash ^= get_piece_hash( source, c, m.source );
 
 	if( source == pieces::pawn ) {
-		if( m.target_col != m.source_col && !target ) {
+		unsigned char source_row = m.source / 8;
+		unsigned char target_col = m.target % 8;
+		unsigned char target_row = m.target / 8;
+		if( m.flags & move_flags::enpassant ) {
 			// Was en-passant
-			hash ^= pawns[1-c][m.target_col + m.source_row * 8];
+			hash ^= pawns[1-c][target_col + source_row * 8];
 		}
-		if( m.target_row == m.source_row + 2 || m.target_row + 2 == m.source_row ) {
+		else if( m.flags & move_flags::pawn_double_move ) {
 			// Becomes en-passantable
-			hash ^= enpassant[m.target_col + (m.source_row + m.target_row) * 4];
+			hash ^= enpassant[target_col + (source_row + target_row) * 4];
 		}
 	}
 	else if( source == pieces::rook ) {
-		if( !m.source_col && p.castle[c] & 0x2 && m.source_row == (c ? 7 : 0) ) {
+		if( m.source == queenside_rook_origin[c] && p.castle[c] & 0x2 ) {
 			hash ^= castle[c][p.castle[c]];
 			hash ^= castle[c][p.castle[c] & 0x5];
 		}
-		else if( m.source_col == 7 && p.castle[c] & 0x1 && m.source_row == (c ? 7 : 0) ) {
+		else if( m.source == kingside_rook_origin[c] && p.castle[c] & 0x1 ) {
 			hash ^= castle[c][p.castle[c]];
 			hash ^= castle[c][p.castle[c] & 0x6];
 		}
 	}
 	else if( source == pieces::king ) {
-		if( (m.source_col == m.target_col + 2) || (m.source_col + 2 == m.target_col) ) {
+		if( m.flags & move_flags::castle ) {
+			unsigned char target_col = m.target % 8;
+			unsigned char target_row = m.target / 8;
+
 			// Was castling
-			if( m.target_col == 2 ) {
-				hash ^= rooks[c][0 + m.target_row * 8];
-				hash ^= rooks[c][3 + m.target_row * 8];
+			if( target_col == 2 ) {
+				hash ^= rooks[c][0 + target_row * 8];
+				hash ^= rooks[c][3 + target_row * 8];
 			}
 			else {
-				hash ^= rooks[c][7 + m.target_row * 8];
-				hash ^= rooks[c][5 + m.target_row * 8];
+				hash ^= rooks[c][7 + target_row * 8];
+				hash ^= rooks[c][5 + target_row * 8];
 			}
 			hash ^= castle[c][p.castle[c]];
 			hash ^= castle[c][0x4];
@@ -189,16 +200,16 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 	}
 
 	if( !(m.flags & move_flags::promotion ) ) {
-		hash ^= get_piece_hash( source, c, m.target_col + m.target_row * 8 );
+		hash ^= get_piece_hash( source, c, m.target );
 	}
 	else {
-		hash ^= queens[c][m.target_col + m.target_row * 8];
+		hash ^= queens[c][m.target];
 	}
 
 	return hash;
 }
 
-unsigned long long get_pawn_structure_hash( color::type c, unsigned char col, unsigned char row )
+unsigned long long get_pawn_structure_hash( color::type c, unsigned char pawn )
 {
-	return pawn_structure[c][col][row];
+	return pawn_structure[c][pawn];
 }

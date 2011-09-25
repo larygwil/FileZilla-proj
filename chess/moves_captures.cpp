@@ -19,33 +19,29 @@ extern unsigned long long pawn_enpassant[2];
 namespace {
 
 void do_add_move( position const& p, color::type c, move_info*& moves, pieces::type const& pi,
-				  unsigned char const& old_col, unsigned char const& old_row,
-				  unsigned char const& new_col, unsigned char const& new_row,
-				  int flags, pieces::type target, promotions::type promotion = promotions::queen )
+				  unsigned char const& source, unsigned char const& target,
+				  int flags, pieces::type captured, promotions::type promotion = promotions::queen )
 {
 	move_info& mi = *(moves++);
 
 	mi.m.flags = flags;
 	mi.m.piece = pi;
-	mi.m.source_col = old_col;
-	mi.m.source_row = old_row;
-	mi.m.target_col = new_col;
-	mi.m.target_row = new_row;
-	mi.m.captured_piece = target;
+	mi.m.source = source;
+	mi.m.target = target;
+	mi.m.captured_piece = captured;
 	mi.m.promotion = promotion;
 
-	mi.evaluation = get_material_value( target ) * 32 - get_material_value( pi );
+	mi.evaluation = get_material_value( captured ) * 32 - get_material_value( pi );
 }
 
 // Adds the move if it does not result in self getting into check
 void add_if_legal( position const& p, color::type c, move_info*& moves, check_map const& check,
 				  pieces::type const& pi,
-				  unsigned char const& old_col, unsigned char const& old_row,
-				  unsigned char const& new_col, unsigned char const& new_row,
-				  int flags, pieces::type target, promotions::type promotion = promotions::queen )
+				  unsigned char const& source, unsigned char const& target,
+				  int flags, pieces::type captured, promotions::type promotion = promotions::queen )
 {
-	unsigned char const& cv_old = check.board[old_col][old_row];
-	unsigned char const& cv_new = check.board[new_col][new_row];
+	unsigned char const& cv_old = check.board[source];
+	unsigned char const& cv_new = check.board[target];
 	if( check.check ) {
 		if( cv_old ) {
 			// Can't come to rescue, this piece is already blocking yet another check.
@@ -62,27 +58,25 @@ void add_if_legal( position const& p, color::type c, move_info*& moves, check_ma
 		}
 	}
 
-	do_add_move( p, c, moves, pi, old_col, old_row, new_col, new_row, flags, target, promotion );
+	do_add_move( p, c, moves, pi, source, target, flags, captured, promotion );
 }
 
 void add_if_legal_king( position const& p, color::type c, move_info*& moves,
-					    unsigned char const& old_col, unsigned char const& old_row,
-					    unsigned char new_col, unsigned char new_row,
-					    int flags, pieces::type target )
+						unsigned char const& source, unsigned char const& target,
+						int flags, pieces::type captured )
 {
-	if( detect_check( p, c, new_col, new_row, old_col, old_row ) ) {
+	if( detect_check( p, c, target, source ) ) {
 		return;
 	}
 
-	do_add_move( p, c, moves, pieces::king, old_col, old_row, new_col, new_row, flags, target );
+	do_add_move( p, c, moves, pieces::king, source, target, flags, captured );
 }
 
 void calc_moves_king( position const& p, color::type c, move_info*& moves, check_map const& check,
-					  unsigned char old_col, unsigned char old_row,
-					  unsigned char new_col, unsigned char new_row )
+					  unsigned char source, unsigned char target )
 {
-	pieces::type target = static_cast<pieces::type>(p.board[new_col][new_row] & 0x0f);
-	add_if_legal_king( p, c, moves, old_col, old_row, new_col, new_row, move_flags::valid, target );
+	pieces::type captured = static_cast<pieces::type>(p.board[target] & 0x0f);
+	add_if_legal_king( p, c, moves, source, target, move_flags::valid, captured );
 }
 
 
@@ -91,9 +85,6 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 	unsigned long long kings = p.bitboards[c].b[bb_type::king];
 	unsigned long long king;
 	bitscan(kings, king);
-
-	unsigned char old_col = static_cast<unsigned char>(king % 8);
-	unsigned char old_row = static_cast<unsigned char>(king / 8);
 
 	unsigned long long other_kings = p.bitboards[1-c].b[bb_type::king];
 	unsigned long long other_king;
@@ -105,8 +96,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 		bitscan( king_moves, i );
 		king_moves &= king_moves - 1;
 		calc_moves_king( p, c, moves, check,
-						 old_col, old_row,
-						 static_cast<unsigned char>(i % 8), static_cast<unsigned char>(i / 8) );
+						 king, i );
 	}
 }
 
@@ -118,19 +108,13 @@ void calc_moves_queen( position const& p, color::type c, move_info*& moves, chec
 	unsigned long long possible_moves = rook_attacks( queen, all_blockers ) | bishop_attacks( queen, all_blockers );
 	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned char old_col = static_cast<unsigned char>(queen % 8);
-	unsigned char old_row = static_cast<unsigned char>(queen / 8);
-
 	unsigned long long queen_move;
 	while( possible_moves ) {
 		bitscan( possible_moves, queen_move );
 		possible_moves &= possible_moves - 1;
 
-		unsigned char new_col = static_cast<unsigned char>(queen_move % 8);
-		unsigned char new_row = static_cast<unsigned char>(queen_move / 8);
-
-		pieces::type target = static_cast<pieces::type>(p.board[new_col][new_row] & 0x0f);
-		add_if_legal( p, c, moves, check, pieces::queen, old_col, old_row, new_col, new_row, move_flags::valid, target );
+		pieces::type captured = static_cast<pieces::type>(p.board[queen_move] & 0x0f);
+		add_if_legal( p, c, moves, check, pieces::queen, queen, queen_move, move_flags::valid, captured );
 	}
 }
 
@@ -155,19 +139,13 @@ void calc_moves_bishop( position const& p, color::type c, move_info*& moves, che
 	unsigned long long possible_moves = bishop_attacks( bishop, all_blockers );
 	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned char old_col = static_cast<unsigned char>(bishop % 8);
-	unsigned char old_row = static_cast<unsigned char>(bishop / 8);
-
 	unsigned long long bishop_move;
 	while( possible_moves ) {
 		bitscan( possible_moves, bishop_move );
 		possible_moves &= possible_moves - 1;
 
-		unsigned char new_col = static_cast<unsigned char>(bishop_move % 8);
-		unsigned char new_row = static_cast<unsigned char>(bishop_move / 8);
-
-		pieces::type target = static_cast<pieces::type>(p.board[new_col][new_row] & 0x0f);
-		add_if_legal( p, c, moves, check, pieces::bishop, old_col, old_row, new_col, new_row, move_flags::valid, target );
+		pieces::type captured = static_cast<pieces::type>(p.board[bishop_move] & 0x0f);
+		add_if_legal( p, c, moves, check, pieces::bishop, bishop, bishop_move, move_flags::valid, captured );
 	}
 }
 
@@ -192,19 +170,13 @@ void calc_moves_rook( position const& p, color::type c, move_info*& moves, check
 	unsigned long long possible_moves = rook_attacks( rook, all_blockers );
 	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned char old_col = static_cast<unsigned char>(rook % 8);
-	unsigned char old_row = static_cast<unsigned char>(rook / 8);
-
 	unsigned long long rook_move;
 	while( possible_moves ) {
 		bitscan( possible_moves, rook_move );
 		possible_moves &= possible_moves - 1;
 
-		unsigned char new_col = static_cast<unsigned char>(rook_move % 8);
-		unsigned char new_row = static_cast<unsigned char>(rook_move / 8);
-
-		pieces::type target = static_cast<pieces::type>(p.board[new_col][new_row] & 0x0f);
-		add_if_legal( p, c, moves, check, pieces::rook, old_col, old_row, new_col, new_row, move_flags::valid, target );
+		pieces::type captured = static_cast<pieces::type>(p.board[rook_move] & 0x0f);
+		add_if_legal( p, c, moves, check, pieces::rook, rook, rook_move, move_flags::valid, captured );
 	}
 }
 
@@ -222,27 +194,22 @@ void calc_moves_rooks( position const& p, color::type c, move_info*& moves, chec
 
 
 void calc_moves_knight( position const& p, color::type c, move_info*& moves, check_map const& check,
-					    unsigned char old_col, unsigned char old_row,
-						unsigned char new_col, unsigned char new_row )
+						unsigned char source, unsigned char target )
 {
-	pieces::type target = static_cast<pieces::type>(p.board[new_col][new_row] & 0x0f);
-	add_if_legal( p, c, moves, check, pieces::knight, old_col, old_row, new_col, new_row, move_flags::valid, target );
+	pieces::type captured = static_cast<pieces::type>(p.board[target] & 0x0f);
+	add_if_legal( p, c, moves, check, pieces::knight, source, target, move_flags::valid, captured );
 }
 
 void calc_moves_knight( position const& p, color::type c, move_info*& moves, check_map const& check,
 					    unsigned long long old_knight )
 {
-	unsigned char old_col = static_cast<unsigned char>(old_knight % 8);
-	unsigned char old_row = static_cast<unsigned char>(old_knight / 8);
-
 	unsigned long long new_knights = possible_knight_moves[old_knight] & ~(p.bitboards[c].b[bb_type::all_pieces]) & p.bitboards[1-c].b[bb_type::all_pieces];
 	while( new_knights ) {
 		unsigned long long new_knight;
 		bitscan( new_knights, new_knight );
 		new_knights &= new_knights - 1;
 		calc_moves_knight( p, c, moves, check,
-						   old_col, old_row,
-						   static_cast<unsigned char>(new_knight % 8), static_cast<unsigned char>(new_knight / 8) );
+						   old_knight, new_knight );
 	}
 }
 
@@ -260,7 +227,7 @@ void calc_moves_knights( position const& p, color::type c, move_info*& moves, ch
 
 
 void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& moves, check_map const& check,
-								 unsigned long long pawn, unsigned char old_col, unsigned char old_row )
+								 unsigned long long pawn )
 {
 	unsigned long long enpassantable = 1ull << p.can_en_passant;
 	unsigned long long enpassants = pawn_control[c][pawn] & enpassantable & pawn_enpassant[c];
@@ -269,11 +236,13 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 		bitscan( enpassants, enpassant )
 
 		unsigned char new_col = enpassant % 8;
-		unsigned char new_row = enpassant / 8;
+
+		unsigned char old_col = static_cast<unsigned char>(pawn % 8);
+		unsigned char old_row = static_cast<unsigned char>(pawn / 8);
 
 		// Special case: Cannot use normal check from add_if_legal as target square is not piece square and if captured pawn gives check, bad things happen.
-		unsigned char const& cv_old = check.board[old_col][old_row];
-		unsigned char const& cv_new = check.board[new_col][new_row];
+		unsigned char const& cv_old = check.board[pawn];
+		unsigned char const& cv_new = check.board[enpassant];
 		if( check.check ) {
 			if( cv_old ) {
 				// Can't come to rescue, this piece is already blocking yet another check.
@@ -309,7 +278,7 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 				if( col == new_col ) {
 					continue;
 				}
-				unsigned char t = p.board[col][old_row];
+				unsigned char t = p.board[col + old_row * 8];
 				if( !t ) {
 					// Empty square
 					continue;
@@ -329,35 +298,29 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 			}
 		}
 
-		do_add_move( p, c, moves, pieces::pawn, old_col, old_row, new_col, new_row, move_flags::valid | move_flags::enpassant, pieces::pawn );
+		do_add_move( p, c, moves, pieces::pawn, pawn, enpassant, move_flags::valid | move_flags::enpassant, pieces::pawn );
 	}
 }
 
 void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check_map const& check,
 					  unsigned long long pawn )
 {
-	unsigned char old_col = static_cast<unsigned char>(pawn % 8);
-	unsigned char old_row = static_cast<unsigned char>(pawn / 8);
-
 	unsigned long long pawn_captures = pawn_control[c][pawn] & p.bitboards[1-c].b[bb_type::all_pieces];
 	while( pawn_captures ) {
-		unsigned long long capture;
-		bitscan( pawn_captures, capture );
+		unsigned long long target;
+		bitscan( pawn_captures, target );
 		pawn_captures &= pawn_captures - 1;
 
-		unsigned char new_col = capture % 8;
-		unsigned char new_row = capture / 8;
-
 		int flags = move_flags::valid;
-		if( new_row == 0 || new_row == 7 ) {
+		if( target / 8 == ( c ? 0 : 7 ) )  {
 			flags |= move_flags::promotion;
 		}
 
-		pieces::type target = static_cast<pieces::type>( p.board[new_col][new_row] & 0x0f );
-		add_if_legal( p, c, moves, check, pieces::pawn, old_col, old_row, new_col, new_row, flags, target );
+		pieces::type captured = static_cast<pieces::type>( p.board[target] & 0x0f );
+		add_if_legal( p, c, moves, check, pieces::pawn, pawn, target, flags, captured );
 	}
 
-	calc_moves_pawn_en_passant( p, c, moves, check, pawn, old_col, old_row );
+	calc_moves_pawn_en_passant( p, c, moves, check, pawn );
 }
 
 void calc_moves_pawns( position const& p, color::type c, move_info*& moves, check_map const& check )

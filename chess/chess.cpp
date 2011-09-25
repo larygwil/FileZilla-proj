@@ -673,31 +673,44 @@ void xboard()
 }
 
 
-void perft( int depth, position const& p, color::type c, unsigned long long& n )
+struct perft_ctx {
+	perft_ctx()
+		: move_ptr(moves)
+	{
+	}
+
+	move_info moves[200 * (MAX_DEPTH) ];
+	move_info* move_ptr;
+
+	killer_moves killers;
+};
+
+
+void perft( perft_ctx& ctx, int depth, position const& p, color::type c, unsigned long long& n )
 {
 	if( conf.depth == -1 ) {
 		conf.depth = 8;
 	}
 
-	if( !depth-- ) {
-		++n;
-		return;
-	}
-
-	move_info moves[200];
-	move_info* pm = moves;
+	move_info* moves = ctx.move_ptr;
 
 	check_map check;
 	calc_check_map( p, c, check );
-	calculate_moves( p, c, 0, pm, check, killer_moves() );
+	calculate_moves( p, c, 0, ctx.move_ptr, check, ctx.killers );
 
-	for( move_info* it = moves; it != pm; ++it ) {
+	if( !--depth ) {
+		n += ctx.move_ptr - moves;
+		ctx.move_ptr = moves;
+		return;
+	}
+
+	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
 		position new_pos = p;
 		bool captured;
 		apply_move( new_pos, *it, c, captured );
-		perft( depth, new_pos, static_cast<color::type>(1-c), n );
+		perft( ctx, depth, new_pos, static_cast<color::type>(1-c), n );
 	}
-
+	ctx.move_ptr = moves;
 }
 
 void perft()
@@ -715,7 +728,10 @@ void perft()
 		84998978956ull
 	};
 
+	perft_ctx ctx;
 	for( unsigned int i = 0; i < sizeof(perft_results)/sizeof(unsigned long long); ++i ) {
+		ctx.move_ptr = ctx.moves;
+
 		std::cerr << "Calculating number of possible moves in " << (i + 1) << " plies:" << std::endl;
 
 		position p;
@@ -726,7 +742,7 @@ void perft()
 		int max_depth = i + 1;
 
 		unsigned long long start = get_time();
-		perft( max_depth, p, color::white, ret );
+		perft( ctx, max_depth, p, color::white, ret );
 		unsigned long long stop = get_time();
 
 

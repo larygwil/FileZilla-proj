@@ -207,19 +207,17 @@ void book_update_move( unsigned long long index, int move_index, unsigned long l
 move move_entry::get_move() const
 {
 	move m;
-	m.source_col = source_col;
-	m.source_row = source_row;
-	m.target_col = target_col;
-	m.target_row = target_row;
+	m.source = source_col + source_row * 8;
+	m.target = target_col + target_row * 8;
 	return m;
 }
 
 void move_entry::set_move( move const& m )
 {
-	source_col = m.source_col;
-	source_row = m.source_row;
-	target_col = m.target_col;
-	target_row = m.target_row;
+	source_col = m.source % 8;
+	source_row = m.source / 8;
+	target_col = m.target % 8;
+	target_row = m.target / 8;
 }
 
 bool move_entry::operator>=( move_entry const& rhs ) const

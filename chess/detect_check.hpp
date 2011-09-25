@@ -23,14 +23,14 @@
  */
 struct check_map
 {
-	unsigned char board[8][8];
+	unsigned char board[64];
 	unsigned char check;
 
 	inline bool multiple() const { return (check & 0x40) != 0; }
 };
 void calc_check_map( position const& p, color::type c, check_map& map );
 
-bool detect_check( position const& p, color::type c, unsigned char king_col, unsigned char king_row, unsigned char ignore_col, unsigned char ignore_row );
+bool detect_check( position const& p, color::type c, unsigned char king, unsigned char ignore );
 bool detect_check( position const& p, color::type c );
 
 /*
@@ -47,7 +47,7 @@ bool detect_check( position const& p, color::type c );
 
 struct inverse_check_map
 {
-	unsigned char board[8][8];
+	unsigned char board[64];
 	unsigned char enemy_king_col;
 	unsigned char enemy_king_row;
 };

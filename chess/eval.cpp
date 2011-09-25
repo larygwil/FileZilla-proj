@@ -20,123 +20,124 @@ enum type
 }
 
 namespace {
-unsigned char const pawn_values[2][8][8] =
+signed short const p = material_values::pawn;
+unsigned char const pawn_values[2][64] = {
 	{
-		{
-			{ 0, 100, 102, 103, 104, 106, 145, 0 },
-			{ 0, 100, 102, 105, 108, 112, 150, 0 },
-			{ 0, 100, 102, 110, 117, 125, 155, 0 },
-			{ 0,  80, 105, 120, 127, 140, 160, 0 },
-			{ 0,  80, 105, 120, 127, 140, 160, 0 },
-			{ 0, 100, 102, 110, 117, 125, 155, 0 },
-			{ 0, 100, 102, 105, 108, 112, 150, 0 },
-			{ 0, 100, 102, 103, 104, 106, 145, 0 }
-		},
-		{
-			{ 0, 145, 106, 104, 103, 102, 100, 0 },
-			{ 0, 150, 112, 108, 105, 102, 100, 0 },
-			{ 0, 155, 125, 117, 110, 102, 100, 0 },
-			{ 0, 160, 140, 127, 120, 105,  80, 0 },
-			{ 0, 160, 140, 127, 120, 105,  80, 0 },
-			{ 0, 155, 125, 117, 110, 102, 100, 0 },
-			{ 0, 150, 112, 108, 105, 102, 100, 0 },
-			{ 0, 145, 106, 104, 103, 102, 100, 0 }
-		}
-
-	};
+		0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
+		p   , p   , p   , p-20, p-20, p   , p   , p   ,
+		p+2 , p+2 , p+2 , p+5 , p+5 , p+2 , p+2 , p+2 ,
+		p+3 , p+5 , p+10, p+20, p+20, p+10, p+5 , p+3 ,
+		p+6 , p+8 , p+17, p+27, p+27, p+17, p+8 , p+6 ,
+		p+10, p+15, p+25, p+40, p+40, p+25, p+15, p+10,
+		p+45, p+50, p+55, p+60, p+60, p+55, p+50, p+45,
+		0   , 0   , 0   , 0   , 0   , 0   , 0   , 0
+	},
+	{
+		0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
+		p+45, p+50, p+55, p+60, p+60, p+55, p+50, p+45,
+		p+10, p+15, p+25, p+40, p+40, p+25, p+15, p+10 ,
+		p+5 , p+8 , p+17, p+27, p+27, p+17, p+8 , p+6 ,
+		p+3 , p+5 , p+10, p+20, p+20, p+10, p+5 , p+3 ,
+		p+2 , p+2 , p+2 , p+5 , p+5 , p+2 , p+2 , p+2 ,
+		p   , p   , p   , p-20, p-20, p   , p   , p   ,
+		0   , 0   , 0   , 0   , 0   , 0   , 0   , 0
+	}
+};
 
 
 signed short const q = material_values::queen;
-signed short const queen_values[2][8][8] = {
+signed short const queen_values[2][64] = {
 	{
-		{ q-20, q-10, q-10, q-5 , q   , q-10, q-10, q-20 },
-		{ q-10, q   , q+5 , q   , q   , q   , q   , q-10 },
-		{ q-10, q+5 , q+5 , q+5 , q+5 , q+5 , q   , q-10 },
-		{ q-5 , q   , q+5 , q+5 , q+5 , q+5 , q   , q-5  },
-		{ q-5 , q   , q+5 , q+5 , q+5 , q+5 , q   , q-5  },
-		{ q-10, q   , q+5 , q+5 , q+5 , q+5 , q   , q-10 },
-		{ q-10, q   , q   , q   , q   , q   , q   , q-10 },
-		{ q-20, q-10, q-10, q-5 , q-5 , q-10, q-10, q-20 }
+		q-20, q-10, q-10, q-5 , q-5 , q-10, q-10, q-20,
+		q-10, q   , q+2 , q+3 , q+3 , q+2 , q   , q-10,
+		q-10, q+2 , q+5 , q+5 , q+5 , q+5 , q+2 , q-10,
+		q-5 , q+3 , q+5 , q+7 , q+7 , q+5 , q+3 , q-5 ,
+		q-5 , q+3 , q+5 , q+7 , q+7 , q+5 , q+3 , q-5 ,
+		q-10, q+2 , q+5 , q+5 , q+5 , q+5 , q+2 , q-10,
+		q-10, q   , q+2 , q+3 , q+3 , q+2 , q   , q-10,
+		q-20, q-10, q-10, q-5 , q-5 , q-10, q-10, q-20,
 	},
 	{
-		{ q-20, q-10, q-10, q-5 , q   , q-10, q-10, q-20 },
-		{ q-10, q   , q   , q   , q   , q   , q   , q-10 },
-		{ q-10, q   , q+5 , q+5 , q+5 , q+5 , q   , q-10 },
-		{ q-5 , q   , q+5 , q+5 , q+5 , q+5 , q   , q-5  },
-		{ q-5 , q   , q+5 , q+5 , q+5 , q+5 , q   , q-5  },
-		{ q-10, q   , q+5 , q+5 , q+5 , q+5 , q+5 , q-10 },
-		{ q-10, q   , q   , q   , q   , q+5 , q   , q-10 },
-		{ q-20, q-10, q-10, q-5 , q-5 , q-10, q-10, q-20 }
+		q-20, q-10, q-10, q-5 , q-5 , q-10, q-10, q-20,
+		q-10, q   , q+2 , q+3 , q+3 , q+2 , q   , q-10,
+		q-10, q+2 , q+5 , q+5 , q+5 , q+5 , q+2 , q-10,
+		q-5 , q+3 , q+5 , q+7 , q+7 , q+5 , q+3 , q-5 ,
+		q-5 , q+3 , q+5 , q+7 , q+7 , q+5 , q+3 , q-5 ,
+		q-10, q+2 , q+5 , q+5 , q+5 , q+5 , q+2 , q-10,
+		q-10, q   , q+2 , q+3 , q+3 , q+2 , q   , q-10,
+		q-20, q-10, q-10, q-5 , q-5 , q-10, q-10, q-20,
 	}
 };
 
-signed short const rook_values[2][8][8] = {
+signed short const r = material_values::rook;
+signed short const rook_values[2][64] = {
 	{
-		{ 500, 495, 495, 495, 495, 495, 505, 500 },
-		{ 500, 500, 500, 500, 500, 500, 510, 500 },
-		{ 500, 500, 500, 500, 500, 500, 510, 500 },
-		{ 505, 500, 500, 500, 500, 500, 510, 500 },
-		{ 505, 500, 500, 500, 500, 500, 510, 500 },
-		{ 500, 500, 500, 500, 500, 500, 510, 500 },
-		{ 500, 500, 500, 500, 500, 500, 510, 500 },
-		{ 500, 495, 495, 495, 495, 495, 505, 500 }
+		r  , r  , r  , r  , r  , r  , r  , r  ,
+		r-5, r  , r  , r  , r  , r  , r  , r-5,
+		r-5, r  , r  , r  , r  , r  , r  , r-5,
+		r-5, r  , r  , r  , r  , r  , r  , r-5,
+		r-5, r  , r  , r  , r  , r  , r  , r-5,
+		r-5, r  , r  , r  , r  , r  , r  , r-5,
+		r+5, r+5, r+5, r+5, r+5, r+5, r+5, r+5,
+		r  , r  , r  , r  , r  , r  , r  , r
 	},
 	{
-		{ 500, 505, 495, 495, 495, 495, 495, 500 },
-		{ 500, 510, 500, 500, 500, 500, 500, 500 },
-		{ 500, 510, 500, 500, 500, 500, 500, 500 },
-		{ 500, 510, 500, 500, 500, 500, 500, 505 },
-		{ 500, 510, 500, 500, 500, 500, 500, 505 },
-		{ 500, 510, 500, 500, 500, 500, 500, 500 },
-		{ 500, 510, 500, 500, 500, 500, 500, 500 },
-		{ 500, 505, 495, 495, 495, 495, 495, 500 }
+		r  , r  , r  , r  , r  , r  , r  , r  ,
+		r+5, r+5, r+5, r+5, r+5, r+5, r+5, r+5,
+		r-5, r  , r  , r  , r  , r  , r  , r-5,
+		r-5, r  , r  , r  , r  , r  , r  , r-5,
+		r-5, r  , r  , r  , r  , r  , r  , r-5,
+		r-5, r  , r  , r  , r  , r  , r  , r-5,
+		r-5, r  , r  , r  , r  , r  , r  , r-5,
+		r  , r  , r  , r  , r  , r  , r  , r  ,
 	}
 };
 
-signed short const knight_values[2][8][8] = {
+signed short const n = material_values::knight;
+signed short const knight_values[2][64] = {
 	{
-		{ 260, 270, 280, 280, 280, 280, 270, 260 },
-		{ 270, 290, 305, 310, 305, 310, 290, 270 },
-		{ 280, 310, 310, 315, 315, 310, 310, 280 },
-		{ 280, 305, 315, 320, 320, 315, 310, 280 },
-		{ 280, 305, 315, 320, 320, 315, 310, 280 },
-		{ 280, 310, 310, 315, 315, 310, 310, 280 },
-		{ 270, 290, 305, 310, 305, 310, 290, 270 },
-		{ 260, 270, 280, 280, 280, 280, 270, 260 }
+		n-25, n-15, n-10, n-10, n-10, n-10, n-15, n-25,
+		n-15, n-5,  n,    n+2,  n+2,  n,    n-5,  n-15,
+		n-10, n,    n+2,  n+5,  n+5,  n+2,  n,    n-10,
+		n-10, n+2,  n+5,  n+10, n+10, n+5,  n+2,  n-10,
+		n-10, n+2,  n+5,  n+10, n+10, n+5,  n+2,  n-10,
+		n-10, n,    n+2,  n+5,  n+5,  n+2,  n,    n-10,
+		n-15, n-5,  n,    n+2,  n+2,  n,    n-5,  n-15,
+		n-25, n-15, n-10, n-10, n-10, n-10, n-15, n-25
 	},
 	{
-		{ 260, 270, 280, 280, 280, 280, 270, 260 },
-		{ 270, 290, 310, 305, 310, 305, 290, 270 },
-		{ 280, 310, 310, 315, 315, 310, 310, 280 },
-		{ 280, 310, 315, 320, 320, 315, 305, 280 },
-		{ 280, 310, 315, 320, 320, 315, 305, 280 },
-		{ 280, 310, 310, 315, 315, 310, 310, 280 },
-		{ 270, 290, 310, 305, 310, 305, 290, 270 },
-		{ 260, 270, 280, 280, 280, 280, 270, 260 },
+		n-25, n-15, n-10, n-10, n-10, n-10, n-15, n-25,
+		n-15, n-5,  n,    n+2,  n+2,  n,    n-5,  n-15,
+		n-10, n,    n+2,  n+5,  n+5,  n+2,  n,    n-10,
+		n-10, n+2,  n+5,  n+10, n+10, n+5,  n+2,  n-10,
+		n-10, n+2,  n+5,  n+10, n+10, n+5,  n+2,  n-10,
+		n-10, n,    n+2,  n+5,  n+5,  n+2,  n,    n-10,
+		n-15, n-5,  n,    n+2,  n+2,  n,    n-5,  n-15,
+		n-25, n-15, n-10, n-10, n-10, n-10, n-15, n-25
 	}
 };
 
 signed short const b = material_values::bishop;
-signed short const bishop_values[2][8][8] = {
+signed short const bishop_values[2][64] = {
 	{
-		{ b-10, b   , b+3 , b+5 , b+ 5, b+3 , b   , b   },
-		{ b-9 , b+10, b+6 , b+10, b+10, b+6 , b+10, b   },
-		{ b-7 , b+5 , b+15, b+12, b+12, b+15, b+5 , b+2 },
-		{ b-5 , b+10, b+12, b+20, b+20, b+12, b+10, b+5 },
-		{ b-5 , b+10, b+12, b+20, b+20, b+12, b+10, b+5 },
-		{ b-7 , b+5 , b+15, b+12, b+12, b+15, b+5 , b+2 },
-		{ b-9 , b+10, b+6 , b+10, b+10, b+6 , b+10, b   },
-		{ b-10, b   , b+3 , b+5 , b+ 5, b+3 , b   , b   }
+		b-10, b-9,  b-7,  b-5,  b-5,  b-7,  b-9,  b-10,
+		b-2,  b+10, b+5,  b+10, b+10, b+5,  b+10, b-2,
+		b+3,  b+6,  b+15, b+12, b+12, b+15, b+6,  b+3,
+		b+5,  b+10, b+12, b+20, b+20, b+12, b+10, b+5,
+		b+5,  b+10, b+12, b+20, b+20, b+12, b+10, b+5,
+		b+3,  b+6,  b+15, b+12, b+12, b+15, b+6,  b+3,
+		b,    b+10, b+5,  b+10, b+10, b+5,  b+10, b,
+		b,    b,    b+2,  b+5,  b+5,  b+2,  b,    b
 	},
 	{
-		{ b  , b   , b+3 , b+5 , b+ 5, b+3 , b   , b-10 },
-		{ b  , b+10, b+6 , b+10, b+10, b+6 , b+10, b-9  },
-		{ b+2, b+5 , b+15, b+12, b+12, b+15, b+5 , b-7  },
-		{ b+5, b+10, b+12, b+20, b+20, b+12, b+10, b-5  },
-		{ b+5, b+10, b+12, b+20, b+20, b+12, b+10, b-5  },
-		{ b+2, b+5 , b+15, b+12, b+12, b+15, b+5 , b-7  },
-		{ b  , b+10, b+6 , b+10, b+10, b+6 , b+10, b-9  },
-		{ b  , b   , b+3 , b+5 , b+ 5, b+3 , b   , b-10 }
+		b,    b,    b+2,  b+5,  b+5,  b+2,  b,    b,
+		b,    b+10, b+5,  b+10, b+10, b+5,  b+10, b,
+		b+3,  b+6,  b+15, b+12, b+12, b+15, b+6,  b+3,
+		b+5,  b+10, b+12, b+20, b+20, b+12, b+10, b+5,
+		b+5,  b+10, b+12, b+20, b+20, b+12, b+10, b+5,
+		b+3,  b+6,  b+15, b+12, b+12, b+15, b+6,  b+3,
+		b-2,  b+10, b+5,  b+10, b+10, b+5,  b+10, b-2,
+		b-10, b-9,  b-7,  b-5,  b-5,  b-7,  b-9,  b-10
 	}
 };
 
@@ -602,24 +603,21 @@ short evaluate_side( position const& p, color::type c )
 
 		pieces &= pieces - 1;
 
-		unsigned long long col = piece % 8;
-		unsigned long long row = piece / 8;
-
 		unsigned long long bpiece = 1ull << piece;
 		if( p.bitboards[c].b[bb_type::pawns] & bpiece ) {
-			result += pawn_values[c][col][row];
+			result += pawn_values[c][piece];
 		}
 		else if( p.bitboards[c].b[bb_type::knights] & bpiece ) {
-			result += knight_values[c][col][row];
+			result += knight_values[c][piece];
 		}
 		else if( p.bitboards[c].b[bb_type::bishops] & bpiece ) {
-			result += bishop_values[c][col][row];
+			result += bishop_values[c][piece];
 		}
 		else if( p.bitboards[c].b[bb_type::rooks] & bpiece ) {
-			result += rook_values[c][col][row];
+			result += rook_values[c][piece];
 		}
 		else if( p.bitboards[c].b[bb_type::queens] & bpiece ) {
-			result += queen_values[c][col][row];
+			result += queen_values[c][piece];
 		}
 	}
 
@@ -651,19 +649,19 @@ short evaluate_fast( position const& p, color::type c )
 }
 
 namespace {
-static short get_piece_value( color::type c, pieces::type target, int col, int row )
+static short get_piece_square_value( color::type c, pieces::type target, unsigned char pi )
 {
 	switch( target ) {
 	case pieces::pawn:
-		return pawn_values[c][col][row];
+		return pawn_values[c][pi];
 	case pieces::knight:
-		return knight_values[c][col][row];
+		return knight_values[c][pi];
 	case pieces::bishop:
-		return bishop_values[c][col][row];
+		return bishop_values[c][pi];
 	case pieces::rook:
-		return rook_values[c][col][row];
+		return rook_values[c][pi];
 	case pieces::queen:
-		return queen_values[c][col][row];
+		return queen_values[c][pi];
 	default:
 	case pieces::king:
 		return 0;
@@ -687,16 +685,16 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 	if( m.flags & move_flags::castle ) {
 		
 		current_evaluation += special_values::castled;
-
-		if( m.target_col == 6 ) {
+		unsigned char row = c ? 56 : 0;
+		if( m.target % 8 == 6 ) {
 			// Kingside
-			current_evaluation -= rook_values[c][7][m.source_row];
-			current_evaluation += rook_values[c][5][m.source_row];
+			current_evaluation -= rook_values[c][7 + row];
+			current_evaluation += rook_values[c][5 + row];
 		}
 		else {
 			// Queenside
-			current_evaluation -= rook_values[c][0][m.source_row];
-			current_evaluation += rook_values[c][3][m.source_row];
+			current_evaluation -= rook_values[c][0 + row];
+			current_evaluation += rook_values[c][3 + row];
 		}
 
 		outPawns = p.pawns;
@@ -706,10 +704,11 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 
 	if( m.captured_piece != pieces::none ) {
 		if( m.flags & move_flags::enpassant ) {
-			current_evaluation += pawn_values[1-c][m.target_col][m.source_row];
+			unsigned char ep = (m.target & 0x7) | (m.source & 0x38);
+			current_evaluation += pawn_values[1-c][ep];
 		}
 		else {
-			current_evaluation += get_piece_value( static_cast<color::type>(1-c), m.captured_piece, m.target_col, m.target_row );
+			current_evaluation += get_piece_square_value( static_cast<color::type>(1-c), m.captured_piece, m.target );
 		}
 
 		if( m.captured_piece == pieces::bishop && popcount( p.bitboards[1-c].b[bb_type::bishops] ) == 2 ) {
@@ -718,12 +717,12 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 	}
 
 	if( m.flags & move_flags::promotion ) {
-		current_evaluation -= pawn_values[c][m.source_col][m.source_row];
-		current_evaluation += queen_values[c][m.target_col][m.target_row];
+		current_evaluation -= pawn_values[c][m.source];
+		current_evaluation += queen_values[c][m.target];
 	}
 	else {
-		current_evaluation -= get_piece_value( c, m.piece, m.source_col, m.source_row );
-		current_evaluation += get_piece_value( c, m.piece, m.target_col, m.target_row );
+		current_evaluation -= get_piece_square_value( c, m.piece, m.source );
+		current_evaluation += get_piece_square_value( c, m.piece, m.target );
 	}
 
 	outPawns = p.pawns;
@@ -734,20 +733,21 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 
 		if( m.captured_piece == pieces::pawn ) {
 			if( m.flags & move_flags::enpassant ) {
-				pawnMap[1-c] &= ~(1ull << (m.target_col + m.source_row * 8) );
-				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.source_row );
+				unsigned char ep = (m.target & 0x7) | (m.source & 0x38);
+				pawnMap[1-c] &= ~(1ull << ep );
+				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), ep );
 			}
 			else {
-				pawnMap[1-c] &= ~(1ull << (m.target_col + m.target_row * 8) );
-				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target_col, m.target_row );
+				pawnMap[1-c] &= ~(1ull << m.target );
+				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target );
 			}
 		}
 		if( m.piece == pieces::pawn ) {
-			pawnMap[c] &= ~(1ull << (m.source_row * 8 + m.source_col) );
-			outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.source_col, m.source_row );
+			pawnMap[c] &= ~(1ull << m.source );
+			outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.source );
 			if( !(m.flags & move_flags::promotion) ) {
-				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.target_col, m.target_row );
-				pawnMap[c] |= 1ull << (m.target_row * 8 + m.target_col);
+				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.target );
+				pawnMap[c] |= 1ull << m.target;
 			}
 		}
 

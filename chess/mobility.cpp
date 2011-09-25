@@ -45,7 +45,9 @@ struct eval_results {
 	short center_control;
 };
 
-// Using the XRAYS pattern, own pieces do not stop mobility.
+//#define XRAYS 1
+// If using the XRAYS pattern, own pieces do not stop mobility.
+
 // We do stop at own pawns and king though.
 // Naturally, enemy pieces also block us.
 
@@ -119,7 +121,11 @@ inline static void evaluate_knights_mobility( position const& p, color::type c, 
 
 inline static void evaluate_bishop_mobility( position const& p, color::type c, bitboard const* bitboards, unsigned long long bishop, eval_data const& data, eval_results& results )
 {
+#if XRAYS
 	unsigned long long const all_blockers = bitboards[1-c].b[bb_type::all_pieces] | bitboards[c].b[bb_type::pawns] | bitboards[c].b[bb_type::king];
+#else
+	unsigned long long const all_blockers = bitboards[1-c].b[bb_type::all_pieces] | bitboards[c].b[bb_type::all_pieces];
+#endif
 
 	unsigned long long moves = bishop_attacks( bishop, all_blockers );
 	moves &= ~(bitboards[c].b[bb_type::all_pieces] | bitboards[1-c].b[bb_type::pawn_control] );
@@ -166,7 +172,11 @@ inline static void evaluate_bishops_mobility( position const& p, color::type c, 
 
 inline static void evaluate_rook_mobility( position const& p, color::type c, bitboard const* bitboards, unsigned long long rook, eval_data const& data, eval_results& results )
 {
+#if XRAYS
 	unsigned long long const all_blockers = bitboards[1-c].b[bb_type::all_pieces] | bitboards[c].b[bb_type::pawns] | bitboards[c].b[bb_type::king];
+#else
+	unsigned long long const all_blockers = bitboards[1-c].b[bb_type::all_pieces] | bitboards[c].b[bb_type::all_pieces];
+#endif
 
 	unsigned long long moves = rook_attacks( rook, all_blockers );
 	moves &= ~(bitboards[c].b[bb_type::all_pieces] | bitboards[1-c].b[bb_type::pawn_control] );
@@ -233,7 +243,11 @@ inline static void evaluate_rooks_mobility( position const& p, color::type c, bi
 
 inline static void evaluate_queen_mobility( position const& p, color::type c, bitboard const* bitboards, unsigned long long queen, eval_data const& data, eval_results& results )
 {
+#if XRAYS
 	unsigned long long const all_blockers = bitboards[1-c].b[bb_type::all_pieces] | bitboards[c].b[bb_type::pawns] | bitboards[c].b[bb_type::king];
+#else
+	unsigned long long const all_blockers = bitboards[1-c].b[bb_type::all_pieces] | bitboards[c].b[bb_type::all_pieces];
+#endif
 
 	unsigned long long moves = bishop_attacks( queen, all_blockers ) | rook_attacks( queen, all_blockers );
 	moves &= ~(bitboards[c].b[bb_type::all_pieces] | bitboards[1-c].b[bb_type::pawn_control] );
@@ -328,12 +342,12 @@ short evaluate_mobility( position const& p, color::type c, bitboard const* bitbo
 	do_evaluate_mobility( p, c, bitboards, results_self, results_other );
 
 	return
-		results_self.mobility - results_other.mobility +
-		results_self.pin - results_other.pin +
-		results_self.rooks_on_open_file_bonus - results_other.rooks_on_open_file_bonus +
-		results_self.tropism - results_other.tropism +
-		results_self.king_attack - results_other.king_attack +
-		results_self.center_control - results_other.center_control +
+		(results_self.mobility - results_other.mobility) * 2 +
+		(results_self.pin - results_other.pin) +
+		(results_self.rooks_on_open_file_bonus - results_other.rooks_on_open_file_bonus) +
+		(results_self.tropism - results_other.tropism) +
+		(results_self.king_attack - results_other.king_attack) +
+		(results_self.center_control - results_other.center_control) +
 		0;
 }
 

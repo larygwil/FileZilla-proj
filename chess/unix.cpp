@@ -147,16 +147,36 @@ void thread::join()
 	t_ = 0;
 }
 
+
 scoped_lock::scoped_lock( mutex& m )
-	: m_(m)
+	: m_(m), locked_()
 {
 	pthread_mutex_lock( &m.m_ );
+	locked_ = true;
 }
+
 
 scoped_lock::~scoped_lock()
 {
-	pthread_mutex_unlock( &m_.m_ );
+	if( locked_ ) {
+		pthread_mutex_unlock( &m_.m_ );
+	}
 }
+
+
+void scoped_lock::lock()
+{
+	pthread_mutex_lock( &m_.m_ );
+	locked_ = true;
+}
+
+
+void scoped_lock::unlock()
+{
+	pthread_mutex_unlock( &m_.m_ );
+	locked_ = false;
+}
+
 
 bool thread::spawned()
 {

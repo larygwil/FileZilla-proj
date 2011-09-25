@@ -41,6 +41,14 @@ struct MoveSort2 {
 killer_moves const empty_killers;
 short quiescence_search( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, check_map const& check, color::type c, short alpha, short beta )
 {
+#if 0
+	if( get_zobrist_hash(p, c) != hash ) {
+		std::cerr << "FAIL HASH!" << std::endl;
+	}
+	if( evaluate_fast(p, c) != current_evaluation ) {
+		std::cerr << "FAIL EVAL!" << std::endl;
+	}
+#endif
 	if( do_abort ) {
 		return result::loss;
 	}
@@ -472,22 +480,41 @@ namespace {
 class processing_thread : public thread
 {
 public:
+	enum state_type {
+		idle,
+		busy,
+		pending_results,
+		quitting
+	};
+
 	processing_thread( mutex& mtx, condition& cond )
-		: mutex_(mtx), cond_(cond), finished_(), clock_()
+		: mutex_(mtx), cond_(cond), clock_(), state_(idle)
 	{
+		spawn();
+	}
+
+	void quit( scoped_lock& l )
+	{
+		state_ = quitting;
+		waiting_on_work_.signal( l );
 	}
 
 	// Call locked
-	bool finished() {
-		return finished_;
+	bool got_results() {
+		return state_ == pending_results;
+	}
+
+	bool is_idle() {
+		return state_ == idle;
 	}
 
 	// Call locked
 	short result() {
+		state_ = idle;
 		return result_;
 	}
 
-	void process( position const& p, color::type c, move_info const& m, short max_depth, short quiescence_depth, short alpha_at_prev_depth, short alpha, short beta, int clock, pv_entry* pv, seen_positions const& seen )
+	void process( scoped_lock& l, position const& p, color::type c, move_info const& m, short max_depth, short quiescence_depth, short alpha_at_prev_depth, short alpha, short beta, int clock, pv_entry* pv, seen_positions const& seen )
 	{
 		p_ = p;
 		c_ = c;
@@ -497,13 +524,14 @@ public:
 		alpha_at_prev_depth_ = alpha_at_prev_depth;
 		alpha_ = alpha;
 		beta_ = beta;
-		finished_ = false;
 		clock_ = clock;
 		pv_ = pv;
 
 		seen_ = seen;
 
-		spawn();
+		state_ = busy;
+
+		waiting_on_work_.signal( l );
 	}
 
 	move_info get_move() const { return m_; }
@@ -515,8 +543,12 @@ public:
 
 	virtual void onRun();
 private:
+	short processWork();
+
 	mutex& mutex_;
 	condition& cond_;
+
+	condition waiting_on_work_;
 
 	position p_;
 	color::type c_;
@@ -527,42 +559,40 @@ private:
 	short alpha_;
 	short beta_;
 
-	bool finished_;
 	short result_;
 	int clock_;
 
 	pv_entry* pv_;
 
 	seen_positions seen_;
+
+	context ctx_;
+
+	state_type state_;
 };
 }
 
 
-void processing_thread::onRun()
+short processing_thread::processWork()
 {
 	position new_pos = p_;
 	bool captured;
 	apply_move( new_pos, m_, c_, captured );
 	unsigned long long hash = get_zobrist_hash( new_pos, static_cast<color::type>(1-c_) );
 
-	context ctx;
-	ctx.max_depth = max_depth_;
-	ctx.quiescence_depth = quiescence_depth_;
-	ctx.clock = clock_ % 256;
-	ctx.seen = seen_;
+	ctx_.max_depth = max_depth_;
+	ctx_.quiescence_depth = quiescence_depth_;
+	ctx_.clock = clock_ % 256;
+	ctx_.seen = seen_;
+	ctx_.move_ptr = ctx_.moves;
 
-	if( ctx.seen.is_two_fold( hash, 0 ) ) {
-		ctx.pv_pool.clear_pv_move( pv_->next() );
+	if( ctx_.seen.is_two_fold( hash, 0 ) ) {
+		ctx_.pv_pool.clear_pv_move( pv_->next() );
 
-		scoped_lock l( mutex_ );
-		result_ = result::draw;
-		finished_ = true;
-		cond_.signal( l );
-
-		return;
+		return result::draw;
 	}
 
-	ctx.seen.pos[++ctx.seen.root_position] = hash;
+	ctx_.seen.pos[++ctx_.seen.root_position] = hash;
 
 	// Search using aspiration window:
 	short value;
@@ -572,32 +602,52 @@ void processing_thread::onRun()
 		short beta = (std::min)( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
 		if( alpha < beta ) {
-			value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next(), false );
+			value = -step( 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next(), false );
 			if( value > alpha && value < beta ) {
 				// Aspiration search found something sensible
-				scoped_lock l( mutex_ );
-				result_ = value;
-				finished_ = true;
-				cond_.signal( l );
-				return;
+				return value;
 			}
 		}
 	}
 
 	if( alpha_ != result::loss ) {
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_, pv_->next(), false );
+		value = -step( 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_, pv_->next(), false );
 		if( value > alpha_ ) {
-			value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
+			value = -step( 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
 		}
 	}
 	else {
-		value = -step( 1, ctx, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
+		value = -step( 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
 	}
 
-	scoped_lock l( mutex_ );
-	result_ = value;
-	finished_ = true;
-	cond_.signal( l );
+	return value;
+}
+
+
+void processing_thread::onRun()
+{
+	scoped_lock l(mutex_);
+
+	while( true ) {
+
+		while( state_ != busy && state_ != quitting ) {
+			waiting_on_work_.wait( l );
+		}
+
+		if( state_ == quitting ) {
+			return;
+		}
+
+		l.unlock();
+
+		short result = processWork();
+
+		l.lock();
+
+		result_ = result;
+		state_ = pending_results;
+		cond_.signal( l );
+	}
 }
 
 struct move_data {
@@ -697,6 +747,9 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 
 		bool done = false;
 		while( !done ) {
+
+			scoped_lock l( mtx );
+
 			while( it != old_sorted.end() && !do_abort ) {
 
 				if( !got_first_result && it != old_sorted.begin() ) {
@@ -706,11 +759,11 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 
 				int t;
 				for( t = 0; t < conf.thread_count; ++t ) {
-					if( threads[t]->spawned() ) {
+					if( !threads[t]->is_idle() ) {
 						continue;
 					}
 
-					threads[t]->process( p, c, it->m, max_depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv, seen );
+					threads[t]->process( l, p, c, it->m, max_depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv, seen );
 
 					// First one is run on its own to get a somewhat sane lower bound for others to work with.
 					if( it++ == old_sorted.begin() ) {
@@ -725,8 +778,6 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 			}
 break2:
 
-			scoped_lock l( mtx );
-
 			unsigned long long now = get_time();
 			if( move_time_limit > now - start ) {
 				cond.wait( l, move_time_limit - now + start );
@@ -740,36 +791,32 @@ break2:
 
 			bool all_idle = true;
 			for( int t = 0; t < conf.thread_count; ++t ) {
-				if( !threads[t]->spawned() ) {
-					continue;
-				}
 
-				if( !threads[t]->finished() ) {
-					all_idle = false;
-					continue;
-				}
-
-				threads[t]->join();
-
-				got_first_result = true;
-				if( !do_abort ) {
+				if( threads[t]->got_results() ) {
+					got_first_result = true;
 					int value = threads[t]->result();
-					++evaluated;
+					if( !do_abort ) {
+						++evaluated;
 
-					pv_entry* pv = threads[t]->get_pv();
-					extend_pv_from_tt( pv, p, c, max_depth, conf.quiescence_depth );
+						pv_entry* pv = threads[t]->get_pv();
+						extend_pv_from_tt( pv, p, c, max_depth, conf.quiescence_depth );
 
-					insert_sorted( sorted, value, threads[t]->get_move(), pv );
-					if( threads[t]->get_move().m != pv->get_best_move() ) {
-						std::cerr << "FAIL: Wrong PV move" << std::endl;
+						insert_sorted( sorted, value, threads[t]->get_move(), pv );
+						if( threads[t]->get_move().m != pv->get_best_move() ) {
+							std::cerr << "FAIL: Wrong PV move" << std::endl;
+						}
+
+						if( value > alpha ) {
+							alpha = value;
+
+							highest_depth = max_depth;
+							new_best_cb.on_new_best_move( p, c, max_depth, value, stats.full_width_nodes + stats.quiescence_nodes, pv );
+						}
 					}
+				}
 
-					if( value > alpha ) {
-						alpha = value;
-
-						highest_depth = max_depth;
-						new_best_cb.on_new_best_move( p, c, max_depth, value, stats.full_width_nodes + stats.quiescence_nodes, pv );
-					}
+				if( !threads[t]->is_idle() ) {
+					all_idle = false;
 				}
 			}
 
@@ -853,6 +900,13 @@ break2:
 	print_stats( start, stop );
 	reset_stats();
 
+	scoped_lock l( mtx );
+
+	for( std::vector<processing_thread*>::iterator it = threads.begin(); it != threads.end(); ++it ) {
+		(*it)->quit( l );
+	}
+
+	l.unlock();
 	for( std::vector<processing_thread*>::iterator it = threads.begin(); it != threads.end(); ++it ) {
 		delete *it;
 	}

@@ -104,10 +104,10 @@ std::string pv_to_string( pv_entry const* pv, position p, color::type c )
 		if( !apply_move( p, pv->get_best_move(), c, captured ) ) {
 			ss << "FAIL! Invalid mode in pv: "
 					  << static_cast<int>(pv->get_best_move().flags) << " "
-					  << static_cast<int>(pv->get_best_move().source_col) << " "
-					  << static_cast<int>(pv->get_best_move().source_row) << " "
-					  << static_cast<int>(pv->get_best_move().target_col) << " "
-					  << static_cast<int>(pv->get_best_move().target_row) << " "
+					  << static_cast<int>(pv->get_best_move().source % 8) << " "
+					  << static_cast<int>(pv->get_best_move().source / 8) << " "
+					  << static_cast<int>(pv->get_best_move().target % 8) << " "
+					  << static_cast<int>(pv->get_best_move().target / 8) << " "
 					  << std::endl;
 			return ss.str();
 		}
@@ -132,10 +132,10 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 		if( !apply_move( p, pv->get_best_move(), c, captured ) ) {
 			std::cerr << "FAIL! Invalid mode in pv: "
 					  << static_cast<int>(pv->get_best_move().flags) << " "
-					  << static_cast<int>(pv->get_best_move().source_col) << " "
-					  << static_cast<int>(pv->get_best_move().source_row) << " "
-					  << static_cast<int>(pv->get_best_move().target_col) << " "
-					  << static_cast<int>(pv->get_best_move().target_row) << " "
+					  << static_cast<int>(pv->get_best_move().source % 8) << " "
+					  << static_cast<int>(pv->get_best_move().source / 8) << " "
+					  << static_cast<int>(pv->get_best_move().target % 8) << " "
+					  << static_cast<int>(pv->get_best_move().target / 8) << " "
 					  << std::endl;
 		}
 

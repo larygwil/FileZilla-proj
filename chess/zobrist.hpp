@@ -9,6 +9,6 @@ unsigned long long get_zobrist_hash( position const& p, color::type c );
 
 unsigned long long update_zobrist_hash( position const& p, color::type c, unsigned long long hash, move const& m );
 
-unsigned long long get_pawn_structure_hash( color::type c, unsigned char col, unsigned char row );
+unsigned long long get_pawn_structure_hash( color::type c, unsigned char pawn );
 
 #endif

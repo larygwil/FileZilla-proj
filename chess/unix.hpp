@@ -32,9 +32,13 @@ public:
 	scoped_lock( mutex& m );
 	~scoped_lock();
 
+	void lock();
+	void unlock();
+
 private:
 	friend class condition;
 	mutex& m_;
+	bool locked_;
 };
 
 

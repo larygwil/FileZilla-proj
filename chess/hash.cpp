@@ -80,10 +80,8 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, sh
 	v |= (
 				(static_cast<unsigned long long>(best_move.flags) ) |
 				(static_cast<unsigned long long>(best_move.piece) << 5 ) |
-				(static_cast<unsigned long long>(best_move.source_col) << 8) |
-				(static_cast<unsigned long long>(best_move.source_row) << 11) |
-				(static_cast<unsigned long long>(best_move.target_col) << 14) |
-				(static_cast<unsigned long long>(best_move.target_row) << 17) |
+				(static_cast<unsigned long long>(best_move.source) << 8) |
+				(static_cast<unsigned long long>(best_move.target) << 14) |
 				(static_cast<unsigned long long>(best_move.captured_piece) << 20) |
 				(static_cast<unsigned long long>(best_move.promotion) << 23) ) << field_shifts::move;
 
@@ -165,10 +163,8 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 
 		best_move.flags = (v >> (field_shifts::move)) & 0x1F;
 		best_move.piece = static_cast<pieces::type>((v >> (field_shifts::move + 5)) & 0x07);
-		best_move.source_col = (v >> (field_shifts::move + 8)) & 0x07;
-		best_move.source_row = (v >> (field_shifts::move + 11)) & 0x07;
-		best_move.target_col = (v >> (field_shifts::move + 14)) & 0x07;
-		best_move.target_row = (v >> (field_shifts::move + 17)) & 0x07;
+		best_move.source = (v >> (field_shifts::move + 8)) & 0x3f;
+		best_move.target = (v >> (field_shifts::move + 14)) & 0x3f;
 		best_move.captured_piece = static_cast<pieces::type>((v >> (field_shifts::move + 20)) & 0x07);
 		best_move.promotion = (v >> (field_shifts::move + 23)) & 0x03;
 
