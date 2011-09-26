@@ -330,6 +330,20 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 	return ret;
 }
 
+
+std::string move_to_source_target_string( move const& m )
+{
+	std::string ret;
+
+	ret += 'a' + m.source % 8;
+	ret += '1' + m.source / 8;
+	ret += 'a' + m.target % 8;
+	ret += '1' + m.target / 8;
+
+	return ret;
+}
+
+
 void init_bitboards( position& p );
 
 void init_board( position& p )

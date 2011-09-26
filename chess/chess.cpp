@@ -123,8 +123,8 @@ struct xboard_state
 	xboard_state()
 		: c()
 		, clock()
-		, in_book()
-		, book_index()
+		, book_( book_dir )
+		, in_book( book_.is_open() )
 		, time_remaining()
 		, bonus_time()
 		, force(true)
@@ -141,11 +141,11 @@ struct xboard_state
 	void reset()
 	{
 		init_board(p);
-		in_book = open_book( book_dir );
+		in_book = book_.is_open();
 		if( in_book ) {
 			std::cerr << "Opening book loaded" << std::endl;
 		}
-		book_index = 0;
+		move_history_.clear();
 
 		c = color::white;
 
@@ -187,29 +187,7 @@ struct xboard_state
 			std::cout << "1/2-1/2 (Draw)" << std::endl;
 		}
 
-		if( in_book ) {
-			std::vector<move_entry> moves;
-			/*book_entry entry = */
-				get_entries( book_index, moves );
-			if( moves.empty() ) {
-				in_book = false;
-			}
-			else {
-				in_book = false;
-				for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-					if( it->get_move() == m ) {
-						if( it->next_index ) {
-							in_book = true;
-							book_index = it->next_index;
-						}
-						break;
-					}
-				}
-			}
-			if( !in_book ) {
-				std::cerr << "Left opening book" << std::endl;
-			}
-		}
+		move_history_.push_back( move_to_source_target_string( m ) );
 	}
 
 	bool undo( unsigned int count )
@@ -227,10 +205,11 @@ struct xboard_state
 
 		while( --count ) {
 			history.pop_back();
+			move_history_.pop_back();
 		}
 		p = history.back();
 		history.pop_back();
-		
+		move_history_.pop_back();
 
 		bonus_time = false;
 		in_book = false;
@@ -242,8 +221,8 @@ struct xboard_state
 	color::type c;
 	int clock;
 	seen_positions seen;
+	book book_;
 	bool in_book;
-	unsigned long long book_index;
 	unsigned long long time_remaining;
 	unsigned long long bonus_time;
 	bool force;
@@ -253,6 +232,7 @@ struct xboard_state
 	unsigned long long time_increment;
 
 	std::list<position> history;
+	std::vector<std::string> move_history_;
 
 	bool post;
 };
@@ -421,39 +401,31 @@ void go( xboard_thread& thread, xboard_state& state )
 	}
 	// Do a step
 	if( state.in_book ) {
-		std::vector<move_entry> moves;
-		/*book_entry entry = */
-			get_entries( state.book_index, moves );
+		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.c, state.move_history_ );
 		if( moves.empty() ) {
+			std::cerr << "Current position not in book" << std::endl;
 			state.in_book = false;
 		}
 		else {
 			short best = moves.front().forecast;
-			int count_best = 0;
+			int count_best = 1;
 			std::cerr << "Entries from book: " << std::endl;
-			for( std::vector<move_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-				if( it->forecast + 25 >= best ) {
+			std::cerr << move_to_string( state.p, state.c, moves.front().m ) << " " << moves.front().forecast << " (" << moves.front().search_depth << ")" << std::endl;
+			for( std::vector<book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
+				if( it->forecast > -33 && it->forecast + 25 >= best ) {
 					++count_best;
 				}
-				std::cerr << move_to_string( state.p, state.c, it->get_move() ) << " " << it->forecast << std::endl;
+				std::cerr << move_to_string( state.p, state.c, it->m ) << " " << it->forecast << std::endl;
 			}
 
-			move_entry best_move = moves[get_random_unsigned_long_long() % count_best];
-			move m = best_move.get_move();
-			if( !best_move.next_index ) {
-				state.in_book = false;
-				std::cerr << "Left opening book" << std::endl;
-			}
-			else {
-				state.book_index = best_move.next_index;
-			}
+			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
 
-			std::cout << "move " << move_to_string( state.p, state.c, m ) << std::endl;
+			std::cout << "move " << move_to_string( state.p, state.c, best_move.m ) << std::endl;
 
 			state.history.push_back( state.p );
 
 			bool captured;
-			apply_move( state.p, m, state.c, captured );
+			apply_move( state.p, best_move.m, state.c, captured );
 			++state.clock;
 			state.c = static_cast<color::type>( 1 - state.c );
 

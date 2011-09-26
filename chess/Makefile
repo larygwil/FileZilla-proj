@@ -1,5 +1,5 @@
-CXXFLAGS = -O3 -g -pipe -march=corei7 -std=gnu++0x -Wall -flto
-#CXXFLAGS = -O0 -g -pipe -std=gnu++0x
+CFLAGS = -O3 -g -pipe -march=corei7 -std=gnu++0x -Wall -flto
+CXXFLAGS = $(CFLAGS) -std=gnu++0x
 
 all: chess bookgen
 
@@ -14,6 +14,7 @@ OBJECT_FILES = \
 	config.o \
 	detect_check.o \
 	eval.o \
+	fen.o \
 	hash.o \
 	logger.o \
 	mobility.o \
@@ -25,19 +26,23 @@ OBJECT_FILES = \
 	statistics.o \
 	unix.o \
 	util.o \
+	sqlite/sqlite3.o \
 	zobrist.o 
 
 %.o: %.cpp *.hpp
 	g++ $(CXXFLAGS) -pthread -c -o $@ $<
 
+sqlite/sqlite3.o: sqlite/sqlite3.c sqlite/sqlite3.h
+	gcc $(CFFLAGS) -pthread -c -o $@ $<
+
 mobility.o: mobility_data.hpp
 
 chess: $(OBJECT_FILES) chess.o
-	g++ $(CXXFLAGS) -pthread -o $@ $^
+	g++ $(CXXFLAGS) -pthread -ldl -o $@ $^
 
 
 bookgen: $(OBJECT_FILES) bookgen.o
-	g++ $(CXXFLAGS) -pthread -o $@ $^
+	g++ $(CXXFLAGS) -pthread -ldl -o $@ $^
 
 clean:
 	rm -f chess bookgen mobility_gen
