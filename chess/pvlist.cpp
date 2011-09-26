@@ -150,7 +150,7 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 	}
 
 	while(true) {
-		uint64_t hash = get_zobrist_hash( p, c );
+		uint64_t hash = get_zobrist_hash( p );
 
 		int r;
 		if( depth >= max_depth ) {

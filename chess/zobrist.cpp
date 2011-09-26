@@ -68,7 +68,7 @@ void init_zobrist_tables()
 	initialized = true;
 }
 
-unsigned long long get_zobrist_hash( position const& p, color::type c ) {
+unsigned long long get_zobrist_hash( position const& p ) {
 	unsigned long long ret = 0;
 
 	for( unsigned int c = 0; c < 2; ++c ) {

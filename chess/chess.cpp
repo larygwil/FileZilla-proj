@@ -59,7 +59,7 @@ void auto_play()
 
 	seen_positions seen;
 	seen.root_position = 0;
-	seen.pos[0] = get_zobrist_hash( p, c );
+	seen.pos[0] = get_zobrist_hash( p );
 
 	while( calc( p, c, m, res, TIME_LIMIT * timer_precision() / 1000, TIME_LIMIT * timer_precision() / 1000, i, seen ) ) {
 		if( c == color::white ) {
@@ -96,11 +96,11 @@ void auto_play()
 		c = static_cast<color::type>(1-c);
 
 		if( !reset_seen ) {
-			seen.pos[++seen.root_position] = get_zobrist_hash( p, c );
+			seen.pos[++seen.root_position] = get_zobrist_hash( p );
 		}
 		else {
 			seen.root_position = 0;
-			seen.pos[0] = get_zobrist_hash( p, c );
+			seen.pos[0] = get_zobrist_hash( p );
 		}
 
 		if( seen.root_position > 110 ) { // Be lenient, 55 move rule is fine for us in case we don't implement this correctly.
@@ -153,7 +153,7 @@ struct xboard_state
 
 		seen = seen_positions();
 		seen.root_position = 0;
-		seen.pos[0] = get_zobrist_hash( p, c );
+		seen.pos[0] = get_zobrist_hash( p );
 
 		time_remaining = conf.time_limit * timer_precision() / 1000;
 		bonus_time = 0;
@@ -176,11 +176,11 @@ struct xboard_state
 		c = static_cast<color::type>( 1 - c );
 
 		if( !reset_seen ) {
-			seen.pos[++seen.root_position] = get_zobrist_hash( p, c );
+			seen.pos[++seen.root_position] = get_zobrist_hash( p );
 		}
 		else {
 			seen.root_position = 0;
-			seen.pos[0] = get_zobrist_hash( p, c );
+			seen.pos[0] = get_zobrist_hash( p );
 		}
 
 		if( seen.root_position >= 110 ) {

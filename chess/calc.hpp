@@ -13,7 +13,7 @@ public:
 	seen_positions();
 
 	unsigned long long pos[100 + MAX_DEPTH + MAX_QDEPTH + 10]; // Must be at least 50 full moves + max depth and add some safety margin.
-	int root_position; // Index of first move after root position in seen_positions
+	int root_position; // Index of root position in seen_positions
 	int null_move_position;
 
 	bool is_two_fold( unsigned long long hash, int depth ) const;

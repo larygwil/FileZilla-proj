@@ -55,6 +55,9 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 	}
 
 	if( str == "0-0" || str == "O-O" ) {
+		m.captured_piece = pieces::none;
+		m.flags = move_flags::valid | move_flags::castle;
+		m.piece = pieces::king;
 		m.source = c ? 60 : 4;
 		m.target = c ? 62 : 6;
 		if( !validate_move( p, m, c ) ) {
@@ -64,6 +67,9 @@ bool parse_move( position& p, color::type c, std::string const& line, move& m )
 		return true;
 	}
 	else if( str == "0-0-0" || str == "O-O-O" ) {
+		m.captured_piece = pieces::none;
+		m.flags = move_flags::valid | move_flags::castle;
+		m.piece = pieces::king;
 		m.source = c ? 60 : 4;
 		m.target = c ? 58 : 2;
 		if( !validate_move( p, m, c ) ) {

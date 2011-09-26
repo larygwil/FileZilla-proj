@@ -42,7 +42,7 @@ killer_moves const empty_killers;
 short quiescence_search( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, check_map const& check, color::type c, short alpha, short beta )
 {
 #if 0
-	if( get_zobrist_hash(p, c) != hash ) {
+	if( get_zobrist_hash(p) != hash ) {
 		std::cerr << "FAIL HASH!" << std::endl;
 	}
 	if( evaluate_fast(p, c) != current_evaluation ) {
@@ -98,11 +98,11 @@ short quiescence_search( int depth, context& ctx, position const& p, unsigned lo
 				unsigned long long new_hash = update_zobrist_hash( p, c, hash, tt_move );
 
 				short value;
-				if( ctx.seen.is_two_fold( new_hash, depth ) ) {
+				if( ctx.seen.is_two_fold( new_hash, depth + 1 ) ) {
 					value = result::draw;
 				}
 				else {
-					ctx.seen.pos[ctx.seen.root_position + depth] = new_hash;
+					ctx.seen.pos[ctx.seen.root_position + depth + 1] = new_hash;
 
 					short new_eval = evaluate_move( p, c, current_evaluation, tt_move, pawns );
 
@@ -578,7 +578,7 @@ short processing_thread::processWork()
 	position new_pos = p_;
 	bool captured;
 	apply_move( new_pos, m_, c_, captured );
-	unsigned long long hash = get_zobrist_hash( new_pos, static_cast<color::type>(1-c_) );
+	unsigned long long hash = get_zobrist_hash( new_pos );
 
 	ctx_.max_depth = max_depth_;
 	ctx_.quiescence_depth = quiescence_depth_;
@@ -586,13 +586,13 @@ short processing_thread::processWork()
 	ctx_.seen = seen_;
 	ctx_.move_ptr = ctx_.moves;
 
-	if( ctx_.seen.is_two_fold( hash, 0 ) ) {
+	if( ctx_.seen.is_two_fold( hash, 1 ) ) {
 		ctx_.pv_pool.clear_pv_move( pv_->next() );
 
 		return result::draw;
 	}
 
-	ctx_.seen.pos[++ctx_.seen.root_position] = hash;
+	ctx_.seen.pos[ctx_.seen.root_position + 1] = hash;
 
 	// Search using aspiration window:
 	short value;
@@ -925,7 +925,7 @@ seen_positions::seen_positions()
 bool seen_positions::is_three_fold( unsigned long long hash, int depth ) const
 {
 	int count = 0;
-	for( int i = root_position + depth - 1; i >= null_move_position; --i ) {
+	for( int i = root_position + depth - 4; i >= null_move_position; i -= 2) {
 		if( pos[i] == hash ) {
 			++count;
 		}
@@ -935,7 +935,7 @@ bool seen_positions::is_three_fold( unsigned long long hash, int depth ) const
 
 bool seen_positions::is_two_fold( unsigned long long hash, int depth ) const
 {
-	for( int i = root_position + depth - 1; i >= null_move_position; --i ) {
+	for( int i = root_position + depth - 4; i >= null_move_position; i -= 2 ) {
 		if( pos[i] == hash ) {
 			return true;
 		}
