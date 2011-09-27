@@ -365,7 +365,7 @@ void go( book& b, position const& p, color::type c, seen_positions const& seen, 
 
 			++calculated;
 			unsigned long long now = get_time();
-			std::cerr << std::endl << "Remaining work " << wl.count << " being processed with " << (calculated * 3600 * 1000) / (now - start) << " moves/hour" << std::endl;
+			std::cerr << std::endl << "Remaining work " << wl.count << " being processed with " << (calculated * 3600) * timer_precision() / (now - start) << " moves/hour" << std::endl;
 		}
 
 		if( all_idle && stop ) {
