@@ -174,7 +174,7 @@ void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, see
 
 		std::vector<std::string> child_history = move_history;
 		child_history.push_back( move_to_source_target_string( it->m ) );
-		std::vector<book_entry> child_moves = b.get_entries( p, c, child_history );
+		std::vector<book_entry> child_moves = b.get_entries( new_pos, static_cast<color::type>(1-c), child_history );
 
 		seen_positions child_seen = seen;
 		child_seen.pos[++child_seen.root_position] = get_zobrist_hash( new_pos );

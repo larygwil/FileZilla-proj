@@ -1,4 +1,5 @@
 CFLAGS = -O3 -g -pipe -march=corei7 -std=gnu++0x -Wall -flto
+#CFLAGS = -O0 -g -pipe -std=gnu++0x -Wall
 CXXFLAGS = $(CFLAGS) -std=gnu++0x
 
 all: chess bookgen
