@@ -130,101 +130,102 @@ void init_book( book& b )
 	}
 }
 
-//struct work {
-//	int depth;
-//	position p;
-//	color::type c;
-//	unsigned long long index; // position
-//	int move_index; // move inside position
-//};
+struct work {
+	std::vector<std::string> move_history;
+	seen_positions seen;
+	position p;
+	color::type c;
+};
 
-//struct worklist {
-//	worklist() : next_work(), count()
-//		{}
+struct worklist {
+	worklist() : next_work(), count()
+		{}
 
-//	bool empty() const { return !count; }
+	bool empty() const { return !count; }
 
-//	void clear() {
-//		count = 0;
-//		next_work = 0;
-//		for( unsigned int i = 0; i < MAX_BOOK_DEPTH; ++i ) {
-//			work_at_depth[i].clear();
-//		}
-//	}
+	void clear() {
+		count = 0;
+		next_work = 0;
+		for( unsigned int i = 0; i < MAX_BOOK_DEPTH; ++i ) {
+			work_at_depth[i].clear();
+		}
+	}
 
-//	std::vector<work> work_at_depth[MAX_BOOK_DEPTH];
-//	unsigned int next_work;
+	std::vector<work> work_at_depth[MAX_BOOK_DEPTH];
+	unsigned int next_work;
 
-//	unsigned int count;
-//};
+	unsigned int count;
+};
 
 
-//void get_work( worklist& wl, int max_depth, unsigned int max_width, int depth, unsigned long long index, position const& p, color::type c )
-//{
-//	std::vector<book_entry> moves;
-//	/*book_entry entry = */
-//	get_entries( index, moves );
+void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, seen_positions const& seen, std::vector<std::string> const& move_history, position const& p, color::type c )
+{
+	std::vector<book_entry> moves = b.get_entries( p, c, move_history );
 
-//	unsigned int i = 0;
-//	for( std::vector<book_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it, ++i ) {
-//		if( i >= max_width ) {
-//			break;
-//		}
+	unsigned int i = 0;
+	for( std::vector<book_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it, ++i ) {
+		if( i >= max_width ) {
+			break;
+		}
 
-//		position new_pos = p;
-//		bool captured;
-//		apply_move( new_pos, it->get_move(), c, captured );
+		position new_pos = p;
+		bool captured;
+		apply_move( new_pos, it->m, c, captured );
 
-//		if( !it->next_index ) {
-//			work w;
-//			w.depth = depth;
-//			w.index = index;
-//			w.move_index = it - moves.begin();
-//			w.p = new_pos;
-//			w.c = static_cast<color::type>(1-c);
-//			wl.work_at_depth[depth].push_back(w);
-//			++wl.count;
-//		}
-//		else {
-//			if( depth + 1 < max_depth ) {
-//				get_work( wl, max_depth, max_width, depth + 1, it->next_index, new_pos, static_cast<color::type>(1-c) );
-//			}
-//		}
-//	}
-//}
+		std::vector<std::string> child_history = move_history;
+		child_history.push_back( move_to_source_target_string( it->m ) );
+		std::vector<book_entry> child_moves = b.get_entries( p, c, child_history );
 
-//bool get_next( worklist& wl, work& w )
-//{
-//	unsigned int i = wl.next_work;
-//	do {
-//		if( !wl.work_at_depth[i].empty() ) {
-//			w = wl.work_at_depth[i].front();
-//			wl.work_at_depth[i].erase( wl.work_at_depth[i].begin() );
+		seen_positions child_seen = seen;
+		child_seen.pos[++child_seen.root_position] = get_zobrist_hash( new_pos );
 
-//			if( ++wl.next_work == MAX_BOOK_DEPTH ) {
-//				wl.next_work = 0;
-//			}
-//			--wl.count;
-//			return true;
-//		}
-//		if( ++i == MAX_BOOK_DEPTH ) {
-//			i = 0;
-//		}
-//	} while( i != wl.next_work );
+		if( child_moves.empty() ) {
+			work w;
+			w.p = new_pos;
+			w.c = static_cast<color::type>(1-c);
+			w.move_history = child_history;
+			w.seen = child_seen;
+			wl.work_at_depth[child_history.size()].push_back(w);
+			++wl.count;
+		}
+		else if( child_history.size() < static_cast<std::size_t>(max_depth) ) {
+			get_work( b, wl, max_depth, max_width, child_seen, child_history, new_pos, static_cast<color::type>(1-c) );
+		}
+	}
+}
 
-//	if( !wl.work_at_depth[i].empty() ) {
-//		w = wl.work_at_depth[i].front();
-//		wl.work_at_depth[i].erase( wl.work_at_depth[i].begin() );
+bool get_next( worklist& wl, work& w )
+{
+	unsigned int i = wl.next_work;
+	do {
+		if( !wl.work_at_depth[i].empty() ) {
+			w = wl.work_at_depth[i].front();
+			wl.work_at_depth[i].erase( wl.work_at_depth[i].begin() );
 
-//		if( ++wl.next_work == MAX_BOOK_DEPTH ) {
-//			wl.next_work = 0;
-//		}
-//		--wl.count;
-//		return true;
-//	}
+			if( ++wl.next_work == MAX_BOOK_DEPTH ) {
+				wl.next_work = 0;
+			}
+			--wl.count;
+			return true;
+		}
+		if( ++i == MAX_BOOK_DEPTH ) {
+			i = 0;
+		}
+	} while( i != wl.next_work );
 
-//	return false;
-//}
+	if( !wl.work_at_depth[i].empty() ) {
+		w = wl.work_at_depth[i].front();
+		wl.work_at_depth[i].erase( wl.work_at_depth[i].begin() );
+
+		if( ++wl.next_work == MAX_BOOK_DEPTH ) {
+			wl.next_work = 0;
+		}
+		--wl.count;
+		return true;
+	}
+
+	return false;
+}
 
 volatile bool stop = false;
 
@@ -234,148 +235,148 @@ extern "C" void on_signal(int)
 	stop = true;
 }
 
-//namespace {
-//class processing_thread : public thread
-//{
-//public:
-//	processing_thread( mutex& mtx, condition& cond )
-//		: mutex_(mtx), cond_(cond), finished_()
-//	{
-//	}
+namespace {
+class processing_thread : public thread
+{
+public:
+	processing_thread( book& b, mutex& mtx, condition& cond )
+		: b_(b), mutex_(mtx), cond_(cond), finished_()
+	{
+	}
 
-//	// Call locked
-//	bool finished() {
-//		return finished_;
-//	}
+	// Call locked
+	bool finished() {
+		return finished_;
+	}
 
-//	void process( work const& w )
-//	{
-//		w_ = w;
-//		finished_ = false;
+	void process( work const& w )
+	{
+		w_ = w;
+		finished_ = false;
 
-//		spawn();
-//	}
+		spawn();
+	}
 
-//	virtual void onRun();
-//private:
-//	mutex& mutex_;
-//	condition& cond_;
+	virtual void onRun();
+private:
+	book& b_;
+	mutex& mutex_;
+	condition& cond_;
 
-//	work w_;
-//	bool finished_;
-//};
+	work w_;
+	bool finished_;
+};
 
-//void processing_thread::onRun()
-//{
-//	unsigned long long index = calculate_position( w_.p, w_.c, w_.depth, w_.index );
-//	book_update_move( w_.index, w_.move_index, index );
+void processing_thread::onRun()
+{
+	calculate_position( b_, w_.p, w_.c, w_.seen, w_.move_history );
 
-//	scoped_lock l(mutex_);
-//	finished_ = true;
-//	cond_.signal(l);
-//}
-//}
+	scoped_lock l(mutex_);
+	finished_ = true;
+	cond_.signal(l);
+}
+}
 
-//void go( position const& p, color::type c, unsigned long long index, unsigned int depth, unsigned int max_depth, unsigned int max_width )
-//{
-//	mutex mtx;
-//	condition cond;
+void go( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<std::string> const& move_history, unsigned int max_depth, unsigned int max_width )
+{
+	mutex mtx;
+	condition cond;
 
-//	std::vector<processing_thread*> threads;
-//	int thread_count = 12;
-//	for( int t = 0; t < thread_count; ++t ) {
-//		threads.push_back( new processing_thread( mtx, cond ) );
-//	}
+	std::vector<processing_thread*> threads;
+	int thread_count = conf.thread_count;
+	for( int t = 0; t < thread_count; ++t ) {
+		threads.push_back( new processing_thread( b, mtx, cond ) );
+	}
 
-//	max_depth += depth;
-//	if( max_depth > MAX_BOOK_DEPTH ) {
-//		max_depth = MAX_BOOK_DEPTH;
-//	}
+	max_depth += move_history.size();
+	if( max_depth > MAX_BOOK_DEPTH ) {
+		max_depth = MAX_BOOK_DEPTH;
+	}
 
-//	worklist wl;
+	worklist wl;
 
-//	scoped_lock l(mtx);
+	scoped_lock l(mtx);
 
-//	bool all_idle = true;
+	bool all_idle = true;
 
-//	unsigned long long start = get_time();
-//	unsigned long long calculated = 0;
+	unsigned long long start = get_time();
+	unsigned long long calculated = 0;
 
-//	while( true ) {
+	while( true ) {
 
-//		while( !stop ) {
+		while( !stop ) {
 
-//			if( wl.empty() && !all_idle ) {
-//				break;
-//			}
+			if( wl.empty() && !all_idle ) {
+				break;
+			}
 
-//			while( wl.empty() ) {
-//				get_work( wl, max_depth, max_width, depth + 1, index, p, c );
-//				if( wl.empty() ) {
-//					if( max_depth < MAX_BOOK_DEPTH ) {
-//						++max_depth;
-//					}
-//					else {
-//						break;
-//					}
-//				}
-//				else {
-//					std::cerr << std::endl << "Created worklist with " << wl.count << " positions to evaluate" << std::endl;
-//				}
-//			}
+			while( wl.empty() ) {
+				get_work( b, wl, max_depth, max_width, seen, move_history, p, c );
+				if( wl.empty() ) {
+					if( max_depth < MAX_BOOK_DEPTH ) {
+						++max_depth;
+					}
+					else {
+						break;
+					}
+				}
+				else {
+					std::cerr << std::endl << "Created worklist with " << wl.count << " positions to evaluate" << std::endl;
+				}
+			}
 
-//			int t;
-//			for( t = 0; t < thread_count; ++t ) {
-//				if( threads[t]->spawned() ) {
-//					continue;
-//				}
+			int t;
+			for( t = 0; t < thread_count; ++t ) {
+				if( threads[t]->spawned() ) {
+					continue;
+				}
 
-//				work w;
-//				if( get_next( wl, w ) ) {
-//					threads[t]->process( w );
-//					all_idle = false;
-//				}
-//				else {
-//					break;
-//				}
-//			}
-//			if( t == thread_count ) {
-//				break;
-//			}
-//		}
-//		if( all_idle ) {
-//			break;
-//		}
+				work w;
+				if( get_next( wl, w ) ) {
+					threads[t]->process( w );
+					all_idle = false;
+				}
+				else {
+					break;
+				}
+			}
+			if( t == thread_count ) {
+				break;
+			}
+		}
+		if( all_idle ) {
+			break;
+		}
 
-//		cond.wait( l );
+		cond.wait( l );
 
-//		all_idle = true;
-//		for( int t = 0; t < thread_count; ++t ) {
-//			if( !threads[t]->spawned() ) {
-//				continue;
-//			}
+		all_idle = true;
+		for( int t = 0; t < thread_count; ++t ) {
+			if( !threads[t]->spawned() ) {
+				continue;
+			}
 
-//			if( !threads[t]->finished() ) {
-//				all_idle = false;
-//				continue;
-//			}
+			if( !threads[t]->finished() ) {
+				all_idle = false;
+				continue;
+			}
 
-//			threads[t]->join();
+			threads[t]->join();
 
-//			++calculated;
-//			unsigned long long now = get_time();
-//			std::cerr << std::endl << "Remaining work " << wl.count << " being processed with " << (calculated * 3600 * 1000) / (now - start) << " moves/hour" << std::endl;
-//		}
+			++calculated;
+			unsigned long long now = get_time();
+			std::cerr << std::endl << "Remaining work " << wl.count << " being processed with " << (calculated * 3600 * 1000) / (now - start) << " moves/hour" << std::endl;
+		}
 
-//		if( all_idle && stop ) {
-//			break;
-//		}
-//	}
+		if( all_idle && stop ) {
+			break;
+		}
+	}
 
-//	if( !stop ) {
-//		std::cerr << "All done" << std::endl;
-//	}
-//}
+	if( !stop ) {
+		std::cerr << "All done" << std::endl;
+	}
+}
 
 void print_pos( position const& p, color::type c, std::vector<book_entry> const& moves )
 {
@@ -451,7 +452,7 @@ void run( book& b )
 			break;
 		}
 		if( line == "go" ) {
-			//go( p, c, book_index, depth, max_depth, max_width );
+			go( b, p, c, seen, move_history, max_depth, max_width );
 			return;
 		}
 		else if( line == "size" ) {
