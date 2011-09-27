@@ -428,6 +428,7 @@ void go( xboard_thread& thread, xboard_state& state )
 			apply_move( state.p, best_move.m, state.c, captured );
 			++state.clock;
 			state.c = static_cast<color::type>( 1 - state.c );
+			state.move_history_.push_back( move_to_source_target_string( best_move.m ) );
 
 			unsigned long long stop = get_time();
 			state.time_remaining -= stop - start;
