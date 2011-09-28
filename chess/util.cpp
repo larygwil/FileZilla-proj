@@ -343,9 +343,6 @@ std::string move_to_source_target_string( move const& m )
 	return ret;
 }
 
-
-void init_bitboards( position& p );
-
 void init_board( position& p )
 {
 	memset( p.board, 0, 64 );

@@ -892,5 +892,7 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 
 short get_material_value( pieces::type pi )
 {
-	return static_cast<material_values::type>(pi);
+	static short const mv[] = { material_values::none, material_values::pawn, material_values::knight, material_values::bishop, material_values::rook, material_values::queen, material_values::king };
+
+	return mv[pi];
 }

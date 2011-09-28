@@ -17,6 +17,7 @@ std::string move_to_string( position const& p, color::type c, move const& m );
 std::string move_to_source_target_string( move const& m );
 
 void init_board( position& p );
+void init_bitboards( position& p );
 
 bool apply_move( position& p, move const& m, color::type c, bool& capture );
 bool apply_move( position& p, move_info const& m, color::type c, bool& capture );
