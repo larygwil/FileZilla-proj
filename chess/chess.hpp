@@ -127,11 +127,11 @@ struct move
 
 namespace result {
 enum type {
-	win = 30000,
-	win_threshold = win - 100,
+	win = 31000,
+	win_threshold = win - 1000,
 	draw = 0,
-	loss = -30000,
-	loss_threshold = loss + 100
+	loss = -31000,
+	loss_threshold = loss + 1000
 };
 }
 

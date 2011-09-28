@@ -16,8 +16,8 @@ public:
 	int root_position; // Index of root position in seen_positions
 	int null_move_position;
 
-	bool is_two_fold( unsigned long long hash, int depth ) const;
-	bool is_three_fold( unsigned long long hash, int depth ) const;
+	bool is_two_fold( unsigned long long hash, int ply ) const;
+	bool is_three_fold( unsigned long long hash, int ply ) const;
 };
 
 struct new_best_move_callback
@@ -27,7 +27,10 @@ struct new_best_move_callback
 extern new_best_move_callback default_new_best_move_callback;
 
 // May modify seen_positions at indexes > root_position
-bool calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long time_remaining, int clock, seen_positions& seen, new_best_move_callback& new_best_cb = default_new_best_move_callback );
+bool calc( position& p, color::type c, move& m, int& res,
+		   unsigned long long move_time_limit, unsigned long long time_remaining, int clock,
+		   seen_positions& seen, short last_mate,
+		   new_best_move_callback& new_best_cb = default_new_best_move_callback );
 
 class killer_moves
 {
@@ -73,6 +76,6 @@ public:
 	killer_moves killers[2][MAX_DEPTH + 1];
 };
 
-short step( int depth, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv, bool last_was_null );
+short step( int depth, int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv, bool last_was_null );
 
 #endif

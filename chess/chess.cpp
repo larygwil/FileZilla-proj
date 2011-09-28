@@ -18,6 +18,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "config.hpp"
 #include "calc.hpp"
 #include "eval.hpp"
+#include "fen.hpp"
 #include "hash.hpp"
 #include "mobility.hpp"
 #include "moves.hpp"
@@ -55,17 +56,22 @@ void auto_play()
 	unsigned int i = 1;
 	color::type c = color::white;
 	move m;
-	int res;
+	int res = 0;
 
 	seen_positions seen;
 	seen.root_position = 0;
 	seen.pos[0] = get_zobrist_hash( p );
 
-	while( calc( p, c, m, res, TIME_LIMIT * timer_precision() / 1000, TIME_LIMIT * timer_precision() / 1000, i, seen ) ) {
+	short last_mate = 0;
+
+	while( calc( p, c, m, res, TIME_LIMIT * timer_precision() / 1000, TIME_LIMIT * timer_precision() / 1000, i, seen, last_mate ) ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
 		}
 
+		if( res > result::win_threshold ) {
+			last_mate = res;
+		}
 		std::cout << " " << move_to_string(p, c, m) << std::endl;
 
 		if( c == color::black ) {
@@ -134,6 +140,7 @@ struct xboard_state
 		, time_increment()
 		, history()
 		, post(true)
+		, last_mate()
 	{
 		reset();
 	}
@@ -160,6 +167,8 @@ struct xboard_state
 
 		force = false;
 		self = color::black;
+
+		last_mate = 0;
 	}
 
 	void apply( move const& m )
@@ -235,6 +244,8 @@ struct xboard_state
 	std::vector<std::string> move_history_;
 
 	bool post;
+
+	short last_mate;
 };
 
 
@@ -303,7 +314,7 @@ void xboard_thread::onRun()
 
 	move m;
 	int res;
-	bool success = calc( state.p, state.c, m, res, time_limit, state.time_remaining, state.clock, state.seen, *this );
+	bool success = calc( state.p, state.c, m, res, time_limit, state.time_remaining, state.clock, state.seen, state.last_mate, *this );
 	
 	scoped_lock l( mtx );
 
@@ -322,6 +333,10 @@ void xboard_thread::onRun()
 			std::cerr << "  ; Current evaluation: " << i << " centipawns, forecast " << res << std::endl;
 			
 			//std::cerr << explain_eval( state.p, static_cast<color::type>(1-state.c), p.bitboards );
+		}
+
+		if( res > result::win_threshold ) {
+			state.last_mate = res;
 		}
 	}
 	else {
@@ -412,7 +427,7 @@ void go( xboard_thread& thread, xboard_state& state )
 			std::cerr << "Entries from book: " << std::endl;
 			std::cerr << move_to_string( state.p, state.c, moves.front().m ) << " " << moves.front().forecast << " (" << moves.front().search_depth << ")" << std::endl;
 			for( std::vector<book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
-				if( it->forecast > -33 && it->forecast + 25 >= best ) {
+				if( it->forecast > -33 && it->forecast + 25 >= best && count_best < 3 ) {
 					++count_best;
 				}
 				std::cerr << move_to_string( state.p, state.c, it->m ) << " " << it->forecast << std::endl;
@@ -631,6 +646,20 @@ void xboard()
 			for( ; it != pm; ++it ) {
 				std::cout << " " << move_to_string( state.p, state.c, it->m ) << std::endl;
 			}
+		}
+		else if( line.substr( 0, 4 ) == "~fen") {
+			line = line.substr( 5 );
+			position new_pos;
+			color::type new_c;
+			if( !parse_fen_noclock( line, new_pos, new_c ) ) {
+				std::cout << "Error (bad command): Not a valid FEN position" << std::endl;
+				continue;
+			}
+			state.reset();
+			state.p = new_pos;
+			state.c = new_c;
+			state.seen.pos[0] = get_zobrist_hash( state.p );
+			state.in_book = false;
 		}
 		else {
 			move m;

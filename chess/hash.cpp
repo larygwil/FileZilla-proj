@@ -66,10 +66,30 @@ enum type {
 };
 }
 
-void hash::store( hash_key key, color::type c, unsigned char remaining_depth, short eval, short alpha, short beta, move const& best_move, unsigned char clock )
+void hash::store( hash_key key, color::type c, unsigned char remaining_depth, unsigned char ply, short eval, short alpha, short beta, move const& best_move, unsigned char clock )
 {
 	if( c ) {
 		key = ~key;
+	}
+
+	score_type::type t;
+	if( eval >= beta ) {
+		t = score_type::lower_bound;
+	}
+	else if( eval <= alpha ) {
+		t = score_type::upper_bound;
+	}
+	else {
+		t = score_type::exact;
+	}
+
+	// Mate score adjustment.
+	// Important: Do after determining the node type
+	if( eval > result::win_threshold ) {
+		eval += ply;
+	}
+	else if( eval < result::loss_threshold ) {
+		eval -= ply;
 	}
 
 	unsigned long long bucket_offset = (key % bucket_count_) * bucket_entries;
@@ -85,15 +105,7 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, sh
 				(static_cast<unsigned long long>(best_move.captured_piece) << 20) |
 				(static_cast<unsigned long long>(best_move.promotion) << 23) ) << field_shifts::move;
 
-	if( eval >= beta ) {
-		v |= static_cast<unsigned long long>(score_type::lower_bound) << field_shifts::node_type;
-	}
-	else if( eval <= alpha ) {
-		v |= static_cast<unsigned long long>(score_type::upper_bound) << field_shifts::node_type;
-	}
-	else {
-		v |= static_cast<unsigned long long>(score_type::exact) << field_shifts::node_type;
-	}
+	v |= static_cast<unsigned long long>(t) << field_shifts::node_type;
 	v |= static_cast<unsigned long long>(eval) << field_shifts::score;
 
 	for( unsigned int i = 0; i < bucket_entries; ++i ) {
@@ -146,7 +158,7 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, sh
 }
 
 
-score_type::type hash::lookup( hash_key key, color::type c, unsigned char remaining_depth, short alpha, short beta, short& eval, move& best_move, unsigned char clock )
+score_type::type hash::lookup( hash_key key, color::type c, unsigned char remaining_depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move, unsigned char clock )
 {
 	if( c ) {
 		key = ~key;
@@ -173,6 +185,14 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 		if( depth >= remaining_depth ) {
 			unsigned char type = (v >> field_shifts::node_type) & field_masks::node_type;
 			eval = (v >> field_shifts::score) & field_masks::score;
+
+			if( eval > result::win_threshold ) {
+				eval -= ply;
+			}
+			else if( eval < result::loss_threshold ) {
+				eval += ply;
+			}
+
 			//unsigned char age = (v >> field_shifts::age) & field_masks::age;
 
 			if( ( type == score_type::exact ) ||
