@@ -1,4 +1,5 @@
 #include "fen.hpp"
+#include "util.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -127,6 +128,26 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c )
 		return false;
 	}
 
+	if( color != "w" && color != "b" ) {
+		return false;
+	}
+	if( color == "w" ) {
+		c = color::white;
+	}
+	else {
+		c = color::black;
+	}
+
+	if( castle != "-" ) {
+		// FIXME
+		return false;
+	}
+
+	p.castle[0] = 0;
+	p.castle[1] = 0;
+
+	p.can_en_passant = 0;
+
 	for( unsigned int i = 0; i < 64; ++i ) {
 		p.board[i] = 0;
 	}
@@ -213,6 +234,8 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c )
 		++cur;
 	}
 
+
+	init_bitboards( p );
 
 	return true;
 }
