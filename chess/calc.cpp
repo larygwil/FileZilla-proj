@@ -48,6 +48,11 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 	if( evaluate_fast(p, c) != current_evaluation ) {
 		std::cerr << "FAIL EVAL!" << std::endl;
 	}
+	position p2 = p;
+	p2.init_pawn_structure();
+	if( p2.pawns.hash != p.pawns.hash ) {
+		std::cerr << "PAWN HASH FAIL" << std::endl;
+	}
 #endif
 	if( do_abort ) {
 		return result::loss;
@@ -59,72 +64,17 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 
 	int const limit = ctx.max_depth + ctx.quiescence_depth;
 
-	move tt_move;
-
-	{
-//		short eval;
-//		score_type::type t = transposition_table.lookup( hash, c, ctx.max_depth - depth + 128, alpha, beta, eval, tt_move, ctx.clock );
-//		if( t != score_type::none ) {
-//			return eval;
-//		}
-		tt_move.flags = 0; // Is this ideal?
-	}
-
-	short full_eval = evaluate_full( p, c, current_evaluation );
-
 	if( ply >= limit ) {
 		return beta;
 	}
 
-	short old_alpha = alpha;
+	short full_eval = evaluate_full( p, c, current_evaluation );
 
 	if( full_eval > alpha && !check.check ) {
 		if( full_eval >= beta ) {
 			return full_eval;
 		}
 		alpha = full_eval;
-	}
-
-	if( tt_move.flags & move_flags::valid ) {
-		position new_pos = p;
-		bool captured;
-		if( apply_move( new_pos, tt_move, c, captured ) ) {
-			check_map new_check;
-			calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
-			position::pawn_structure pawns;
-
-			if( check.check || captured ) {
-
-				unsigned long long new_hash = update_zobrist_hash( p, c, hash, tt_move );
-
-				short value;
-				if( ctx.seen.is_two_fold( new_hash, ply ) ) {
-					value = result::draw;
-				}
-				else {
-					ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
-
-					short new_eval = evaluate_move( p, c, current_evaluation, tt_move, pawns );
-
-					value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -new_eval, new_check, static_cast<color::type>(1-c), -beta, -alpha );
-				}
-
-				if( value > alpha ) {
-					alpha = value;
-
-					if( alpha >= beta ) {
-						if( !do_abort ) {
-							//transposition_table.store( hash, c, limit - depth, alpha, old_alpha, beta, tt_move, ctx.clock );
-						}
-						return alpha;
-					}
-				}
-			}
-		}
-		else {
-			std::cerr << "Possible type-1 collision in quiesence search" << std::endl;
-			tt_move.flags = 0;
-		}
 	}
 
 	move_info* moves = ctx.move_ptr;
@@ -140,10 +90,6 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 	bool got_moves = moves != ctx.move_ptr;
 
 	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
-		if( tt_move.flags & move_flags::valid && tt_move == it->m ) {
-			continue;
-		}
-
 		if( !check.check ) {
 			it->evaluation = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
 		}
@@ -163,83 +109,13 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 		else {
 			ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
 
-			/*if( alpha != old_alpha ) {
-				value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -alpha-1, -alpha );
-				if( value > alpha ) {
-					value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
-				}
-			}
-			else*/ {
-				value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
-			}
+			value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
 		}
 		if( value > alpha ) {
-			tt_move = it->m;
-
 			alpha = value;
 
 			if( alpha >= beta ) {
 				break;
-			}
-		}
-	}
-
-
-	if( 0 ) {//alpha < beta && !check.check && depth <= ctx.max_depth + 2 ) {
-		// Extension: Do try check in lower qsearch depths.
-
-		ctx.move_ptr = moves;
-
-		inverse_check_map inverse_check;
-		calc_inverse_check_map( p, c, inverse_check );
-		calculate_moves_checks( p, c, current_evaluation, ctx.move_ptr, check, inverse_check );
-		std::sort( moves, ctx.move_ptr, moveSort );
-
-		got_moves |= moves != ctx.move_ptr;
-
-		for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
-			if( tt_move.flags & move_flags::valid && tt_move == it->m ) {
-				continue;
-			}
-
-			position new_pos = p;
-			bool captured;
-			apply_move( new_pos, *it, c, captured );
-			check_map new_check;
-			calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
-
-			if( !new_check.check ) {
-				// Sadly imperfect move generator.
-				continue;
-			}
-
-			unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
-
-			short value;
-			if( ctx.seen.is_two_fold( new_hash, ply ) ) {
-				value = result::draw;
-			}
-			else {
-				ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
-
-				if( alpha != old_alpha ) {
-					value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -alpha-1, -alpha );
-					if( value > alpha ) {
-						value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
-					}
-				}
-				else {
-					value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
-				}
-			}
-			if( value > alpha ) {
-				tt_move = it->m;
-
-				alpha = value;
-
-				if( alpha >= beta ) {
-					break;
-				}
 			}
 		}
 	}
@@ -260,10 +136,6 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 				return result::draw;
 			}
 		}
-	}
-
-	if( !do_abort ) {
-		//transposition_table.store( hash, c, limit - depth + 1, alpha, old_alpha, beta, tt_move, ctx.clock );
 	}
 
 	return alpha;
