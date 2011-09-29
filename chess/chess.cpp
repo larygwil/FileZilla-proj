@@ -92,8 +92,7 @@ void auto_play()
 			reset_seen = true;
 		}
 
-		bool captured;
-		apply_move( p, m, c, captured );
+		apply_move( p, m, c );
 		int ev = evaluate_fast( p, color::white );
 		std::cerr << "Evaluation (for white): " << ev << " centipawns" << std::endl;
 
@@ -179,8 +178,7 @@ struct xboard_state
 			reset_seen = true;
 		}
 
-		bool captured;
-		apply_move( p, m, c, captured );
+		apply_move( p, m, c );
 		++clock;
 		c = static_cast<color::type>( 1 - c );
 
@@ -439,8 +437,7 @@ void go( xboard_thread& thread, xboard_state& state )
 
 			state.history.push_back( state.p );
 
-			bool captured;
-			apply_move( state.p, best_move.m, state.c, captured );
+			apply_move( state.p, best_move.m, state.c );
 			++state.clock;
 			state.c = static_cast<color::type>( 1 - state.c );
 			state.move_history_.push_back( move_to_source_target_string( best_move.m ) );
@@ -708,8 +705,7 @@ void perft( perft_ctx& ctx, int depth, position const& p, color::type c, unsigne
 
 	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
 		position new_pos = p;
-		bool captured;
-		apply_move( new_pos, *it, c, captured );
+		apply_move( new_pos, *it, c );
 		perft( ctx, depth, new_pos, static_cast<color::type>(1-c), n );
 	}
 	ctx.move_ptr = moves;

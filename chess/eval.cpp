@@ -874,7 +874,7 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 {
 	eval_fast += evaluate_pawn_shield( p, c );
 
-	eval_fast += evaluate_mobility( p, c, p.bitboards );
+	eval_fast += evaluate_mobility( p, c );
 	
 	// Adjust score based on material. The basic idea is that,
 	// given two positions with equal, non-zero score,

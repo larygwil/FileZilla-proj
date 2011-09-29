@@ -47,8 +47,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 
 	for( move_info const* it = moves; it != pm; ++it ) {
 		position new_pos = p;
-		bool captured;
-		apply_move( new_pos, *it, c, captured );
+		apply_move( new_pos, *it, c );
 
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 
@@ -86,8 +85,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 		book_entry& entry = entries[i];
 
 		position new_pos = p;
-		bool captured;
-		apply_move( new_pos, entry.m, c, captured );
+		apply_move( new_pos, entry.m, c );
 		position::pawn_structure pawns;
 		short new_eval = evaluate_move( p, c, eval, entry.m, pawns );
 
@@ -169,8 +167,7 @@ void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, see
 		}
 
 		position new_pos = p;
-		bool captured;
-		apply_move( new_pos, it->m, c, captured );
+		apply_move( new_pos, it->m, c );
 
 		std::vector<std::string> child_history = move_history;
 		child_history.push_back( move_to_source_target_string( it->m ) );
@@ -506,8 +503,7 @@ void run( book& b )
 
 				move_history.push_back( move_to_source_target_string( m ) );
 
-				bool captured;
-				apply_move( p, m, c, captured );
+				apply_move( p, m, c );
 				c = static_cast<color::type>( 1 - c );
 
 				seen.pos[++seen.root_position] = get_zobrist_hash( p );

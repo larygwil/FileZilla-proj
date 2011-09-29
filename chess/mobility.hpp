@@ -5,8 +5,8 @@
 
 #include "chess.hpp"
 
-short evaluate_mobility( position const& p, color::type c, bitboard const* bitboards );
+short evaluate_mobility( position const& p, color::type c );
 
-std::string explain_eval( position const& p, color::type c, bitboard const* bitboards );
+std::string explain_eval( position const& p, color::type c );
 
 #endif

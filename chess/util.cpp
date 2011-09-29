@@ -416,12 +416,10 @@ void init_bitboards( position& p )
 }
 
 namespace {
-static bool do_apply_move( position& p, move const& m, color::type c, bool& capture )
+static bool do_apply_move( position& p, move const& m, color::type c )
 {
 	unsigned long long const source_square = 1ull << m.source;
 	unsigned long long const target_square = 1ull << m.target;
-
-	capture = m.captured_piece != 0;
 
 	p.board[m.source] = 0;
 
@@ -533,9 +531,9 @@ static bool do_apply_move( position& p, move const& m, color::type c, bool& capt
 }
 
 
-bool apply_move( position& p, move const& m, color::type c, bool& capture )
+bool apply_move( position& p, move const& m, color::type c )
 {
-	bool ret = do_apply_move( p, m, c, capture );
+	bool ret = do_apply_move( p, m, c );
 
 	if( m.piece == pieces::pawn || m.captured_piece == pieces::pawn ) {
 		if( m.captured_piece == pieces::pawn ) {
@@ -564,9 +562,9 @@ bool apply_move( position& p, move const& m, color::type c, bool& capture )
 }
 
 
-bool apply_move( position& p, move_info const& mi, color::type c, bool& capture )
+bool apply_move( position& p, move_info const& mi, color::type c )
 {
-	bool ret = do_apply_move( p, mi.m, c, capture );
+	bool ret = do_apply_move( p, mi.m, c );
 	p.pawns = mi.pawns;
 	return ret;
 }

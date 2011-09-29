@@ -94,22 +94,27 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 			it->evaluation = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
 		}
 
-		position new_pos = p;
-		bool captured;
-		apply_move( new_pos, *it, c, captured );
-		check_map new_check;
-		calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
-
+		short value;
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 
-		short value;
 		if( ctx.seen.is_two_fold( new_hash, ply ) ) {
 			value = result::draw;
 		}
 		else {
-			ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
+			position new_pos = p;
+			apply_move( new_pos, *it, c );
+			check_map new_check;
+			calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
 
-			value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
+
+			if( ctx.seen.is_two_fold( new_hash, ply ) ) {
+				value = result::draw;
+			}
+			else {
+				ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
+
+				value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
+			}
 		}
 		if( value > alpha ) {
 			alpha = value;
@@ -214,8 +219,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 
 	if( tt_move.flags & move_flags::valid ) {
 		position new_pos = p;
-		bool captured;
-		if( apply_move( new_pos, tt_move, c, captured ) ) {
+		if( apply_move( new_pos, tt_move, c ) ) {
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, tt_move );
 			position::pawn_structure pawns;
 			short new_eval = evaluate_move( p, c, current_evaluation, tt_move, pawns );
@@ -282,8 +286,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 		}
 
 		position new_pos = p;
-		bool captured;
-		apply_move( new_pos, *it, c, captured );
+		apply_move( new_pos, *it, c );
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 		short value;
 
@@ -312,7 +315,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 			if( alpha >= beta ) {
 				ctx.pv_pool.release(cpv);
 
-				if( !captured ) {
+				if( !it->m.captured_piece ) {
 					ctx.killers[c][ply].add_killer( it->m );
 				}
 				break;
@@ -445,8 +448,7 @@ private:
 short processing_thread::processWork()
 {
 	position new_pos = p_;
-	bool captured;
-	apply_move( new_pos, m_, c_, captured );
+	apply_move( new_pos, m_, c_ );
 	unsigned long long hash = get_zobrist_hash( new_pos );
 
 	ctx_.max_depth = max_depth_;
