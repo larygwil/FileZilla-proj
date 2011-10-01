@@ -101,7 +101,7 @@ bool detect_check( position const& p, color::type c, unsigned char king, unsigne
 	unsigned long long rooks_and_queens_check = (unblocked_king_n|unblocked_king_e|unblocked_king_s|unblocked_king_w) & rooks_and_queens;
 	unsigned long long bishops_and_queens_check = (unblocked_king_ne|unblocked_king_se|unblocked_king_sw|unblocked_king_nw) & bishops_and_queens;
 
-	return rooks_and_queens_check | bishops_and_queens_check |detect_check_knights( p, c, king );
+	return rooks_and_queens_check | bishops_and_queens_check | detect_check_knights( p, c, king );
 }
 
 bool detect_check( position const& p, color::type c )
@@ -114,7 +114,7 @@ bool detect_check( position const& p, color::type c )
 }
 
 
-void calc_check_map_knight( position const& p, color::type c, check_map& map, unsigned char king, unsigned char knight )
+void calc_check_map_knight( check_map& map, unsigned char king, unsigned char knight )
 {
 	unsigned char v = 0x80 | knight;
 	map.board[knight] = v;
@@ -198,7 +198,7 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 	while( knights ) {
 		bitscan( knights, knight );
 		knights &= knights - 1;
-		calc_check_map_knight( p, c, map, king, knight );
+		calc_check_map_knight( map, king, knight );
 	}
 
 	unsigned char cv = map.board[king];
@@ -207,7 +207,7 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 
 
 namespace {
-static void process_ray_inverse( position const& p, color::type c, inverse_check_map& map, unsigned long long ray, unsigned long long ignore, unsigned long long potential_check_givers )
+static void process_ray_inverse( inverse_check_map& map, unsigned long long ray, unsigned long long ignore, unsigned long long potential_check_givers )
 {
 	potential_check_givers &= ray;
 	unsigned long long blockers = ray & ignore;
@@ -263,16 +263,16 @@ void calc_inverse_check_map( position const& p, color::type c, inverse_check_map
 	unsigned long long unblocked_king_nw = attack( king, blockers2, ray_nw );
 
 	unsigned long long rooks_and_queens = p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens];
-	process_ray_inverse( p, c, map, unblocked_king_n, ignore, rooks_and_queens );
-	process_ray_inverse( p, c, map, unblocked_king_e, ignore, rooks_and_queens );
-	process_ray_inverse( p, c, map, unblocked_king_s, ignore, rooks_and_queens );
-	process_ray_inverse( p, c, map, unblocked_king_w, ignore, rooks_and_queens );
+	process_ray_inverse( map, unblocked_king_n, ignore, rooks_and_queens );
+	process_ray_inverse( map, unblocked_king_e, ignore, rooks_and_queens );
+	process_ray_inverse( map, unblocked_king_s, ignore, rooks_and_queens );
+	process_ray_inverse( map, unblocked_king_w, ignore, rooks_and_queens );
 
 	unsigned long long bishops_and_queens = p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::queens];
-	process_ray_inverse( p, c, map, unblocked_king_ne, ignore, bishops_and_queens );
-	process_ray_inverse( p, c, map, unblocked_king_se, ignore, bishops_and_queens );
-	process_ray_inverse( p, c, map, unblocked_king_sw, ignore, bishops_and_queens );
-	process_ray_inverse( p, c, map, unblocked_king_nw, ignore, bishops_and_queens );
+	process_ray_inverse( map, unblocked_king_ne, ignore, bishops_and_queens );
+	process_ray_inverse( map, unblocked_king_se, ignore, bishops_and_queens );
+	process_ray_inverse( map, unblocked_king_sw, ignore, bishops_and_queens );
+	process_ray_inverse( map, unblocked_king_nw, ignore, bishops_and_queens );
 
 	// Mark empty squares
 	rooks &= ~p.bitboards[c].b[bb_type::all_pieces];

@@ -148,7 +148,7 @@ void add_if_legal_king( position const& p, color::type c, int const current_eval
 	do_add_move( p, c, current_evaluation, moves, killers, pieces::king, source, target, flags, captured );
 }
 
-void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, killer_moves const& killers,
+void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, killer_moves const& killers,
 					  unsigned char const& source, unsigned char const& target )
 {
 	pieces::type captured = static_cast<pieces::type>(p.board[target] & 0x0f);
@@ -171,7 +171,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 		unsigned long long king_move;
 		bitscan( king_moves, king_move );
 		king_moves &= king_moves - 1;
-		calc_moves_king( p, c, current_evaluation, moves, check, killers,
+		calc_moves_king( p, c, current_evaluation, moves, killers,
 						 king, king_move );
 	}
 

@@ -6,7 +6,7 @@
 
 #ifdef USE_STATISTICS
 
-statistics::type stats = {0};
+statistics::type stats;
 
 void print_stats( unsigned long long start, unsigned long long stop )
 {

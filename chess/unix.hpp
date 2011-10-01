@@ -83,7 +83,7 @@ void init_rw_lock( rwlock& l );
 class thread {
 public:
 	thread();
-	~thread();
+	virtual ~thread();
 
 	void spawn();
 	void join();

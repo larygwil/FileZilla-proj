@@ -173,7 +173,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 
 	{
 		short eval;
-		score_type::type t = transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move, ctx.clock );
+		score_type::type t = transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move );
 		if( t != score_type::none ) {
 			if( t == score_type::exact ) {
 				ctx.pv_pool.set_pv_move( pv, tt_move );
@@ -210,7 +210,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 		step( depth - 2, ply, ctx, p, hash, current_evaluation, c, alpha, beta, pv, false );
 
 		short eval;
-		transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move, ctx.clock );
+		transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move );
 	}
 
 	short old_alpha = alpha;

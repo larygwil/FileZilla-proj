@@ -133,6 +133,9 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, un
 		if( !pos->key ) {
 			++stats_.entries;
 		}
+		else {
+			++stats_.index_collisions;
+		}
 #endif
 		pos->key = v ^ key;
 
@@ -161,7 +164,7 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, un
 }
 
 
-score_type::type hash::lookup( hash_key key, color::type c, unsigned char remaining_depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move, unsigned char clock )
+score_type::type hash::lookup( hash_key key, color::type c, unsigned char remaining_depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move )
 {
 	if( c ) {
 		key = ~key;

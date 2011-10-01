@@ -13,7 +13,7 @@ unsigned long long timer_precision()
 
 unsigned long long get_time()
 {
-	timeval tv = {0};
+	timeval tv = {0, 0};
 	gettimeofday( &tv, 0 );
 
 	unsigned long long ret = static_cast<unsigned long long>(tv.tv_sec) * 1000 * 1000 + tv.tv_usec;
@@ -88,7 +88,7 @@ void condition::wait( scoped_lock& l, unsigned long long timeout )
 	}
 	int res;
 	do {
-		timeval tv = {0};
+		timeval tv = {0, 0};
 		gettimeofday( &tv, 0 );
 
 		timespec ts;
@@ -104,7 +104,7 @@ void condition::wait( scoped_lock& l, unsigned long long timeout )
 	signalled_ = false;
 }
 
-void condition::signal( scoped_lock& l )
+void condition::signal( scoped_lock& /*l*/ )
 {
 	signalled_ = true;
 	pthread_cond_signal( &cond_ );

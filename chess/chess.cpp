@@ -140,6 +140,7 @@ struct xboard_state
 		, history()
 		, post(true)
 		, last_mate()
+		, started_from_root()
 	{
 		reset();
 	}
@@ -168,6 +169,8 @@ struct xboard_state
 		self = color::black;
 
 		last_mate = 0;
+
+		started_from_root = true;
 	}
 
 	void apply( move const& m )
@@ -244,6 +247,8 @@ struct xboard_state
 	bool post;
 
 	short last_mate;
+
+	bool started_from_root;
 };
 
 
@@ -457,6 +462,10 @@ void go( xboard_thread& thread, xboard_state& state )
 		}
 	}
 
+	if( state.clock < 21 && state.started_from_root ) {
+		state.book_.mark_for_processing( state.move_history_ );
+	}
+
 	thread.start( start );
 }
 
@@ -666,6 +675,7 @@ void xboard()
 			state.c = new_c;
 			state.seen.pos[0] = get_zobrist_hash( state.p );
 			state.in_book = false;
+			state.started_from_root = false;
 		}
 		else {
 			move m;

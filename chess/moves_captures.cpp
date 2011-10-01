@@ -18,7 +18,7 @@ extern unsigned long long pawn_enpassant[2];
 
 namespace {
 
-void do_add_move( position const& p, color::type c, move_info*& moves, pieces::type const& pi,
+void do_add_move( move_info*& moves, pieces::type const& pi,
 				  unsigned char const& source, unsigned char const& target,
 				  int flags, pieces::type captured, promotions::type promotion = promotions::queen )
 {
@@ -35,7 +35,7 @@ void do_add_move( position const& p, color::type c, move_info*& moves, pieces::t
 }
 
 // Adds the move if it does not result in self getting into check
-void add_if_legal( position const& p, color::type c, move_info*& moves, check_map const& check,
+void add_if_legal( move_info*& moves, check_map const& check,
 				  pieces::type const& pi,
 				  unsigned char const& source, unsigned char const& target,
 				  int flags, pieces::type captured, promotions::type promotion = promotions::queen )
@@ -58,7 +58,7 @@ void add_if_legal( position const& p, color::type c, move_info*& moves, check_ma
 		}
 	}
 
-	do_add_move( p, c, moves, pi, source, target, flags, captured, promotion );
+	do_add_move( moves, pi, source, target, flags, captured, promotion );
 }
 
 void add_if_legal_king( position const& p, color::type c, move_info*& moves,
@@ -69,10 +69,10 @@ void add_if_legal_king( position const& p, color::type c, move_info*& moves,
 		return;
 	}
 
-	do_add_move( p, c, moves, pieces::king, source, target, flags, captured );
+	do_add_move( moves, pieces::king, source, target, flags, captured );
 }
 
-void calc_moves_king( position const& p, color::type c, move_info*& moves, check_map const& check,
+void calc_moves_king( position const& p, color::type c, move_info*& moves,
 					  unsigned char source, unsigned char target )
 {
 	pieces::type captured = static_cast<pieces::type>(p.board[target] & 0x0f);
@@ -80,7 +80,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 }
 
 
-void calc_moves_king( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_king( position const& p, color::type c, move_info*& moves )
 {
 	unsigned long long kings = p.bitboards[c].b[bb_type::king];
 	unsigned long long king;
@@ -95,7 +95,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 		unsigned long long i;
 		bitscan( king_moves, i );
 		king_moves &= king_moves - 1;
-		calc_moves_king( p, c, moves, check,
+		calc_moves_king( p, c, moves,
 						 king, i );
 	}
 }
@@ -114,7 +114,7 @@ void calc_moves_queen( position const& p, color::type c, move_info*& moves, chec
 		possible_moves &= possible_moves - 1;
 
 		pieces::type captured = static_cast<pieces::type>(p.board[queen_move] & 0x0f);
-		add_if_legal( p, c, moves, check, pieces::queen, queen, queen_move, move_flags::valid, captured );
+		add_if_legal( moves, check, pieces::queen, queen, queen_move, move_flags::valid, captured );
 	}
 }
 
@@ -145,7 +145,7 @@ void calc_moves_bishop( position const& p, color::type c, move_info*& moves, che
 		possible_moves &= possible_moves - 1;
 
 		pieces::type captured = static_cast<pieces::type>(p.board[bishop_move] & 0x0f);
-		add_if_legal( p, c, moves, check, pieces::bishop, bishop, bishop_move, move_flags::valid, captured );
+		add_if_legal( moves, check, pieces::bishop, bishop, bishop_move, move_flags::valid, captured );
 	}
 }
 
@@ -176,7 +176,7 @@ void calc_moves_rook( position const& p, color::type c, move_info*& moves, check
 		possible_moves &= possible_moves - 1;
 
 		pieces::type captured = static_cast<pieces::type>(p.board[rook_move] & 0x0f);
-		add_if_legal( p, c, moves, check, pieces::rook, rook, rook_move, move_flags::valid, captured );
+		add_if_legal( moves, check, pieces::rook, rook, rook_move, move_flags::valid, captured );
 	}
 }
 
@@ -193,11 +193,11 @@ void calc_moves_rooks( position const& p, color::type c, move_info*& moves, chec
 }
 
 
-void calc_moves_knight( position const& p, color::type c, move_info*& moves, check_map const& check,
+void calc_moves_knight( position const& p, move_info*& moves, check_map const& check,
 						unsigned char source, unsigned char target )
 {
 	pieces::type captured = static_cast<pieces::type>(p.board[target] & 0x0f);
-	add_if_legal( p, c, moves, check, pieces::knight, source, target, move_flags::valid, captured );
+	add_if_legal( moves, check, pieces::knight, source, target, move_flags::valid, captured );
 }
 
 void calc_moves_knight( position const& p, color::type c, move_info*& moves, check_map const& check,
@@ -208,7 +208,7 @@ void calc_moves_knight( position const& p, color::type c, move_info*& moves, che
 		unsigned long long new_knight;
 		bitscan( new_knights, new_knight );
 		new_knights &= new_knights - 1;
-		calc_moves_knight( p, c, moves, check,
+		calc_moves_knight( p, moves, check,
 						   old_knight, new_knight );
 	}
 }
@@ -298,7 +298,7 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 			}
 		}
 
-		do_add_move( p, c, moves, pieces::pawn, pawn, enpassant, move_flags::valid | move_flags::enpassant, pieces::pawn );
+		do_add_move( moves, pieces::pawn, pawn, enpassant, move_flags::valid | move_flags::enpassant, pieces::pawn );
 	}
 }
 
@@ -317,7 +317,7 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 		}
 
 		pieces::type captured = static_cast<pieces::type>( p.board[target] & 0x0f );
-		add_if_legal( p, c, moves, check, pieces::pawn, pawn, target, flags, captured );
+		add_if_legal( moves, check, pieces::pawn, pawn, target, flags, captured );
 	}
 
 	calc_moves_pawn_en_passant( p, c, moves, check, pawn );
@@ -338,7 +338,7 @@ void calc_moves_pawns( position const& p, color::type c, move_info*& moves, chec
 
 void calculate_moves_captures( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	calc_moves_king( p, c, moves, check );
+	calc_moves_king( p, c, moves );
 
 	calc_moves_pawns( p, c, moves, check );
 	calc_moves_queens( p, c, moves, check );

@@ -94,7 +94,7 @@ unsigned char conv_to_index( unsigned char s )
 	}
 }
 
-extern "C" int get_cb( void* p, int, char** data, char** names ) {
+extern "C" int get_cb( void* p, int, char** data, char** /*names*/ ) {
 	cb_data* d = reinterpret_cast<cb_data*>(p);
 
 	unsigned char si = conv_to_index( data[0][0] );
@@ -191,7 +191,7 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 
 
 namespace {
-extern "C" int count_cb( void* p, int, char** data, char** names ) {
+extern "C" int count_cb( void* p, int, char** data, char** /*names*/ ) {
 	unsigned long long* count = reinterpret_cast<unsigned long long*>(p);
 	*count = atoll( *data );
 
@@ -210,4 +210,27 @@ unsigned long long book::size()
 	sqlite3_exec( impl_->db, query.c_str(), &count_cb, reinterpret_cast<void*>(&count), 0 );
 
 	return count;
+}
+
+
+void book::mark_for_processing( std::vector<move> history )
+{
+	std::stringstream ss;
+	ss << "BEGIN TRANSACTION;";
+	while( !history.empty() ) {
+		std::string h = history_to_string( history );
+		ss << "INSERT OR IGNORE INTO position (pos) VALUES ('" << h << "');";
+		history.pop_back();
+	}
+
+	ss << "COMMIT TRANSACTION;";
+
+	std::string query = ss.str();
+
+	int res = sqlite3_exec( impl_->db, query.c_str(), 0, 0, 0 );
+
+	if( res != SQLITE_OK ) {
+		std::cerr << "Database failure" << std::endl;
+		abort();
+	}
 }

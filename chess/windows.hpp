@@ -63,7 +63,7 @@ private:
 class thread {
 public:
 	thread();
-	~thread();
+	virtual ~thread();
 
 	void spawn();
 	void join();

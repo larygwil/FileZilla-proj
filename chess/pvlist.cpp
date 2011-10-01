@@ -160,7 +160,7 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 		}
 		move best;
 		short ev;
-		score_type::type s = transposition_table.lookup( hash, c, r, 0, result::loss, result::win, ev, best, 0 );
+		score_type::type s = transposition_table.lookup( hash, c, r, 0, result::loss, result::win, ev, best );
 		if( s != score_type::exact || !(best.flags & move_flags::valid) ) {
 			break;
 		}

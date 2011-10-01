@@ -68,7 +68,7 @@ void add_if_legal_king( position const& p, color::type c, int const current_eval
 	do_add_move( p, c, current_evaluation, moves, pieces::king, source, target, flags );
 }
 
-void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check,
+void calc_moves_king( position const& p, color::type c, int const current_evaluation, move_info*& moves,
 					  inverse_check_map const& inverse_check,
 					  unsigned char source, unsigned char target )
 {
@@ -93,7 +93,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 		unsigned long long king_move;
 		bitscan( king_moves, king_move );
 		king_moves &= king_moves - 1;
-		calc_moves_king( p, c, current_evaluation, moves, check,
+		calc_moves_king( p, c, current_evaluation, moves,
 						 inverse_check,
 						 king, king_move );
 	}
