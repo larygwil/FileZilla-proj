@@ -28,9 +28,22 @@ void print_stats( unsigned long long start, unsigned long long stop )
 
 	std::cerr << "- Number of entries: " << s.entries << std::endl;
 	std::cerr << "- Fill level:        " << static_cast<double>(s.entries) / transposition_table.max_hash_entry_count() << std::endl;
-	std::cerr << "- Lookup misses:     " << s.misses << std::endl;
-	std::cerr << "- Lookup hits:       " << s.hits << std::endl;
-	std::cerr << "- Lookup best moves: " << s.best_move << std::endl;
+	std::cerr << "- Lookup misses:     " << s.misses;
+	if( s.misses + s.hits + s.best_move ) {
+		std::cerr << " (" << static_cast<double>(s.misses) / (s.misses + s.hits + s.best_move) * 100 << "%)";
+	}
+	std::cerr << std::endl;
+	std::cerr << "- Lookup hits:       " << s.hits;
+	if( s.misses + s.hits + s.best_move ) {
+		std::cerr << " (" << static_cast<double>(s.hits) / (s.misses + s.hits + s.best_move) * 100 << "%)";
+	}
+	std::cerr << std::endl;
+	std::cerr << "- Lookup best moves: " << s.best_move;
+	if( s.misses + s.hits + s.best_move ) {
+		std::cerr << " (" << static_cast<double>(s.best_move) / (s.misses + s.hits + s.best_move) * 100 << "%)";
+	}
+	std::cerr << std::endl;
+	std::cerr << "- Index collisions:  " << s.index_collisions << std::endl;
 
 	pawn_structure_hash_table::stats ps = pawn_hash_table.get_stats(true);
 

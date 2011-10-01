@@ -120,12 +120,14 @@ public:
 			, hits()
 			, best_move()
 			, misses()
+			, index_collisions()
 		{}
 
 		unsigned long long entries;
 		unsigned long long hits;
 		unsigned long long best_move;
 		unsigned long long misses;
+		unsigned long long index_collisions;
 	};
 
 	stats get_stats( bool reset );

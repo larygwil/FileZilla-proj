@@ -153,6 +153,9 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, un
 	if( !pos->key ) {
 		++stats_.entries;
 	}
+	else {
+		++stats_.index_collisions;
+	}
 #endif
 	pos->key = v ^ key;
 }
@@ -234,6 +237,7 @@ hash::stats hash::get_stats(bool reset)
 	if( reset ) {
 		stats_.hits = 0;
 		stats_.misses = 0;
+		stats_.index_collisions = 0;
 		stats_.best_move = 0;
 	}
 	return ret;
