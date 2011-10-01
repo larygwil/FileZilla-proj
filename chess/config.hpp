@@ -24,6 +24,8 @@ struct config
 	int random_seed;
 
 	std::string logfile;
+
+	bool ponder;
 };
 extern config conf;
 

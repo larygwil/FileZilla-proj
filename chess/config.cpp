@@ -12,7 +12,8 @@ config::config()
   depth(-1),
   quiescence_depth(MAX_QDEPTH),
   time_limit(3600*1000), // In ms
-  random_seed(-1) //-1 == based on time
+  random_seed(-1), //-1 == based on time
+  ponder()
 {}
 
 int config::init( int argc,  char const* argv[] )
@@ -97,6 +98,9 @@ int config::init( int argc,  char const* argv[] )
 				exit(1);
 			}
 			conf.logfile = argv[i];
+		}
+		else if( !strcmp(argv[i], "--ponder" ) ) {
+			conf.ponder = true;
 		}
 		else {
 			std::cerr << "Unknown argument " << argv[i] << std::endl;

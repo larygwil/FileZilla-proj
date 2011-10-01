@@ -320,6 +320,7 @@ void xboard_thread::onRun()
 		return;
 	}
 
+	bool ponder = false;
 	if( success ) {
 
 		std::cout << "move " << move_to_string( state.p, state.c, m ) << std::endl;
@@ -335,6 +336,9 @@ void xboard_thread::onRun()
 
 		if( res > result::win_threshold ) {
 			state.last_mate = res;
+		}
+		else {
+			ponder = conf.ponder;
 		}
 	}
 	else {
@@ -357,6 +361,11 @@ void xboard_thread::onRun()
 		state.bonus_time = 0;
 	}
 	state.time_remaining -= elapsed;
+
+	if( ponder ) {
+		l.unlock();
+		calc( state.p, state.c, m, res, 0, state.time_remaining, state.clock, state.seen, state.last_mate, *this );
+	}
 }
 
 
