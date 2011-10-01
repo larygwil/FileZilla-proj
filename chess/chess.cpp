@@ -194,7 +194,7 @@ struct xboard_state
 			std::cout << "1/2-1/2 (Draw)" << std::endl;
 		}
 
-		move_history_.push_back( move_to_source_target_string( m ) );
+		move_history_.push_back( m );
 	}
 
 	bool undo( unsigned int count )
@@ -239,7 +239,7 @@ struct xboard_state
 	unsigned long long time_increment;
 
 	std::list<position> history;
-	std::vector<std::string> move_history_;
+	std::vector<move> move_history_;
 
 	bool post;
 
@@ -449,7 +449,7 @@ void go( xboard_thread& thread, xboard_state& state )
 			apply_move( state.p, best_move.m, state.c );
 			++state.clock;
 			state.c = static_cast<color::type>( 1 - state.c );
-			state.move_history_.push_back( move_to_source_target_string( best_move.m ) );
+			state.move_history_.push_back( best_move.m );
 
 			unsigned long long stop = get_time();
 			state.time_remaining -= stop - start;

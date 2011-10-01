@@ -22,7 +22,7 @@ int const MAX_BOOKSEARCH_DEPTH = 12;
 
 unsigned int const MAX_BOOK_DEPTH = 10;
 
-bool calculate_position( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<std::string> const& move_history )
+bool calculate_position( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history )
 {
 	short eval = evaluate_fast( p, c );
 
@@ -120,7 +120,7 @@ void init_book( book& b )
 	seen_positions seen;
 	seen.pos[0] = get_zobrist_hash( p );
 
-	std::vector<std::string> move_history;
+	std::vector<move> move_history;
 
 	if( !calculate_position( b, p, color::white, seen, move_history ) ) {
 		std::cerr << "Could not save position" << std::endl;
@@ -129,7 +129,7 @@ void init_book( book& b )
 }
 
 struct work {
-	std::vector<std::string> move_history;
+	std::vector<move> move_history;
 	seen_positions seen;
 	position p;
 	color::type c;
@@ -156,7 +156,7 @@ struct worklist {
 };
 
 
-void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, seen_positions const& seen, std::vector<std::string> const& move_history, position const& p, color::type c )
+void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, seen_positions const& seen, std::vector<move> const& move_history, position const& p, color::type c )
 {
 	std::vector<book_entry> moves = b.get_entries( p, c, move_history );
 
@@ -169,8 +169,8 @@ void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, see
 		position new_pos = p;
 		apply_move( new_pos, it->m, c );
 
-		std::vector<std::string> child_history = move_history;
-		child_history.push_back( move_to_source_target_string( it->m ) );
+		std::vector<move> child_history = move_history;
+		child_history.push_back( it->m );
 		std::vector<book_entry> child_moves = b.get_entries( new_pos, static_cast<color::type>(1-c), child_history );
 
 		seen_positions child_seen = seen;
@@ -274,7 +274,7 @@ void processing_thread::onRun()
 }
 }
 
-void go( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<std::string> const& move_history, unsigned int max_depth, unsigned int max_width )
+void go( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history, unsigned int max_depth, unsigned int max_width )
 {
 	mutex mtx;
 	condition cond;
@@ -423,7 +423,7 @@ void run( book& b )
 	position p;
 	init_board( p );
 
-	std::vector<std::string> move_history;
+	std::vector<move> move_history;
 	std::vector<history_entry> history;
 
 	seen_positions seen;
@@ -501,7 +501,7 @@ void run( book& b )
 				h.m = m;
 				history.push_back( h );
 
-				move_history.push_back( move_to_source_target_string( m ) );
+				move_history.push_back( m );
 
 				apply_move( p, m, c );
 				c = static_cast<color::type>( 1 - c );

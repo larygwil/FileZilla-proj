@@ -26,10 +26,10 @@ public:
 	bool is_open() const;
 
 	// Returned entries are sorted by forecast, highest first.
-	std::vector<book_entry> get_entries( position const& p, color::type c, std::vector<std::string> const& history );
+	std::vector<book_entry> get_entries( position const& p, color::type c, std::vector<move> const& history );
 
 	// Entries do not have to be sorted
-	bool add_entries( std::vector<std::string> const& history, std::vector<book_entry> entries );
+	bool add_entries( std::vector<move> const& history, std::vector<book_entry> entries );
 
 	unsigned long long size();
 

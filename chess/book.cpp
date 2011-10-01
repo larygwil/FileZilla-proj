@@ -8,11 +8,31 @@
 #include <sstream>
 
 namespace {
-std::string history_to_string( std::vector<std::string> const& history )
+unsigned char const table[64] = {
+  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
+  'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
+  'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
+  'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F',
+  'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+  'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+  'W', 'X', 'Y', 'Z', '0', '1', '2', '3',
+  '4', '5', '6', '7', '8', '9', ',', '.' };
+
+
+std::string move_to_book_string( move const& m )
 {
 	std::string ret;
-	for( std::vector<std::string>::const_iterator it = history.begin(); it != history.end(); ++it ) {
-		ret += *it;
+	ret += table[m.source];
+	ret += table[m.target];
+	return ret;
+}
+
+
+std::string history_to_string( std::vector<move> const& history )
+{
+	std::string ret;
+	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
+		ret += move_to_book_string(*it);
 	}
 
 	return ret;
@@ -55,11 +75,39 @@ struct cb_data {
 	color::type c;
 };
 
+unsigned char conv_to_index( unsigned char s )
+{
+	if( s >= 'a' && s <= 'z' ) {
+		return s - 'a';
+	}
+	else if( s >= 'A' && s <= 'Z' ) {
+		return s - 'A' + 26;
+	}
+	else if( s >= '0' && s <= '-' ) {
+		return s - '0' + 26 + 26;
+	}
+	else if( s == ',' ) {
+		return 62;
+	}
+	else {//if( s == ',' ) {
+		return 63;
+	}
+}
+
 extern "C" int get_cb( void* p, int, char** data, char** names ) {
 	cb_data* d = reinterpret_cast<cb_data*>(p);
 
+	unsigned char si = conv_to_index( data[0][0] );
+	unsigned char ti = conv_to_index( data[0][1] );
+
+	char ms[5] = {0};
+	ms[0] = (si % 8) + 'a';
+	ms[1] = (si / 8) + '1';
+	ms[2] = (ti % 8) + 'a';
+	ms[3] = (ti / 8) + '1';
+
 	move m;
-	if( !parse_move( d->p, d->c, data[0], m ) ) {
+	if( !parse_move( d->p, d->c, ms, m ) ) {
 		return 1;
 	}
 
@@ -83,7 +131,7 @@ extern "C" int get_cb( void* p, int, char** data, char** names ) {
 }
 
 
-std::vector<book_entry> book::get_entries( position const& p, color::type c, std::vector<std::string> const& history )
+std::vector<book_entry> book::get_entries( position const& p, color::type c, std::vector<move> const& history )
 {
 	std::vector<book_entry> ret;
 
@@ -113,7 +161,7 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 }
 
 
-bool book::add_entries( std::vector<std::string> const& history, std::vector<book_entry> entries )
+bool book::add_entries( std::vector<move> const& history, std::vector<book_entry> entries )
 {
 	std::sort( entries.begin(), entries.end() );
 
@@ -124,7 +172,7 @@ bool book::add_entries( std::vector<std::string> const& history, std::vector<boo
 	std::stringstream ss;
 	ss << "BEGIN TRANSACTION;";
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
-		std::string m = move_to_source_target_string( it->m );
+		std::string m = move_to_book_string( it->m );
 		ss << "INSERT OR IGNORE INTO position (pos) VALUES ('" << h << "');";
 		ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth) VALUES ((SELECT id FROM position WHERE pos='" << h << "'), '" << m << "', " << it->forecast << ", " << it->search_depth << ");";
 	}
