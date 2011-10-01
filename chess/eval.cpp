@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+extern unsigned long long king_pawn_shield[2][64];
+
 namespace special_values {
 enum type
 {
@@ -807,46 +809,17 @@ unsigned char const shield_const = 5;
  *
  * Special case: a and h file. There b and g also count twice.
  */
-short evaluate_pawn_shield_side( position const& p, color::type c )
+static short evaluate_pawn_shield_side( position const& p, color::type c )
 {
 	short ev = 0;
 
-	int const y = c ? 40 : 8;
 
 	unsigned long long kings = p.bitboards[c].b[bb_type::king];
 	unsigned long long king;
 	bitscan( kings, king );
 
-	unsigned char king_col = static_cast<unsigned char>( king % 8 );
-	unsigned char king_row = static_cast<unsigned char>( king / 8 );
-
-	if( king_row == (c ? 7 : 0) ) {
-		if( p.bitboards[c].b[bb_type::pawns] & (9ull << (king_col + y) ) ) {
-			ev += special_values::pawn_shield * 2;
-		}
-		if( king_col ) {
-			if( p.bitboards[c].b[bb_type::pawns] & (9ull << (king_col - 1 + y) ) ) {
-				if( king_col == 7 ) {
-					ev += special_values::pawn_shield * 2;
-				}
-				else {
-					ev += special_values::pawn_shield;
-				}
-			}
-		}
-		if( king_col != 7 ) {
-			if( p.bitboards[c].b[bb_type::pawns] & (9ull << (king_col + 1 + y) ) ) {
-				if( king_col == 0 ) {
-					ev += special_values::pawn_shield * 2;
-				}
-				else {
-					ev += special_values::pawn_shield;
-				}
-			}
-		}
-	}
-
-	return ev;
+	unsigned long long shield = king_pawn_shield[c][king] & p.bitboards[c].b[bb_type::pawns];
+	return special_values::pawn_shield * popcount(shield);
 }
 
 
