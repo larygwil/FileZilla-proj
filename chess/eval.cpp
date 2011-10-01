@@ -811,9 +811,6 @@ unsigned char const shield_const = 5;
  */
 static short evaluate_pawn_shield_side( position const& p, color::type c )
 {
-	short ev = 0;
-
-
 	unsigned long long kings = p.bitboards[c].b[bb_type::king];
 	unsigned long long king;
 	bitscan( kings, king );

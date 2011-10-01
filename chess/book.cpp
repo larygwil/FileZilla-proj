@@ -12,9 +12,6 @@ std::string history_to_string( std::vector<std::string> const& history )
 {
 	std::string ret;
 	for( std::vector<std::string>::const_iterator it = history.begin(); it != history.end(); ++it ) {
-		if( it != history.begin() ) {
-			ret += " ";
-		}
 		ret += *it;
 	}
 
@@ -103,7 +100,7 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 
 	std::string h = history_to_string( history );
 
-	std::string query = "SELECT move, forecast, searchdepth FROM book WHERE position='" + h + "'";
+	std::string query = "SELECT move, forecast, searchdepth FROM book WHERE position = (SELECT id FROM position WHERE pos ='" + h + "') ORDER BY forecast DESC,searchdepth DESC";
 
 	int res = sqlite3_exec( impl_->db, query.c_str(), &get_cb, reinterpret_cast<void*>(&data), 0 );
 
@@ -128,7 +125,8 @@ bool book::add_entries( std::vector<std::string> const& history, std::vector<boo
 	ss << "BEGIN TRANSACTION;";
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 		std::string m = move_to_source_target_string( it->m );
-		ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth) VALUES ('" << h << "', '" << m << "', " << it->forecast << ", " << it->search_depth << ");";
+		ss << "INSERT OR IGNORE INTO position (pos) VALUES ('" << h << "');";
+		ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth) VALUES ((SELECT id FROM position WHERE pos='" << h << "'), '" << m << "', " << it->forecast << ", " << it->search_depth << ");";
 	}
 	ss << "COMMIT TRANSACTION;";
 
@@ -158,7 +156,7 @@ unsigned long long book::size()
 {
 	scoped_lock l(impl_->mtx);
 
-	std::string query = "SELECT COUNT(DISTINCT position) FROM book;";
+	std::string query = "SELECT COUNT(id) FROM position;";
 
 	unsigned long long count = 0;
 	sqlite3_exec( impl_->db, query.c_str(), &count_cb, reinterpret_cast<void*>(&count), 0 );
