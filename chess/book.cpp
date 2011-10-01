@@ -83,13 +83,13 @@ unsigned char conv_to_index( unsigned char s )
 	else if( s >= 'A' && s <= 'Z' ) {
 		return s - 'A' + 26;
 	}
-	else if( s >= '0' && s <= '-' ) {
+	else if( s >= '0' && s <= '9' ) {
 		return s - '0' + 26 + 26;
 	}
 	else if( s == ',' ) {
 		return 62;
 	}
-	else {//if( s == ',' ) {
+	else {//if( s == '.' ) {
 		return 63;
 	}
 }
