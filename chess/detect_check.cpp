@@ -2,7 +2,7 @@
 #include "detect_check.hpp"
 #include "sliding_piece_attacks.hpp"
 
-extern unsigned long long pawn_control[2][64];
+extern unsigned long long const pawn_control[2][64];
 
 extern unsigned long long const possible_knight_moves[64] = {
 	0x0000000000020400ull,
@@ -217,7 +217,7 @@ static void process_ray_inverse( inverse_check_map& map, unsigned long long ray,
 		bitscan( blockers, blocker );
 
 		unsigned long long cpi;
-		bitscan( potential_check_givers, cpi )
+		bitscan( potential_check_givers, cpi );
 
 		map.board[blocker] = cpi | 0x80;
 	}

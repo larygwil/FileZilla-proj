@@ -43,6 +43,10 @@ std::string history_to_string( std::vector<move> const& history )
 class book::impl
 {
 public:
+	impl() : db()
+	{
+	}
+
 	mutex mtx;
 	sqlite3* db;
 };
@@ -50,7 +54,7 @@ public:
 book::book( std::string const& book_dir )
 	: impl_( new impl )
 {
-	std::string fn( book_dir + "/opening_book.db" );
+	std::string fn( book_dir + "opening_book.db" );
 	sqlite3_open( fn.c_str(), &impl_->db );
 }
 

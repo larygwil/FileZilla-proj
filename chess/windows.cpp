@@ -42,12 +42,29 @@ scoped_lock::scoped_lock( mutex& m )
 	: m_(m)
 {
 	EnterCriticalSection( &m.cs_ );
+	locked_ = true;
 }
 
 
 scoped_lock::~scoped_lock()
 {
+	if( locked_ ) {
+		LeaveCriticalSection( &m_.cs_ );
+	}
+}
+
+
+void scoped_lock::lock()
+{
+	EnterCriticalSection( &m_.cs_ );
+	locked_ = true;
+}
+
+
+void scoped_lock::unlock()
+{
 	LeaveCriticalSection( &m_.cs_ );
+	locked_ = false;
 }
 
 

@@ -39,9 +39,13 @@ public:
 	scoped_lock( mutex& m );
 	~scoped_lock();
 
+	void lock();
+	void unlock();
+
 private:
 	friend class condition;
 	mutex& m_;
+	bool locked_;
 };
 
 
@@ -84,11 +88,21 @@ inline void bitscan( unsigned long long mask, unsigned long long& index )
 	index = static_cast<unsigned long long >(i);
 }
 
+inline void bitscan_reverse( unsigned long long mask, unsigned long long& index )
+{
+	unsigned long i;
+	_BitScanReverse64( &i, mask );
+
+	index = static_cast<unsigned long long >(i);
+}
+
 int get_cpu_count();
 
 // In MiB
 int get_system_memory();
 
 #define popcount __popcnt64
+
+#define atoll _atoi64
 
 #endif

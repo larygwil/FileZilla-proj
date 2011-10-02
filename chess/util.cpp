@@ -384,7 +384,7 @@ void init_board( position& p )
 	p.init_pawn_structure();
 }
 
-extern unsigned long long pawn_control[2][64];
+extern unsigned long long const pawn_control[2][64];
 
 void init_bitboards( position& p )
 {

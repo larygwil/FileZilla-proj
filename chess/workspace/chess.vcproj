@@ -60,6 +60,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				StackReserveSize="10485760"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -120,7 +121,7 @@
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="2"
+				EnableEnhancedInstructionSet="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -136,6 +137,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				StackReserveSize="10485760"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="17"
@@ -196,6 +198,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\fen.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\hash.cpp"
 				>
 			</File>
@@ -225,6 +231,10 @@
 			</File>
 			<File
 				RelativePath="..\pvlist.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\sqlite\sqlite3.c"
 				>
 			</File>
 			<File
@@ -275,6 +285,10 @@
 			</File>
 			<File
 				RelativePath="..\eval.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\fen.hpp"
 				>
 			</File>
 			<File
@@ -332,10 +346,6 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 		</Filter>
-		<File
-			RelativePath=".\ClassDiagram1.cd"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

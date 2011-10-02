@@ -9,7 +9,7 @@
 #include <iostream>
 #include <string>
 
-extern unsigned long long pawn_control[2][64];
+extern unsigned long long const pawn_control[2][64];
 
 unsigned long long pawn_enpassant[2] = {
 	0x0000ff0000000000ull,
@@ -332,7 +332,7 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, int const cur
 	unsigned long long enpassants = pawn_control[c][pawn] & enpassantable & pawn_enpassant[c];
 	if( enpassants ) {
 		unsigned long long enpassant;
-		bitscan( enpassants, enpassant )
+		bitscan( enpassants, enpassant );
 
 		unsigned char new_col = enpassant % 8;
 

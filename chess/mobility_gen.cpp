@@ -133,7 +133,7 @@ int main()
 	}
 
 	{
-		std::cout << "unsigned long long pawn_control[2][64] = {" << std::endl;
+		std::cout << "extern unsigned long long const pawn_control[2][64] = {" << std::endl;
 
 		for( int c = 0; c < 2; ++c ) {
 			std::cout << "\t{" << std::endl;

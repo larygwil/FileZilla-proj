@@ -29,6 +29,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "zobrist.hpp"
 #include "logger.hpp"
 
+#include <algorithm>
 #include <list>
 #include <iostream>
 #include <iomanip>
@@ -442,7 +443,7 @@ void go( xboard_thread& thread, xboard_state& state )
 				if( it->forecast > -33 && it->forecast + 25 >= best && count_best < 3 ) {
 					++count_best;
 				}
-				std::cerr << move_to_string( state.p, state.c, it->m ) << " " << it->forecast << std::endl;
+				std::cerr << move_to_string( state.p, state.c, it->m ) << " " << it->forecast << " (" << moves.front().search_depth << ")" << std::endl;
 			}
 
 			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
@@ -785,9 +786,24 @@ void perft()
 int main( int argc, char const* argv[] )
 {
 	std::string self = argv[0];
+#if _MSC_VER
+	std::replace( self.begin(), self.end(), '\\', '/' );
+#endif
 	if( self.rfind('/') != std::string::npos ) {
 		book_dir = self.substr( 0, self.rfind('/') + 1 );
 	}
+#if _MSC_VER
+	if( 1){//GetFileAttributes( (book_dir + "/opening_book.db").c_str() ) == INVALID_FILE_ATTRIBUTES ) {
+		char buffer[MAX_PATH];
+		GetModuleFileName( 0, buffer, MAX_PATH );
+		buffer[MAX_PATH - 1] = 0;
+		book_dir = buffer;
+		std::replace( book_dir.begin(), book_dir.end(), '\\', '/' );
+		if( book_dir.rfind('/') != std::string::npos ) {
+			book_dir = book_dir.substr( 0, book_dir.rfind('/') + 1 );
+		}
+	}
+#endif
 
 	console_init();
 

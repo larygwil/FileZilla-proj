@@ -233,7 +233,7 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 	unsigned long long enpassants = pawn_control[c][pawn] & enpassantable & pawn_enpassant[c];
 	if( enpassants ) {
 		unsigned long long enpassant;
-		bitscan( enpassants, enpassant )
+		bitscan( enpassants, enpassant );
 
 		unsigned char new_col = enpassant % 8;
 
