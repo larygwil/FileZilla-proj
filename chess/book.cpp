@@ -1,5 +1,6 @@
 #include "book.hpp"
 #include "util.hpp"
+#include "zobrist.hpp"
 
 #include "sqlite/sqlite3.h"
 
@@ -94,11 +95,10 @@ unsigned char conv_to_index( unsigned char s )
 	}
 }
 
-extern "C" int get_cb( void* p, int, char** data, char** /*names*/ ) {
-	cb_data* d = reinterpret_cast<cb_data*>(p);
 
-	unsigned char si = conv_to_index( data[0][0] );
-	unsigned char ti = conv_to_index( data[0][1] );
+bool conv_to_move( position const& p, color::type c, move& m, char const* data ) {
+	unsigned char si = conv_to_index( data[0] );
+	unsigned char ti = conv_to_index( data[1] );
 
 	char ms[5] = {0};
 	ms[0] = (si % 8) + 'a';
@@ -106,8 +106,18 @@ extern "C" int get_cb( void* p, int, char** data, char** /*names*/ ) {
 	ms[2] = (ti % 8) + 'a';
 	ms[3] = (ti / 8) + '1';
 
+	if( !parse_move( p, c, ms, m ) ) {
+		return false;
+	}
+
+	return true;
+}
+
+extern "C" int get_cb( void* p, int, char** data, char** /*names*/ ) {
+	cb_data* d = reinterpret_cast<cb_data*>(p);
+
 	move m;
-	if( !parse_move( d->p, d->c, ms, m ) ) {
+	if( !conv_to_move( d->p, d->c, m, data[0] ) ) {
 		return 1;
 	}
 
@@ -215,6 +225,8 @@ unsigned long long book::size()
 
 void book::mark_for_processing( std::vector<move> history )
 {
+	scoped_lock l(impl_->mtx);
+
 	std::stringstream ss;
 	ss << "BEGIN TRANSACTION;";
 	while( !history.empty() ) {
@@ -234,3 +246,59 @@ void book::mark_for_processing( std::vector<move> history )
 		abort();
 	}
 }
+
+
+namespace {
+extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
+{
+	std::list<work>* wl = reinterpret_cast<std::list<work>*>(p);
+
+	std::string pos = *data;
+	if( pos.length() % 2 ) {
+		return 1;
+	}
+
+	work w;
+	init_board( w.p );
+	w.c = color::white;
+	w.seen.pos[0] = get_zobrist_hash(w.p);
+
+	while( !pos.empty() ) {
+		std::string ms = pos.substr( 0, 2 );
+		pos = pos.substr( 2 );
+
+		move m;
+		if( !conv_to_move( w.p, w.c, m, ms.c_str() ) ) {
+			return 1;
+		}
+
+		apply_move( w.p, m, w.c );
+		w.c = static_cast<color::type>(1-w.c);
+		w.move_history.push_back( m );
+		w.seen.pos[++w.seen.root_position] = get_zobrist_hash(w.p);
+	}
+
+	wl->push_back( w );
+
+	return 0;
+}
+}
+
+
+std::list<work> book::get_unprocessed_positions()
+{
+	std::list<work> ret;
+
+	scoped_lock l(impl_->mtx);
+
+	std::string query = "select pos from position where id not in (select distinct(position) from book);";
+
+	int res = sqlite3_exec( impl_->db, query.c_str(), &work_cb, reinterpret_cast<void*>(&ret), 0 );
+	if( res != SQLITE_OK && res != SQLITE_DONE ) {
+		abort();
+	}
+
+	return ret;
+}
+
+

@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <deque>
+#include <list>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -56,7 +57,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 			value = 0;
 		}
 		else {
-			ctx.seen.pos[ctx.seen.root_position + 1] = new_hash;
+			ctx.seen.pos[++ctx.seen.root_position] = new_hash;
 
 			pv_entry* pv = ctx.pv_pool.get();
 			value = -step(ctx.max_depth, 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
@@ -96,7 +97,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 			value = 0;
 		}
 		else {
-			ctx.seen.pos[ctx.seen.root_position + 1] = new_hash;
+			ctx.seen.pos[++ctx.seen.root_position] = new_hash;
 			pv_entry* pv = ctx.pv_pool.get();
 			value = -step( ctx.max_depth, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
 			ctx.pv_pool.release(pv);
@@ -127,13 +128,6 @@ void init_book( book& b )
 		exit(1);
 	}
 }
-
-struct work {
-	std::vector<move> move_history;
-	seen_positions seen;
-	position p;
-	color::type c;
-};
 
 struct worklist {
 	worklist() : next_work(), count()
@@ -274,6 +268,7 @@ void processing_thread::onRun()
 }
 }
 
+
 void go( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history, unsigned int max_depth, unsigned int max_width )
 {
 	mutex mtx;
@@ -325,6 +320,7 @@ void go( book& b, position const& p, color::type c, seen_positions const& seen, 
 			int t;
 			for( t = 0; t < thread_count; ++t ) {
 				if( threads[t]->spawned() ) {
+					all_idle = false;
 					continue;
 				}
 
@@ -374,6 +370,89 @@ void go( book& b, position const& p, color::type c, seen_positions const& seen, 
 		std::cerr << "All done" << std::endl;
 	}
 }
+
+
+void process( book& b )
+{
+	std::list<work> wl = b.get_unprocessed_positions();
+	if( wl.empty() ) {
+		return;
+	}
+
+	std::cerr << "Got " << wl.size() << " positions to calculate" << std::endl;
+
+	mutex mtx;
+	condition cond;
+
+	std::vector<processing_thread*> threads;
+	int thread_count = conf.thread_count;
+	for( int t = 0; t < thread_count; ++t ) {
+		threads.push_back( new processing_thread( b, mtx, cond ) );
+	}
+
+	scoped_lock l(mtx);
+
+	bool all_idle = true;
+
+	unsigned long long start = get_time();
+	unsigned long long calculated = 0;
+
+	while( true ) {
+
+		while( !wl.empty() ) {
+
+			int t;
+			for( t = 0; t < thread_count; ++t ) {
+				if( threads[t]->spawned() ) {
+					continue;
+				}
+
+				work w = wl.front();
+				wl.pop_front();
+				threads[t]->process( w );
+				all_idle = false;
+				if( wl.empty() ) {
+					break;
+				}
+			}
+			if( t == thread_count ) {
+				break;
+			}
+		}
+		if( all_idle ) {
+			break;
+		}
+
+		cond.wait( l );
+
+		all_idle = true;
+		for( int t = 0; t < thread_count; ++t ) {
+			if( !threads[t]->spawned() ) {
+				continue;
+			}
+
+			if( !threads[t]->finished() ) {
+				all_idle = false;
+				continue;
+			}
+
+			threads[t]->join();
+
+			++calculated;
+			unsigned long long now = get_time();
+			std::cerr << std::endl << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) * timer_precision() / (now - start) << " moves/hour" << std::endl;
+		}
+
+		if( all_idle && stop ) {
+			break;
+		}
+	}
+
+	if( !stop ) {
+		std::cerr << "All done" << std::endl;
+	}
+}
+
 
 void print_pos( position const& p, color::type c, std::vector<book_entry> const& moves )
 {
@@ -451,6 +530,9 @@ void run( book& b )
 		if( line == "go" ) {
 			go( b, p, c, seen, move_history, max_depth, max_width );
 			return;
+		}
+		else if( line == "process" ) {
+			process( b );
 		}
 		else if( line == "size" ) {
 			std::cout << "Distinct entries: " << b.size() << std::endl;

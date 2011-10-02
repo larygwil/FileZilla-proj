@@ -34,7 +34,7 @@ bool validate_move( position const& p, move const& m, color::type c )
 	return false;
 }
 
-bool parse_move( position& p, color::type c, std::string const& line, move& m )
+bool parse_move( position const& p, color::type c, std::string const& line, move& m )
 {
 	std::string str = line;
 	std::size_t len = str.size();

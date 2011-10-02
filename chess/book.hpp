@@ -1,8 +1,10 @@
 #ifndef __BOOK_H__
 #define __BOOK_H__
 
+#include "calc.hpp"
 #include "chess.hpp"
 
+#include <list>
 #include <string>
 #include <vector>
 
@@ -16,6 +18,15 @@ struct book_entry
 		return forecast > rhs.forecast;
 	}
 };
+
+
+struct work {
+	std::vector<move> move_history;
+	seen_positions seen;
+	position p;
+	color::type c;
+};
+
 
 class book
 {
@@ -34,6 +45,8 @@ public:
 	void mark_for_processing( std::vector<move> history );
 
 	unsigned long long size();
+
+	std::list<work> get_unprocessed_positions();
 
 private:
 	class impl;
