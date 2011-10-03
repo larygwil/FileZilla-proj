@@ -634,8 +634,8 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 					break;
 				}
 
-				int t;
-				for( t = 0; t < conf.thread_count; ++t ) {
+				std::size_t t;
+				for( t = 0; t < threads.size(); ++t ) {
 					if( !threads[t]->is_idle() ) {
 						continue;
 					}
@@ -649,7 +649,7 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 					break;
 				}
 
-				if( t == conf.thread_count ) {
+				if( t == threads.size() ) {
 					break;
 				}
 			}
@@ -672,7 +672,7 @@ break2:
 			}
 
 			bool all_idle = true;
-			for( int t = 0; t < conf.thread_count; ++t ) {
+			for( std::size_t t = 0; t < threads.size(); ++t ) {
 
 				if( threads[t]->got_results() ) {
 					got_first_result = true;
