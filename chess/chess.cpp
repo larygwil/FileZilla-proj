@@ -793,7 +793,7 @@ int main( int argc, char const* argv[] )
 		book_dir = self.substr( 0, self.rfind('/') + 1 );
 	}
 #if _MSC_VER
-	if( 1){//GetFileAttributes( (book_dir + "/opening_book.db").c_str() ) == INVALID_FILE_ATTRIBUTES ) {
+	if( GetFileAttributes( (book_dir + "/opening_book.db").c_str() ) == INVALID_FILE_ATTRIBUTES ) {
 		char buffer[MAX_PATH];
 		GetModuleFileName( 0, buffer, MAX_PATH );
 		buffer[MAX_PATH - 1] = 0;

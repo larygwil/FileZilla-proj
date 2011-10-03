@@ -56,15 +56,11 @@ class context
 {
 public:
 	context()
-		: max_depth(1)
-		, quiescence_depth(0)
-		, clock(0)
+		: clock(0)
 		, move_ptr(moves)
 	{
 	}
 
-	int max_depth;
-	int quiescence_depth;
 	unsigned char clock; // The halfmove clock
 	pv_entry_pool pv_pool;
 

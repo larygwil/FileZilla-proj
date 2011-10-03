@@ -10,9 +10,9 @@
 #include "zobrist.hpp"
 
 #include <algorithm>
-#include <math.h>
 #include <iomanip>
 #include <iostream>
+#include <math.h>
 #include <sstream>
 #include <string>
 #include <map>
@@ -62,19 +62,26 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 	++stats.quiescence_nodes;
 #endif
 
-	int const limit = ctx.max_depth + ctx.quiescence_depth;
+	int const limit = MAX_DEPTH + MAX_QDEPTH;
 
 	if( ply >= limit ) {
 		return beta;
 	}
 
-	short full_eval = evaluate_full( p, c, current_evaluation );
+	// Do lazy evaluation.
+	// Assumes that full eval does not differ from fast one by more than 300 centipawns.
+	// If this assumption holds, outcome is equivalent to non-lazy eval.
+	// This saves between 15-20% of all calls to full_eval.
 
-	if( full_eval > alpha && !check.check ) {
-		if( full_eval >= beta ) {
-			return full_eval;
+	short full_eval = result::win; // Any impossible value would do
+	if( current_evaluation + 300 > alpha && !check.check ) {
+		full_eval = evaluate_full( p, c, current_evaluation );
+		if( full_eval > alpha ) {
+			if( full_eval >= beta ) {
+				return full_eval;
+			}
+			alpha = full_eval;
 		}
-		alpha = full_eval;
 	}
 
 	move_info* moves = ctx.move_ptr;
@@ -135,6 +142,9 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 			calculate_moves( p, c, current_evaluation, ctx.move_ptr, check, empty_killers );
 			if( ctx.move_ptr != moves ) {
 				ctx.move_ptr = moves;
+				if( full_eval == result::win ) {
+					full_eval = evaluate_full( p, c, current_evaluation );
+				}
 				return full_eval;
 			}
 			else {
@@ -451,8 +461,6 @@ short processing_thread::processWork()
 	apply_move( new_pos, m_, c_ );
 	unsigned long long hash = get_zobrist_hash( new_pos );
 
-	ctx_.max_depth = max_depth_;
-	ctx_.quiescence_depth = quiescence_depth_;
 	ctx_.clock = clock_ % 256;
 	ctx_.seen = seen_;
 	ctx_.move_ptr = ctx_.moves;
@@ -473,7 +481,7 @@ short processing_thread::processWork()
 		short beta = (std::min)( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
 		if( alpha < beta ) {
-			value = -step( ctx_.max_depth, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next(), false );
+			value = -step( max_depth_, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next(), false );
 			if( value > alpha && value < beta ) {
 				// Aspiration search found something sensible
 				return value;
@@ -482,13 +490,13 @@ short processing_thread::processWork()
 	}
 
 	if( alpha_ != result::loss ) {
-		value = -step( ctx_.max_depth, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_, pv_->next(), false );
+		value = -step( max_depth_, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_, pv_->next(), false );
 		if( value > alpha_ ) {
-			value = -step( ctx_.max_depth, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
+			value = -step( max_depth_, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
 		}
 	}
 	else {
-		value = -step( ctx_.max_depth, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
+		value = -step( max_depth_, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
 	}
 
 	return value;

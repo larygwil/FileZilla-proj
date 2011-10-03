@@ -41,8 +41,6 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 	unsigned long long hash = get_zobrist_hash( p );
 
 	context ctx;
-	ctx.max_depth = MAX_BOOKSEARCH_DEPTH - 2;
-	ctx.quiescence_depth = conf.quiescence_depth;
 	ctx.clock = move_history.size() % 256;
 	ctx.seen = seen;
 
@@ -60,7 +58,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 			ctx.seen.pos[++ctx.seen.root_position] = new_hash;
 
 			pv_entry* pv = ctx.pv_pool.get();
-			value = -step(ctx.max_depth, 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+			value = -step( MAX_BOOKSEARCH_DEPTH - 2, 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
 			ctx.pv_pool.release(pv);
 		}
 
@@ -74,8 +72,6 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 	}
 
 	std::sort( entries.begin(), entries.end() );
-
-	ctx.max_depth = MAX_BOOKSEARCH_DEPTH;
 
 	std::size_t fulldepth = 5;
 	if( entries.size() < 5 ) {
@@ -99,7 +95,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 		else {
 			ctx.seen.pos[++ctx.seen.root_position] = new_hash;
 			pv_entry* pv = ctx.pv_pool.get();
-			value = -step( ctx.max_depth, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+			value = -step( MAX_BOOKSEARCH_DEPTH, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
 			ctx.pv_pool.release(pv);
 		}
 
