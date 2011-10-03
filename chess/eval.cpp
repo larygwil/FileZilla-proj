@@ -559,7 +559,7 @@ void evaluate_pawn( unsigned long long own_pawns, unsigned long long foreign_paw
 }
 }
 
-short __attribute((noinline)) evaluate_pawns( unsigned long long white_pawns, unsigned long long black_pawns )
+short evaluate_pawns( unsigned long long white_pawns, unsigned long long black_pawns )
 {
 	// Two while loops, otherwise nice branchless solution.
 
