@@ -38,6 +38,23 @@ struct MoveSort2 {
 } moveSort2;
 }
 
+
+void sort_moves( move_info* begin, move_info* end, position const& p, color::type c, short current_evaluation, killer_moves const& killers )
+{
+	for( move_info* it = begin; it != end; ++it ) {
+		it->evaluation = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
+		it->sort = it->evaluation;
+		if( it->m.captured_piece != pieces::none ) {
+			it->sort += get_material_value( it->m.captured_piece ) * 1000000 - get_material_value( it->m.piece );
+		}
+		else if( killers.is_killer( it->m ) ) {
+			it->sort += 500000;
+		}
+	}
+	std::sort( begin, end, moveSort2 );
+}
+
+
 killer_moves const empty_killers;
 short quiescence_search( int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, check_map const& check, color::type c, short alpha, short beta )
 {
@@ -87,8 +104,8 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 	move_info* moves = ctx.move_ptr;
 
 	if( check.check ) {
-		calculate_moves( p, c, current_evaluation, ctx.move_ptr, check, empty_killers );
-		std::sort( moves, ctx.move_ptr, moveSort2 );
+		calculate_moves( p, c, ctx.move_ptr, check );
+		sort_moves( moves, ctx.move_ptr, p, c, current_evaluation, empty_killers );
 	}
 	else {
 		calculate_moves_captures( p, c, ctx.move_ptr, check );
@@ -139,7 +156,7 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 			return result::loss + ply;
 		}
 		else {
-			calculate_moves( p, c, current_evaluation, ctx.move_ptr, check, empty_killers );
+			calculate_moves( p, c, ctx.move_ptr, check );
 			if( ctx.move_ptr != moves ) {
 				ctx.move_ptr = moves;
 				if( full_eval == result::win ) {
@@ -273,7 +290,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 	}
 
 	move_info* moves = ctx.move_ptr;
-	calculate_moves( p, c, current_evaluation, ctx.move_ptr, check, ctx.killers[c][depth] );
+	calculate_moves( p, c, ctx.move_ptr, check );
 
 	if( ctx.move_ptr == moves ) {
 		if( best_pv ) {
@@ -288,7 +305,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 		}
 	}
 
-	std::sort( moves, ctx.move_ptr, moveSort2 );
+	sort_moves( moves, ctx.move_ptr, p, c, current_evaluation, ctx.killers[c][ply] );
 
 	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
 		if( tt_move.flags & move_flags::valid && tt_move == it->m ) {
@@ -567,7 +584,8 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 	move_info moves[200];
 	move_info* pm = moves;
 	int current_evaluation = evaluate_fast( p, c );
-	calculate_moves( p, c, current_evaluation, pm, check, empty_killers );
+	calculate_moves( p, c, pm, check );
+	sort_moves( moves, pm, p, c, current_evaluation, empty_killers );
 
 	if( moves == pm ) {
 		if( check.check ) {

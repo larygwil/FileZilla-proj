@@ -655,7 +655,7 @@ void xboard()
 
 			move_info moves[200];
 			move_info* pm = moves;
-			calculate_moves( state.p, state.c, 0, pm, check, killer_moves() );
+			calculate_moves( state.p, state.c, pm, check );
 
 			std::cout << "Possible moves:" << std::endl;
 			move_info* it = &moves[0];
@@ -715,7 +715,7 @@ void perft( perft_ctx& ctx, int depth, position const& p, color::type c, unsigne
 
 	check_map check;
 	calc_check_map( p, c, check );
-	calculate_moves( p, c, 0, ctx.move_ptr, check, ctx.killers );
+	calculate_moves( p, c, ctx.move_ptr, check );
 
 	if( !--depth ) {
 		n += ctx.move_ptr - moves;
@@ -725,7 +725,7 @@ void perft( perft_ctx& ctx, int depth, position const& p, color::type c, unsigne
 
 	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
 		position new_pos = p;
-		apply_move( new_pos, *it, c );
+		apply_move( new_pos, it->m, c );
 		perft( ctx, depth, new_pos, static_cast<color::type>(1-c), n );
 	}
 	ctx.move_ptr = moves;

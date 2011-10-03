@@ -31,7 +31,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 	move_info* pm = moves;
 	check_map check;
 	calc_check_map( p, c, check );
-	calculate_moves( p, c, eval, pm, check, killer_moves() );
+	calculate_moves( p, c, pm, check );
 	if( pm == moves ) {
 		return true;
 	}
