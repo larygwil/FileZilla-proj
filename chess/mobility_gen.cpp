@@ -435,7 +435,7 @@ int main()
 	}
 
 	{
-		std::cout << "unsigned long long king_pawn_shield[2][64] = {" << std::endl;
+		std::cout << "extern unsigned long long const king_pawn_shield[2][64] = {" << std::endl;
 
 		for( int c = 0; c < 2; ++c ) {
 			std::cout << "\t{" << std::endl;
@@ -487,6 +487,36 @@ int main()
 			}
 		}
 		std::cout << "};" << std::endl << std::endl;
+	}
+
+	{
+		std::cout << "extern unsigned long long const isolated_pawns[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			unsigned long long v = 0;
+
+			int source_col = source % 8;
+
+			for( int y = 0; y < 8; ++y ) {
+				if( source_col > 0 ) {
+					v |= 1ull << (source_col - 1 + y * 8);
+				}
+				if( source_col < 7 ) {
+					v |= 1ull << (source_col + 1 + y * 8);
+				}
+			}
+
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
 	}
 
 	return 0;

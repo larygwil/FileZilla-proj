@@ -7,14 +7,16 @@
 
 #include <iostream>
 
-extern unsigned long long king_pawn_shield[2][64];
+extern unsigned long long const king_pawn_shield[2][64];
+extern unsigned long long const isolated_pawns[64];
 
 namespace special_values {
 enum type
 {
 	double_bishop = 25,
-	doubled_pawn = -50,
+	doubled_pawn = -15,
 	passed_pawn = 35,
+	isolated_pawn = -15,
 	connected_pawn = 15,
 	pawn_shield = 3,
 	castled = 25
@@ -278,73 +280,7 @@ unsigned long long const passed_pawns[2][64] = {
 	}
 };
 unsigned long long const doubled_pawns[2][64] = {
-{
-		0x0101010101010100ull,
-		0x0202020202020200ull,
-		0x0404040404040400ull,
-		0x0808080808080800ull,
-		0x1010101010101000ull,
-		0x2020202020202000ull,
-		0x4040404040404000ull,
-		0x8080808080808000ull,
-		0x0101010101010000ull,
-		0x0202020202020000ull,
-		0x0404040404040000ull,
-		0x0808080808080000ull,
-		0x1010101010100000ull,
-		0x2020202020200000ull,
-		0x4040404040400000ull,
-		0x8080808080800000ull,
-		0x0101010101000000ull,
-		0x0202020202000000ull,
-		0x0404040404000000ull,
-		0x0808080808000000ull,
-		0x1010101010000000ull,
-		0x2020202020000000ull,
-		0x4040404040000000ull,
-		0x8080808080000000ull,
-		0x0101010100000000ull,
-		0x0202020200000000ull,
-		0x0404040400000000ull,
-		0x0808080800000000ull,
-		0x1010101000000000ull,
-		0x2020202000000000ull,
-		0x4040404000000000ull,
-		0x8080808000000000ull,
-		0x0101010000000000ull,
-		0x0202020000000000ull,
-		0x0404040000000000ull,
-		0x0808080000000000ull,
-		0x1010100000000000ull,
-		0x2020200000000000ull,
-		0x4040400000000000ull,
-		0x8080800000000000ull,
-		0x0101000000000000ull,
-		0x0202000000000000ull,
-		0x0404000000000000ull,
-		0x0808000000000000ull,
-		0x1010000000000000ull,
-		0x2020000000000000ull,
-		0x4040000000000000ull,
-		0x8080000000000000ull,
-		0x0100000000000000ull,
-		0x0200000000000000ull,
-		0x0400000000000000ull,
-		0x0800000000000000ull,
-		0x1000000000000000ull,
-		0x2000000000000000ull,
-		0x4000000000000000ull,
-		0x8000000000000000ull,
-		0x0000000000000000ull,
-		0x0000000000000000ull,
-		0x0000000000000000ull,
-		0x0000000000000000ull,
-		0x0000000000000000ull,
-		0x0000000000000000ull,
-		0x0000000000000000ull,
-		0x0000000000000000ull
-	},
-{
+	{
 		0x0000000000000000ull,
 		0x0000000000000000ull,
 		0x0000000000000000ull,
@@ -409,6 +345,72 @@ unsigned long long const doubled_pawns[2][64] = {
 		0x0020202020202020ull,
 		0x0040404040404040ull,
 		0x0080808080808080ull
+	},
+	{
+		0x0101010101010100ull,
+		0x0202020202020200ull,
+		0x0404040404040400ull,
+		0x0808080808080800ull,
+		0x1010101010101000ull,
+		0x2020202020202000ull,
+		0x4040404040404000ull,
+		0x8080808080808000ull,
+		0x0101010101010000ull,
+		0x0202020202020000ull,
+		0x0404040404040000ull,
+		0x0808080808080000ull,
+		0x1010101010100000ull,
+		0x2020202020200000ull,
+		0x4040404040400000ull,
+		0x8080808080800000ull,
+		0x0101010101000000ull,
+		0x0202020202000000ull,
+		0x0404040404000000ull,
+		0x0808080808000000ull,
+		0x1010101010000000ull,
+		0x2020202020000000ull,
+		0x4040404040000000ull,
+		0x8080808080000000ull,
+		0x0101010100000000ull,
+		0x0202020200000000ull,
+		0x0404040400000000ull,
+		0x0808080800000000ull,
+		0x1010101000000000ull,
+		0x2020202000000000ull,
+		0x4040404000000000ull,
+		0x8080808000000000ull,
+		0x0101010000000000ull,
+		0x0202020000000000ull,
+		0x0404040000000000ull,
+		0x0808080000000000ull,
+		0x1010100000000000ull,
+		0x2020200000000000ull,
+		0x4040400000000000ull,
+		0x8080800000000000ull,
+		0x0101000000000000ull,
+		0x0202000000000000ull,
+		0x0404000000000000ull,
+		0x0808000000000000ull,
+		0x1010000000000000ull,
+		0x2020000000000000ull,
+		0x4040000000000000ull,
+		0x8080000000000000ull,
+		0x0100000000000000ull,
+		0x0200000000000000ull,
+		0x0400000000000000ull,
+		0x0800000000000000ull,
+		0x1000000000000000ull,
+		0x2000000000000000ull,
+		0x4000000000000000ull,
+		0x8000000000000000ull,
+		0x0000000000000000ull,
+		0x0000000000000000ull,
+		0x0000000000000000ull,
+		0x0000000000000000ull,
+		0x0000000000000000ull,
+		0x0000000000000000ull,
+		0x0000000000000000ull,
+		0x0000000000000000ull
 	}
 };
 unsigned long long const connected_pawns[2][64] = {
@@ -547,34 +549,41 @@ unsigned long long const connected_pawns[2][64] = {
 };
 
 
-short evaluate_pawn( unsigned long long own_pawns, unsigned long long foreign_pawns, color::type c, unsigned long long pawn )
+void evaluate_pawn( unsigned long long own_pawns, unsigned long long foreign_pawns, color::type c, unsigned long long pawn,
+					 unsigned long long& unpassed, unsigned long long& doubled, unsigned long long& connected, unsigned long long& unisolated )
 {
-	short ret = 0;
-	if( doubled_pawns[c][pawn] & own_pawns ) {
-		ret += special_values::doubled_pawn;
-	}
-	else if( !(passed_pawns[c][pawn] & foreign_pawns) ) {
-		ret += special_values::passed_pawn;
-	}
-	if( connected_pawns[c][pawn] & own_pawns ) {
-		ret += special_values::connected_pawn;
-	}
-	return ret;
+	doubled |= doubled_pawns[c][pawn] & own_pawns;
+	unpassed |= passed_pawns[c][pawn] & foreign_pawns;
+	connected |= connected_pawns[c][pawn] & own_pawns;
+	unisolated |= isolated_pawns[pawn] & own_pawns;
 }
 }
 
-short evaluate_pawns( unsigned long long white_pawns, unsigned long long black_pawns )
+short __attribute((noinline)) evaluate_pawns( unsigned long long white_pawns, unsigned long long black_pawns )
 {
+	// Two while loops, otherwise nice branchless solution.
+
 	short ret = 0;
 
+	unsigned long long unpassed_white = 0;
+	unsigned long long doubled_white = 0;
+	unsigned long long connected_white = 0;
+	unsigned long long unisolated_white = 0;
+	unsigned long long unpassed_black = 0;
+	unsigned long long doubled_black = 0;
+	unsigned long long connected_black = 0;
+	unsigned long long unisolated_black = 0;
 	{
+
 		unsigned long long pawns = white_pawns;
 		while( pawns ) {
 			unsigned long long pawn;
 			bitscan( pawns, pawn );
 			pawns &= pawns - 1;
 
-			ret += evaluate_pawn( white_pawns, black_pawns, color::white, pawn );
+			evaluate_pawn( white_pawns, black_pawns, color::white, pawn,
+								  unpassed_black, doubled_white, connected_white, unisolated_white );
+
 		}
 	}
 
@@ -586,9 +595,21 @@ short evaluate_pawns( unsigned long long white_pawns, unsigned long long black_p
 			bitscan( pawns, pawn );
 			pawns &= pawns - 1;
 
-			ret -= evaluate_pawn( black_pawns, white_pawns, color::black, pawn );
+			evaluate_pawn( black_pawns, white_pawns, color::black, pawn,
+						   unpassed_white, doubled_black, connected_black, unisolated_black );
+
 		}
 	}
+	unpassed_white |= doubled_white;
+	ret += special_values::passed_pawn * popcount(white_pawns ^ unpassed_white);
+	ret += special_values::doubled_pawn * popcount(doubled_white);
+	ret += special_values::connected_pawn * popcount(connected_white);
+	ret += special_values::isolated_pawn * popcount(white_pawns ^ unisolated_white);
+	unpassed_black |= doubled_black;
+	ret -= special_values::passed_pawn * popcount(black_pawns ^ unpassed_black);
+	ret -= special_values::doubled_pawn * popcount(doubled_black);
+	ret -= special_values::connected_pawn * popcount(connected_black);
+	ret -= special_values::isolated_pawn * popcount(black_pawns ^ unisolated_black);
 
 	return ret;
 }
