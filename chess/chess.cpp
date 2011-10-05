@@ -20,14 +20,15 @@ contact tim.kosse@filezilla-project.org for details.
 #include "eval.hpp"
 #include "fen.hpp"
 #include "hash.hpp"
+#include "logger.hpp"
 #include "mobility.hpp"
 #include "moves.hpp"
 #include "util.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "platform.hpp"
 #include "statistics.hpp"
+#include "selftest.hpp"
 #include "zobrist.hpp"
-#include "logger.hpp"
 
 #include <algorithm>
 #include <list>
@@ -692,97 +693,6 @@ void xboard()
 }
 
 
-struct perft_ctx {
-	perft_ctx()
-		: move_ptr(moves)
-	{
-	}
-
-	move_info moves[200 * (MAX_DEPTH) ];
-	move_info* move_ptr;
-
-	killer_moves killers;
-};
-
-
-void perft( perft_ctx& ctx, int depth, position const& p, color::type c, unsigned long long& n )
-{
-	if( conf.depth == -1 ) {
-		conf.depth = 8;
-	}
-
-	move_info* moves = ctx.move_ptr;
-
-	check_map check;
-	calc_check_map( p, c, check );
-	calculate_moves( p, c, ctx.move_ptr, check );
-
-	if( !--depth ) {
-		n += ctx.move_ptr - moves;
-		ctx.move_ptr = moves;
-		return;
-	}
-
-	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
-		position new_pos = p;
-		apply_move( new_pos, it->m, c );
-		perft( ctx, depth, new_pos, static_cast<color::type>(1-c), n );
-	}
-	ctx.move_ptr = moves;
-}
-
-void perft()
-{
-	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
-
-	unsigned long long const perft_results[] = {
-		20ull,
-		400ull,
-		8902ull,
-		197281ull,
-		4865609ull,
-		119060324ull,
-		3195901860ull,
-		84998978956ull
-	};
-
-	perft_ctx ctx;
-	for( unsigned int i = 0; i < sizeof(perft_results)/sizeof(unsigned long long); ++i ) {
-		ctx.move_ptr = ctx.moves;
-
-		std::cerr << "Calculating number of possible moves in " << (i + 1) << " plies:" << std::endl;
-
-		position p;
-		init_board( p );
-
-		unsigned long long ret = 0;
-
-		int max_depth = i + 1;
-
-		unsigned long long start = get_time();
-		perft( ctx, max_depth, p, color::white, ret );
-		unsigned long long stop = get_time();
-
-
-		std::cerr << "Moves: "     << ret << std::endl;
-		std::cerr << "Took:  "     << (stop - start) * 1000 / timer_precision() << " ms" << std::endl;
-		if( ret ) {
-			std::cerr << "Time/move: " << ((stop - start) * 1000 * 1000 * 1000) / ret / timer_precision() << " ns" << std::endl;
-		}
-
-		if( ret != perft_results[i] ) {
-			std::cerr << "FAIL! Expected " << perft_results[i] << " moves." << std::endl;
-			break;
-		}
-		else {
-			std::cerr << "PASS" << std::endl;
-		}
-		std::cerr << std::endl;
-	}
-	
-}
-
-
 int main( int argc, char const* argv[] )
 {
 	std::string self = argv[0];
@@ -829,6 +739,9 @@ int main( int argc, char const* argv[] )
 	}
 	else if( i < argc && !strcmp(argv[i], "perft" ) ) {
 		perft();
+	}
+	else if( i < argc && !strcmp(argv[i], "test" ) ) {
+		selftest();
 	}
 	else {
 		auto_play();

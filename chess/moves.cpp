@@ -173,7 +173,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 	unsigned char row = c ? 56 : 0;
 	// Queenside castling
 	if( p.castle[c] & 0x2 ) {
-		if( !p.board[1 + row] && !p.board[2 + row] && !p.board[3 + row] ) {
+		if( !p.board[1 + row] && !p.board[2 + row] && !p.board[3 + row] && !(possible_king_moves[2 + row] & other_kings ) ) {
 			if( !detect_check( p, c, 3 + row, 3 + row ) ) {
 				add_if_legal_king( p, c, moves, 4 + row, 2 + row, move_flags::valid | move_flags::castle, pieces::none );
 			}
@@ -181,7 +181,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 	}
 	// Kingside castling
 	if( p.castle[c] & 0x1 ) {
-		if( !p.board[5 + row] && !p.board[6 + row] ) {
+		if( !p.board[5 + row] && !p.board[6 + row] && !(possible_king_moves[6 + row] & other_kings ) ) {
 			if( !detect_check( p, c, 5 + row, 5 + row ) ) {
 				add_if_legal_king( p, c, moves, 4 + row, 6 + row, move_flags::valid | move_flags::castle, pieces::none );
 			}

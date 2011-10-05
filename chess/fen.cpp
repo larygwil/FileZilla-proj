@@ -138,15 +138,41 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c )
 		c = color::black;
 	}
 
-	if( castle != "-" ) {
-		// FIXME
-		return false;
-	}
-
 	p.castle[0] = 0;
 	p.castle[1] = 0;
+	if( castle != "-" ) {
+		for( std::size_t i = 0; i < castle.size(); ++i ) {
+			switch( castle[i] ) {
+			case 'Q':
+				p.castle[0] |= 0x2;
+				break;
+			case 'K':
+				p.castle[0] |= 0x1;
+				break;
+			case 'q':
+				p.castle[1] |= 0x2;
+				break;
+			case 'k':
+				p.castle[1] |= 0x1;
+				break;
+			default:
+				return false;
+			}
+		}
+	}
 
 	p.can_en_passant = 0;
+
+	if( enpassant != "-" ) {
+		if( enpassant.size() != 2 ) {
+			return false;
+		}
+		if( enpassant[0] < 'a' || enpassant[0] > 'h' || enpassant[1] < '1' || enpassant[1] > '8' ) {
+			return false;
+		}
+
+		p.can_en_passant = (enpassant[1] - '1') * 8 + enpassant[0] - 'a';
+	}
 
 	for( unsigned int i = 0; i < 64; ++i ) {
 		p.board[i] = 0;

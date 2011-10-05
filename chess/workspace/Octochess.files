@@ -12,6 +12,8 @@
 ../detect_check.hpp
 ../eval.cpp
 ../eval.hpp
+../fen.cpp
+../fen.hpp
 ../hash.cpp
 ../hash.hpp
 ../logger.cpp
@@ -29,6 +31,8 @@
 ../pvlist.cpp
 ../pvlist.hpp
 ../random.hpp
+../selftest.cpp
+../selftest.hpp
 ../sliding_piece_attacks.hpp
 ../statistics.cpp
 ../statistics.hpp
