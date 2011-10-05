@@ -18,6 +18,15 @@
 #include <map>
 #include <vector>
 
+// TODO: Fine-tweak these values.
+int const check_extension = 5;
+int const pawn_push_extension = 2;
+int const cutoff = depth_factor - 1;
+
+unsigned int const lmr_searched = 2;
+int const lmr_reduction = depth_factor;
+int const lmr_min_depth = depth_factor;
+
 volatile bool do_abort = false;
 
 short const ASPIRATION = 40;
@@ -184,7 +193,7 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 
 short step( int depth, int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv, bool last_was_null )
 {
-	if( depth <= 0 ) {
+	if( depth < cutoff || ply >= MAX_DEPTH ) {
 		return quiescence_search( ply, ctx, p, hash, current_evaluation, c, alpha, beta );
 	}
 
@@ -213,12 +222,17 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 	check_map check;
 	calc_check_map( p, c, check );
 
+	if( check.check ) {
+		depth += check_extension;
+	}
+
 #if NULL_MOVE_REDUCTION > 0
 	if( !last_was_null && !check.check && depth > 1 && p.material[0] > 1500 && p.material[1] > 1500 ) {
 		int old_null = ctx.seen.null_move_position;
 		ctx.seen.null_move_position = ctx.seen.root_position + ply - 1;
 		pv_entry* cpv = ctx.pv_pool.get();
-		short value = -step( depth - NULL_MOVE_REDUCTION - 1, ply + 1, ctx, p, hash, -current_evaluation, static_cast<color::type>(1-c), -beta, -beta + 1, cpv, true );
+
+		short value = -step( depth - (NULL_MOVE_REDUCTION + 1) * depth_factor, ply + 1, ctx, p, hash, -current_evaluation, static_cast<color::type>(1-c), -beta, -beta + 1, cpv, true );
 		ctx.pv_pool.release( cpv );
 
 		ctx.seen.null_move_position = old_null;
@@ -234,7 +248,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 
 	if( !(tt_move.flags & move_flags::valid) && depth > 2 ) {
 
-		step( depth - 2, ply, ctx, p, hash, current_evaluation, c, alpha, beta, pv, false );
+		step( depth - 2 * depth_factor, ply, ctx, p, hash, current_evaluation, c, alpha, beta, pv, false );
 
 		short eval;
 		transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move );
@@ -244,9 +258,12 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 
 	pv_entry* best_pv = 0;
 
+	unsigned int processed_moves = 0;
+
 	if( tt_move.flags & move_flags::valid ) {
 		position new_pos = p;
 		if( apply_move( new_pos, tt_move, c ) ) {
+			++processed_moves;
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, tt_move );
 			position::pawn_structure pawns;
 			short new_eval = evaluate_move( p, c, current_evaluation, tt_move, pawns );
@@ -260,7 +277,11 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 			else {
 				ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
 
-				value = -step( depth - 1, ply + 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
+				unsigned long long new_depth = depth - depth_factor;
+				if( tt_move.piece == pieces::pawn ) {
+					new_depth += pawn_push_extension;
+				}
+				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
 			}
 			if( value > alpha ) {
 
@@ -312,6 +333,8 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 			continue;
 		}
 
+		++processed_moves;
+
 		position new_pos = p;
 		apply_move( new_pos, *it, c );
 		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
@@ -324,15 +347,24 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 		else {
 			ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
 
+			unsigned long long new_depth = depth - depth_factor;
+			if( tt_move.piece == pieces::pawn ) {
+				new_depth += pawn_push_extension;
+			}
+
+			if( processed_moves >= lmr_searched && !check.check && depth > lmr_min_depth && !it->m.captured_piece ) {
+				new_depth -= lmr_reduction;
+			}
+
 			if( alpha != old_alpha ) {
-				value = -step( depth - 1, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -alpha-1, -alpha, cpv, false );
+				value = -step(new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -alpha-1, -alpha, cpv, false );
 
 				if( value > alpha ) {
-					value = -step( depth - 1, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
+					value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
 				}
 			}
 			else {
-				value = -step( depth - 1, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
+				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
 			}
 		}
 		if( value > alpha ) {
@@ -498,7 +530,7 @@ short processing_thread::processWork()
 		short beta = (std::min)( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
 		if( alpha < beta ) {
-			value = -step( max_depth_, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next(), false );
+			value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next(), false );
 			if( value > alpha && value < beta ) {
 				// Aspiration search found something sensible
 				return value;
@@ -507,13 +539,13 @@ short processing_thread::processWork()
 	}
 
 	if( alpha_ != result::loss ) {
-		value = -step( max_depth_, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_, pv_->next(), false );
+		value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_, pv_->next(), false );
 		if( value > alpha_ ) {
-			value = -step( max_depth_, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
+			value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
 		}
 	}
 	else {
-		value = -step( max_depth_, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
+		value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
 	}
 
 	return value;

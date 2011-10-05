@@ -58,7 +58,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 			ctx.seen.pos[++ctx.seen.root_position] = new_hash;
 
 			pv_entry* pv = ctx.pv_pool.get();
-			value = -step( MAX_BOOKSEARCH_DEPTH - 2, 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+			value = -step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor, 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
 			ctx.pv_pool.release(pv);
 		}
 
@@ -95,7 +95,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 		else {
 			ctx.seen.pos[++ctx.seen.root_position] = new_hash;
 			pv_entry* pv = ctx.pv_pool.get();
-			value = -step( MAX_BOOKSEARCH_DEPTH, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+			value = -step( MAX_BOOKSEARCH_DEPTH * depth_factor, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
 			ctx.pv_pool.release(pv);
 		}
 

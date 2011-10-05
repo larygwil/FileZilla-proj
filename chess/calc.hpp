@@ -8,6 +8,8 @@
 #include "moves.hpp"
 
 
+int const depth_factor = 6;
+
 class seen_positions {
 public:
 	seen_positions();
@@ -72,6 +74,7 @@ public:
 	killer_moves killers[2][MAX_DEPTH + 1];
 };
 
+// Depth is number of plies to search multiplied by depth_factor
 short step( int depth, int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv, bool last_was_null );
 
 #endif
