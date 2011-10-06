@@ -20,12 +20,12 @@
 
 // TODO: Fine-tweak these values.
 int const check_extension = 5;
-int const pawn_push_extension = 2;
+int const pawn_push_extension = 3;
 int const cutoff = depth_factor - 1;
 
 unsigned int const lmr_searched = 2;
 int const lmr_reduction = depth_factor;
-int const lmr_min_depth = depth_factor;
+int const lmr_min_depth = depth_factor + 1;
 
 volatile bool do_abort = false;
 

@@ -143,6 +143,13 @@ struct xboard_state
 		, post(true)
 		, last_mate()
 		, started_from_root()
+		, internal_overhead( 100 * timer_precision() / 1000 )
+		, communication_overhead( 50 * timer_precision() / 1000 )
+		, last_go_time()
+		, last_go_color()
+		, moves_between_updates()
+		, level_cmd_differences()
+		, level_cmd_count()
 	{
 		reset();
 	}
@@ -229,6 +236,27 @@ struct xboard_state
 		return true;
 	}
 
+	void update_comm_overhead( unsigned long long new_remaining )
+	{
+		if( c == last_go_color && moves_between_updates && std::abs(static_cast<signed long long>(time_remaining) - static_cast<signed long long>(new_remaining)) < 2 * timer_precision() * moves_between_updates ) {
+			level_cmd_differences += (static_cast<signed long long>(time_remaining) - static_cast<signed long long>(new_remaining));
+			level_cmd_count += moves_between_updates;
+
+			unsigned long long comm_overhead;
+			if( level_cmd_differences >= 0 ) {
+				comm_overhead = level_cmd_differences / level_cmd_count;
+			}
+			else {
+				comm_overhead = 0;
+			}
+
+			std::cerr << "Updating communication overhead from " << communication_overhead * 1000 / timer_precision() << " ms to " << comm_overhead * 1000 / timer_precision() << " ms " << std::endl;
+			communication_overhead = comm_overhead;
+		}
+
+		moves_between_updates = 0;
+	}
+
 	position p;
 	color::type c;
 	int clock;
@@ -251,6 +279,23 @@ struct xboard_state
 	short last_mate;
 
 	bool started_from_root;
+
+	// If we calculate move time of x but consume y > x amount of time, internal overhead if y - x.
+	// This is measured locally between receiving the go and sending out the reply.
+	unsigned long long internal_overhead;
+
+	// If we receive time updates between moves, communication_overhead is the >=0 difference between two timer updates
+	// and the calculated time consumption.
+	unsigned long long communication_overhead;
+	unsigned long long last_go_time;
+
+	color::type last_go_color;
+	unsigned int moves_between_updates;
+
+	// Level command is in seconds only. Hence we need to accumulate data before we can update the
+	// communication overhead.
+	signed long long level_cmd_differences;
+	unsigned long long level_cmd_count;
 };
 
 
@@ -264,7 +309,7 @@ public:
 
 	virtual void onRun();
 
-	void start( unsigned long long t );
+	void start();
 
 	move stop();
 
@@ -275,7 +320,6 @@ public:
 private:
 	bool abort;
 	xboard_state& state;
-	unsigned long long starttime;
 	move best_move;
 };
 
@@ -307,20 +351,29 @@ void xboard_thread::onRun()
 		remaining_moves = (state.time_control * 2) - (state.clock % (state.time_control * 2));
 	}
 	unsigned long long time_limit = (state.time_remaining - state.bonus_time) / remaining_moves + state.bonus_time;
-	unsigned long long overhead_compensation = 100 * timer_precision() / 1000;
+	unsigned long long overhead = state.internal_overhead + state.communication_overhead;
 
 	if( state.time_increment && state.time_remaining > (time_limit + state.time_increment) ) {
 		time_limit += state.time_increment;
 	}
 
-	if( time_limit > overhead_compensation ) {
-		time_limit -= overhead_compensation;
+	if( time_limit > overhead ) {
+		time_limit -= overhead;
+	}
+	else {
+		// Any less time makes no sense.
+		time_limit = 10 * 1000 / timer_precision();
+	}
+
+	// Any less time makes no sense.
+	if( time_limit < 10 * 1000 / timer_precision() ) {
+		time_limit = 10 * 1000 / timer_precision();
 	}
 
 	move m;
 	int res;
 	bool success = calc( state.p, state.c, m, res, time_limit, state.time_remaining, state.clock, state.seen, state.last_mate, *this );
-	
+
 	scoped_lock l( mtx );
 
 	if( abort ) {
@@ -360,12 +413,20 @@ void xboard_thread::onRun()
 		}
 	}
 	unsigned long long stop = get_time();
-	unsigned long long elapsed = stop - starttime;
+	unsigned long long elapsed = stop - state.last_go_time;
+
+	std::cerr << "Elapsed: " << elapsed * 1000 / timer_precision() << " ms" << std::endl;
 	if( time_limit > elapsed ) {
 		state.bonus_time = (time_limit - elapsed) / 2;
 	}
 	else {
 		state.bonus_time = 0;
+
+		unsigned long long actual_overhead = elapsed - time_limit;
+		if( actual_overhead > state.internal_overhead ) {
+			std::cerr << "Updating internal overhead from " << state.internal_overhead * 1000 / timer_precision() << " ms to " << actual_overhead * 1000 / timer_precision() << " ms " << std::endl;
+			state.internal_overhead = actual_overhead;
+		}
 	}
 	state.time_remaining -= elapsed;
 
@@ -376,14 +437,12 @@ void xboard_thread::onRun()
 }
 
 
-void xboard_thread::start( unsigned long long t )
+void xboard_thread::start()
 {
 	join();
 	do_abort = false;
 	abort = false;
 	best_move.flags = 0;
-
-	starttime = t;
 
 	spawn();
 }
@@ -406,7 +465,7 @@ void xboard_thread::on_new_best_move( position const& p, color::type c, int dept
 	scoped_lock lock( mtx );
 	if( !abort ) {
 
-		unsigned long long elapsed = ( get_time() - starttime ) * 100 / timer_precision();
+		unsigned long long elapsed = ( get_time() - state.last_go_time ) * 100 / timer_precision();
 		std::stringstream ss;
 		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(6) << elapsed << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
 		if( state.post ) {
@@ -421,9 +480,12 @@ void xboard_thread::on_new_best_move( position const& p, color::type c, int dept
 }
 
 
-void go( xboard_thread& thread, xboard_state& state )
+void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv_time )
 {
-	unsigned long long start = get_time();
+	state.last_go_time = cmd_recv_time;
+	state.last_go_color = state.c;
+	++state.moves_between_updates;
+
 	if( !state.hash_initialized ) {
 		transposition_table.init( conf.memory );
 		state.hash_initialized = true;
@@ -459,7 +521,8 @@ void go( xboard_thread& thread, xboard_state& state )
 			state.move_history_.push_back( best_move.m );
 
 			unsigned long long stop = get_time();
-			state.time_remaining -= stop - start;
+			state.time_remaining -= stop - state.last_go_time;
+			std::cerr << "Elapsed: " << (stop - state.last_go_time) * 1000 / timer_precision() << " ms" << std::endl;
 			return;
 		}
 	}
@@ -468,7 +531,7 @@ void go( xboard_thread& thread, xboard_state& state )
 		state.book_.mark_for_processing( state.move_history_ );
 	}
 
-	thread.start( start );
+	thread.start();
 }
 
 void xboard()
@@ -494,6 +557,9 @@ void xboard()
 
 	while( true ) {
 		std::getline( std::cin, line );
+
+		unsigned long long cmd_recv_time = get_time();
+
 		if( !std::cin ) {
 			std::cerr << "EOF" << std::endl;
 			break;
@@ -639,6 +705,8 @@ void xboard()
 				}
 			}
 
+			state.update_comm_overhead( (minutes * 60 + seconds) * timer_precision() );
+
 			state.time_control = control;
 			state.time_remaining = minutes * 60 + seconds;
 			state.time_remaining *= timer_precision();
@@ -648,7 +716,7 @@ void xboard()
 			state.force = false;
 			state.self = state.c;
 			// TODO: clocks...
-			go( thread, state );
+			go( thread, state, cmd_recv_time );
 		}
 		else if( line == "~moves" ) {
 			check_map check;
@@ -685,7 +753,7 @@ void xboard()
 
 				state.apply( m );
 				if( !state.force && state.c == state.self ) {
-					go( thread, state );
+					go( thread, state, cmd_recv_time );
 				}
 			}
 		}
