@@ -19,6 +19,7 @@
 #include <vector>
 
 // TODO: Fine-tweak these values.
+#if 0
 int const check_extension = 5;
 int const pawn_push_extension = 3;
 int const cutoff = depth_factor - 1;
@@ -26,6 +27,15 @@ int const cutoff = depth_factor - 1;
 unsigned int const lmr_searched = 2;
 int const lmr_reduction = depth_factor;
 int const lmr_min_depth = depth_factor + 1;
+#else
+int const check_extension = 0;
+int const pawn_push_extension = 0;
+int const cutoff = depth_factor;
+
+unsigned int const lmr_searched = 999;
+int const lmr_reduction = 0;
+int const lmr_min_depth = 0;
+#endif
 
 volatile bool do_abort = false;
 
