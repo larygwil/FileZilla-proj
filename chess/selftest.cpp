@@ -9,6 +9,7 @@
 #include "algorithm"
 
 #include <iostream>
+#include <vector>
 
 extern const int PAWN_HASH_TABLE_SIZE = 10;
 
@@ -68,7 +69,7 @@ bool perft( std::size_t max_depth )
 	};
 
 	perft_ctx ctx;
-	for( unsigned int i = 0; i < std::min(max_depth, sizeof(perft_results)/sizeof(unsigned long long)); ++i ) {
+	for( unsigned int i = 0; i < (std::min)(max_depth, sizeof(perft_results)/sizeof(unsigned long long)); ++i ) {
 		ctx.move_ptr = ctx.moves;
 
 		std::cerr << "Calculating number of possible moves in " << (i + 1) << " plies:" << std::endl;
@@ -182,5 +183,6 @@ bool selftest()
 
 	std::cerr << "Self test failed" << std::endl;
 	abort();
+	return false;
 }
 

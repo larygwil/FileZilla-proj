@@ -234,6 +234,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\selftest.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\sqlite\sqlite3.c"
 				>
 			</File>
@@ -321,6 +325,10 @@
 			</File>
 			<File
 				RelativePath="..\random.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\selftest.hpp"
 				>
 			</File>
 			<File
