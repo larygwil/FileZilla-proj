@@ -143,7 +143,7 @@ public:
 
 	void free_hash();
 
-	void clearData();
+	void clear_data();
 
 	uint64_t max_hash_entry_count() const;
 

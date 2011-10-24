@@ -40,9 +40,15 @@ bool hash::init( unsigned int max_size )
 	delete [] data_;
 	data_ = 0;
 	data_ = new entry[ bucket_count_ * bucket_entries ];
-	memset( data_, 0, size_ );
 
+	clear_data();
 	return true;
+}
+
+
+void hash::clear_data()
+{
+	memset( data_, 0, size_ );
 }
 
 
