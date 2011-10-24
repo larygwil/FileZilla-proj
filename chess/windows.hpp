@@ -61,6 +61,7 @@ public:
 
 private:
 	CONDITION_VARIABLE cond_;
+	bool signalled_;
 };
 
 

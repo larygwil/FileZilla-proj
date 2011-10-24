@@ -69,6 +69,7 @@ void scoped_lock::unlock()
 
 
 condition::condition()
+	: signalled_()
 {
 	InitializeConditionVariable( &cond_ );
 }
@@ -81,19 +82,30 @@ condition::~condition()
 
 void condition::wait( scoped_lock& l )
 {
+	if( signalled_ ) {
+		signalled_ = false;
+		return;
+	}
 	SleepConditionVariableCS( &cond_, &l.m_.cs_, INFINITE );
+	signalled_ = false;
 }
 
 
 void condition::wait( scoped_lock& l, unsigned long long timeout )
 {
+	if( signalled_ ) {
+		signalled_ = false;
+		return;
+	}
 	timeout = timeout * 1000 / timer_precision();
 	SleepConditionVariableCS( &cond_, &l.m_.cs_, static_cast<DWORD>(timeout) );
+	signalled_ = false;
 }
 
 
 void condition::signal( scoped_lock& l )
 {
+	signalled_ = true;
 	WakeConditionVariable( &cond_ );
 }
 
