@@ -1,5 +1,6 @@
 #include "mobility.hpp"
 #include "mobility_data.hpp"
+#include "eval.hpp"
 #include "sliding_piece_attacks.hpp"
 #include <iostream>
 #include <iomanip>
@@ -11,14 +12,6 @@ extern unsigned long long const possible_king_moves[64];
 unsigned long long const center_squares = 0x00003c3c3c3c0000ull;
 
 namespace {
-
-namespace pin_values {
-enum type {
-	absolute_bishop = 35,
-	absolute_rook = 30,
-	absolute_queen = 25
-};
-}
 
 struct eval_data {
 	unsigned long long other_king_pos;
@@ -150,7 +143,7 @@ inline static void evaluate_bishop_pin( position const& p, color::type c, unsign
 
 	// Absolute pin
 	if( (unblocked_moves ^ blocked_moves) & p.bitboards[1-c].b[bb_type::king] ) {
-		results.pin += pin_values::absolute_bishop;
+		results.pin += eval_values.pin_absolute_bishop;
 	}
 }
 
@@ -206,7 +199,7 @@ inline static void evaluate_rook_pin( position const& p, color::type c, unsigned
 
 	// Absolute pin
 	if( (unblocked_moves ^ blocked_moves) & p.bitboards[1-c].b[bb_type::king] ) {
-		results.pin += pin_values::absolute_rook;
+		results.pin += eval_values.pin_absolute_rook;
 	}
 }
 
@@ -272,7 +265,7 @@ inline static void evaluate_queen_pin( position const& p, color::type c, unsigne
 
 	// Absolute pin
 	if( (unblocked_moves ^ blocked_moves) & p.bitboards[1-c].b[bb_type::king] ) {
-		results.pin += pin_values::absolute_queen;
+		results.pin += eval_values.pin_absolute_queen;
 	}
 }
 
@@ -342,12 +335,12 @@ short evaluate_mobility( position const& p, color::type c )
 	do_evaluate_mobility( p, c, results_self, results_other );
 
 	return
-		(results_self.mobility - results_other.mobility) * 2 +
-		(results_self.pin - results_other.pin) +
-		(results_self.rooks_on_open_file_bonus - results_other.rooks_on_open_file_bonus) +
-		(results_self.tropism - results_other.tropism) +
-		(results_self.king_attack - results_other.king_attack) +
-		(results_self.center_control - results_other.center_control) +
+		((results_self.mobility - results_other.mobility) * eval_values.mobility_multiplicator) / eval_values.mobility_divisor +
+		((results_self.pin - results_other.pin) * eval_values.pin_multiplicator) / eval_values.pin_divisor +
+		((results_self.rooks_on_open_file_bonus - results_other.rooks_on_open_file_bonus) * eval_values.rooks_on_open_file_multiplicator) / eval_values.rooks_on_open_file_divisor +
+		((results_self.tropism - results_other.tropism) * eval_values.tropism_multiplicator) / eval_values.tropism_divisor +
+		((results_self.king_attack - results_other.king_attack) * eval_values.king_attack_multiplicator) / eval_values.king_attack_divisor +
+		((results_self.center_control - results_other.center_control) * eval_values.center_control_multiplicator) / eval_values.center_control_divisor +
 		0;
 }
 

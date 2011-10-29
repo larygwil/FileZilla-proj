@@ -374,7 +374,7 @@ void init_board( position& p )
 
 	p.can_en_passant = 0;
 
-	p.material[0] = material_values::initial;
+	p.material[0] = eval_values.initial_material;
 	p.material[1] = p.material[0];
 
 	init_bitboards( p );
@@ -383,6 +383,22 @@ void init_board( position& p )
 }
 
 extern unsigned long long const pawn_control[2][64];
+
+void init_material( position& p ) {
+	p.material[0] = 0;
+	p.material[1] = 0;
+
+	for( unsigned int pi = 0; pi < 64; ++pi ) {
+		if( !p.board[pi] ) {
+			continue;
+		}
+
+		color::type c = static_cast<color::type>(p.board[pi] >> 4);
+		pieces::type b = static_cast<pieces::type>(p.board[pi] & 0x0f);
+
+		p.material[c] += get_material_value( b );
+	}
+}
 
 void init_bitboards( position& p )
 {

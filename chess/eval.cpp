@@ -10,22 +10,109 @@
 extern unsigned long long const king_pawn_shield[2][64];
 extern unsigned long long const isolated_pawns[64];
 
-namespace special_values {
-enum type
+eval_values_t eval_values;
+
+/*eval_values_t::eval_values_t()
 {
-	double_bishop = 25,
-	doubled_pawn = -15,
-	passed_pawn = 35,
-	isolated_pawn = -15,
-	connected_pawn = 15,
-	pawn_shield = 3,
-	castled = 25
-};
+	material_values[pieces::none] = 0;
+	material_values[pieces::pawn] = 100;
+	material_values[pieces::knight] = 295;
+	material_values[pieces::bishop] = 305;
+	material_values[pieces::rook] = 500;
+	material_values[pieces::queen] = 900;
+	material_values[pieces::king] = 0;
+
+	double_bishop = 25;
+	doubled_pawn = -15;
+	passed_pawn = 35;
+	isolated_pawn = -15;
+	connected_pawn = 15;
+	pawn_shield = 3;
+	castled = 25;
+
+	pin_absolute_bishop = 35;
+	pin_absolute_rook = 30;
+	pin_absolute_queen = 25;
+
+	mobility_multiplicator = 6;
+	mobility_divisor = 3;
+
+	pin_multiplicator = 5;
+	pin_divisor = 5;
+
+	rooks_on_open_file_multiplicator = 5;
+	rooks_on_open_file_divisor = 5;
+
+	tropism_multiplicator = 5;
+	tropism_divisor = 5;
+
+	king_attack_multiplicator = 5;
+	king_attack_divisor = 5;
+
+	center_control_multiplicator = 5;
+	center_control_divisor = 5;
+
+	update_derived();
+}*/
+
+eval_values_t::eval_values_t()
+{
+	material_values[pieces::none] = 0;
+	material_values[pieces::pawn] = 100;
+	material_values[pieces::knight] = 294;
+	material_values[pieces::bishop] = 304;
+	material_values[pieces::rook] = 500;
+	material_values[pieces::queen] = 900;
+	material_values[pieces::king] = 0;
+
+	double_bishop = 28;
+	doubled_pawn = -30;
+	passed_pawn = 19;
+	isolated_pawn = -10;
+	connected_pawn = 0;
+	pawn_shield = 5;
+	castled = 25;
+
+	pin_absolute_bishop = 16;
+	pin_absolute_rook = 0;
+	pin_absolute_queen = 49;
+
+	mobility_multiplicator = 6;
+	mobility_divisor = 2;
+
+	pin_multiplicator = 6;
+	pin_divisor = 5;
+
+	rooks_on_open_file_multiplicator = 1;
+	rooks_on_open_file_divisor = 10;
+
+	tropism_multiplicator = 0;
+	tropism_divisor = 5;
+
+	king_attack_multiplicator = 5;
+	king_attack_divisor = 1;
+
+	center_control_multiplicator = 8;
+	center_control_divisor = 1;
+
+	update_derived();
 }
 
+void eval_values_t::update_derived()
+{
+	initial_material = 
+		material_values[pieces::pawn] * 8 + 
+		material_values[pieces::knight] * 2 +
+		material_values[pieces::bishop] * 2 +
+		material_values[pieces::rook] * 2 +
+		material_values[pieces::queen] +
+		material_values[pieces::king];
+}
+
+
 namespace {
-signed short const p = material_values::pawn;
-unsigned char const pawn_values[2][64] = {
+short p = eval_values.material_values[pieces::pawn];
+short pawn_values[2][64] = {
 	{
 		0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
 		p   , p   , p   , p-20, p-20, p   , p   , p   ,
@@ -49,8 +136,8 @@ unsigned char const pawn_values[2][64] = {
 };
 
 
-signed short const q = material_values::queen;
-signed short const queen_values[2][64] = {
+short q = eval_values.material_values[pieces::queen];
+short queen_values[2][64] = {
 	{
 		q-20, q-10, q-10, q-5 , q-5 , q-10, q-10, q-20,
 		q-10, q   , q+2 , q+3 , q+3 , q+2 , q   , q-10,
@@ -73,8 +160,8 @@ signed short const queen_values[2][64] = {
 	}
 };
 
-signed short const r = material_values::rook;
-signed short const rook_values[2][64] = {
+short r = eval_values.material_values[pieces::rook];
+short rook_values[2][64] = {
 	{
 		r  , r  , r  , r  , r  , r  , r  , r  ,
 		r-5, r  , r  , r  , r  , r  , r  , r-5,
@@ -97,8 +184,8 @@ signed short const rook_values[2][64] = {
 	}
 };
 
-signed short const n = material_values::knight;
-signed short const knight_values[2][64] = {
+short n = eval_values.material_values[pieces::knight];
+short knight_values[2][64] = {
 	{
 		n-25, n-15, n-10, n-10, n-10, n-10, n-15, n-25,
 		n-15, n-5,  n,    n+2,  n+2,  n,    n-5,  n-15,
@@ -121,8 +208,8 @@ signed short const knight_values[2][64] = {
 	}
 };
 
-signed short const b = material_values::bishop;
-signed short const bishop_values[2][64] = {
+short b = eval_values.material_values[pieces::bishop];
+short bishop_values[2][64] = {
 	{
 		b-10, b-9,  b-7,  b-5,  b-5,  b-7,  b-9,  b-10,
 		b-2,  b+10, b+5,  b+10, b+10, b+5,  b+10, b-2,
@@ -601,15 +688,15 @@ short evaluate_pawns( unsigned long long white_pawns, unsigned long long black_p
 		}
 	}
 	unpassed_white |= doubled_white;
-	ret += special_values::passed_pawn * popcount(white_pawns ^ unpassed_white);
-	ret += special_values::doubled_pawn * popcount(doubled_white);
-	ret += special_values::connected_pawn * popcount(connected_white);
-	ret += special_values::isolated_pawn * popcount(white_pawns ^ unisolated_white);
+	ret += eval_values.passed_pawn * popcount(white_pawns ^ unpassed_white);
+	ret += eval_values.doubled_pawn * popcount(doubled_white);
+	ret += eval_values.connected_pawn * popcount(connected_white);
+	ret += eval_values.isolated_pawn * popcount(white_pawns ^ unisolated_white);
 	unpassed_black |= doubled_black;
-	ret -= special_values::passed_pawn * popcount(black_pawns ^ unpassed_black);
-	ret -= special_values::doubled_pawn * popcount(doubled_black);
-	ret -= special_values::connected_pawn * popcount(connected_black);
-	ret -= special_values::isolated_pawn * popcount(black_pawns ^ unisolated_black);
+	ret -= eval_values.passed_pawn * popcount(black_pawns ^ unpassed_black);
+	ret -= eval_values.doubled_pawn * popcount(doubled_black);
+	ret -= eval_values.connected_pawn * popcount(connected_black);
+	ret -= eval_values.isolated_pawn * popcount(black_pawns ^ unisolated_black);
 
 	return ret;
 }
@@ -645,11 +732,11 @@ short evaluate_side( position const& p, color::type c )
 	}
 
 	if( popcount( p.bitboards[c].b[bb_type::bishops] ) >= 2 ) {
-		result += special_values::double_bishop;
+		result += eval_values.double_bishop;
 	}
 
 	if( p.castle[c] & 0x4 ) {
-		result += special_values::castled;
+		result += eval_values.castled;
 	}
 
 	return result;
@@ -707,7 +794,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 
 	if( m.flags & move_flags::castle ) {
 		
-		current_evaluation += special_values::castled;
+		current_evaluation += eval_values.castled;
 		unsigned char row = c ? 56 : 0;
 		if( m.target % 8 == 6 ) {
 			// Kingside
@@ -735,7 +822,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		}
 
 		if( m.captured_piece == pieces::bishop && popcount( p.bitboards[1-c].b[bb_type::bishops] ) == 2 ) {
-			current_evaluation += special_values::double_bishop;
+			current_evaluation += eval_values.double_bishop;
 		}
 	}
 
@@ -837,7 +924,7 @@ static short evaluate_pawn_shield_side( position const& p, color::type c )
 	bitscan( kings, king );
 
 	unsigned long long shield = king_pawn_shield[c][king] & p.bitboards[c].b[bb_type::pawns];
-	return special_values::pawn_shield * popcount(shield);
+	return eval_values.pawn_shield * popcount(shield);
 }
 
 
@@ -864,13 +951,13 @@ extern unsigned long long const pawn_control[2][64];
 short evaluate_full( position const& p, color::type c, short eval_fast )
 {
 	eval_fast += evaluate_pawn_shield( p, c );
-
+	
 	eval_fast += evaluate_mobility( p, c );
 	
 	// Adjust score based on material. The basic idea is that,
 	// given two positions with equal, non-zero score,
 	// the position having fewer material is better.
-	short v = 25 * (std::max)( 0, material_values::initial * 2 - p.material[0] - p.material[1] ) / (material_values::initial * 2);
+	short v = 25 * (std::max)( 0, eval_values.initial_material * 2 - p.material[0] - p.material[1] ) / (eval_values.initial_material * 2);
 	if( eval_fast > 0 ) {
 		eval_fast += v;
 	}
@@ -883,7 +970,5 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 
 short get_material_value( pieces::type pi )
 {
-	static short const mv[] = { material_values::none, material_values::pawn, material_values::knight, material_values::bishop, material_values::rook, material_values::queen, material_values::king };
-
-	return mv[pi];
+	return eval_values.material_values[pi];
 }
