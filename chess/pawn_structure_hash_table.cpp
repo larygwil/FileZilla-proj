@@ -40,7 +40,7 @@ bool pawn_structure_hash_table::init( uint64_t size_in_mib )
 }
 
 
-bool pawn_structure_hash_table::lookup( uint64_t key, short& eval ) const
+bool pawn_structure_hash_table::lookup( uint64_t key, short* eval ) const
 {
 	unsigned long long index = key % size_;
 
@@ -53,7 +53,8 @@ bool pawn_structure_hash_table::lookup( uint64_t key, short& eval ) const
 		return false;
 	}
 
-	eval = static_cast<short>(v);
+	eval[0] = static_cast<short>(v >> 16);
+	eval[1] = static_cast<short>(v & 0xFFFFull);
 
 #if USE_STATISTICS
 	stats_.hits++;
@@ -63,11 +64,11 @@ bool pawn_structure_hash_table::lookup( uint64_t key, short& eval ) const
 }
 
 
-void pawn_structure_hash_table::store( uint64_t key, short eval )
+void pawn_structure_hash_table::store( uint64_t key, short const* eval )
 {
 	unsigned long long index = key % size_;
 
-	unsigned long long v = static_cast<uint64_t>(eval);
+	unsigned long long v = (static_cast<uint64_t>(eval[0]) << 16) + static_cast<uint64_t>(eval[1]);
 
 	data_[index].data = v;
 	data_[index].key = v ^ key;

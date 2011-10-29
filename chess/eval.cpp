@@ -57,7 +57,7 @@ eval_values_t eval_values;
 }*/
 
 // After much tweaking employing a genetic algorithm, this is better but still far from perfect.
-eval_values_t::eval_values_t()
+/*eval_values_t::eval_values_t()
 {
 	material_values[pieces::none] = 0;
 	material_values[pieces::pawn] = 100;
@@ -68,11 +68,20 @@ eval_values_t::eval_values_t()
 	material_values[pieces::king] = 0;
 
 	double_bishop = 28;
-	doubled_pawn = -30;
-	passed_pawn = 19;
-	isolated_pawn = -10;
-	connected_pawn = 0;
-	pawn_shield = 5;
+
+	doubled_pawn[0] = -30;
+	passed_pawn[0] = 19;
+	isolated_pawn[0] = -10;
+	connected_pawn[0] = 0;
+
+	doubled_pawn[1] = -30;
+	passed_pawn[1] = 19;
+	isolated_pawn[1] = -10;
+	connected_pawn[1] = 0;
+
+	pawn_shield[0] = 5;
+	pawn_shield[1] = 5;
+
 	castled = 25;
 
 	pin_absolute_bishop = 16;
@@ -97,6 +106,64 @@ eval_values_t::eval_values_t()
 	center_control_multiplicator = 8;
 	center_control_divisor = 1;
 
+	phase_transition_begin = 600;
+	phase_transition_duration = 1200;
+
+	update_derived();
+}*/
+
+eval_values_t::eval_values_t()
+{
+	material_values[pieces::none] = 0;
+	material_values[pieces::pawn] = 102;
+	material_values[pieces::knight] = 320;
+	material_values[pieces::bishop] = 315;
+	material_values[pieces::rook] = 487;
+	material_values[pieces::queen] = 909;
+	material_values[pieces::king] = 0;
+
+	double_bishop = 35;
+
+	doubled_pawn[0] = -23;
+	passed_pawn[0] = 0;
+	isolated_pawn[0] = 0;
+	connected_pawn[0] = 0;
+
+	doubled_pawn[1] = -25;
+	passed_pawn[1] = 31;
+	isolated_pawn[1] = -12;
+	connected_pawn[1] = 0;
+
+	pawn_shield[0] = 10;
+	pawn_shield[1] = 0;
+
+	castled = 0;
+
+	pin_absolute_bishop = 37;
+	pin_absolute_rook = 0;
+	pin_absolute_queen = 48;
+
+	mobility_multiplicator = 4;
+	mobility_divisor = 1;
+
+	pin_multiplicator = 7;
+	pin_divisor = 5;
+
+	rooks_on_open_file_multiplicator = 3;
+	rooks_on_open_file_divisor = 8;
+
+	tropism_multiplicator = 1;
+	tropism_divisor = 9;
+
+	king_attack_multiplicator = 10;
+	king_attack_divisor = 1;
+
+	center_control_multiplicator = 6;
+	center_control_divisor = 1;
+
+	phase_transition_begin = 985;
+	phase_transition_duration = 1996;
+
 	update_derived();
 }
 
@@ -109,6 +176,25 @@ void eval_values_t::update_derived()
 		material_values[pieces::rook] * 2 +
 		material_values[pieces::queen] +
 		material_values[pieces::king];
+
+	phase_transition_material_begin = initial_material * 2 - phase_transition_begin;
+	phase_transition_material_end = phase_transition_material_begin - phase_transition_duration;
+}
+
+
+short phase_scale( short const* material, short ev1, short ev2 )
+{
+	int m = material[0] + material[1];
+	if( m >= eval_values.phase_transition_material_begin ) {
+		return ev1;
+	}
+	else if( m <= eval_values.phase_transition_material_end ) {
+		return ev2;
+	}
+	
+	int position = 256 * (eval_values.phase_transition_material_begin - m) / static_cast<int>(eval_values.phase_transition_duration);
+	return ((static_cast<int>(ev1) * position      ) >> 8) +
+		   ((static_cast<int>(ev2) * (256-position)) >> 8);
 }
 
 
@@ -648,11 +734,9 @@ void evaluate_pawn( unsigned long long own_pawns, unsigned long long foreign_paw
 }
 }
 
-short evaluate_pawns( unsigned long long white_pawns, unsigned long long black_pawns )
+void evaluate_pawns( unsigned long long white_pawns, unsigned long long black_pawns, short* eval )
 {
 	// Two while loops, otherwise nice branchless solution.
-
-	short ret = 0;
 
 	unsigned long long unpassed_white = 0;
 	unsigned long long doubled_white = 0;
@@ -690,17 +774,25 @@ short evaluate_pawns( unsigned long long white_pawns, unsigned long long black_p
 		}
 	}
 	unpassed_white |= doubled_white;
-	ret += eval_values.passed_pawn * popcount(white_pawns ^ unpassed_white);
-	ret += eval_values.doubled_pawn * popcount(doubled_white);
-	ret += eval_values.connected_pawn * popcount(connected_white);
-	ret += eval_values.isolated_pawn * popcount(white_pawns ^ unisolated_white);
 	unpassed_black |= doubled_black;
-	ret -= eval_values.passed_pawn * popcount(black_pawns ^ unpassed_black);
-	ret -= eval_values.doubled_pawn * popcount(doubled_black);
-	ret -= eval_values.connected_pawn * popcount(connected_black);
-	ret -= eval_values.isolated_pawn * popcount(black_pawns ^ unisolated_black);
 
-	return ret;
+	eval[0] = static_cast<short>(eval_values.passed_pawn[0] * popcount(white_pawns ^ unpassed_white));
+	eval[0] += static_cast<short>(eval_values.doubled_pawn[0] * popcount(doubled_white));
+	eval[0] += static_cast<short>(eval_values.connected_pawn[0] * popcount(connected_white));
+	eval[0] += static_cast<short>(eval_values.isolated_pawn[0] * popcount(white_pawns ^ unisolated_white));
+	eval[0] -= static_cast<short>(eval_values.passed_pawn[0] * popcount(black_pawns ^ unpassed_black));
+	eval[0] -= static_cast<short>(eval_values.doubled_pawn[0] * popcount(doubled_black));
+	eval[0] -= static_cast<short>(eval_values.connected_pawn[0] * popcount(connected_black));
+	eval[0] -= static_cast<short>(eval_values.isolated_pawn[0] * popcount(black_pawns ^ unisolated_black));
+
+	eval[1] = static_cast<short>(eval_values.passed_pawn[1] * popcount(white_pawns ^ unpassed_white));
+	eval[1] += static_cast<short>(eval_values.doubled_pawn[1] * popcount(doubled_white));
+	eval[1] += static_cast<short>(eval_values.connected_pawn[1] * popcount(connected_white));
+	eval[1] += static_cast<short>(eval_values.isolated_pawn[1] * popcount(white_pawns ^ unisolated_white));
+	eval[1] -= static_cast<short>(eval_values.passed_pawn[1] * popcount(black_pawns ^ unpassed_black));
+	eval[1] -= static_cast<short>(eval_values.doubled_pawn[1] * popcount(doubled_black));
+	eval[1] -= static_cast<short>(eval_values.connected_pawn[1] * popcount(connected_black));
+	eval[1] -= static_cast<short>(eval_values.isolated_pawn[1] * popcount(black_pawns ^ unisolated_black));
 }
 
 
@@ -748,11 +840,14 @@ short evaluate_fast( position const& p, color::type c )
 {
 	int value = evaluate_side( p, c ) - evaluate_side( p, static_cast<color::type>(1-c) );
 
+	short pawn_eval[2];
+	evaluate_pawns( p.bitboards[0].b[bb_type::pawns], p.bitboards[1].b[bb_type::pawns], pawn_eval );
+	short scaled_pawns = phase_scale( p.material, pawn_eval[0], pawn_eval[1] );
 	if( c ) {
-		value -= evaluate_pawns( p.bitboards[0].b[bb_type::pawns], p.bitboards[1].b[bb_type::pawns] );
+		value -= scaled_pawns;
 	}
 	else {
-		value += evaluate_pawns( p.bitboards[0].b[bb_type::pawns], p.bitboards[1].b[bb_type::pawns] );
+		value += scaled_pawns;
 	}
 
 	ASSERT( value > result::loss && value < result::win );
@@ -839,6 +934,18 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 
 	outPawns = p.pawns;
 	if( m.piece == pieces::pawn || m.captured_piece == pieces::pawn ) {
+		short material[2];
+		material[0] = p.material[0];
+		material[1] = p.material[1];
+
+		if( m.captured_piece != pieces::none ) {
+			material[1-c] -= get_material_value( m.captured_piece );
+		}
+		if( m.flags & move_flags::promotion ) {
+			material[c] -= get_material_value( pieces::pawn );
+			material[c] += get_material_value( pieces::queen );
+		}
+
 		unsigned long long pawnMap[2];
 		pawnMap[0] = p.bitboards[0].b[bb_type::pawns];
 		pawnMap[1] = p.bitboards[1].b[bb_type::pawns];
@@ -863,21 +970,22 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 			}
 		}
 
-		short pawn_eval;
+		short pawn_eval[2];
 		if( !pawn_hash_table.lookup( outPawns.hash, pawn_eval ) ) {
-			pawn_eval = evaluate_pawns(pawnMap[0], pawnMap[1]);
+			evaluate_pawns(pawnMap[0], pawnMap[1], pawn_eval);
 			pawn_hash_table.store( outPawns.hash, pawn_eval );
 		}
 
+		short scaled_eval = phase_scale( material, pawn_eval[0], pawn_eval[1] );
 		if( c == color::white ) {
 			current_evaluation -= outPawns.eval;
-			current_evaluation += pawn_eval;
+			current_evaluation += scaled_eval;
 		}
 		else {
 			current_evaluation += outPawns.eval;
-			current_evaluation -= pawn_eval;
+			current_evaluation -= scaled_eval;
 		}
-		outPawns.eval = pawn_eval;
+		outPawns.eval = scaled_eval;
 	}
 
 #if 0
@@ -907,9 +1015,6 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 }
 
 
-unsigned char const shield_const = 5;
-
-
 /* Pawn shield for king
  * 1 2 3
  * 4 5 6
@@ -919,26 +1024,28 @@ unsigned char const shield_const = 5;
  *
  * Special case: a and h file. There b and g also count twice.
  */
-static short evaluate_pawn_shield_side( position const& p, color::type c )
+static void evaluate_pawn_shield_side( position const& p, color::type c, short* pawn_shield )
 {
 	unsigned long long kings = p.bitboards[c].b[bb_type::king];
 	unsigned long long king;
 	bitscan( kings, king );
 
 	unsigned long long shield = king_pawn_shield[c][king] & p.bitboards[c].b[bb_type::pawns];
-	return eval_values.pawn_shield * popcount(shield);
+	pawn_shield[0] = static_cast<short>(eval_values.pawn_shield[0] * popcount(shield));
+	pawn_shield[1] = static_cast<short>(eval_values.pawn_shield[1] * popcount(shield));
 }
 
 
-short evaluate_pawn_shield( position const& p, color::type c )
+void evaluate_pawn_shield( position const& p, color::type c, short* pawn_shield )
 {
+	short own[2];
+	short other[2];
 
-	short own = evaluate_pawn_shield_side( p, c );
-	short other = evaluate_pawn_shield_side( p, static_cast<color::type>(1-c) );
+	evaluate_pawn_shield_side( p, c, own );
+	evaluate_pawn_shield_side( p, static_cast<color::type>(1-c), other );
 
-	short ev = own - other;
-
-	return ev;
+	pawn_shield[0] = own[0] - other[0];
+	pawn_shield[1] = own[1] - other[1];
 }
 
 short evaluate_full( position const& p, color::type c )
@@ -952,7 +1059,10 @@ extern unsigned long long const pawn_control[2][64];
 
 short evaluate_full( position const& p, color::type c, short eval_fast )
 {
-	eval_fast += evaluate_pawn_shield( p, c );
+	short pawn_shield[2];
+	evaluate_pawn_shield( p, c, pawn_shield );
+
+	eval_fast += phase_scale( p.material, pawn_shield[0], pawn_shield[1] );
 	
 	eval_fast += evaluate_mobility( p, c );
 	

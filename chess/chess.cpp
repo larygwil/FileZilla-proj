@@ -28,6 +28,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "platform.hpp"
 #include "statistics.hpp"
 #include "selftest.hpp"
+#include "tweak.hpp"
 #include "zobrist.hpp"
 
 #include <algorithm>
@@ -747,6 +748,10 @@ void xboard()
 			state.in_book = false;
 			state.started_from_root = false;
 		}
+		else if( line == "~score") {
+			short eval = evaluate_full( state.p, state.c );
+			std::cout << eval << std::endl;
+		}
 		else {
 			move m;
 			if( parse_move( state.p, state.c, line, m ) ) {
@@ -802,8 +807,8 @@ int main( int argc, char const* argv[] )
 	}
 	init_zobrist_tables();
 
-	if( i < argc && !strcmp(argv[i], "xboard" ) ) {
-		xboard();
+	if( i < argc && !strcmp(argv[i], "auto" ) ) {
+		auto_play();
 	}
 	else if( i < argc && !strcmp(argv[i], "perft" ) ) {
 		perft();
@@ -811,8 +816,14 @@ int main( int argc, char const* argv[] )
 	else if( i < argc && !strcmp(argv[i], "test" ) ) {
 		selftest();
 	}
+	else if( i < argc && !strcmp(argv[i], "tweakgen" ) ) {
+		generate_test_positions();
+	}
+	else if( i < argc && !strcmp(argv[i], "tweak" ) ) {
+		tweak_evaluation();
+	}
 	else {
-		auto_play();
+		xboard();
 	}
 
 	logger::cleanup();

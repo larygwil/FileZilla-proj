@@ -263,6 +263,7 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c )
 
 	init_bitboards( p );
 	init_material( p );
+	p.init_pawn_structure();
 
 	return true;
 }

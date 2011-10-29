@@ -8,14 +8,19 @@ struct eval_values_t
 	eval_values_t();
 
 	short material_values[7];
+
+	// Derived
 	short initial_material;
 
 	short double_bishop;
-	short doubled_pawn;
-	short passed_pawn;
-	short isolated_pawn;
-	short connected_pawn;
-	short pawn_shield;
+
+	short doubled_pawn[2];
+	short passed_pawn[2];
+	short isolated_pawn[2];
+	short connected_pawn[2];
+	
+	short pawn_shield[2];
+
 	short castled;
 
 	short pin_absolute_bishop;
@@ -42,6 +47,13 @@ struct eval_values_t
 	short center_control_multiplicator;
 	short center_control_divisor;
 
+	short phase_transition_begin;
+	short phase_transition_duration;
+
+	// Derived
+	int phase_transition_material_begin;
+	int phase_transition_material_end;
+
 	void update_derived();
 };
 
@@ -54,8 +66,10 @@ short evaluate_full( position const& p, color::type c, short eval_fast );
 
 short evaluate_move( position const& p, color::type c, short current_evaluation, move const& m, position::pawn_structure& outPawns );
 
-short evaluate_pawns( unsigned long long const white_pawns, unsigned long long const black_pawns );
+void evaluate_pawns( unsigned long long const white_pawns, unsigned long long const black_pawns, short* eval );
 
 short get_material_value( pieces::type pi );
+
+short phase_scale( short const* material, short ev1, short ev2 );
 
 #endif

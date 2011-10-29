@@ -11,7 +11,7 @@
  *
  * Key 64bit zobrist over pawns, white's point of view.
  *
- * Data is 16bit evaluation, 48 bit spare.
+ * Data is 2 times 16bit evaluation, for two game phases, 32 bit spare.
  *
  * If there are type-1 collisions, they are not handled the slightest.
  * Rationale being pawn evaluation only having a slight impact on overall
@@ -43,9 +43,11 @@ public:
 
 	bool init( uint64_t size_in_mib );
 
-	bool lookup( uint64_t key, short& eval ) const;
+	// Pass array of two shorts
+	bool lookup( uint64_t key, short* eval ) const;
 
-	void store( uint64_t key, short eval );
+	// Pass array of two shorts
+	void store( uint64_t key, short const* eval );
 
 	stats get_stats( bool reset );
 

@@ -7,7 +7,7 @@
 
 namespace pieces {
 enum type {
-	none,
+	none = 0,
 	pawn,
 	knight,
 	bishop,

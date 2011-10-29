@@ -566,10 +566,12 @@ bool apply_move( position& p, move const& m, color::type c )
 			}
 		}
 
-		if( !pawn_hash_table.lookup( p.pawns.hash, p.pawns.eval ) ) {
-			p.pawns.eval = evaluate_pawns(p.bitboards[0].b[bb_type::pawns], p.bitboards[1].b[bb_type::pawns]);
-			pawn_hash_table.store( p.pawns.hash, p.pawns.eval );
+		short pawn_eval[2];
+		if( !pawn_hash_table.lookup( p.pawns.hash, pawn_eval ) ) {
+			evaluate_pawns(p.bitboards[0].b[bb_type::pawns], p.bitboards[1].b[bb_type::pawns], pawn_eval);
+			pawn_hash_table.store( p.pawns.hash, pawn_eval );
 		}
+		p.pawns.eval = phase_scale( p.material, pawn_eval[0], pawn_eval[1] );
 	}
 
 	return ret;
@@ -633,5 +635,7 @@ void position::init_pawn_structure()
 			pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), pawn );
 		}
 	}
-	pawns.eval = evaluate_pawns( bitboards[0].b[bb_type::pawns], bitboards[1].b[bb_type::pawns] );
+	short pawn_eval[2];
+	evaluate_pawns( bitboards[0].b[bb_type::pawns], bitboards[1].b[bb_type::pawns], pawn_eval );
+	pawns.eval = phase_scale( material, pawn_eval[0], pawn_eval[1] );
 }
