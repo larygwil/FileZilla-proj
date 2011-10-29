@@ -12,6 +12,7 @@ extern unsigned long long const isolated_pawns[64];
 
 eval_values_t eval_values;
 
+// Original values
 /*eval_values_t::eval_values_t()
 {
 	material_values[pieces::none] = 0;
@@ -55,6 +56,7 @@ eval_values_t eval_values;
 	update_derived();
 }*/
 
+// After much tweaking employing a genetic algorithm, this is better but still far from perfect.
 eval_values_t::eval_values_t()
 {
 	material_values[pieces::none] = 0;
