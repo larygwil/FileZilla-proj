@@ -26,6 +26,7 @@ OBJECT_FILES = \
 	pvlist.o \
 	selftest.o \
 	statistics.o \
+	tweak.o \
 	unix.o \
 	util.o \
 	sqlite/sqlite3.o \

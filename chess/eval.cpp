@@ -115,31 +115,31 @@ eval_values_t eval_values;
 eval_values_t::eval_values_t()
 {
 	material_values[pieces::none] = 0;
-	material_values[pieces::pawn] = 102;
-	material_values[pieces::knight] = 320;
-	material_values[pieces::bishop] = 315;
-	material_values[pieces::rook] = 487;
-	material_values[pieces::queen] = 909;
+	material_values[pieces::pawn] = 91;
+	material_values[pieces::knight] = 330;
+	material_values[pieces::bishop] = 330;
+	material_values[pieces::rook] = 508;
+	material_values[pieces::queen] = 930;
 	material_values[pieces::king] = 0;
 
 	double_bishop = 35;
 
-	doubled_pawn[0] = -23;
-	passed_pawn[0] = 0;
+	doubled_pawn[0] = -17;
+	passed_pawn[0] = 1;
 	isolated_pawn[0] = 0;
 	connected_pawn[0] = 0;
 
-	doubled_pawn[1] = -25;
-	passed_pawn[1] = 31;
-	isolated_pawn[1] = -12;
+	doubled_pawn[1] = -23;
+	passed_pawn[1] = 46;
+	isolated_pawn[1] = -17;
 	connected_pawn[1] = 0;
 
 	pawn_shield[0] = 10;
-	pawn_shield[1] = 0;
+	pawn_shield[1] = 2;
 
 	castled = 0;
 
-	pin_absolute_bishop = 37;
+	pin_absolute_bishop = 27;
 	pin_absolute_rook = 0;
 	pin_absolute_queen = 48;
 
@@ -147,22 +147,22 @@ eval_values_t::eval_values_t()
 	mobility_divisor = 1;
 
 	pin_multiplicator = 7;
-	pin_divisor = 5;
+	pin_divisor = 4;
 
-	rooks_on_open_file_multiplicator = 3;
+	rooks_on_open_file_multiplicator = 2;
 	rooks_on_open_file_divisor = 8;
 
-	tropism_multiplicator = 1;
+	tropism_multiplicator = 0;
 	tropism_divisor = 9;
 
 	king_attack_multiplicator = 10;
 	king_attack_divisor = 1;
 
-	center_control_multiplicator = 6;
+	center_control_multiplicator = 7;
 	center_control_divisor = 1;
 
-	phase_transition_begin = 985;
-	phase_transition_duration = 1996;
+	phase_transition_begin = 991;
+	phase_transition_duration = 1998;
 
 	update_derived();
 }
@@ -199,124 +199,119 @@ short phase_scale( short const* material, short ev1, short ev2 )
 
 
 namespace {
-short p = eval_values.material_values[pieces::pawn];
-short pawn_values[2][64] = {
+short const pawn_values[2][64] = {
 	{
-		0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
-		p   , p   , p   , p-20, p-20, p   , p   , p   ,
-		p+2 , p+2 , p+2 , p+5 , p+5 , p+2 , p+2 , p+2 ,
-		p+3 , p+5 , p+10, p+20, p+20, p+10, p+5 , p+3 ,
-		p+6 , p+8 , p+17, p+27, p+27, p+17, p+8 , p+6 ,
-		p+10, p+15, p+25, p+40, p+40, p+25, p+15, p+10,
-		p+45, p+50, p+55, p+60, p+60, p+55, p+50, p+45,
-		0   , 0   , 0   , 0   , 0   , 0   , 0   , 0
+		 0,  0,  0,   0,   0, 0   , 0   , 0   ,
+		 0,  0,  0, -20, -20, 0   , 0   , 0   ,
+		 2,  2,  2,   5,   5,   2 ,   2 ,   2 ,
+		 3,  5, 10,  20,  20,   10,   5 ,   3 ,
+		 6,  8, 17,  27,  27, 17,   8 ,   6 ,
+		10, 15, 25,  40,  40, 25,   15,   10,
+		45, 50, 55,  60,  60, 55,   50,   45,
+		 0,  0,  0,   0,   0,  0   , 0   , 0
 	},
 	{
-		0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
-		p+45, p+50, p+55, p+60, p+60, p+55, p+50, p+45,
-		p+10, p+15, p+25, p+40, p+40, p+25, p+15, p+10 ,
-		p+5 , p+8 , p+17, p+27, p+27, p+17, p+8 , p+6 ,
-		p+3 , p+5 , p+10, p+20, p+20, p+10, p+5 , p+3 ,
-		p+2 , p+2 , p+2 , p+5 , p+5 , p+2 , p+2 , p+2 ,
-		p   , p   , p   , p-20, p-20, p   , p   , p   ,
-		0   , 0   , 0   , 0   , 0   , 0   , 0   , 0
+		 0, 0   , 0   , 0   , 0   , 0   , 0   , 0   ,
+		45,   50,   55,   60,   60,   55,   50,   45,
+		10,   15,   25,   40,   40,   25,   15,   10 ,
+		 5,   8 ,   17,   27,   27,   17,   8 ,   6 ,
+		 3,   5 ,   10,   20,   20,   10,   5 ,   3 ,
+		 2,   2 ,   2 ,   5 ,   5 ,   2 ,   2 ,   2 ,
+		 0, 0   , 0   ,   20,  20, 0   , 0   , 0   ,
+		 0, 0   , 0   , 0   , 0   , 0   , 0   , 0
 	}
 };
 
 
-short q = eval_values.material_values[pieces::queen];
-short queen_values[2][64] = {
+short const queen_values[2][64] = {
 	{
-		q-20, q-10, q-10, q-5 , q-5 , q-10, q-10, q-20,
-		q-10, q   , q+2 , q+3 , q+3 , q+2 , q   , q-10,
-		q-10, q+2 , q+5 , q+5 , q+5 , q+5 , q+2 , q-10,
-		q-5 , q+3 , q+5 , q+7 , q+7 , q+5 , q+3 , q-5 ,
-		q-5 , q+3 , q+5 , q+7 , q+7 , q+5 , q+3 , q-5 ,
-		q-10, q+2 , q+5 , q+5 , q+5 , q+5 , q+2 , q-10,
-		q-10, q   , q+2 , q+3 , q+3 , q+2 , q   , q-10,
-		q-20, q-10, q-10, q-5 , q-5 , q-10, q-10, q-20,
+		 -20,  -10,  -10,  -5 ,  -5 ,  -10,  -10,  -20,
+		 -10,    0,   2 ,   3 ,   3 ,   2 , 0   ,  -10,
+		 -10,    2,   5 ,   5 ,   5 ,   5 ,   2 ,  -10,
+		  -5,    3,   5 ,   7 ,   7 ,   5 ,   3 ,  -5 ,
+		  -5,    3,   5 ,   7 ,   7 ,   5 ,   3 ,  -5 ,
+		 -10,    2,   5 ,   5 ,   5 ,   5 ,   2 ,  -10,
+		 -10, 0   ,   2 ,   3 ,   3 ,   2 , 0   ,  -10,
+		 -20,  -10,  -10,  -5 ,  -5 ,  -10,  -10,  -20,
 	},
 	{
-		q-20, q-10, q-10, q-5 , q-5 , q-10, q-10, q-20,
-		q-10, q   , q+2 , q+3 , q+3 , q+2 , q   , q-10,
-		q-10, q+2 , q+5 , q+5 , q+5 , q+5 , q+2 , q-10,
-		q-5 , q+3 , q+5 , q+7 , q+7 , q+5 , q+3 , q-5 ,
-		q-5 , q+3 , q+5 , q+7 , q+7 , q+5 , q+3 , q-5 ,
-		q-10, q+2 , q+5 , q+5 , q+5 , q+5 , q+2 , q-10,
-		q-10, q   , q+2 , q+3 , q+3 , q+2 , q   , q-10,
-		q-20, q-10, q-10, q-5 , q-5 , q-10, q-10, q-20,
+		 -20,  -10,  -10,  -5 ,  -5 ,  -10,  -10,  -20,
+		 -10, 0   ,   2 ,   3 ,   3 ,   2 , 0   ,  -10,
+		 -10,   2 ,   5 ,   5 ,   5 ,   5 ,   2 ,  -10,
+		 -5 ,   3 ,   5 ,   7 ,   7 ,   5 ,   3 ,  -5 ,
+		 -5 ,   3 ,   5 ,   7 ,   7 ,   5 ,   3 ,  -5 ,
+		 -10,   2 ,   5 ,   5 ,   5 ,   5 ,   2 ,  -10,
+		 -10, 0   ,   2 ,   3 ,   3 ,   2 , 0   ,  -10,
+		 -20,  -10,  -10,  -5 ,  -5 ,  -10,  -10,  -20,
 	}
 };
 
-short r = eval_values.material_values[pieces::rook];
-short rook_values[2][64] = {
+short const rook_values[2][64] = {
 	{
-		r  , r  , r  , r  , r  , r  , r  , r  ,
-		r-5, r  , r  , r  , r  , r  , r  , r-5,
-		r-5, r  , r  , r  , r  , r  , r  , r-5,
-		r-5, r  , r  , r  , r  , r  , r  , r-5,
-		r-5, r  , r  , r  , r  , r  , r  , r-5,
-		r-5, r  , r  , r  , r  , r  , r  , r-5,
-		r+5, r+5, r+5, r+5, r+5, r+5, r+5, r+5,
-		r  , r  , r  , r  , r  , r  , r  , r
+		0  , 0  , 0  , 0  , 0  , 0  , 0  , 0  ,
+		 -5, 0  , 0  , 0  , 0  , 0  , 0  , 5,
+		 -5, 0  , 0  , 0  , 0  , 0  , 0  , 5,
+		 -5, 0  , 0  , 0  , 0  , 0  , 0  , 5,
+		 -5, 0  , 0  , 0  , 0  , 0  , 0  , 5,
+		 -5, 0  , 0  , 0  , 0  , 0  , 0  , 5,
+		  5,   5,   5,   5,   5,   5,   5,   5,
+		0  , 0  , 0  , 0  , 0  , 0  , 0  , 0
 	},
 	{
-		r  , r  , r  , r  , r  , r  , r  , r  ,
-		r+5, r+5, r+5, r+5, r+5, r+5, r+5, r+5,
-		r-5, r  , r  , r  , r  , r  , r  , r-5,
-		r-5, r  , r  , r  , r  , r  , r  , r-5,
-		r-5, r  , r  , r  , r  , r  , r  , r-5,
-		r-5, r  , r  , r  , r  , r  , r  , r-5,
-		r-5, r  , r  , r  , r  , r  , r  , r-5,
-		r  , r  , r  , r  , r  , r  , r  , r  ,
+		0  , 0  , 0  , 0  , 0  , 0  , 0  , 0  ,
+		  5,   5,   5,   5,   5,   5,   5,   5,
+		 -5, 0  , 0  , 0  , 0  , 0  , 0  ,  -5,
+		 -5, 0  , 0  , 0  , 0  , 0  , 0  ,  -5,
+		 -5, 0  , 0  , 0  , 0  , 0  , 0  ,  -5,
+		 -5, 0  , 0  , 0  , 0  , 0  , 0  ,  -5,
+		 -5, 0  , 0  , 0  , 0  , 0  , 0  ,  -5,
+		0  , 0  , 0  , 0  , 0  , 0  , 0  , 0  ,
 	}
 };
 
-short n = eval_values.material_values[pieces::knight];
-short knight_values[2][64] = {
+short const knight_values[2][64] = {
 	{
-		n-25, n-15, n-10, n-10, n-10, n-10, n-15, n-25,
-		n-15, n-5,  n,    n+2,  n+2,  n,    n-5,  n-15,
-		n-10, n,    n+2,  n+5,  n+5,  n+2,  n,    n-10,
-		n-10, n+2,  n+5,  n+10, n+10, n+5,  n+2,  n-10,
-		n-10, n+2,  n+5,  n+10, n+10, n+5,  n+2,  n-10,
-		n-10, n,    n+2,  n+5,  n+5,  n+2,  n,    n-10,
-		n-15, n-5,  n,    n+2,  n+2,  n,    n-5,  n-15,
-		n-25, n-15, n-10, n-10, n-10, n-10, n-15, n-25
+		 -25,  -15,  -10,  -10,  -10,  -10,  -15,  -25,
+		 -15,  -5,  0,      2,    2,  0,     -5,   -15,
+		 -10, 0,      2,    5,    5,    2,  0,     -10,
+		 -10,   2,    5,    10,   10,   5,    2,   -10,
+		 -10,   2,    5,    10,   10,   5,    2,   -10,
+		 -10, 0,      2,    5,    5,    2,  0,     -10,
+		 -15,  -5,  0,      2,    2,  0,     -5,   -15,
+		 -25,  -15,  -10,  -10,  -10,  -10,  -15,  -25
 	},
 	{
-		n-25, n-15, n-10, n-10, n-10, n-10, n-15, n-25,
-		n-15, n-5,  n,    n+2,  n+2,  n,    n-5,  n-15,
-		n-10, n,    n+2,  n+5,  n+5,  n+2,  n,    n-10,
-		n-10, n+2,  n+5,  n+10, n+10, n+5,  n+2,  n-10,
-		n-10, n+2,  n+5,  n+10, n+10, n+5,  n+2,  n-10,
-		n-10, n,    n+2,  n+5,  n+5,  n+2,  n,    n-10,
-		n-15, n-5,  n,    n+2,  n+2,  n,    n-5,  n-15,
-		n-25, n-15, n-10, n-10, n-10, n-10, n-15, n-25
+		 -25,  -15,  -10,  -10,  -10,  -10,  -15,  -25,
+		 -15,  -5,  0,      2,    2,  0,     -5,   -15,
+		 -10, 0,      2,    5,    5,    2,  0,     -10,
+		 -10,   2,    5,    10,   10,   5,    2,   -10,
+		 -10,   2,    5,    10,   10,   5,    2,   -10,
+		 -10, 0,      2,    5,    5,    2,  0,     -10,
+		 -15,  -5,  0,      2,    2,  0,     -5,   -15,
+		 -25,  -15,  -10,  -10,  -10,  -10,  -15,  -25
 	}
 };
 
-short b = eval_values.material_values[pieces::bishop];
-short bishop_values[2][64] = {
+short const bishop_values[2][64] = {
 	{
-		b-10, b-9,  b-7,  b-5,  b-5,  b-7,  b-9,  b-10,
-		b-2,  b+10, b+5,  b+10, b+10, b+5,  b+10, b-2,
-		b+3,  b+6,  b+15, b+12, b+12, b+15, b+6,  b+3,
-		b+5,  b+10, b+12, b+20, b+20, b+12, b+10, b+5,
-		b+5,  b+10, b+12, b+20, b+20, b+12, b+10, b+5,
-		b+3,  b+6,  b+15, b+12, b+12, b+15, b+6,  b+3,
-		b,    b+10, b+5,  b+10, b+10, b+5,  b+10, b,
-		b,    b,    b+2,  b+5,  b+5,  b+2,  b,    b
+		 -10,  -9,   -7,   -5,   -5,   -7,   -9,   -10,
+		 -2,    10,   5,    10,   10,   5,    10,  -2,
+		  3,    6,    15,   12,   12,   15,   6,    3,
+		  5,    10,   12,   20,   20,   12,   10,   5,
+		  5,    10,   12,   20,   20,   12,   10,   5,
+		  3,    6,    15,   12,   12,   15,   6,    3,
+		0,      10,   5,    10,   10,   5,    10, 0,
+		0,    0,      2,    5,    5,    2,  0,    0
 	},
 	{
-		b,    b,    b+2,  b+5,  b+5,  b+2,  b,    b,
-		b,    b+10, b+5,  b+10, b+10, b+5,  b+10, b,
-		b+3,  b+6,  b+15, b+12, b+12, b+15, b+6,  b+3,
-		b+5,  b+10, b+12, b+20, b+20, b+12, b+10, b+5,
-		b+5,  b+10, b+12, b+20, b+20, b+12, b+10, b+5,
-		b+3,  b+6,  b+15, b+12, b+12, b+15, b+6,  b+3,
-		b-2,  b+10, b+5,  b+10, b+10, b+5,  b+10, b-2,
-		b-10, b-9,  b-7,  b-5,  b-5,  b-7,  b-9,  b-10
+		0,    0,      2,    5,    5,    2,  0,    0,
+		0,      10,   5,    10,   10,   5,    10, 0,
+		  3,    6,    15,   12,   12,   15,   6,    3,
+		  5,    10,   12,   20,   20,   12,   10,   5,
+		  5,    10,   12,   20,   20,   12,   10,   5,
+		  3,    6,    15,   12,   12,   15,   6,    3,
+		 -2,    10,   5,    10,   10,   5,    10,  -2,
+		 -10,  -9,   -7,   -5,   -5,   -7,   -9,   -10
 	}
 };
 
@@ -800,28 +795,28 @@ short evaluate_side( position const& p, color::type c )
 {
 	short result = 0;
 
-	unsigned long long pieces = p.bitboards[c].b[bb_type::all_pieces];
-	while( pieces ) {
+	unsigned long long all_pieces = p.bitboards[c].b[bb_type::all_pieces];
+	while( all_pieces ) {
 		unsigned long long piece;
-		bitscan( pieces, piece );
+		bitscan( all_pieces, piece );
 
-		pieces &= pieces - 1;
+		all_pieces &= all_pieces - 1;
 
 		unsigned long long bpiece = 1ull << piece;
 		if( p.bitboards[c].b[bb_type::pawns] & bpiece ) {
-			result += pawn_values[c][piece];
+			result += pawn_values[c][piece] + eval_values.material_values[pieces::pawn];
 		}
 		else if( p.bitboards[c].b[bb_type::knights] & bpiece ) {
-			result += knight_values[c][piece];
+			result += knight_values[c][piece] + eval_values.material_values[pieces::knight];
 		}
 		else if( p.bitboards[c].b[bb_type::bishops] & bpiece ) {
-			result += bishop_values[c][piece];
+			result += bishop_values[c][piece] + eval_values.material_values[pieces::bishop];
 		}
 		else if( p.bitboards[c].b[bb_type::rooks] & bpiece ) {
-			result += rook_values[c][piece];
+			result += rook_values[c][piece] + eval_values.material_values[pieces::rook];
 		}
 		else if( p.bitboards[c].b[bb_type::queens] & bpiece ) {
-			result += queen_values[c][piece];
+			result += queen_values[c][piece] + eval_values.material_values[pieces::queen];
 		}
 	}
 
@@ -860,15 +855,15 @@ static short get_piece_square_value( color::type c, pieces::type target, unsigne
 {
 	switch( target ) {
 	case pieces::pawn:
-		return pawn_values[c][pi];
+		return pawn_values[c][pi] + eval_values.material_values[pieces::pawn];
 	case pieces::knight:
-		return knight_values[c][pi];
+		return knight_values[c][pi] + eval_values.material_values[pieces::knight];
 	case pieces::bishop:
-		return bishop_values[c][pi];
+		return bishop_values[c][pi] + eval_values.material_values[pieces::bishop];
 	case pieces::rook:
-		return rook_values[c][pi];
+		return rook_values[c][pi] + eval_values.material_values[pieces::rook];
 	case pieces::queen:
-		return queen_values[c][pi];
+		return queen_values[c][pi] + eval_values.material_values[pieces::queen];
 	default:
 	case pieces::king:
 		return 0;
@@ -912,7 +907,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 	if( m.captured_piece != pieces::none ) {
 		if( m.flags & move_flags::enpassant ) {
 			unsigned char ep = (m.target & 0x7) | (m.source & 0x38);
-			current_evaluation += pawn_values[1-c][ep];
+			current_evaluation += pawn_values[1-c][ep] + eval_values.material_values[pieces::pawn];
 		}
 		else {
 			current_evaluation += get_piece_square_value( static_cast<color::type>(1-c), m.captured_piece, m.target );
@@ -924,8 +919,8 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 	}
 
 	if( m.flags & move_flags::promotion ) {
-		current_evaluation -= pawn_values[c][m.source];
-		current_evaluation += queen_values[c][m.target];
+		current_evaluation -= pawn_values[c][m.source] + eval_values.material_values[pieces::pawn];
+		current_evaluation += queen_values[c][m.target] + eval_values.material_values[pieces::queen];
 	}
 	else {
 		current_evaluation -= get_piece_square_value( c, m.piece, m.source );

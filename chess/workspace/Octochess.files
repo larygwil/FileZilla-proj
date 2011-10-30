@@ -36,6 +36,8 @@
 ../sliding_piece_attacks.hpp
 ../statistics.cpp
 ../statistics.hpp
+../tweak.cpp
+../tweak.hpp
 ../unix.cpp
 ../unix.hpp
 ../util.cpp
