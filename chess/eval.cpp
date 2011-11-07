@@ -118,51 +118,51 @@ eval_values_t::eval_values_t()
 	material_values[pieces::pawn] = 91;
 	material_values[pieces::knight] = 330;
 	material_values[pieces::bishop] = 330;
-	material_values[pieces::rook] = 508;
+	material_values[pieces::rook] = 524;
 	material_values[pieces::queen] = 930;
 	material_values[pieces::king] = 0;
 
 	double_bishop = 35;
 
-	doubled_pawn[0] = -17;
+	doubled_pawn[0] = -14;
 	passed_pawn[0] = 1;
 	isolated_pawn[0] = 0;
 	connected_pawn[0] = 0;
 
-	doubled_pawn[1] = -23;
-	passed_pawn[1] = 46;
-	isolated_pawn[1] = -17;
+	doubled_pawn[1] = -24;
+	passed_pawn[1] = 44;
+	isolated_pawn[1] = -16;
 	connected_pawn[1] = 0;
 
 	pawn_shield[0] = 10;
-	pawn_shield[1] = 2;
+	pawn_shield[1] = 3;
 
 	castled = 0;
 
-	pin_absolute_bishop = 27;
+	pin_absolute_bishop = 19;
 	pin_absolute_rook = 0;
-	pin_absolute_queen = 48;
+	pin_absolute_queen = 39;
 
-	mobility_multiplicator = 4;
-	mobility_divisor = 1;
+	mobility_multiplicator = 7;
+	mobility_divisor = 2;
 
 	pin_multiplicator = 7;
-	pin_divisor = 4;
+	pin_divisor = 3;
 
 	rooks_on_open_file_multiplicator = 2;
 	rooks_on_open_file_divisor = 8;
 
-	tropism_multiplicator = 0;
+	tropism_multiplicator = 1;
 	tropism_divisor = 9;
 
 	king_attack_multiplicator = 10;
 	king_attack_divisor = 1;
 
-	center_control_multiplicator = 7;
+	center_control_multiplicator = 8;
 	center_control_divisor = 1;
 
-	phase_transition_begin = 991;
-	phase_transition_duration = 1998;
+	phase_transition_begin = 983;
+	phase_transition_duration = 1999;
 
 	update_derived();
 }

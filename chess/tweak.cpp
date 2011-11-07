@@ -37,7 +37,6 @@ static bool tweak_calc( position& p, color::type c, move& m, int& res, unsigned 
 
 	move_info moves[200];
 	move_info* pm = moves;
-	int current_evaluation = evaluate_fast( p, c );
 	calculate_moves( p, c, pm, check );
 
 	if( moves == pm ) {
@@ -73,7 +72,6 @@ static void generate_test_positions_impl()
 
 	transposition_table.clear_data();
 	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
-	unsigned long long start = get_time();
 	position p;
 
 	init_board(p);
@@ -132,8 +130,6 @@ static void generate_test_positions_impl()
 			break;
 		}
 	}
-
-	unsigned long long stop = get_time();
 }
 }
 
@@ -438,7 +434,7 @@ void select( population& pop )
 }
 
 
-void save_new_best( individual& best, std::vector<reference_data> const& data )
+void save_new_best( individual& best, std::vector<reference_data> const& /*data*/ )
 {
 	std::cout << std::endl;
 	std::cout << "New best: " << best.fitness_ << std::endl;
