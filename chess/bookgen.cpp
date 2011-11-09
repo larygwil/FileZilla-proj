@@ -19,7 +19,7 @@
 
 #include <signal.h>
 
-int const MAX_BOOKSEARCH_DEPTH = 12;
+int const MAX_BOOKSEARCH_DEPTH = 13;
 
 unsigned int const MAX_BOOK_DEPTH = 10;
 
@@ -106,6 +106,133 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 	}
 
 	return b.add_entries( move_history, entries );
+}
+
+
+bool update_position( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history, std::vector<book_entry> const& entries )
+{
+	unsigned long long hash = get_zobrist_hash( p );
+
+	context ctx;
+	ctx.clock = move_history.size() % 256;
+	ctx.seen = seen;
+
+	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
+		book_entry entry = *it;
+
+		if( entry.search_depth < MAX_BOOKSEARCH_DEPTH ) {
+			position new_pos = p;
+			apply_move( new_pos, entry.m, c );
+
+			unsigned long long new_hash = update_zobrist_hash( p, c, hash, entry.m );
+
+			short value;
+			if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
+				value = 0;
+			}
+			else {
+				ctx.seen.pos[++ctx.seen.root_position] = new_hash;
+
+				short eval = evaluate_fast( new_pos, c );
+
+				pv_entry* pv = ctx.pv_pool.get();
+				value = -step( (MAX_BOOKSEARCH_DEPTH) * depth_factor, 1, ctx, new_pos, new_hash, -eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+				ctx.pv_pool.release(pv);
+			}
+
+			entry.forecast = value;
+			entry.search_depth = MAX_BOOKSEARCH_DEPTH;
+
+			b.update_entry( move_history, entry );
+			std::cerr << ".";
+		}
+		else {
+			std::cerr << "x";
+		}
+	}
+
+	return true;
+//	move_info moves[200];
+//	move_info* pm = moves;
+//	check_map check;
+//	calc_check_map( p, c, check );
+//	calculate_moves( p, c, pm, check );
+//	if( pm == moves ) {
+//		return true;
+//	}
+
+
+	/*
+	std::vector<book_entry> entries;
+
+	unsigned long long hash = get_zobrist_hash( p );
+
+	context ctx;
+	ctx.clock = move_history.size() % 256;
+	ctx.seen = seen;
+
+	for( move_info const* it = moves; it != pm; ++it ) {
+		position new_pos = p;
+		apply_move( new_pos, *it, c );
+
+		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
+
+		short value;
+		if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
+			value = 0;
+		}
+		else {
+			ctx.seen.pos[++ctx.seen.root_position] = new_hash;
+
+			pv_entry* pv = ctx.pv_pool.get();
+			value = -step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor, 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+			ctx.pv_pool.release(pv);
+		}
+
+		book_entry entry;
+		entry.forecast = value;
+		entry.m = it->m;
+		entry.search_depth = MAX_BOOKSEARCH_DEPTH - 2;
+		entries.push_back( entry );
+
+		std::cerr << ".";
+	}
+
+	std::sort( entries.begin(), entries.end() );
+
+	std::size_t fulldepth = 5;
+	if( entries.size() < 5 ) {
+		fulldepth = entries.size();
+	}
+
+	for( std::size_t i = 0; i < fulldepth; ++i ) {
+		book_entry& entry = entries[i];
+
+		position new_pos = p;
+		apply_move( new_pos, entry.m, c );
+		position::pawn_structure pawns;
+		short new_eval = evaluate_move( p, c, eval, entry.m, pawns );
+
+		unsigned long long new_hash = update_zobrist_hash( p, c, hash, entry.m );
+
+		short value;
+		if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
+			value = 0;
+		}
+		else {
+			ctx.seen.pos[++ctx.seen.root_position] = new_hash;
+			pv_entry* pv = ctx.pv_pool.get();
+			value = -step( MAX_BOOKSEARCH_DEPTH * depth_factor, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+			ctx.pv_pool.release(pv);
+		}
+
+		entry.search_depth = MAX_BOOKSEARCH_DEPTH;
+		entry.forecast = value;
+
+		std::cerr << "F";
+	}
+
+	return b.add_entries( move_history, entries );*/
 }
 
 
@@ -239,6 +366,18 @@ public:
 	void process( work const& w )
 	{
 		w_ = w;
+		entries_.clear();
+
+		finished_ = false;
+
+		spawn();
+	}
+
+	void process( book_entry_with_position const& w )
+	{
+		w_ = w.w;
+		entries_ = w.entries;
+
 		finished_ = false;
 
 		spawn();
@@ -251,12 +390,18 @@ private:
 	condition& cond_;
 
 	work w_;
+	std::vector<book_entry> entries_;
 	bool finished_;
 };
 
 void processing_thread::onRun()
 {
-	calculate_position( b_, w_.p, w_.c, w_.seen, w_.move_history );
+	if( entries_.empty() ) {
+		calculate_position( b_, w_.p, w_.c, w_.seen, w_.move_history );
+	}
+	else {
+		update_position( b_, w_.p, w_.c, w_.seen, w_.move_history, entries_ );
+	}
 
 	scoped_lock l(mutex_);
 	finished_ = true;
@@ -450,6 +595,88 @@ void process( book& b )
 }
 
 
+void update( book& b )
+{
+	std::list<book_entry_with_position> wl = b.get_all_entries( 5 );
+	if( wl.empty() ) {
+		return;
+	}
+
+	std::cerr << "Got " << wl.size() << " positions to calculate" << std::endl;
+
+	mutex mtx;
+	condition cond;
+
+	std::vector<processing_thread*> threads;
+	int thread_count = conf.thread_count;
+	for( int t = 0; t < thread_count; ++t ) {
+		threads.push_back( new processing_thread( b, mtx, cond ) );
+	}
+
+	scoped_lock l(mtx);
+
+	bool all_idle = true;
+
+	unsigned long long start = get_time();
+	unsigned long long calculated = 0;
+
+	while( true ) {
+
+		while( !wl.empty() ) {
+
+			int t;
+			for( t = 0; t < thread_count; ++t ) {
+				if( threads[t]->spawned() ) {
+					continue;
+				}
+
+				book_entry_with_position w = wl.front();
+				wl.pop_front();
+				threads[t]->process( w );
+				all_idle = false;
+				if( wl.empty() ) {
+					break;
+				}
+			}
+			if( t == thread_count ) {
+				break;
+			}
+		}
+		if( all_idle ) {
+			break;
+		}
+
+		cond.wait( l );
+
+		all_idle = true;
+		for( int t = 0; t < thread_count; ++t ) {
+			if( !threads[t]->spawned() ) {
+				continue;
+			}
+
+			if( !threads[t]->finished() ) {
+				all_idle = false;
+				continue;
+			}
+
+			threads[t]->join();
+
+			++calculated;
+			unsigned long long now = get_time();
+			std::cerr << std::endl << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) * timer_precision() / (now - start) << " moves/hour" << std::endl;
+		}
+
+		if( all_idle && stop ) {
+			break;
+		}
+	}
+
+	if( !stop ) {
+		std::cerr << "All done" << std::endl;
+	}
+}
+
+
 void print_pos( position const& p, color::type c, std::vector<book_entry> const& moves )
 {
 	std::cout << "Possible moves:" << std::endl;
@@ -568,6 +795,9 @@ void run( book& b )
 				std::vector<book_entry> moves = b.get_entries( p, c, move_history );
 				print_pos( history, p, c, moves );
 			}
+		}
+		else if( line == "update" ) {
+			update( b );
 		}
 		else if( !line.empty() ) {
 			move m;

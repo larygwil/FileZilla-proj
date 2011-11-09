@@ -28,6 +28,13 @@ struct work {
 };
 
 
+struct book_entry_with_position
+{
+	work w;
+	std::vector<book_entry> entries;
+};
+
+
 class book
 {
 public:
@@ -37,7 +44,8 @@ public:
 	bool is_open() const;
 
 	// Returned entries are sorted by forecast, highest first.
-	std::vector<book_entry> get_entries( position const& p, color::type c, std::vector<move> const& history );
+	// move_limit limits the number of returned moves per position, sorted descendingly by forecast.
+	std::vector<book_entry> get_entries( position const& p, color::type c, std::vector<move> const& history, int move_limit = -1 );
 
 	// Entries do not have to be sorted
 	bool add_entries( std::vector<move> const& history, std::vector<book_entry> entries );
@@ -47,6 +55,14 @@ public:
 	unsigned long long size();
 
 	std::list<work> get_unprocessed_positions();
+
+	// move_limit limits the number of returned moves per position, sorted descendingly by forecast.
+	// max_evaluation_version ensures that only entries with an eval_version lower or equal than the given version are returned.
+	std::list<book_entry_with_position> get_all_entries( int move_limit = -1 );
+
+	bool update_entry( std::vector<move> const& history, book_entry const& entry );
+
+	void fold();
 
 private:
 	class impl;
