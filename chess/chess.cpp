@@ -507,7 +507,7 @@ void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv
 				if( it->forecast > -33 && it->forecast + 25 >= best && count_best < 3 ) {
 					++count_best;
 				}
-				std::cerr << move_to_string( state.p, state.c, it->m ) << " " << it->forecast << " (" << moves.front().search_depth << ")" << std::endl;
+				std::cerr << move_to_string( state.p, state.c, it->m ) << " " << it->forecast << " (" << it->search_depth << ")" << std::endl;
 			}
 
 			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
