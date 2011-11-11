@@ -147,7 +147,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves,
 }
 
 
-__attribute((noinline)) void calc_moves_king( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_king( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	unsigned long long kings = p.bitboards[c].b[bb_type::king];
 	unsigned long long king;
@@ -208,7 +208,7 @@ void calc_moves_queen( position const& p, color::type c, move_info*& moves, chec
 }
 
 
-__attribute((noinline)) void calc_moves_queens( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_queens( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	unsigned long long queens = p.bitboards[c].b[bb_type::queens];
 	while( queens ) {
@@ -239,7 +239,7 @@ void calc_moves_bishop( position const& p, color::type c, move_info*& moves, che
 }
 
 
-__attribute((noinline)) void calc_moves_bishops( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_bishops( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	unsigned long long bishops = p.bitboards[c].b[bb_type::bishops];
 	while( bishops ) {
@@ -270,7 +270,7 @@ void calc_moves_rook( position const& p, color::type c, move_info*& moves, check
 }
 
 
-__attribute((noinline)) void calc_moves_rooks( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_rooks( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	unsigned long long rooks = p.bitboards[c].b[bb_type::rooks];
 	while( rooks ) {
@@ -303,7 +303,7 @@ void calc_moves_knight( position const& p, color::type c, move_info*& moves, che
 }
 
 
-__attribute((noinline)) void calc_moves_knights( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_knights( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	unsigned long long knights = p.bitboards[c].b[bb_type::knights];
 	while( knights ) {
@@ -437,7 +437,7 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 	}
 }
 
-__attribute((noinline)) void calc_moves_pawns( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_pawns( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
 	unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
 	while( pawns ) {
