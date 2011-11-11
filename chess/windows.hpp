@@ -11,6 +11,8 @@ typedef unsigned long long uint64_t;
 	s \
 	__pragma( pack(pop) )
 
+#define NONPACKED(s) s
+
 namespace std {
 namespace tr1 {
 }
