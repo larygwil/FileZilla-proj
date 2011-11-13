@@ -8,7 +8,7 @@
 #include <iostream>
 #include <sstream>
 
-int const eval_version = 2;
+int const eval_version = 3;
 
 namespace {
 unsigned char const table[64] = {
@@ -311,7 +311,7 @@ std::list<work> book::get_unprocessed_positions()
 
 	scoped_lock l(impl_->mtx);
 
-	std::string query = "SELECT pos FROM position WHERE id NOT IN (SELECT DISTINCT(position) FROM book);";
+	std::string query = "SELECT pos FROM position WHERE id NOT IN (SELECT DISTINCT(position) FROM book) ORDER BY LENGTH(pos);";
 
 	int res = sqlite3_exec( impl_->db, query.c_str(), &work_cb, reinterpret_cast<void*>(&ret), 0 );
 	if( res != SQLITE_OK && res != SQLITE_DONE ) {
@@ -333,7 +333,7 @@ std::list<book_entry_with_position> book::get_all_entries( int move_limit )
 	{
 		scoped_lock l(impl_->mtx);
 
-		std::string query = "SELECT pos FROM position";
+		std::string query = "SELECT pos FROM position ORDER BY LENGTH(pos)";
 
 		int res = sqlite3_exec( impl_->db, query.c_str(), &work_cb, reinterpret_cast<void*>(&positions), 0 );
 		if( res != SQLITE_OK && res != SQLITE_DONE ) {

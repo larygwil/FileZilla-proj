@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+extern int const eval_version;
+
 struct book_entry
 {
 	move m;

@@ -12,12 +12,11 @@
 
 #include <algorithm>
 #include <deque>
+#include <fstream>
 #include <list>
 #include <iostream>
 #include <map>
 #include <sstream>
-
-#include <signal.h>
 
 int const MAX_BOOKSEARCH_DEPTH = 13;
 
@@ -670,6 +669,103 @@ void print_pos( std::vector<history_entry> const& history, position const& p, co
 }
 
 
+void learnpgn( book& b, std::string const& file )
+{
+	if( file.empty() ) {
+		std::cerr << "No filename given" << std::endl;
+	}
+
+	std::ifstream in( file );
+	std::string line;
+
+	position p;
+	color::type c = color::white;
+	std::vector<move> move_history;
+
+	bool valid = true;
+
+	while( std::getline( in, line ) ) {
+		if( line.empty() ) {
+			continue;
+		}
+
+		if( line[0] == '[' ) {
+			if( move_history.size() ) {
+				std::cerr << ".";
+				while( move_history.size() > 20 ) {
+					move_history.pop_back();
+				}
+				b.mark_for_processing( move_history );
+			}
+
+			init_board( p );
+			c = color::white;
+			move_history.clear();
+			valid = true;
+			continue;
+		}
+
+		if( !valid ) {
+			continue;
+		}
+
+		std::istringstream ss( line );
+		std::string token;
+
+		while( ss >> token ) {
+			if( token == "1-0" || token == "0-1" || token == "1/2-1/2" || token == "*" ) {
+				valid = false;
+				break;
+			}
+
+			if( token == "+" ) {
+				continue;
+			}
+
+			if( std::isdigit(token[0]) ) {
+				std::ostringstream os;
+				os << (move_history.size() / 2) + 1;
+				if( move_history.size() % 2 ) {
+					os << "...";
+				}
+				else {
+					os << ".";
+				}
+
+				if( token != os.str() ) {
+					valid = false;
+					std::cerr << "Invalid move number token: " << token <<std::endl;
+					std::cerr << "Expected: " << os.str() << std::endl;
+					break;
+				}
+
+				continue;
+			}
+
+			move m;
+			if( !parse_move( p, c, token, m ) ) {
+				std::cerr << "Invalid move: " << token << std::endl;
+				std::cerr << "Line: " << line << std::endl;
+				valid = false;
+				break;
+			}
+
+			apply_move( p, m, c );
+			c = static_cast<color::type>(1-c);
+			move_history.push_back(m);
+
+		}
+	}
+	if( move_history.size() ) {
+		while( move_history.size() > 20 ) {
+			move_history.pop_back();
+		}
+		b.mark_for_processing( move_history );
+	}
+
+}
+
+
 void run( book& b )
 {
 	position p;
@@ -747,11 +843,17 @@ void run( book& b )
 			}
 		}
 		else if( line.substr( 0, 6 ) == "update" ) {
-			int v = atoi( line.substr( 7 ).c_str() );
+			int v = 5;
+			if( line.size() > 6 ) {
+				v = atoi( line.substr( 7 ).c_str() );
+			}
 			if( v <= 0 ) {
 				v = 5;
 			}
 			update( b, v );
+		}
+		else if( line.substr( 0, 9 ) == "learnpgn ") {
+			learnpgn( b, line.substr( 9 ) );
 		}
 		else if( !line.empty() ) {
 			move m;
@@ -807,7 +909,7 @@ int main( int argc, char const* argv[] )
 		book_dir = self.substr( 0, self.rfind('/') + 1 );
 	}
 
-	signal( SIGINT, &on_signal );
+	//signal( SIGINT, &on_signal );
 
 	console_init();
 
