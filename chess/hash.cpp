@@ -25,7 +25,9 @@ hash::hash()
 
 hash::~hash()
 {
-	delete [] data_;
+	if( data_ ) {
+		free( data_ );
+	}
 }
 
 
@@ -37,9 +39,16 @@ bool hash::init( unsigned int max_size )
 	bucket_count_ = size_ / bucket_size;
 	size_ = bucket_count_ * bucket_size;
 
-	delete [] data_;
-	data_ = 0;
-	data_ = new entry[ bucket_count_ * bucket_entries ];
+	if( data_ ) {
+		free( data_ );
+		data_ = 0;
+	}
+	posix_memalign( reinterpret_cast<void**>(&data_), 128, bucket_count_ * bucket_entries * sizeof(entry) );
+
+	if( reinterpret_cast<intptr_t>(data_) % 128 ) {
+		std::cerr << "We want cache-line aligned memory for the hash" << std::endl;
+	//	abort();
+	}
 
 	clear_data();
 	return true;
