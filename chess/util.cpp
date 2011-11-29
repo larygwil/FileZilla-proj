@@ -11,6 +11,7 @@
 #include "zobrist.hpp"
 
 #include <iostream>
+#include <list>
 
 extern unsigned char const queenside_rook_origin[2];
 extern unsigned char const kingside_rook_origin[2];
@@ -46,13 +47,6 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 		str = str.substr(0, len);
 	}
 
-	bool promotion = false;
-	if( len && (str[len - 1] == 'q' || str[len - 1] == 'r' || str[len - 1] == 'b' || str[len - 1] == 'n') ) {
-		promotion = true;
-		--len;
-		str = str.substr(0, len);
-	}
-
 	if( str == "0-0" || str == "O-O" ) {
 		m.captured_piece = pieces::none;
 		m.flags = move_flags::valid | move_flags::castle;
@@ -77,15 +71,26 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 		}
 		return true;
 	}
+
+
 	unsigned char piecetype = 0;
 
-	if( len && str[len - 1] == 'Q' ) {
+	bool promotion = false;
+	// Small b not in this list intentionally, to avoid disambiguation with a4xb
+	if( len && (str[len - 1] == 'q' || str[len - 1] == 'Q' || str[len - 1] == 'r' || str[len - 1] == 'R' || str[len - 1] == 'B' || str[len - 1] == 'n' || str[len - 1] == 'N' ) ) {
+		promotion = true;
 		--len;
 		str = str.substr(0, len);
 		if( str[len - 1] == '=' ) {
 			--len;
 			str = str.substr(0, len);
 		}
+		piecetype = 'P';
+	}
+	else if( len > 2 && str[len - 1] == 'b' && str[len - 2] == '=' ) {
+		promotion = true;
+		len -= 2;
+		str = str.substr(0, len);
 		piecetype = 'P';
 	}
 
@@ -180,7 +185,7 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 	move_info* pm = moves;
 	calculate_moves( p, c, pm, check );
 
-	move_info* match = 0;
+	std::list<move_info> matches;
 
 	for( move_info* it = moves; it != pm; ++it ) {
 		unsigned char source = p.board[it->m.source] & 0xf;
@@ -229,30 +234,47 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 			continue;
 		}
 
-		if( match ) {
-			std::cout << "Illegal move (ambigious): " << line << std::endl;
-			return false;
-		}
-		else {
-			match = it;
-		}
+		matches.push_back(*it);
 	}
 
-
-	if( !match ) {
+	if( matches.size() > 1 ) {
+		std::cout << "Illegal move (ambigious): " << line << std::endl;
+		std::cerr << "Candiates:" << std::endl;
+		for( std::list<move_info>::const_iterator it = matches.begin(); it != matches.end(); ++it ) {
+			std::cerr << move_to_string( p, c, it->m ) << std::endl;
+		}
+		return false;
+	}
+	else if( matches.empty() ) {
 		std::cout << "Illegal move (not valid): " << line << std::endl;
-		std::cerr << "Parsed: " << first_col << " " << first_row << " " << second_col << " " << second_row << ", capture=" << capture << std::endl;
+		std::cerr << "Parsed:";
+		if( first_col != -1 ) {
+			std::cerr << " source_file=" << 'a' + first_col;
+		}
+		if( first_row != -1 ) {
+			std::cerr << " source_rank=" << first_row;
+		}
+		if( second_col != -1 ) {
+			std::cerr << " target_file=" << 'a' + second_col;
+		}
+		if( second_row != -1 ) {
+			std::cerr << " target_rank=" << second_row;
+		}
+		std::cerr << " capture=" << capture << std::endl;
 		return false;
 	}
 
-	if( promotion && match->m.target / 8 != (c ? 0 : 7) ) {
+	move_info match = matches.front();
+	if( promotion && match.m.target / 8 != (c ? 0 : 7) ) {
 		std::cout << "Illegal move (not valid, expecting a promotion): " << line << std::endl;
+		return false;
 	}
 
-	m = match->m;
+	m = match.m;
 
 	return true;
 }
+
 
 std::string move_to_string( position const& p, color::type c, move const& m )
 {
