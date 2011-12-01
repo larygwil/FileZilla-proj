@@ -5,6 +5,7 @@
 #include "chess.hpp"
 
 #include <list>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -37,6 +38,22 @@ struct book_entry_with_position
 };
 
 
+struct stat_entry {
+	stat_entry() : processed(), queued() {}
+
+	int processed;
+	int queued;
+};
+
+struct book_stats {
+	book_stats() : total_processed(1), total_queued() {}
+
+	std::map<int, stat_entry> data;
+
+	int total_processed;
+	int total_queued;
+};
+
 class book
 {
 public:
@@ -55,6 +72,8 @@ public:
 	void mark_for_processing( std::vector<move> history );
 
 	unsigned long long size();
+
+	book_stats stats();
 
 	std::list<work> get_unprocessed_positions();
 

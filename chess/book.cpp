@@ -419,3 +419,57 @@ void book::fold()
 		}
 	}
 }
+
+
+namespace {
+extern "C" int stats_processed_cb( void* p, int, char** data, char** /*names*/ ) {
+	book_stats* stats = reinterpret_cast<book_stats*>(p);
+
+	int depth = atoll( data[0] ) / 2;
+	int processed = atoll( data[1] );
+
+	if( depth > 0 ) {
+		stats->data[depth].processed = processed;
+		stats->total_processed += processed;
+	}
+
+	return 0;
+}
+
+extern "C" int stats_queued_cb( void* p, int, char** data, char** /*names*/ ) {
+	book_stats* stats = reinterpret_cast<book_stats*>(p);
+
+	int depth = atoll( data[0] ) / 2;
+	int queued = atoll( data[1] );
+
+	if( depth > 0 ) {
+		stats->data[depth].queued = queued;
+		stats->total_queued += queued;
+	}
+
+	return 0;
+}
+}
+
+book_stats book::stats()
+{
+	book_stats ret;
+
+	std::string query = "SELECT length(pos), count(pos) FROM position WHERE id IN (SELECT DISTINCT(position) FROM book) GROUP BY LENGTH(pos) ORDER BY LENGTH(pos)";
+	int res = sqlite3_exec( impl_->db, query.c_str(), &stats_processed_cb, reinterpret_cast<void*>(&ret), 0 );
+	if( res != SQLITE_OK && res != SQLITE_DONE ) {
+		std::cerr << "Database failure" << std::endl;
+		std::cerr << "Failed query: " << query << std::endl;
+		abort();
+	}
+
+	query = "SELECT length(pos), count(pos) FROM position WHERE id NOT IN (SELECT DISTINCT(position) FROM book) GROUP BY LENGTH(pos) ORDER BY LENGTH(pos)";
+	res = sqlite3_exec( impl_->db, query.c_str(), &stats_queued_cb, reinterpret_cast<void*>(&ret), 0 );
+	if( res != SQLITE_OK && res != SQLITE_DONE ) {
+		std::cerr << "Database failure" << std::endl;
+		std::cerr << "Failed query: " << query << std::endl;
+		abort();
+	}
+
+	return ret;
+}

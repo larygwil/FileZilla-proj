@@ -14,6 +14,7 @@
 #include <deque>
 #include <fstream>
 #include <list>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -803,8 +804,25 @@ void run( book& b )
 		else if( line == "process" ) {
 			process( b );
 		}
-		else if( line == "size" ) {
-			std::cout << "Distinct entries: " << b.size() << std::endl;
+		else if( line == "size" || line == "stats" ) {
+
+			book_stats stats = b.stats();
+
+			std::stringstream ss;
+
+			ss << "Plies Processed Queued" << std::endl;
+			ss << "----------------------" << std::endl;
+			for ( auto it : stats.data ) {
+				ss << std::setw( 5 ) << it.first;
+				ss << std::setw( 10 ) << it.second.processed;
+				ss << std::setw( 7 ) << it.second.queued << std::endl;
+			}
+			ss << "----------------------" << std::endl;
+			ss << std::setw( 5 ) << "Total";
+			ss << std::setw( 10 ) << stats.total_processed;
+			ss << std::setw( 7 ) << stats.total_queued << std::endl;
+
+			std::cout << ss.str();
 		}
 		else if( line.substr( 0, 11 ) == "book_depth " ) {
 			int v = atoi( line.substr( 11 ).c_str() );
