@@ -661,3 +661,73 @@ void position::init_pawn_structure()
 	evaluate_pawns( bitboards[0].b[bb_type::pawns], bitboards[1].b[bb_type::pawns], pawn_eval );
 	pawns.eval = phase_scale( material, pawn_eval[0], pawn_eval[1] );
 }
+
+
+namespace {
+static std::string board_square_to_string( char bs )
+{
+#if _MSC_VER
+	std::string const white;
+	std::string const restore;
+#else
+	std::string white;
+	std::string restore;
+	if( isatty( 0 ) ) {
+		white = "\x1b" "[1m";
+		restore = "\x1b" "[0m";
+	}
+#endif
+
+	switch (bs) {
+	case pieces::pawn:
+		return white + "P" + restore;
+	case pieces::knight:
+		return white + "K" + restore;
+	case pieces::bishop:
+		return white + "B" + restore;
+	case pieces::rook:
+		return white + "R" + restore;
+	case pieces::queen:
+		return white + "Q" + restore;
+	case pieces::king:
+		return white + "K" + restore;
+	case pieces::pawn + 16:
+		return "p";
+	case pieces::knight + 16:
+		return "n";
+	case pieces::bishop + 16:
+		return "b";
+	case pieces::rook + 16:
+		return "r";
+	case pieces::queen + 16:
+		return "q";
+	case pieces::king + 16:
+		return "k";
+	default:
+		return ".";
+	}
+}
+}
+
+
+std::string board_to_string( position const& p )
+{
+	std::string ret;
+
+	ret += " +-----------------+\n";
+	for( int row = 7; row >= 0; --row ) {
+
+		ret += '1' + row;
+		ret += "| ";
+		for( int col = 0; col < 8; ++col ) {
+			ret += board_square_to_string( p.board[ row * 8 + col] );
+			ret += ' ';
+		}
+
+		ret += "|\n";
+	}
+	ret += " +-----------------+\n";
+	ret += "   A B C D E F G H \n";
+
+	return ret;
+}

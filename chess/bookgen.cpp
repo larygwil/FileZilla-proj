@@ -627,18 +627,51 @@ void update( book& b, int entries_per_pos = 5 )
 }
 
 
-void print_pos( position const& p, color::type c, std::vector<book_entry> const& moves )
+namespace {
+std::string side_by_side( std::string const& left, std::string const& right, std::size_t separation = 2 )
 {
-	std::cout << "Possible moves:" << std::endl;
+	std::ostringstream out;
+
+	std::size_t max_width = 0;
+	{
+		std::istringstream ileft( left );
+		std::string line;
+		while( std::getline(ileft, line) ) {
+			max_width = (std::max)(max_width, line.size() );
+		}
+	}
+
+	std::istringstream ileft( left );
+	std::istringstream iright( right );
+
+	while( ileft || iright ) {
+		std::string lline;
+		std::string rline;
+		std::getline(ileft, lline);
+		std::getline(iright, rline);
+		out << std::left << std::setw( max_width + separation ) << lline << rline << std::endl;
+	}
+
+	return out.str();
+}
+}
+
+
+std::string print_moves( position const& p, color::type c, std::vector<book_entry> const& moves )
+{
+	std::ostringstream out;
+	out << "  Move  Outlook Depth" << std::endl;
 	for( std::vector<book_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-		std::cout << move_to_string( p, c, it->m ) << " with forecast " << it->forecast << " (" << static_cast<int>(it->search_depth) << ")" << std::endl;
+		out << move_to_string( p, c, it->m ) << std::setw( 7 ) << it->forecast << std::setw(6) << it->search_depth << std::endl;
 	}
 	if( c == color::white ) {
-		std::cout << "White to move" << std::endl;
+		out << "White to move" << std::endl;
 	}
 	else {
-		std::cout << "Black to move" << std::endl;
+		out << "Black to move" << std::endl;
 	}
+
+	return out.str();
 }
 
 struct history_entry {
@@ -663,10 +696,15 @@ void print_pos( std::vector<history_entry> const& history, position const& p, co
 		ss << move_to_string(history[i].p, history[i].c, history[i].m );
 	}
 	std::string line = ss.str();
+	if( !line.empty() ) {
+		std::cout << "Line: " << line << std::endl << std::endl;
+	}
+
+	std::string mstr = print_moves( p, c, moves );
+	std::string board = board_to_string( p );
 
 	std::cout << std::endl;
-	std::cout << "Line: " << line << std::endl;
-	print_pos( p, c, moves );
+	std::cout << side_by_side( mstr, board );
 }
 
 
@@ -780,10 +818,10 @@ void run( book& b )
 
 	color::type c = color::white;
 
-	std::vector<book_entry> moves = b.get_entries( p, c, move_history );
-
-	std::cout << std::endl;
-	print_pos( p, c, moves );
+	{
+		std::vector<book_entry> entries = b.get_entries( p, c, move_history );
+		print_pos( history, p, c, entries );
+	}
 
 	unsigned int max_depth = std::min(4u, MAX_BOOK_DEPTH);
 	unsigned int max_width = 2;
