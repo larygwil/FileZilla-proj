@@ -43,7 +43,7 @@ bool hash::init( unsigned int max_size )
 		free( data_ );
 		data_ = 0;
 	}
-	posix_memalign( reinterpret_cast<void**>(&data_), 128, bucket_count_ * bucket_entries * sizeof(entry) );
+	posix_memalign( reinterpret_cast<void**>(&data_), 65536, bucket_count_ * bucket_entries * sizeof(entry) );
 
 	if( reinterpret_cast<intptr_t>(data_) % 128 ) {
 		std::cerr << "We want cache-line aligned memory for the hash" << std::endl;
