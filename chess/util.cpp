@@ -682,7 +682,7 @@ static std::string board_square_to_string( char bs )
 	case pieces::pawn:
 		return white + "P" + restore;
 	case pieces::knight:
-		return white + "K" + restore;
+		return white + "N" + restore;
 	case pieces::bishop:
 		return white + "B" + restore;
 	case pieces::rook:
