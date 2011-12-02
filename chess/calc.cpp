@@ -149,15 +149,9 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 			check_map new_check;
 			calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
 
+			ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
 
-			if( ctx.seen.is_two_fold( new_hash, ply ) ) {
-				value = result::draw;
-			}
-			else {
-				ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
-
-				value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
-			}
+			value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
 		}
 		if( value > alpha ) {
 			alpha = value;
@@ -345,16 +339,17 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 
 		++processed_moves;
 
-		position new_pos = p;
-		apply_move( new_pos, *it, c );
-		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 		short value;
+		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
 
 		pv_entry* cpv = ctx.pv_pool.get();
 		if( ctx.seen.is_two_fold( new_hash, ply ) ) {
 			value = result::draw;
 		}
 		else {
+			position new_pos = p;
+			apply_move( new_pos, *it, c );
+
 			ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
 
 			unsigned long long new_depth = depth - depth_factor;
