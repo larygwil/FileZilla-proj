@@ -40,6 +40,16 @@ std::string history_to_string( std::vector<move> const& history )
 
 	return ret;
 }
+
+std::string history_to_string( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end )
+{
+	std::string ret;
+	for( std::vector<move>::const_iterator it = begin; it != end; ++it ) {
+		ret += move_to_book_string(*it);
+	}
+
+	return ret;
+}
 }
 
 class book::impl
@@ -188,16 +198,24 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 {
 	std::sort( entries.begin(), entries.end() );
 
-	std::string h = history_to_string( history );
+	std::string hs = history_to_string( history );
 
-	scoped_lock l(impl_->mtx);
+	position p;
+	init_board( p );
+	color::type c = color::white;
+
+	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
+		apply_move( p, *it, c );
+		c = static_cast<color::type>(1-c);
+	}
+	unsigned long long hash = get_zobrist_hash( p );
 
 	std::stringstream ss;
 	ss << "BEGIN TRANSACTION;";
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 		std::string m = move_to_book_string( it->m );
-		ss << "INSERT OR IGNORE INTO position (pos) VALUES ('" << h << "');";
-		ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth, eval_version) VALUES ((SELECT id FROM position WHERE pos='" << h << "'), '"
+		ss << "INSERT OR IGNORE INTO position (pos, hash) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ");";
+		ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth, eval_version) VALUES ((SELECT id FROM position WHERE pos='" << hs << "'), '"
 		   << m << "', "
 		   << it->forecast << ", "
 		   << it->search_depth << ", "
@@ -205,6 +223,8 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 		   << ");";
 	}
 	ss << "COMMIT TRANSACTION;";
+
+	scoped_lock l(impl_->mtx);
 
 	std::string query = ss.str();
 
@@ -242,22 +262,30 @@ unsigned long long book::size()
 }
 
 
-void book::mark_for_processing( std::vector<move> history )
+void book::mark_for_processing( std::vector<move> const& history )
 {
 	scoped_lock l(impl_->mtx);
 
 	std::stringstream ss;
+
 	ss << "BEGIN TRANSACTION;";
-	while( !history.empty() ) {
-		std::string h = history_to_string( history );
-		ss << "INSERT OR IGNORE INTO position (pos) VALUES ('" << h << "');";
-		history.pop_back();
+
+	position p;
+	init_board( p );
+	color::type c = color::white;
+
+	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
+		apply_move( p, *it, c );
+		c = static_cast<color::type>(1-c);
+		unsigned long long hash = get_zobrist_hash( p );
+
+		std::string hs = history_to_string( history.begin(), it + 1 );
+		ss << "INSERT OR REPLACE INTO position (pos, hash) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ");";
 	}
 
 	ss << "COMMIT TRANSACTION;";
 
 	std::string query = ss.str();
-
 	int res = sqlite3_exec( impl_->db, query.c_str(), 0, 0, 0 );
 
 	if( res != SQLITE_OK ) {
@@ -356,6 +384,7 @@ std::list<book_entry_with_position> book::get_all_entries( int move_limit )
 
 	return ret;
 }
+
 
 bool book::update_entry( std::vector<move> const& history, book_entry const& entry )
 {

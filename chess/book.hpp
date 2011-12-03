@@ -69,7 +69,7 @@ public:
 	// Entries do not have to be sorted
 	bool add_entries( std::vector<move> const& history, std::vector<book_entry> entries );
 
-	void mark_for_processing( std::vector<move> history );
+	void mark_for_processing( std::vector<move> const& history );
 
 	unsigned long long size();
 
