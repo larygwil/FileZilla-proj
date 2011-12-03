@@ -23,8 +23,10 @@ void init_material( position& p );
 bool apply_move( position& p, move const& m, color::type c );
 bool apply_move( position& p, move_info const& m, color::type c );
 
-
 void init_random( unsigned long long seed );
+
+void push_rng_state();
+void pop_rng_state();
 
 unsigned char get_random_unsigned_char();
 

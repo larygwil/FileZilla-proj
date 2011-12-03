@@ -731,3 +731,27 @@ std::string board_to_string( position const& p )
 
 	return ret;
 }
+
+static std::list<unsigned long long> stack;
+
+void push_rng_state()
+{
+	scoped_lock l( m ) ;
+	stack.push_back( random_unsigned_char );
+	stack.push_back( random_unsigned_long_long_pos );
+}
+
+void pop_rng_state()
+{
+	scoped_lock l( m );
+	if( stack.size() < 2 ) {
+		std::cerr << "Cannot pop rng state if empty" << std::endl;
+		exit(1);
+	}
+
+	random_unsigned_long_long_pos = stack.back();
+	stack.pop_back();
+	random_unsigned_char = stack.back();
+	stack.pop_back();
+}
+

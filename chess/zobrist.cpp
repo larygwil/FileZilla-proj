@@ -26,11 +26,15 @@ extern unsigned char const kingside_rook_origin[2] = {
 	7, 63
 };
 
+
 void init_zobrist_tables()
 {
 	if( initialized ) {
 		return;
 	}
+
+	push_rng_state();
+	init_random( 0 );
 
 	for( int c = 0; c < 2; ++c ) {
 		for( int i = 0; i < 64; ++i ) {
@@ -66,7 +70,10 @@ void init_zobrist_tables()
 	}
 
 	initialized = true;
+
+	pop_rng_state();
 }
+
 
 unsigned long long get_zobrist_hash( position const& p ) {
 	unsigned long long ret = 0;
