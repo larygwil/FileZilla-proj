@@ -64,7 +64,7 @@ public:
 
 	// Returned entries are sorted by forecast, highest first.
 	// move_limit limits the number of returned moves per position, sorted descendingly by forecast.
-	std::vector<book_entry> get_entries( position const& p, color::type c, std::vector<move> const& history, int move_limit = -1 );
+	std::vector<book_entry> get_entries( position const& p, color::type c, std::vector<move> const& history, int move_limit = -1, bool allow_transpositions = false );
 
 	// Entries do not have to be sorted
 	bool add_entries( std::vector<move> const& history, std::vector<book_entry> entries );

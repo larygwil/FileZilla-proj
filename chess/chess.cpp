@@ -492,11 +492,13 @@ void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv
 		state.hash_initialized = true;
 	}
 	// Do a step
-	if( state.in_book ) {
-		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.c, state.move_history_ );
+	if( state.in_book || state.clock < 30 ) {
+		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.c, state.move_history_, -1, true );
 		if( moves.empty() ) {
-			std::cerr << "Current position not in book" << std::endl;
-			state.in_book = false;
+			if( state.in_book ) {
+				std::cerr << "Current position not in book" << std::endl;
+				state.in_book = false;
+			}
 		}
 		else {
 			short best = moves.front().forecast;
@@ -540,23 +542,14 @@ void xboard()
 	xboard_state state;
 	xboard_thread thread( state );
 
-	std::string line;
-	std::getline( std::cin, line );
-	logger::log_input( line );
-	if( line != "xboard" ) {
-		std::cerr << "First command needs to be xboard!" << std::endl;
-		exit(1);
-	}
-
 	if( conf.depth == -1 ) {
 		conf.depth = 40;
 	}
 
-	std::cout << std::endl;
-
 	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
 
 	while( true ) {
+		std::string line;
 		std::getline( std::cin, line );
 
 		unsigned long long cmd_recv_time = get_time();
@@ -575,7 +568,10 @@ void xboard()
 
 		scoped_lock l( thread.mtx );
 
-		if( line == "quit" ) {
+		if( line == "xboard" ) {
+			std::cout << std::endl;
+		}
+		else if( line == "quit" ) {
 			break;
 		}
 		else if( line == "?" ) {
@@ -751,6 +747,9 @@ void xboard()
 		else if( line == "~score") {
 			short eval = evaluate_full( state.p, state.c );
 			std::cout << eval << std::endl;
+		}
+		else if( line == "~hash") {
+			std::cout << get_zobrist_hash( state.p ) << std::endl;
 		}
 		else {
 			move m;

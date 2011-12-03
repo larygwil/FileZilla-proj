@@ -157,7 +157,7 @@ extern "C" int get_cb( void* p, int, char** data, char** /*names*/ ) {
 }
 
 
-std::vector<book_entry> book::get_entries( position const& p, color::type c, std::vector<move> const& history, int move_limit )
+std::vector<book_entry> book::get_entries( position const& p, color::type c, std::vector<move> const& history, int move_limit, bool allow_transpositions )
 {
 	std::vector<book_entry> ret;
 
@@ -172,10 +172,10 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 	data.c = c;
 	data.entries = &ret;
 
-	std::string h = history_to_string( history );
+	std::string hs = history_to_string( history );
 
 	std::stringstream ss;
-	ss << "SELECT move, forecast, searchdepth FROM book WHERE position = (SELECT id FROM position WHERE pos ='" << h << "') ORDER BY forecast DESC,searchdepth DESC";
+	ss << "SELECT move, forecast, searchdepth FROM book WHERE position = (SELECT id FROM position WHERE pos ='" << hs << "') ORDER BY forecast DESC,searchdepth DESC";
 
 	if( move_limit != -1 ) {
 		ss << " LIMIT " << move_limit;
@@ -188,6 +188,27 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 		std::cerr << "Database failure" << std::endl;
 		std::cerr << "Failed query: " << query << std::endl;
 		abort();
+	}
+
+	if( ret.empty() && allow_transpositions ) {
+		unsigned long long hash = get_zobrist_hash( p );
+
+		std::stringstream ss;
+		ss << "SELECT move, forecast, searchdepth FROM book WHERE position = (SELECT id FROM position WHERE hash=" << static_cast<sqlite3_int64>(hash) << " LIMIT 1) ORDER BY forecast DESC,searchdepth DESC";
+
+		if( move_limit != -1 ) {
+			ss << " LIMIT " << move_limit;
+		}
+
+		std::string query = ss.str();
+		int res = sqlite3_exec( impl_->db, query.c_str(), &get_cb, reinterpret_cast<void*>(&data), 0 );
+
+		if( res != SQLITE_DONE && res != SQLITE_OK ) {
+			ret.clear();
+		}
+		else if( !ret.empty() ) {
+			std::cerr << "Found transposition" << std::endl;
+		}
 	}
 
 	return ret;
@@ -280,7 +301,7 @@ void book::mark_for_processing( std::vector<move> const& history )
 		unsigned long long hash = get_zobrist_hash( p );
 
 		std::string hs = history_to_string( history.begin(), it + 1 );
-		ss << "INSERT OR REPLACE INTO position (pos, hash) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ");";
+		ss << "INSERT OR IGNORE INTO position (pos, hash) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ");";
 	}
 
 	ss << "COMMIT TRANSACTION;";
