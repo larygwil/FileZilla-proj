@@ -153,6 +153,7 @@ private:
 	hash_key size_;
 	hash_key bucket_count_;
 	entry* data_;
+	char* memory_;
 };
 
 extern hash transposition_table;
