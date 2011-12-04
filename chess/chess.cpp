@@ -492,7 +492,7 @@ void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv
 		state.hash_initialized = true;
 	}
 	// Do a step
-	if( (state.in_book || state.clock) < 30 && state.started_from_root ) {
+	if( (state.in_book || state.clock < 30) && state.started_from_root ) {
 		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.c, state.move_history_, -1, true );
 		if( moves.empty() ) {
 			if( state.in_book ) {
@@ -584,6 +584,8 @@ void xboard()
 			}
 		}
 		else if( line.substr( 0, 9 ) == "protover " ) {
+			//std::cout << "feature ping=1" << std::endl;
+			std::cout << "feature setboard=1" << std::endl;
 			std::cout << "feature done=1" << std::endl;
 		}
 		else if( line.substr( 0, 7 ) == "result " ) {
@@ -729,8 +731,13 @@ void xboard()
 				std::cout << " " << move_to_string( state.p, state.c, it->m ) << std::endl;
 			}
 		}
-		else if( line.substr( 0, 4 ) == "~fen") {
-			line = line.substr( 5 );
+		else if( line.substr( 0, 4 ) == "~fen" || line.substr( 0, 8 ) == "setboard" ) {
+			if( line.substr( 0, 4 ) == "~fen" ) {
+				line = line.substr( 5 );
+			}
+			else {
+				line = line.substr( 9 );
+			}
 			position new_pos;
 			color::type new_c;
 			if( !parse_fen_noclock( line, new_pos, new_c ) ) {
