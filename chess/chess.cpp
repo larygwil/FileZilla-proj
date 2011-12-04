@@ -492,7 +492,7 @@ void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv
 		state.hash_initialized = true;
 	}
 	// Do a step
-	if( state.in_book || state.clock < 30 ) {
+	if( (state.in_book || state.clock) < 30 && state.started_from_root ) {
 		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.c, state.move_history_, -1, true );
 		if( moves.empty() ) {
 			if( state.in_book ) {
