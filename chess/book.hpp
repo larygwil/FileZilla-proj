@@ -41,17 +41,17 @@ struct book_entry_with_position
 struct stat_entry {
 	stat_entry() : processed(), queued() {}
 
-	int processed;
-	int queued;
+	unsigned long long processed;
+	unsigned long long queued;
 };
 
 struct book_stats {
 	book_stats() : total_processed(1), total_queued() {}
 
-	std::map<int, stat_entry> data;
+	std::map<unsigned long long, stat_entry> data;
 
-	int total_processed;
-	int total_queued;
+	unsigned long long total_processed;
+	unsigned long long total_queued;
 };
 
 class book

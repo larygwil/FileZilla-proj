@@ -59,9 +59,38 @@ public:
 	{
 	}
 
+	bool query( std::string const& query, int (*callback)(void*,int,char**,char**), void* data, bool report_errors = true );
+
 	mutex mtx;
 	sqlite3* db;
 };
+
+
+bool book::impl::query( std::string const& query, int (*callback)(void*,int,char**,char**), void* data, bool report_errors )
+{
+	bool ret = false;
+
+	char* err_msg = 0;
+	int res = sqlite3_exec( db, query.c_str(), callback, data, &err_msg );
+
+	if( res == SQLITE_OK || res == SQLITE_DONE ) {
+		ret = true;
+	}
+	else if( report_errors ) {
+		std::cerr << "Database failure" << std::endl;
+		std::cerr << "Error code: " << res << std::endl;
+		if( err_msg ) {
+			std::cerr << "Error string: " << err_msg << std::endl;
+		}
+		std::cerr << "Failed query: " << query << std::endl;
+		abort();
+	}
+	
+	sqlite3_free( err_msg );
+
+	return ret;
+}
+
 
 book::book( std::string const& book_dir )
 	: impl_( new impl )
@@ -181,14 +210,7 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 		ss << " LIMIT " << move_limit;
 	}
 
-	std::string query = ss.str();
-	int res = sqlite3_exec( impl_->db, query.c_str(), &get_cb, reinterpret_cast<void*>(&data), 0 );
-
-	if( res != SQLITE_DONE && res != SQLITE_OK ) {
-		std::cerr << "Database failure" << std::endl;
-		std::cerr << "Failed query: " << query << std::endl;
-		abort();
-	}
+	impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data) );
 
 	if( ret.empty() && allow_transpositions ) {
 		unsigned long long hash = get_zobrist_hash( p );
@@ -200,14 +222,13 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 			ss << " LIMIT " << move_limit;
 		}
 
-		std::string query = ss.str();
-		int res = sqlite3_exec( impl_->db, query.c_str(), &get_cb, reinterpret_cast<void*>(&data), 0 );
-
-		if( res != SQLITE_DONE && res != SQLITE_OK ) {
-			ret.clear();
+		if( impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data) ) ) {
+			if( !ret.empty() ) {
+				std::cerr << "Found transposition" << std::endl;
+			}
 		}
-		else if( !ret.empty() ) {
-			std::cerr << "Found transposition" << std::endl;
+		else {
+			ret.clear();
 		}
 	}
 
@@ -247,16 +268,7 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 
 	scoped_lock l(impl_->mtx);
 
-	std::string query = ss.str();
-
-	int res = sqlite3_exec( impl_->db, query.c_str(), 0, 0, 0 );
-
-	if( res != SQLITE_OK ) {
-		std::cerr << "Database failure" << std::endl;
-		std::cerr << "Failed query: " << query << std::endl;
-		abort();
-	}
-	return res == SQLITE_OK;
+	return impl_->query( ss.str(), 0, 0 );
 }
 
 
@@ -277,7 +289,7 @@ unsigned long long book::size()
 	std::string query = "SELECT COUNT(id) FROM position;";
 
 	unsigned long long count = 0;
-	sqlite3_exec( impl_->db, query.c_str(), &count_cb, reinterpret_cast<void*>(&count), 0 );
+	impl_->query( query, &count_cb, reinterpret_cast<void*>(&count) );
 
 	return count;
 }
@@ -306,14 +318,7 @@ void book::mark_for_processing( std::vector<move> const& history )
 
 	ss << "COMMIT TRANSACTION;";
 
-	std::string query = ss.str();
-	int res = sqlite3_exec( impl_->db, query.c_str(), 0, 0, 0 );
-
-	if( res != SQLITE_OK ) {
-		std::cerr << "Database failure" << std::endl;
-		std::cerr << "Failed query: " << query << std::endl;
-		abort();
-	}
+	impl_->query( ss.str(), 0, 0 );
 }
 
 
@@ -362,13 +367,8 @@ std::list<work> book::get_unprocessed_positions()
 
 	std::string query = "SELECT pos FROM position WHERE id NOT IN (SELECT DISTINCT(position) FROM book) ORDER BY LENGTH(pos);";
 
-	int res = sqlite3_exec( impl_->db, query.c_str(), &work_cb, reinterpret_cast<void*>(&ret), 0 );
-	if( res != SQLITE_OK && res != SQLITE_DONE ) {
-		std::cerr << "Database failure" << std::endl;
-		std::cerr << "Failed query: " << query << std::endl;
-		abort();
-	}
-
+	impl_->query( query, &work_cb, reinterpret_cast<void*>(&ret) );
+		
 	return ret;
 }
 
@@ -384,12 +384,7 @@ std::list<book_entry_with_position> book::get_all_entries( int move_limit )
 
 		std::string query = "SELECT pos FROM position ORDER BY LENGTH(pos)";
 
-		int res = sqlite3_exec( impl_->db, query.c_str(), &work_cb, reinterpret_cast<void*>(&positions), 0 );
-		if( res != SQLITE_OK && res != SQLITE_DONE ) {
-			std::cerr << "Database failure" << std::endl;
-			std::cerr << "Failed query: " << query << std::endl;
-			abort();
-		}
+		impl_->query( query, &work_cb, reinterpret_cast<void*>(&positions) );
 	}
 
 	for( std::list<work>::const_iterator it = positions.begin(); it != positions.end(); ++it ) {
@@ -424,16 +419,7 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 	   << ");";
 	ss << "COMMIT TRANSACTION;";
 
-	std::string query = ss.str();
-
-	int res = sqlite3_exec( impl_->db, query.c_str(), 0, 0, 0 );
-
-	if( res != SQLITE_OK ) {
-		std::cerr << "Database failure" << std::endl;
-		std::cerr << "Failed query: " << query << std::endl;
-		abort();
-	}
-	return res == SQLITE_OK;
+	return impl_->query( ss.str(), 0, 0 );
 }
 
 namespace {
@@ -461,12 +447,7 @@ void book::fold()
 
 		std::string query = "SELECT pos FROM position";
 
-		int res = sqlite3_exec( impl_->db, query.c_str(), &all_positions_cb, reinterpret_cast<void*>(&positions_to_fold), 0 );
-		if( res != SQLITE_OK && res != SQLITE_DONE ) {
-			std::cerr << "Database failure" << std::endl;
-			std::cerr << "Failed query: " << query << std::endl;
-			abort();
-		}
+		impl_->query( query, &all_positions_cb, reinterpret_cast<void*>(&positions_to_fold) );
 	}
 }
 
@@ -475,12 +456,12 @@ namespace {
 extern "C" int stats_processed_cb( void* p, int, char** data, char** /*names*/ ) {
 	book_stats* stats = reinterpret_cast<book_stats*>(p);
 
-	int depth = atoll( data[0] ) / 2;
-	int processed = atoll( data[1] );
+	long long depth = atoll( data[0] ) / 2;
+	long long processed = atoll( data[1] );
 
-	if( depth > 0 ) {
-		stats->data[depth].processed = processed;
-		stats->total_processed += processed;
+	if( depth > 0 && processed > 0 ) {
+		stats->data[depth].processed = static_cast<unsigned long long>(processed);
+		stats->total_processed += static_cast<unsigned long long>(processed);
 	}
 
 	return 0;
@@ -489,12 +470,12 @@ extern "C" int stats_processed_cb( void* p, int, char** data, char** /*names*/ )
 extern "C" int stats_queued_cb( void* p, int, char** data, char** /*names*/ ) {
 	book_stats* stats = reinterpret_cast<book_stats*>(p);
 
-	int depth = atoll( data[0] ) / 2;
-	int queued = atoll( data[1] );
+	long long depth = atoll( data[0] ) / 2;
+	long long queued = atoll( data[1] );
 
-	if( depth > 0 ) {
-		stats->data[depth].queued = queued;
-		stats->total_queued += queued;
+	if( depth > 0 && queued > 0 ) {
+		stats->data[depth].queued = static_cast<unsigned long long>(queued);
+		stats->total_queued += static_cast<unsigned long long>(queued);
 	}
 
 	return 0;
@@ -506,20 +487,10 @@ book_stats book::stats()
 	book_stats ret;
 
 	std::string query = "SELECT length(pos), count(pos) FROM position WHERE id IN (SELECT DISTINCT(position) FROM book) GROUP BY LENGTH(pos) ORDER BY LENGTH(pos)";
-	int res = sqlite3_exec( impl_->db, query.c_str(), &stats_processed_cb, reinterpret_cast<void*>(&ret), 0 );
-	if( res != SQLITE_OK && res != SQLITE_DONE ) {
-		std::cerr << "Database failure" << std::endl;
-		std::cerr << "Failed query: " << query << std::endl;
-		abort();
-	}
-
+	impl_->query( query, &stats_processed_cb, reinterpret_cast<void*>(&ret) );
+	
 	query = "SELECT length(pos), count(pos) FROM position WHERE id NOT IN (SELECT DISTINCT(position) FROM book) GROUP BY LENGTH(pos) ORDER BY LENGTH(pos)";
-	res = sqlite3_exec( impl_->db, query.c_str(), &stats_queued_cb, reinterpret_cast<void*>(&ret), 0 );
-	if( res != SQLITE_OK && res != SQLITE_DONE ) {
-		std::cerr << "Database failure" << std::endl;
-		std::cerr << "Failed query: " << query << std::endl;
-		abort();
-	}
+	impl_->query( query, &stats_queued_cb, reinterpret_cast<void*>(&ret) );
 
 	return ret;
 }
