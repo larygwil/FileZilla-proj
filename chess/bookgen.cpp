@@ -850,7 +850,7 @@ void run( book& b )
 
 			ss << "Plies Processed Queued" << std::endl;
 			ss << "----------------------" << std::endl;
-			for( std::map<int, stat_entry>::const_iterator it = stats.data.begin(); it != stats.data.end(); ++it ) {
+			for( std::map<unsigned long long, stat_entry>::const_iterator it = stats.data.begin(); it != stats.data.end(); ++it ) {
 				ss << std::setw( 5 ) << it->first;
 				ss << std::setw( 10 ) << it->second.processed;
 				ss << std::setw( 7 ) << it->second.queued << std::endl;
