@@ -23,6 +23,54 @@ int const MAX_BOOKSEARCH_DEPTH = 13;
 
 unsigned int const MAX_BOOK_DEPTH = 10;
 
+bool deepen_move( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history, move const& m )
+{
+	int depth = MAX_BOOKSEARCH_DEPTH;
+
+	{
+		std::vector<book_entry> entries = b.get_entries( p, c, move_history );
+		for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
+			if( it->m != m ) {
+				continue;
+			}
+			if( it->search_depth >= MAX_BOOKSEARCH_DEPTH ) {
+				depth = it->search_depth + 1;
+			}
+		}
+	}
+
+	context ctx;
+	ctx.clock = move_history.size() % 256;
+	ctx.seen = seen;
+
+	position new_pos = p;
+	apply_move( new_pos, m, c );
+
+	unsigned long long new_hash = get_zobrist_hash( new_pos );
+	short value;
+	if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
+		value = 0;
+	}
+	else {
+		ctx.seen.pos[++ctx.seen.root_position] = new_hash;
+
+		pv_entry* pv = ctx.pv_pool.get();
+
+		short new_eval = evaluate_fast( new_pos, c );
+		value = -step( depth * depth_factor, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+		ctx.pv_pool.release(pv);
+	}
+
+	book_entry e;
+	e.forecast = value;
+	e.m = m;
+	e.search_depth = depth;
+	b.update_entry( move_history, e );
+
+	return true;
+}
+
+
 bool calculate_position( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history )
 {
 	short eval = evaluate_fast( p, c );
@@ -908,8 +956,18 @@ void run( book& b )
 			}
 			update( b, v );
 		}
-		else if( line.substr( 0, 9 ) == "learnpgn ") {
+		else if( line.substr( 0, 9 ) == "learnpgn " ) {
 			learnpgn( b, line.substr( 9 ) );
+		}
+		else if( line.substr( 0, 7 ) == "deepen " ) {
+			line = line.substr( 7 );
+			move m;
+			if( parse_move( p, c, line, m ) ) {
+				deepen_move( b, p, c, seen, move_history, m );
+
+				std::vector<book_entry> entries = b.get_entries( p, c, move_history );
+				print_pos( history, p, c, entries );
+			}
 		}
 		else if( !line.empty() ) {
 			move m;
