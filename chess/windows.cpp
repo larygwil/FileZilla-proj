@@ -207,3 +207,15 @@ int get_system_memory()
 
 	return static_cast<int>(status.ullTotalPhys / 1024 / 1024);
 }
+
+
+void* aligned_malloc( unsigned long long size, unsigned long long alignment )
+{
+	return _aligned_malloc( size, alignment );
+}
+
+
+void aligned_free( void* p )
+{
+	_aligned_free( p );
+}

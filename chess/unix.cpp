@@ -206,3 +206,21 @@ int get_system_memory()
 	uint64_t page_size = sysconf(_SC_PAGE_SIZE);
 	return pages * page_size / 1024 / 1024;
 }
+
+
+void* aligned_malloc( unsigned long long size, unsigned long long alignment )
+{
+	void* p = 0;
+	if( posix_memalign( &p, static_cast<size_t>(alignment), static_cast<size_t>(size) ) != 0 ) {
+		p = 0;
+	}
+
+	return p;
+}
+
+
+void aligned_free( void* p )
+{
+	free( p );
+}
+
