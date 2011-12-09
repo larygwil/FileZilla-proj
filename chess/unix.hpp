@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <pthread.h>
 
-#define PACKED(s) s __attribute__((__packed__))
+#define PACKED(c, s) c s __attribute__((__packed__))
 #define NONPACKED(s) s
 
 unsigned long long timer_precision();

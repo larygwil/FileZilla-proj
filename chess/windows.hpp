@@ -6,9 +6,9 @@
 
 typedef unsigned long long uint64_t;
 
-#define PACKED(s) \
+#define PACKED(c, s) \
 	__pragma( pack( push, 1 ) )\
-	s \
+	c s \
 	__pragma( pack(pop) )
 
 #define NONPACKED(s) s

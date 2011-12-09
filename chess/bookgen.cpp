@@ -17,7 +17,10 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <string>
 #include <sstream>
+
+#include <ctype.h>
 
 int const MAX_BOOKSEARCH_DEPTH = 13;
 
@@ -762,7 +765,7 @@ void learnpgn( book& b, std::string const& file )
 		std::cerr << "No filename given" << std::endl;
 	}
 
-	std::ifstream in( file );
+	std::ifstream in( file.c_str() );
 	std::string line;
 
 	position p;
@@ -809,7 +812,7 @@ void learnpgn( book& b, std::string const& file )
 				continue;
 			}
 
-			if( std::isdigit(token[0]) ) {
+			if( isdigit(token[0]) ) {
 				std::ostringstream os;
 				os << (move_history.size() / 2) + 1;
 				if( move_history.size() % 2 ) {
@@ -871,7 +874,7 @@ void run( book& b )
 		print_pos( history, p, c, entries );
 	}
 
-	unsigned int max_depth = std::min(4u, MAX_BOOK_DEPTH);
+	unsigned int max_depth = (std::min)(4u, MAX_BOOK_DEPTH);
 	unsigned int max_width = 2;
 
 

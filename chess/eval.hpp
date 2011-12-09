@@ -3,7 +3,7 @@
 
 #include "chess.hpp"
 
-struct PACKED(eval_values_t
+PACKED(struct, eval_values_t
 {
 	eval_values_t();
 
