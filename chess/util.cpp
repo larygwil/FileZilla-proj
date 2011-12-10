@@ -276,7 +276,7 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 }
 
 
-std::string move_to_string( position const& p, color::type c, move const& m )
+std::string move_to_string( position const& p, color::type c, move const& m, bool padding )
 {
 	std::string ret;
 
@@ -297,10 +297,20 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 	source &= 0x0f;
 	if( m.flags & move_flags::castle ) {
 		if( m.target == (c ? 62 : 6 ) ) {
-			return "   O-O  ";
+			if( padding ) {
+				return "   O-O  ";
+			}
+			else {
+				return "O-O";
+			}
 		}
 		else {
-			return " O-O-O  ";
+			if( padding ) {
+				return " O-O-O  ";
+			}
+			else {
+				return "O-O-O";
+			}
 		}
 	}
 
@@ -321,7 +331,9 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 			ret += 'R';
 			break;
 		case pieces::pawn:
-			ret += ' ';
+			if( padding ) {
+				ret += ' ';
+			}
 			break;
 		default:
 			break;
@@ -343,7 +355,7 @@ std::string move_to_string( position const& p, color::type c, move const& m )
 	if( m.flags & move_flags::promotion ) {
 		ret += "=Q";
 	}
-	else {
+	else if( padding ) {
 		ret += "  ";
 	}
 

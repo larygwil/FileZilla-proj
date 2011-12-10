@@ -741,10 +741,7 @@ void print_pos( std::vector<history_entry> const& history, position const& p, co
 		if( !(i%2) ) {
 			ss << i / 2 + 1<< ". ";
 		}
-		else {
-			ss << " ";
-		}
-		ss << move_to_string(history[i].p, history[i].c, history[i].m );
+		ss << move_to_string( history[i].p, history[i].c, history[i].m, false );
 	}
 	std::string line = ss.str();
 	if( !line.empty() ) {

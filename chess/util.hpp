@@ -10,8 +10,8 @@ struct move_info;
 bool validate_move( position const& p, move const& m, color::type c );
 bool parse_move( position const& p, color::type c, std::string const& line, move& m );
 
-// E.g. O-O, Na3xf6, b2b4
-std::string move_to_string( position const& p, color::type c, move const& m );
+// E.g. O-O, Na3xf6, b2-b4
+std::string move_to_string( position const& p, color::type c, move const& m, bool padding = true );
 
 // E.g. c4d6
 std::string move_to_source_target_string( move const& m );
