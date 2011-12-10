@@ -166,7 +166,7 @@ struct gene_t
 	short max_;
 };
 
-int const gene_count = 34;
+std::size_t const gene_count = 34;
 
 struct reference_data {
 	position p;
@@ -223,7 +223,7 @@ struct individual
 	{
 		// I U+2665 C-style pointer arithmetic
 		intptr_t diff = reinterpret_cast<const char*>(&ref.eval_data_) - reinterpret_cast<const char*>(&eval_data_);
-		for( int i = 0; i < gene_count; ++i ) {
+		for( std::size_t i = 0; i < gene_count; ++i ) {
 			genes_[i] = ref.genes_[i];
 			genes_[i].value_ = reinterpret_cast<short*>(reinterpret_cast<char*>(genes_[i].value_) - diff);
 		}
@@ -234,7 +234,7 @@ struct individual
 		eval_data_ = ref.eval_data_;
 
 		intptr_t diff = reinterpret_cast<const char*>(&ref.eval_data_) - reinterpret_cast<const char*>(&eval_data_);
-		for( int i = 0; i < gene_count; ++i ) {
+		for( std::size_t i = 0; i < gene_count; ++i ) {
 			genes_[i] = ref.genes_[i];
 			genes_[i].value_ = reinterpret_cast<short*>(reinterpret_cast<char*>(genes_[i].value_) - diff);
 		}
@@ -361,8 +361,8 @@ void combine( population& pop )
 		seen.insert( pop[i]->eval_data_ );
 	}
 
-	for( int r1 = 0; r1 < orig_count; ++r1 ) {
-		int r2 = r1;
+	for( std::size_t r1 = 0; r1 < orig_count; ++r1 ) {
+		std::size_t r2 = r1;
 		while( r1 == r2 ) {
 			r2 = (get_random_unsigned_long_long() + rand()) % orig_count;
 		}
@@ -371,7 +371,7 @@ void combine( population& pop )
 		individual const& i2 = *pop[r2];
 
 		individual* child( new individual(i1) );
-		for( int i = 0; i < gene_count; ++i ) {
+		for( std::size_t i = 0; i < gene_count; ++i ) {
 			if( rand() % 2 ) {
 				child->genes_[i].value_ = i2.genes_[i].value_;
 			}

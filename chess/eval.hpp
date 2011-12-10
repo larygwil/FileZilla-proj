@@ -3,7 +3,7 @@
 
 #include "chess.hpp"
 
-PACKED(struct, eval_values_t
+struct eval_values_t
 {
 	eval_values_t();
 
@@ -55,7 +55,7 @@ PACKED(struct, eval_values_t
 	int phase_transition_material_end;
 
 	void update_derived();
-});
+};
 
 extern eval_values_t eval_values;
 
