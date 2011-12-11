@@ -36,12 +36,9 @@ bool hash::init( unsigned int max_size )
 	// Make sure size is a multiple of block size
 	bucket_count_ = size_ / bucket_size;
 	size_ = bucket_count_ * bucket_size;
-
 	aligned_free( data_ );
-	data_ = reinterpret_cast<entry*>(aligned_malloc( bucket_count_ * bucket_size, 65536 ));
-
-	clear_data();
-	return true;
+	data_ = reinterpret_cast<entry*>(page_aligned_malloc( bucket_count_ * bucket_size ));
+	return data_ != 0;
 }
 
 

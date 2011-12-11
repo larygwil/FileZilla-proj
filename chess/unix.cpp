@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <iostream>
 #include <unistd.h>
+#include <sys/mman.h>
 
 unsigned long long timer_precision()
 {
@@ -208,19 +209,37 @@ int get_system_memory()
 }
 
 
-void* aligned_malloc( unsigned long long size, unsigned long long alignment )
+void* page_aligned_malloc( unsigned long long size )
 {
-	void* p = 0;
-	if( posix_memalign( &p, static_cast<size_t>(alignment), static_cast<size_t>(size) ) != 0 ) {
-		p = 0;
+	unsigned long long page_size = static_cast<unsigned long long>(getpagesize());
+	unsigned long long alloc = page_size + size;
+	if( size % page_size ) {
+		alloc += page_size - size % page_size;
 	}
 
-	return p;
+	void* p = mmap( 0, alloc, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0 );
+
+	if( p && p != MAP_FAILED ) {
+		*reinterpret_cast<unsigned long long*>(p) = alloc;
+		return reinterpret_cast<char*>(p) + page_size;
+	}
+	else {
+		std::cerr << "Memory allocation failed: " << errno << std::endl;
+		return 0;
+	}
 }
 
 
 void aligned_free( void* p )
 {
-	free( p );
+	if( p ) {
+		unsigned long long page_size = static_cast<unsigned long long>(getpagesize());
+		p = reinterpret_cast<char*>(p) - page_size;
+		unsigned long long alloc = *reinterpret_cast<unsigned long long*>(p);
+		int res = munmap( p, alloc );
+		if( res ) {
+			std::cerr << "Deallication failed: " << errno << std::endl;
+		}
+	}
 }
 
