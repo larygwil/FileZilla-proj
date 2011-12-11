@@ -1,4 +1,4 @@
-#include "unix.hpp"
+#include "platform.hpp"
 
 #include <sys/time.h>
 #include <stdio.h>
@@ -247,3 +247,5 @@ void aligned_free( void* p )
 unsigned long long get_page_size()
 {
 	return static_cast<unsigned long long>(getpagesize());
+}
+
