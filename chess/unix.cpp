@@ -211,7 +211,7 @@ int get_system_memory()
 
 void* page_aligned_malloc( unsigned long long size )
 {
-	unsigned long long page_size = static_cast<unsigned long long>(getpagesize());
+	unsigned long long page_size = get_page_size();
 	unsigned long long alloc = page_size + size;
 	if( size % page_size ) {
 		alloc += page_size - size % page_size;
@@ -233,13 +233,17 @@ void* page_aligned_malloc( unsigned long long size )
 void aligned_free( void* p )
 {
 	if( p ) {
-		unsigned long long page_size = static_cast<unsigned long long>(getpagesize());
+		unsigned long long page_size = get_page_size();
 		p = reinterpret_cast<char*>(p) - page_size;
 		unsigned long long alloc = *reinterpret_cast<unsigned long long*>(p);
 		int res = munmap( p, alloc );
 		if( res ) {
-			std::cerr << "Deallication failed: " << errno << std::endl;
+			std::cerr << "Deallocation failed: " << errno << std::endl;
 		}
 	}
 }
 
+
+unsigned long long get_page_size()
+{
+	return static_cast<unsigned long long>(getpagesize());

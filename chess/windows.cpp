@@ -1,4 +1,4 @@
-#include "windows.hpp"
+#include "platform.hpp"
 
 #include <windows.h>
 
@@ -209,13 +209,48 @@ int get_system_memory()
 }
 
 
-void* aligned_malloc( unsigned long long size, unsigned long long alignment )
+void* page_aligned_malloc( unsigned long long size )
 {
-	return _aligned_malloc( size, alignment );
+	unsigned long long page_size = get_page_size();
+
+	unsigned long long alloc = page_size + size;
+	if( size % page_size ) {
+		alloc += page_size - size % page_size;
+	}
+
+	void* p = VirtualAlloc( 0, alloc, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE );
+
+	if( p ) {
+		*reinterpret_cast<unsigned long long*>(p) = alloc;
+		return reinterpret_cast<char*>(p) + page_size;
+	}
+	else {
+		DWORD err = GetLastError();
+		std::cerr << "Memory allocation failed: " << err << std::endl;
+		return 0;
+	}
 }
 
 
 void aligned_free( void* p )
 {
-	_aligned_free( p );
+	if( p ) {
+		unsigned long long page_size = get_page_size();
+
+		p = reinterpret_cast<char*>(p) - page_size;
+		unsigned long long alloc = *reinterpret_cast<unsigned long long*>(p);
+		BOOL res = VirtualFree( p, alloc, MEM_RELEASE );
+		if( !res ) {
+			DWORD err = GetLastError();
+			std::cerr << "Deallocation failed: " << err << std::endl;
+		}
+	}
+}
+
+
+unsigned long long get_page_size()
+{
+	SYSTEM_INFO info = {0};
+	GetSystemInfo( &info );
+	return info.dwPageSize;
 }

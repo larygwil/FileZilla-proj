@@ -7,7 +7,7 @@
   #include "unix.hpp"
 #endif
 
-/**
+/*
  * Allocates a block of memory of size bytes with a start adress being an
  * integer multiple of the system's memory page size.
  * Needs to be freed using aligned_free.
@@ -15,5 +15,8 @@
 void* page_aligned_malloc( unsigned long long alignment );
 
 void aligned_free( void* p );
+
+// Returns the system's memory page size.
+unsigned long long get_page_size();
 
 #endif
