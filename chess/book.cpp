@@ -8,7 +8,7 @@
 #include <iostream>
 #include <sstream>
 
-int const eval_version = 3;
+int const eval_version = 4;
 
 namespace {
 unsigned char const table[64] = {
@@ -177,10 +177,15 @@ extern "C" int get_cb( void* p, int, char** data, char** /*names*/ ) {
 	if( searchdepth < 1 || searchdepth > 40 ) {
 		return 1;
 	}
+	int evalversion = atoi(data[3]);
+	if( evalversion < 0 ) {
+		return 1;
+	}
 
 	book_entry entry;
 	entry.forecast = static_cast<short>(forecast);
 	entry.search_depth = static_cast<short>(searchdepth);
+	entry.eval_version = static_cast<short>(evalversion);
 	entry.m = m;
 	d->entries->push_back( entry );
 
@@ -207,7 +212,7 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 	std::string hs = history_to_string( history );
 
 	std::stringstream ss;
-	ss << "SELECT move, forecast, searchdepth FROM book WHERE position = (SELECT id FROM position WHERE pos ='" << hs << "') ORDER BY forecast DESC,searchdepth DESC";
+	ss << "SELECT move, forecast, searchdepth, eval_version FROM book WHERE position = (SELECT id FROM position WHERE pos ='" << hs << "') ORDER BY forecast DESC,searchdepth DESC";
 
 	if( move_limit != -1 ) {
 		ss << " LIMIT " << move_limit;
@@ -219,7 +224,7 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 		unsigned long long hash = get_zobrist_hash( p );
 
 		std::stringstream ss;
-		ss << "SELECT move, forecast, searchdepth FROM book WHERE position = (SELECT id FROM position WHERE hash=" << static_cast<sqlite3_int64>(hash) << " LIMIT 1) ORDER BY forecast DESC,searchdepth DESC";
+		ss << "SELECT move, forecast, searchdepth, eval_version FROM book WHERE position = (SELECT id FROM position WHERE hash=" << static_cast<sqlite3_int64>(hash) << " LIMIT 1) ORDER BY forecast DESC,searchdepth DESC";
 
 		if( move_limit != -1 ) {
 			ss << " LIMIT " << move_limit;

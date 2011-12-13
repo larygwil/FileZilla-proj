@@ -16,6 +16,7 @@ struct book_entry
 	move m;
 	short forecast;
 	short search_depth;
+	short eval_version;
 
 	bool operator<( book_entry const& rhs ) const {
 		return forecast > rhs.forecast;
