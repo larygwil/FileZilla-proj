@@ -1,21 +1,18 @@
 CXXFLAGS = -O3 -g -pipe -march=corei7 -std=gnu++0x -Wall -flto -fwhole-program -pthread -ldl
 #CXXFLAGS = -O0 -g -pipe -std=gnu++0x
 
-#%.o: %.cpp *.hpp
-#	g++ $(CXXFLAGS) -c -o $@ $<
-
-#chess: chess.o detect_check.o calc.o util.o statistics.o unix.o eval.o hash.o
-#	g++ $(CXXFLAGS) -o $@ $^
+all: chess-use bookgen-use
 
 chess-gen: *.cpp *.hpp
 	g++ $(CXXFLAGS) -fprofile-generate -o $@ book.cpp chess.cpp config.cpp detect_check.cpp calc.cpp fen.cpp logger.cpp mobility.cpp moves.cpp moves_captures.cpp moves_checks.cpp pawn_structure_hash_table.cpp pvlist.cpp util.cpp selftest.cpp statistics.cpp unix.cpp eval.cpp hash.cpp tweak.cpp zobrist.cpp sqlite/sqlite3.o
 	./chess-gen --moves 1 --depth 11 --threads 1 auto
-	rm -f chess-gen *.o
+	rm -f *.o
 
 chess-use: chess-gen
 	g++ $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ book.cpp chess.cpp config.cpp detect_check.cpp calc.cpp fen.cpp logger.cpp mobility.cpp moves.cpp moves_captures.cpp moves_checks.cpp pawn_structure_hash_table.cpp pvlist.cpp util.cpp selftest.cpp statistics.cpp unix.cpp eval.cpp hash.cpp tweak.cpp zobrist.cpp sqlite/sqlite3.o
 
-.PHONY: chess-gen
+bookgen-use: chess-gen
+	g++ $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ book.cpp bookgen.cpp config.cpp detect_check.cpp calc.cpp fen.cpp logger.cpp mobility.cpp moves.cpp moves_captures.cpp moves_checks.cpp pawn_structure_hash_table.cpp pvlist.cpp util.cpp selftest.cpp statistics.cpp unix.cpp eval.cpp hash.cpp tweak.cpp zobrist.cpp sqlite/sqlite3.o
 
 clean:
 	rm -f chess
