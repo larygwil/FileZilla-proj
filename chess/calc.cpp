@@ -94,6 +94,12 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 		return result::loss;
 	}
 
+	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
+		if( p.material[color::white] + p.material[color::black] < 400 ) {
+			return result::draw;
+		}
+	}
+
 #ifdef USE_STATISTICS
 	++stats.quiescence_nodes;
 #endif
@@ -203,6 +209,12 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 
 	if( do_abort ) {
 		return result::loss;
+	}
+
+	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
+		if( p.material[color::white] + p.material[color::black] < 400 ) {
+			return result::draw;
+		}
 	}
 
 #ifdef USE_STATISTICS
