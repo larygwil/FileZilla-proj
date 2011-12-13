@@ -89,13 +89,13 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 
 	std::vector<book_entry> entries;
 
-	unsigned long long hash = get_zobrist_hash( p );
-
-	context ctx;
-	ctx.clock = move_history.size() % 256;
-	ctx.seen = seen;
+	unsigned long long const hash = get_zobrist_hash( p );
 
 	for( move_info const* it = moves; it != pm; ++it ) {
+		context ctx;
+		ctx.clock = move_history.size() % 256;
+		ctx.seen = seen;
+
 		position new_pos = p;
 		apply_move( new_pos, it->m, c );
 
@@ -132,6 +132,10 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 	}
 
 	for( std::size_t i = 0; i < fulldepth; ++i ) {
+		context ctx;
+		ctx.clock = move_history.size() % 256;
+		ctx.seen = seen;
+
 		book_entry& entry = entries[i];
 
 		position new_pos = p;
@@ -166,14 +170,31 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 {
 	unsigned long long hash = get_zobrist_hash( p );
 
-	context ctx;
-	ctx.clock = move_history.size() % 256;
-	ctx.seen = seen;
-
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 		book_entry entry = *it;
 
-		if( entry.search_depth < MAX_BOOKSEARCH_DEPTH ) {
+		if( entry.search_depth < MAX_BOOKSEARCH_DEPTH || entry.eval_version < eval_version ) {
+
+			int new_depth;
+			if( entry.eval_version < eval_version) {
+				if( entry.search_depth <= MAX_BOOKSEARCH_DEPTH - 2 ) {
+					new_depth = MAX_BOOKSEARCH_DEPTH - 2;
+				}
+				else if( entry.search_depth <= MAX_BOOKSEARCH_DEPTH ) {
+					new_depth = MAX_BOOKSEARCH_DEPTH;
+				}
+				else {
+					new_depth = entry.search_depth;
+				}
+			}
+			else {
+				new_depth = MAX_BOOKSEARCH_DEPTH;
+			}
+
+			context ctx;
+			ctx.clock = move_history.size() % 256;
+			ctx.seen = seen;
+
 			position new_pos = p;
 			apply_move( new_pos, entry.m, c );
 
@@ -189,18 +210,16 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 				short eval = evaluate_fast( new_pos, c );
 
 				pv_entry* pv = ctx.pv_pool.get();
-				value = -step( (MAX_BOOKSEARCH_DEPTH) * depth_factor, 1, ctx, new_pos, new_hash, -eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+				value = -step( new_depth * depth_factor, 1, ctx, new_pos, new_hash, -eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
 				ctx.pv_pool.release(pv);
 			}
 
+			std::cerr << entry.forecast << " d" << entry.search_depth << " v" << entry.eval_version << " -> " << value << " d" << new_depth << std::endl;
+
 			entry.forecast = value;
-			entry.search_depth = MAX_BOOKSEARCH_DEPTH;
+			entry.search_depth = new_depth;
 
 			b.update_entry( move_history, entry );
-			std::cerr << ".";
-		}
-		else {
-			std::cerr << "x";
 		}
 	}
 
@@ -583,7 +602,7 @@ void update( book& b, int entries_per_pos = 5 )
 			std::vector<book_entry>& entries = w.entries;
 
 			for( std::size_t i = 0; i < entries.size(); ) {
-				if( entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH ) {
+				if( entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH && entries[i].eval_version >= eval_version ) {
 					entries.erase( entries.begin() + i );
 					++removed_moves;
 				}
@@ -664,7 +683,7 @@ void update( book& b, int entries_per_pos = 5 )
 
 			++calculated;
 			unsigned long long now = get_time();
-			std::cerr << std::endl << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) * timer_precision() / (now - start) << " moves/hour" << std::endl;
+			std::cerr << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) * timer_precision() / (now - start) << " moves/hour" << std::endl;
 		}
 
 		if( all_idle && stop ) {
