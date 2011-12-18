@@ -13,10 +13,13 @@ extern int const eval_version;
 
 struct book_entry
 {
+	book_entry();
+
 	move m;
 	short forecast;
 	short search_depth;
 	short eval_version;
+	bool result_in_book;
 
 	bool operator<( book_entry const& rhs ) const {
 		return forecast > rhs.forecast;
@@ -58,6 +61,7 @@ struct book_stats {
 class book
 {
 public:
+	class impl;
 	book( std::string const& book_dir );
 	~book();
 
@@ -87,7 +91,6 @@ public:
 	void fold();
 
 private:
-	class impl;
 	impl *impl_;
 };
 

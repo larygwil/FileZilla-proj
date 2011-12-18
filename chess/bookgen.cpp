@@ -988,6 +988,9 @@ void run( book& b )
 				print_pos( history, p, c, entries );
 			}
 		}
+		else if( line == "fold" ) {
+			b.fold();
+		}
 		else if( !line.empty() ) {
 			move m;
 			if( parse_move( p, c, line, m ) ) {

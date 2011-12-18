@@ -52,6 +52,16 @@ std::string history_to_string( std::vector<move>::const_iterator const& begin, s
 }
 }
 
+
+book_entry::book_entry()
+	: forecast()
+	, search_depth()
+	, eval_version()
+	, result_in_book()
+{
+}
+
+
 class book::impl
 {
 public:
@@ -431,16 +441,43 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 }
 
 namespace {
-extern "C" int all_positions_cb( void* p, int, char** data, char** /*names*/ )
+extern "C" int fold_forecast( void* p, int, char** data, char** /*names*/ )
 {
-	std::list<std::string>* wl = reinterpret_cast<std::list<std::string>*>(p);
+	std::pair<int, int> *ret = reinterpret_cast<std::pair<int, int>*>(p);
+	ret->first = atoi(data[0]);
+	ret->second = atoi(data[1]);
 
-	std::string pos = *data;
+	return 0;
+}
+
+extern "C" int fold_position( void* p, int, char** data, char** /*names*/ )
+{
+	book::impl* impl_ = reinterpret_cast<book::impl*>(p);
+	std::string id = data[0];
+	std::string pos = data[1];
 	if( pos.length() % 2 ) {
 		return 1;
 	}
 
-	wl->push_back( pos );
+	if( !pos.length() ) {
+		return 0;
+	}
+
+	std::pair<int, int> best;
+	std::string query = "SELECT folded_forecast, folded_depth FROM book WHERE position = " + id + " ORDER BY folded_forecast DESC LIMIT 1;";
+	if( !impl_->query( query, &fold_forecast, &best ) ) {
+		return 1;
+	}
+
+	std::string parent = pos.substr( 0, pos.length() - 2 );
+	std::string move = pos.substr( pos.length() - 2 );
+
+	std::stringstream ss;
+	ss << "UPDATE book SET folded_forecast = " << -best.first << ", folded_depth = " << best.second + 1 << " WHERE position = (SELECT id FROM position WHERE pos = '" << parent << "') AND move = '" << move << "';";
+
+	if( !impl_->query( ss.str(), 0, 0 ) ) {
+		return 1;
+	}
 
 	return 0;
 }
@@ -448,15 +485,43 @@ extern "C" int all_positions_cb( void* p, int, char** data, char** /*names*/ )
 
 void book::fold()
 {
-	std::list<std::string> positions_to_fold;
+	scoped_lock l(impl_->mtx);
 
-	{
-		scoped_lock l(impl_->mtx);
-
-		std::string query = "SELECT pos FROM position";
-
-		impl_->query( query, &all_positions_cb, reinterpret_cast<void*>(&positions_to_fold) );
+	unsigned long long max_length = 0;
+	std::string query = "BEGIN TRANSACTION; SELECT LENGTH(pos) FROM position ORDER BY LENGTH(pos) DESC LIMIT 1;";
+	if( !impl_->query( query, &count_cb, &max_length ) ) {
+		return;
 	}
+
+	std::cerr << "Resetting folded forcasts to actual forecasts...";
+	query = "UPDATE book set folded_depth = searchdepth;";
+	if( !impl_->query( query, 0, 0 ) ) {
+		return;
+	}
+	std::cerr << " done" << std::endl;
+
+	std::cerr << "Resetting folded depths to actual search depths...";
+	query = "UPDATE book set folded_forecast = forecast;";
+	if( !impl_->query( query, 0, 0 ) ) {
+		return;
+	}
+	std::cerr << " done" << std::endl;
+
+	std::cerr << "Folding";
+	for( unsigned long long i = max_length; i > 0; i -= 2 ) {
+		std::cerr << ".";
+		std::stringstream ss;
+		ss << "SELECT id, pos FROM position WHERE length(pos) = " << i << ";";
+		impl_->query( ss.str(), &fold_position, impl_ );
+	}
+	std::cerr << " done" << std::endl;
+
+	std::cerr << "Comitting...";
+	query = "COMMIT TRANSACTION;";
+	if( !impl_->query( query, 0, 0 ) ) {
+		return;
+	}
+	std::cerr << " done" << std::endl;
 }
 
 
