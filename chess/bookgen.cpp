@@ -730,9 +730,12 @@ std::string side_by_side( std::string const& left, std::string const& right, std
 std::string print_moves( position const& p, color::type c, std::vector<book_entry> const& moves )
 {
 	std::ostringstream out;
-	out << "  Move  Outlook Depth" << std::endl;
+	out << "  Move       Folded      Current" << std::endl;
 	for( std::vector<book_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it ) {
-		out << move_to_string( p, c, it->m ) << std::setw( 7 ) << it->forecast << std::setw(6) << it->search_depth << std::endl;
+		out << move_to_string( p, c, it->m )
+			<< std::setw(7) << it->folded_forecast << " @ " << std::setw(2) << it->folded_searchdepth
+			<< std::setw(7) << it->forecast << " @ " << std::setw(2) << it->search_depth
+			<< std::endl;
 	}
 	if( c == color::white ) {
 		out << "White to move" << std::endl;

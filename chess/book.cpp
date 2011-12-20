@@ -58,6 +58,8 @@ book_entry::book_entry()
 	, search_depth()
 	, eval_version()
 	, result_in_book()
+	, folded_forecast()
+	, folded_searchdepth()
 {
 }
 
@@ -191,11 +193,28 @@ extern "C" int get_cb( void* p, int, char** data, char** /*names*/ ) {
 	if( evalversion < 0 ) {
 		return 1;
 	}
+	int folded_forecast = forecast;
+	int folded_searchdepth = searchdepth;
+	if( data[4] && data[5] ) {
+		folded_forecast = atoi(data[4]);
+		if( folded_forecast > 32767 || folded_forecast < -32768 ) {
+			return 1;
+		}
+		folded_searchdepth = atoi(data[5]);
+		if( folded_searchdepth < 1 || folded_searchdepth > 40 ) {
+			return 1;
+		}
+	}
+	else if( data[4] || data[5] ) {
+		return 1;
+	}
 
 	book_entry entry;
 	entry.forecast = static_cast<short>(forecast);
 	entry.search_depth = static_cast<short>(searchdepth);
 	entry.eval_version = static_cast<short>(evalversion);
+	entry.folded_forecast = static_cast<short>(folded_forecast);
+	entry.folded_searchdepth = static_cast<short>(folded_searchdepth);
 	entry.m = m;
 	d->entries->push_back( entry );
 
@@ -222,7 +241,7 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 	std::string hs = history_to_string( history );
 
 	std::stringstream ss;
-	ss << "SELECT move, forecast, searchdepth, eval_version FROM book WHERE position = (SELECT id FROM position WHERE pos ='" << hs << "') ORDER BY forecast DESC,searchdepth DESC";
+	ss << "SELECT move, forecast, searchdepth, eval_version, folded_forecast, folded_depth FROM book WHERE position = (SELECT id FROM position WHERE pos ='" << hs << "') ORDER BY forecast DESC,searchdepth DESC";
 
 	if( move_limit != -1 ) {
 		ss << " LIMIT " << move_limit;
@@ -234,7 +253,7 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 		unsigned long long hash = get_zobrist_hash( p );
 
 		std::stringstream ss;
-		ss << "SELECT move, forecast, searchdepth, eval_version FROM book WHERE position = (SELECT id FROM position WHERE hash=" << static_cast<sqlite3_int64>(hash) << " LIMIT 1) ORDER BY forecast DESC,searchdepth DESC";
+		ss << "SELECT move, forecast, searchdepth, eval_version, folded_forecast, folded_depth FROM book WHERE position = (SELECT id FROM position WHERE hash=" << static_cast<sqlite3_int64>(hash) << " LIMIT 1) ORDER BY forecast DESC,searchdepth DESC";
 
 		if( move_limit != -1 ) {
 			ss << " LIMIT " << move_limit;
@@ -249,6 +268,8 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 			ret.clear();
 		}
 	}
+
+	std::sort( ret.begin(), ret.end(), SortFolded() );
 
 	return ret;
 }
@@ -467,6 +488,11 @@ extern "C" int fold_position( void* p, int, char** data, char** /*names*/ )
 	std::string query = "SELECT folded_forecast, folded_depth FROM book WHERE position = " + id + " ORDER BY folded_forecast DESC LIMIT 1;";
 	if( !impl_->query( query, &fold_forecast, &best ) ) {
 		return 1;
+	}
+
+	if( !best.second ) {
+		// This position is not yet in book.
+		return 0;
 	}
 
 	std::string parent = pos.substr( 0, pos.length() - 2 );

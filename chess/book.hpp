@@ -20,9 +20,24 @@ struct book_entry
 	short search_depth;
 	short eval_version;
 	bool result_in_book;
+	short folded_forecast;
+	short folded_searchdepth;
 
 	bool operator<( book_entry const& rhs ) const {
 		return forecast > rhs.forecast;
+	}
+};
+
+struct SortFolded
+{
+	bool operator()( book_entry const& lhs, book_entry const& rhs ) const {
+		if( lhs.folded_forecast > rhs.folded_forecast ) {
+			return true;
+		}
+		else if( lhs.folded_forecast == rhs.folded_forecast ) {
+			return lhs.forecast > rhs.forecast;
+		}
+		return false;
 	}
 };
 
@@ -67,7 +82,7 @@ public:
 
 	bool is_open() const;
 
-	// Returned entries are sorted by forecast, highest first.
+	// Returned entries are sorted by folded forecast, highest first.
 	// move_limit limits the number of returned moves per position, sorted descendingly by forecast.
 	std::vector<book_entry> get_entries( position const& p, color::type c, std::vector<move> const& history, int move_limit = -1, bool allow_transpositions = false );
 
