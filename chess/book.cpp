@@ -485,7 +485,7 @@ extern "C" int fold_position( void* p, int, char** data, char** /*names*/ )
 	}
 
 	std::pair<int, int> best;
-	std::string query = "SELECT folded_forecast, folded_depth FROM book WHERE position = " + id + " ORDER BY folded_forecast DESC LIMIT 1;";
+	std::string query = "SELECT folded_forecast, folded_depth FROM book WHERE position = " + id + " ORDER BY folded_forecast DESC, folded_depth ASC LIMIT 1;";
 	if( !impl_->query( query, &fold_forecast, &best ) ) {
 		return 1;
 	}
