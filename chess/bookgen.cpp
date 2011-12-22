@@ -124,42 +124,52 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 		std::cerr << ".";
 	}
 
-	std::sort( entries.begin(), entries.end() );
-
 	std::size_t fulldepth = 5;
 	if( entries.size() < 5 ) {
 		fulldepth = entries.size();
 	}
 
-	for( std::size_t i = 0; i < fulldepth; ++i ) {
-		context ctx;
-		ctx.clock = move_history.size() % 256;
-		ctx.seen = seen;
+	bool done = false;
+	while( !done ) {
+		done = true;
 
-		book_entry& entry = entries[i];
+		std::sort( entries.begin(), entries.end() );
 
-		position new_pos = p;
-		apply_move( new_pos, entry.m, c );
-		position::pawn_structure pawns;
-		short new_eval = evaluate_move( p, c, eval, entry.m, pawns );
+		for( std::size_t i = 0; i < fulldepth; ++i ) {
+			book_entry& entry = entries[i];
+			if( entry.search_depth == MAX_BOOKSEARCH_DEPTH ) {
+				continue;
+			}
 
-		unsigned long long new_hash = update_zobrist_hash( p, c, hash, entry.m );
+			done = false;
 
-		short value;
-		if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
-			value = 0;
+			context ctx;
+			ctx.clock = move_history.size() % 256;
+			ctx.seen = seen;
+
+			position new_pos = p;
+			apply_move( new_pos, entry.m, c );
+			position::pawn_structure pawns;
+			short new_eval = evaluate_move( p, c, eval, entry.m, pawns );
+
+			unsigned long long new_hash = update_zobrist_hash( p, c, hash, entry.m );
+
+			short value;
+			if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
+				value = 0;
+			}
+			else {
+				ctx.seen.pos[++ctx.seen.root_position] = new_hash;
+				pv_entry* pv = ctx.pv_pool.get();
+				value = -step( MAX_BOOKSEARCH_DEPTH * depth_factor, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
+				ctx.pv_pool.release(pv);
+			}
+
+			entry.search_depth = MAX_BOOKSEARCH_DEPTH;
+			entry.forecast = value;
+
+			std::cerr << "F";
 		}
-		else {
-			ctx.seen.pos[++ctx.seen.root_position] = new_hash;
-			pv_entry* pv = ctx.pv_pool.get();
-			value = -step( MAX_BOOKSEARCH_DEPTH * depth_factor, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), result::loss, result::win, pv, true );
-			ctx.pv_pool.release(pv);
-		}
-
-		entry.search_depth = MAX_BOOKSEARCH_DEPTH;
-		entry.forecast = value;
-
-		std::cerr << "F";
 	}
 
 	return b.add_entries( move_history, entries );
@@ -602,7 +612,7 @@ void update( book& b, int entries_per_pos = 5 )
 			std::vector<book_entry>& entries = w.entries;
 
 			for( std::size_t i = 0; i < entries.size(); ) {
-				if( entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH && entries[i].eval_version >= eval_version ) {
+				if( /*entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH && */entries[i].eval_version >= eval_version ) {
 					entries.erase( entries.begin() + i );
 					++removed_moves;
 				}
