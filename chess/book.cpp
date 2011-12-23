@@ -110,7 +110,7 @@ book::book( std::string const& book_dir )
 	std::string fn( book_dir + "opening_book.db" );
 	sqlite3_open( fn.c_str(), &impl_->db );
 	if( impl_->db ) {
-		sqlite3_busy_timeout( impl_->db, 500 );
+		sqlite3_busy_timeout( impl_->db, 5000 );
 	}
 }
 
