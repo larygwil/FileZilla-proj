@@ -8,47 +8,29 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "octochess", "chess.vcproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mobility_gen", "mobility_gen.vcproj", "{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bookgen", "..\bookgen\bookgen.vcproj", "{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bookgen", "bookgen.vcproj", "{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D} = {4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Mixed Platforms = Debug|Mixed Platforms
-		Debug|Win32 = Debug|Win32
 		Debug|x64 = Debug|x64
-		Release|Mixed Platforms = Release|Mixed Platforms
-		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
-		{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}.Debug|Mixed Platforms.Build.0 = Debug|x64
-		{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}.Debug|Win32.ActiveCfg = Debug|x64
 		{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}.Debug|x64.ActiveCfg = Debug|x64
 		{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}.Debug|x64.Build.0 = Debug|x64
-		{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}.Release|Mixed Platforms.ActiveCfg = Release|x64
-		{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}.Release|Mixed Platforms.Build.0 = Release|x64
-		{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}.Release|Win32.ActiveCfg = Release|x64
 		{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}.Release|x64.ActiveCfg = Release|x64
 		{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}.Release|x64.Build.0 = Release|x64
-		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
-		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Debug|Mixed Platforms.Build.0 = Debug|x64
-		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Debug|Win32.ActiveCfg = Debug|x64
 		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Debug|x64.ActiveCfg = Debug|x64
 		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Debug|x64.Build.0 = Debug|x64
-		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Release|Mixed Platforms.ActiveCfg = Debug|x64
-		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Release|Mixed Platforms.Build.0 = Debug|x64
-		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Release|Win32.ActiveCfg = Debug|x64
 		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Release|x64.ActiveCfg = Debug|x64
 		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Release|x64.Build.0 = Debug|x64
-		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
-		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Debug|Mixed Platforms.Build.0 = Debug|x64
-		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Debug|Win32.ActiveCfg = Debug|x64
 		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Debug|x64.ActiveCfg = Debug|x64
 		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Debug|x64.Build.0 = Debug|x64
-		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Release|Mixed Platforms.ActiveCfg = Release|x64
-		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Release|Mixed Platforms.Build.0 = Release|x64
-		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Release|Win32.ActiveCfg = Release|x64
 		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Release|x64.ActiveCfg = Release|x64
+		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
