@@ -851,14 +851,18 @@ void learnpgn( book& b, std::string const& file )
 					os << ".";
 				}
 
-				if( token != os.str() ) {
+				if( token.length() < os.str().length() || token.substr( 0, os.str().length() ) != os.str() ) {
 					valid = false;
 					std::cerr << "Invalid move number token: " << token <<std::endl;
 					std::cerr << "Expected: " << os.str() << std::endl;
 					break;
 				}
 
-				continue;
+				token = token.substr( os.str().length() );
+
+				if( token.empty() ) {
+					continue;
+				}
 			}
 
 			move m;
