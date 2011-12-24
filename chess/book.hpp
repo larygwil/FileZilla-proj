@@ -105,6 +105,9 @@ public:
 
 	void fold();
 
+	// If set to a non-empty string, the resulting SQL inserts from calls to add_entries
+	// are logged into the file.
+	bool set_insert_logfile( std::string const& log_file );
 private:
 	impl *impl_;
 };

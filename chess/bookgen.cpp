@@ -422,7 +422,7 @@ void go( book& b, position const& p, color::type c, seen_positions const& seen, 
 		threads.push_back( new processing_thread( b, mtx, cond ) );
 	}
 
-	max_depth += move_history.size();
+	max_depth += static_cast<unsigned int>(move_history.size());
 	if( max_depth > MAX_BOOK_DEPTH ) {
 		max_depth = MAX_BOOK_DEPTH;
 	}
@@ -1003,6 +1003,9 @@ void run( book& b )
 		}
 		else if( line == "fold" ) {
 			b.fold();
+		}
+		else if( line.substr( 0, 11 ) == "insert_log " ) {
+			b.set_insert_logfile( line.substr( 11 ) );
 		}
 		else if( !line.empty() ) {
 			move m;

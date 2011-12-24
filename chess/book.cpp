@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 
 int const eval_version = 4;
@@ -75,6 +76,8 @@ public:
 
 	mutex mtx;
 	sqlite3* db;
+
+	std::ofstream logfile;
 };
 
 
@@ -293,9 +296,9 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 
 	std::stringstream ss;
 	ss << "BEGIN TRANSACTION;";
+	ss << "INSERT OR IGNORE INTO position (pos, hash) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ");";
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 		std::string m = move_to_book_string( it->m );
-		ss << "INSERT OR IGNORE INTO position (pos, hash) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ");";
 		ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth, eval_version) VALUES ((SELECT id FROM position WHERE pos='" << hs << "'), '"
 		   << m << "', "
 		   << it->forecast << ", "
@@ -304,6 +307,8 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 		   << ");";
 	}
 	ss << "COMMIT TRANSACTION;";
+
+	impl_->logfile << ss.str();
 
 	scoped_lock l(impl_->mtx);
 
@@ -584,6 +589,8 @@ extern "C" int stats_queued_cb( void* p, int, char** data, char** /*names*/ ) {
 book_stats book::stats()
 {
 	book_stats ret;
+	impl_->logfile << "ot";
+	scoped_lock l(impl_->mtx);
 
 	std::string query = "SELECT length(pos), count(pos) FROM position WHERE id IN (SELECT DISTINCT(position) FROM book) GROUP BY LENGTH(pos) ORDER BY LENGTH(pos)";
 	impl_->query( query, &stats_processed_cb, reinterpret_cast<void*>(&ret) );
@@ -592,4 +599,17 @@ book_stats book::stats()
 	impl_->query( query, &stats_queued_cb, reinterpret_cast<void*>(&ret) );
 
 	return ret;
+}
+
+
+bool book::set_insert_logfile( std::string const& log_file )
+{
+	scoped_lock l(impl_->mtx);
+
+	impl_->logfile.close();
+	if( !log_file.empty() ) {
+		impl_->logfile.open( log_file.c_str(), std::ofstream::out|std::ofstream::app );
+	}
+
+	return impl_->logfile.is_open();
 }
