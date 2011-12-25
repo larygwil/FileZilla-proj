@@ -107,7 +107,7 @@ struct move
 		, source()
 		, target()
 		, captured_piece()
-		, promotion()
+		, promotion(promotions::queen)
 	{}
 
 	unsigned char flags;

@@ -606,6 +606,9 @@ static bool do_apply_move( position& p, move const& m, color::type c )
 	if( m.flags & move_flags::promotion ) {
 		p.board[m.target] = (pieces::knight + m.promotion) | (c << 4);
 		p.bitboards[c].b[bb_type::knights + m.promotion] ^= target_square;
+
+		p.material[c] -= get_material_value( pieces::pawn );
+		p.material[c] += get_material_value( static_cast<pieces::type>(pieces::knight + m.promotion) );
 	}
 	else {
 		p.board[m.target] = m.piece | (c << 4);
