@@ -118,10 +118,10 @@ struct move
 	unsigned char promotion;
 
 	bool operator!=( move const& rhs ) const {
-		return source != rhs.source || target != rhs.target;
+		return source != rhs.source || target != rhs.target || promotion != rhs.promotion;
 	}
 	bool operator==( move const& rhs ) const {
-		return source == rhs.source && target == rhs.target;
+		return source == rhs.source && target == rhs.target && promotion == rhs.promotion;
 	}
 };
 
