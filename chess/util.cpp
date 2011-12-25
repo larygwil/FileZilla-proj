@@ -76,9 +76,27 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 	unsigned char piecetype = 0;
 
 	bool promotion = false;
+	promotions::type promotion_type = promotions::queen;
 	// Small b not in this list intentionally, to avoid disambiguation with a4xb
 	if( len && (str[len - 1] == 'q' || str[len - 1] == 'Q' || str[len - 1] == 'r' || str[len - 1] == 'R' || str[len - 1] == 'B' || str[len - 1] == 'n' || str[len - 1] == 'N' ) ) {
 		promotion = true;
+		switch( str[len-1] ) {
+			case 'q':
+			case 'Q':
+				promotion_type = promotions::queen;
+				break;
+			case 'r':
+			case 'R':
+				promotion_type = promotions::rook;
+				break;
+			case 'B':
+				promotion_type = promotions::bishop;
+				break;
+			case 'n':
+			case 'N':
+				promotion_type = promotions::knight;
+				break;
+		}
 		--len;
 		str = str.substr(0, len);
 		if( str[len - 1] == '=' ) {
@@ -89,7 +107,16 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 	}
 	else if( len > 2 && str[len - 1] == 'b' && str[len - 2] == '=' ) {
 		promotion = true;
+		promotion_type = promotions::bishop;
 		len -= 2;
+		str = str.substr(0, len);
+		piecetype = 'P';
+	}
+	else if( len == 5 && str[0] >= 'a' && str[0] <= 'h' && str[len - 1] == 'b' ) {
+		// e7e8b
+		promotion = true;
+		promotion_type = promotions::bishop;
+		--len;
 		str = str.substr(0, len);
 		piecetype = 'P';
 	}
@@ -234,6 +261,13 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 			continue;
 		}
 
+		if( promotion && !(it->m.flags & move_flags::promotion) ) {
+			continue;
+		}
+		if( promotion && it->m.promotion != promotion_type ) {
+			continue;
+		}
+
 		matches.push_back(*it);
 	}
 
@@ -249,16 +283,19 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 		std::cout << "Illegal move (not valid): " << line << std::endl;
 		std::cerr << "Parsed:";
 		if( first_col != -1 ) {
-			std::cerr << " source_file=" << 'a' + first_col;
+			std::cerr << " source_file=" << static_cast<char>('a' + first_col);
 		}
 		if( first_row != -1 ) {
 			std::cerr << " source_rank=" << first_row;
 		}
 		if( second_col != -1 ) {
-			std::cerr << " target_file=" << 'a' + second_col;
+			std::cerr << " target_file=" << static_cast<char>('a' + second_col);
 		}
 		if( second_row != -1 ) {
 			std::cerr << " target_rank=" << second_row;
+		}
+		if( promotion ) {
+			std::cerr << " promotion=" << promotion_type << std::endl;
 		}
 		std::cerr << " capture=" << capture << std::endl;
 		return false;
@@ -353,7 +390,20 @@ std::string move_to_string( position const& p, color::type c, move const& m, boo
 	ret += '1' + m.target / 8;
 
 	if( m.flags & move_flags::promotion ) {
-		ret += "=Q";
+		switch( m.promotion ) {
+			case promotions::knight:
+				ret += "=N";
+				break;
+			case promotions::bishop:
+				ret += "=B";
+				break;
+			case promotions::rook:
+				ret += "=R";
+				break;
+			case promotions::queen:
+				ret += "=Q";
+				break;
+		}
 	}
 	else if( padding ) {
 		ret += "  ";
@@ -554,8 +604,8 @@ static bool do_apply_move( position& p, move const& m, color::type c )
 	}
 
 	if( m.flags & move_flags::promotion ) {
-		p.board[m.target] = pieces::queen | (c << 4);
-		p.bitboards[c].b[bb_type::queens] ^= target_square;
+		p.board[m.target] = (pieces::knight + m.promotion) | (c << 4);
+		p.bitboards[c].b[bb_type::knights + m.promotion] ^= target_square;
 	}
 	else {
 		p.board[m.target] = m.piece | (c << 4);

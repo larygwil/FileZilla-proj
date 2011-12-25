@@ -311,13 +311,18 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 		bitscan( pawn_captures, target );
 		pawn_captures &= pawn_captures - 1;
 
-		int flags = move_flags::valid;
-		if( target / 8 == ( c ? 0 : 7 ) )  {
-			flags |= move_flags::promotion;
-		}
-
 		pieces::type captured = static_cast<pieces::type>( p.board[target] & 0x0f );
-		add_if_legal( moves, check, pieces::pawn, pawn, target, flags, captured );
+
+
+		if( target / 8 == ( c ? 0 : 7 ) )  {
+			add_if_legal( moves, check, pieces::pawn, pawn, target, move_flags::valid|move_flags::promotion, captured, promotions::queen );
+			add_if_legal( moves, check, pieces::pawn, pawn, target, move_flags::valid|move_flags::promotion, captured, promotions::rook );
+			add_if_legal( moves, check, pieces::pawn, pawn, target, move_flags::valid|move_flags::promotion, captured, promotions::bishop );
+			add_if_legal( moves, check, pieces::pawn, pawn, target, move_flags::valid|move_flags::promotion, captured, promotions::knight );
+		}
+		else {
+			add_if_legal( moves, check, pieces::pawn, pawn, target, move_flags::valid, captured );
+		}
 	}
 
 	calc_moves_pawn_en_passant( p, c, moves, check, pawn );

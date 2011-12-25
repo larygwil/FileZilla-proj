@@ -210,7 +210,20 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 		hash ^= get_piece_hash( source, c, m.target );
 	}
 	else {
-		hash ^= queens[c][m.target];
+		switch( m.promotion ) {
+			case promotions::knight:
+				hash ^= knights[c][m.target];
+				break;
+			case promotions::bishop:
+				hash ^= bishops[c][m.target];
+				break;
+			case promotions::rook:
+				hash ^= rooks[c][m.target];
+				break;
+			case promotions::queen:
+				hash ^= queens[c][m.target];
+				break;
+		}
 	}
 
 	return hash;

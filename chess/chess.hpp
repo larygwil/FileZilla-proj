@@ -20,10 +20,10 @@ enum type {
 
 namespace promotions {
 enum type {
-	queen,
-	rook,
 	knight,
-	bishop
+	bishop,
+	rook,
+	queen
 };
 }
 

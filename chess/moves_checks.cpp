@@ -266,19 +266,21 @@ void calc_moves_pawn( position const& p, color::type c, int const current_evalua
 	
 	unsigned char captured = p.board[old_col + new_row * 8];
 	if( !captured ) {
-
-		int flags = move_flags::valid;
-		if( new_row == 0 || new_row == 7 ) {
-			flags |= move_flags::promotion;
-		}
-
 		if( inverse_check.board[pawn] ||
 			new_row == 0 || new_row == 7 ||
 			( (inverse_check.enemy_king_row == new_row + cy) &&
 			  ((inverse_check.enemy_king_col == old_col + 1) || (inverse_check.enemy_king_col + 1 == old_col))
 			) )
 		{
-			add_if_legal( p, c, current_evaluation, moves, check, pieces::pawn, pawn, old_col + new_row * 8, flags );
+			if( new_row == 0 || new_row == 7 ) {
+				add_if_legal( p, c, current_evaluation, moves, check, pieces::pawn, pawn, old_col + new_row * 8, move_flags::valid|move_flags::promotion, promotions::queen );
+				add_if_legal( p, c, current_evaluation, moves, check, pieces::pawn, pawn, old_col + new_row * 8, move_flags::valid|move_flags::promotion, promotions::rook );
+				add_if_legal( p, c, current_evaluation, moves, check, pieces::pawn, pawn, old_col + new_row * 8, move_flags::valid|move_flags::promotion, promotions::bishop );
+				add_if_legal( p, c, current_evaluation, moves, check, pieces::pawn, pawn, old_col + new_row * 8, move_flags::valid|move_flags::promotion, promotions::knight );
+			}
+			else {
+				add_if_legal( p, c, current_evaluation, moves, check, pieces::pawn, pawn, old_col + new_row * 8, move_flags::valid );
+			}
 		}
 		
 		if( old_row == ( (c == color::white) ? 1 : 6) ) {

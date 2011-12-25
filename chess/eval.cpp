@@ -920,7 +920,21 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 
 	if( m.flags & move_flags::promotion ) {
 		current_evaluation -= pawn_values[c][m.source] + eval_values.material_values[pieces::pawn];
-		current_evaluation += queen_values[c][m.target] + eval_values.material_values[pieces::queen];
+		switch( m.promotion ) {
+			case promotions::knight:
+				current_evaluation += knight_values[c][m.target];
+				break;
+			case promotions::bishop:
+				current_evaluation += bishop_values[c][m.target];
+				break;
+			case promotions::rook:
+				current_evaluation += rook_values[c][m.target];
+				break;
+			case promotions::queen:
+				current_evaluation += queen_values[c][m.target];
+				break;
+		}
+		current_evaluation += eval_values.material_values[pieces::knight + m.promotion];
 	}
 	else {
 		current_evaluation -= get_piece_square_value( c, m.piece, m.source );
@@ -938,7 +952,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		}
 		if( m.flags & move_flags::promotion ) {
 			material[c] -= get_material_value( pieces::pawn );
-			material[c] += get_material_value( pieces::queen );
+			material[c] += get_material_value( static_cast<pieces::type>(pieces::knight + m.promotion) );
 		}
 
 		unsigned long long pawnMap[2];

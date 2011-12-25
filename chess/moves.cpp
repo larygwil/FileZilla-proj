@@ -401,13 +401,17 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 		bitscan( pawn_captures, pawn_move );
 		pawn_captures &= pawn_captures - 1;
 
-		int flags = move_flags::valid;
-		if( pawn_move / 8 == ( c ? 0 : 7 ) )  {
-			flags |= move_flags::promotion;
-		}
-
 		pieces::type captured = static_cast<pieces::type>( p.board[pawn_move] & 0x0f );
-		add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, flags, captured );
+
+		if( pawn_move / 8 == ( c ? 0 : 7 ) )  {
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, captured, promotions::queen );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, captured, promotions::rook );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, captured, promotions::bishop );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, captured, promotions::knight );
+		}
+		else {
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid, captured );
+		}
 	}
 
 	calc_moves_pawn_en_passant( p, c, moves, check, pawn );
@@ -419,11 +423,16 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 	unsigned char captured = p.board[old_col + new_row * 8];
 	if( !captured ) {
 
-		int flags = move_flags::valid;
+		unsigned char pawn_move = old_col + new_row * 8;
 		if( new_row == 0 || new_row == 7 ) {
-			flags |= move_flags::promotion;
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, pieces::none, promotions::queen );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, pieces::none, promotions::rook );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, pieces::none, promotions::bishop );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, pieces::none, promotions::knight );
 		}
-		add_if_legal( moves, check, pieces::pawn, pawn, old_col + new_row * 8, flags, pieces::none );
+		else {
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid, pieces::none );
+		}
 
 		if( old_row == ( (c == color::white) ? 1 : 6) ) {
 			// Moving two rows from starting row
