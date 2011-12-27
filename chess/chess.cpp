@@ -501,15 +501,15 @@ void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv
 			}
 		}
 		else {
-			short best = moves.front().forecast;
-			int count_best = 1;
 			std::cerr << "Entries from book: " << std::endl;
-			std::cerr << move_to_string( state.p, state.c, moves.front().m ) << " " << moves.front().forecast << " (" << moves.front().search_depth << ")" << std::endl;
+			std::cerr << entries_to_string( state.p, state.c, moves );
+
+			short best = moves.front().folded_forecast;
+			int count_best = 1;
 			for( std::vector<book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
-				if( it->forecast > -33 && it->forecast + 25 >= best && count_best < 3 ) {
+				if( it->folded_forecast > -33 && it->folded_forecast + 25 >= best && count_best < 3 ) {
 					++count_best;
 				}
-				std::cerr << move_to_string( state.p, state.c, it->m ) << " " << it->forecast << " (" << it->search_depth << ")" << std::endl;
 			}
 
 			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];

@@ -5,8 +5,9 @@
 #include "sqlite/sqlite3.h"
 
 #include <algorithm>
-#include <iostream>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <sstream>
 
 int const eval_version = 4;
@@ -612,4 +613,19 @@ bool book::set_insert_logfile( std::string const& log_file )
 	}
 
 	return impl_->logfile.is_open();
+}
+
+
+std::string entries_to_string( position const& p, color::type c, std::vector<book_entry> const& entries )
+{
+	std::ostringstream out;
+	out << "  Move       Folded      Current" << std::endl;
+	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
+		out << move_to_string( p, c, it->m )
+			<< std::setw(7) << it->folded_forecast << " @ " << std::setw(2) << it->folded_searchdepth
+			<< std::setw(7) << it->forecast << " @ " << std::setw(2) << it->search_depth
+			<< std::endl;
+	}
+
+	return out.str();
 }

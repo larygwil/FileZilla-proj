@@ -73,6 +73,7 @@ struct book_stats {
 	unsigned long long total_queued;
 };
 
+
 class book
 {
 public:
@@ -111,5 +112,9 @@ public:
 private:
 	impl *impl_;
 };
+
+
+std::string entries_to_string( position const& p, color::type c, std::vector<book_entry> const& entries );
+
 
 #endif
