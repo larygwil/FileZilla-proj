@@ -744,7 +744,7 @@ std::string print_moves( position const& p, color::type c, std::vector<book_entr
 		ret += "White to move\n";
 	}
 	else {
-		out += "Black to move\n";
+		ret += "Black to move\n";
 	}
 
 	return ret;
