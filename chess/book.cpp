@@ -112,7 +112,10 @@ book::book( std::string const& book_dir )
 	: impl_( new impl )
 {
 	std::string fn( book_dir + "opening_book.db" );
-	sqlite3_open( fn.c_str(), &impl_->db );
+	if( sqlite3_open_v2( fn.c_str(), &impl_->db, SQLITE_OPEN_READWRITE, 0 ) != SQLITE_OK ) {
+		sqlite3_close( impl_->db );
+		impl_->db = 0;
+	}
 	if( impl_->db ) {
 		sqlite3_busy_timeout( impl_->db, 5000 );
 		impl_->query("PRAGMA foreign_keys = ON", 0, 0 );
@@ -333,6 +336,10 @@ unsigned long long book::size()
 {
 	scoped_lock l(impl_->mtx);
 
+	if( !impl_->db ) {
+		return 0;
+	}
+
 	std::string query = "SELECT COUNT(id) FROM position;";
 
 	unsigned long long count = 0;
@@ -345,6 +352,10 @@ unsigned long long book::size()
 void book::mark_for_processing( std::vector<move> const& history )
 {
 	scoped_lock l(impl_->mtx);
+
+	if( !impl_->db ) {
+		return;
+	}
 
 	std::stringstream ss;
 
@@ -592,7 +603,7 @@ extern "C" int stats_queued_cb( void* p, int, char** data, char** /*names*/ ) {
 book_stats book::stats()
 {
 	book_stats ret;
-	impl_->logfile << "ot";
+
 	scoped_lock l(impl_->mtx);
 
 	std::string query = "SELECT length(pos), count(pos) FROM position WHERE id IN (SELECT DISTINCT(position) FROM book) GROUP BY LENGTH(pos) ORDER BY LENGTH(pos)";
