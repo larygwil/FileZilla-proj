@@ -115,6 +115,7 @@ book::book( std::string const& book_dir )
 	sqlite3_open( fn.c_str(), &impl_->db );
 	if( impl_->db ) {
 		sqlite3_busy_timeout( impl_->db, 5000 );
+		impl_->query("PRAGMA foreign_keys = ON", 0, 0 );
 	}
 }
 
