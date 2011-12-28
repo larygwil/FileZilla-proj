@@ -309,9 +309,10 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 	}
 	ss << "COMMIT TRANSACTION;";
 
-	impl_->logfile << ss.str();
-
 	scoped_lock l(impl_->mtx);
+
+	impl_->logfile << ss.str();
+	impl_->logfile.flush();
 
 	return impl_->query( ss.str(), 0, 0 );
 }
