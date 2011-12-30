@@ -596,7 +596,7 @@ void processing_thread::onRun()
 
 	while( true ) {
 
-		while( state_ == idle ) {
+		while( state_ == idle || state_ == pending_results ) {
 			waiting_on_work_.wait( l );
 		}
 
@@ -604,19 +604,20 @@ void processing_thread::onRun()
 			return;
 		}
 
-		l.unlock();
-
-		short result = processWork();
-
-		l.lock();
-
-		result_ = result;
 		if( state_ == busy ) {
-			state_ = pending_results;
+			l.unlock();
+			short result = processWork();
+			l.lock();
+			result_ = result;
+			if( state_ == busy ) {
+				state_ = pending_results;
+			}
 		}
-		else if( state_ == waiting ) {
+		
+		if( state_ == waiting ) {
 			state_ = idle;
 		}
+
 		cond_.signal( l );
 	}
 }
