@@ -28,11 +28,22 @@ struct new_best_move_callback
 };
 extern new_best_move_callback default_new_best_move_callback;
 
-// May modify seen_positions at indexes > root_position
-bool calc( position& p, color::type c, move& m, int& res,
+class calc_manager
+{
+public:
+	calc_manager();
+	virtual ~calc_manager();
+
+	// May modify seen_positions at indexes > root_position
+	bool calc( position& p, color::type c, move& m, int& res,
 		   unsigned long long move_time_limit, unsigned long long time_remaining, int clock,
 		   seen_positions& seen, short last_mate,
 		   new_best_move_callback& new_best_cb = default_new_best_move_callback );
+
+private:
+	class impl;
+	impl* impl_;
+};
 
 class killer_moves
 {

@@ -29,7 +29,8 @@ static bool tweak_calc( position& p, color::type c, move& m, int& res, unsigned 
 		  , new_best_move_callback& new_best_cb = default_new_best_move_callback )
 {
 	if( clock > 10 ) {
-		return calc( p, c, m, res, move_time_limit, time_remaining, clock, seen, last_mate, new_best_cb );
+		calc_manager cmgr;
+		return cmgr.calc( p, c, m, res, move_time_limit, time_remaining, clock, seen, last_mate, new_best_cb );
 	}
 
 	check_map check;

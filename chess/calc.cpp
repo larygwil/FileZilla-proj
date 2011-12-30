@@ -432,6 +432,7 @@ public:
 		idle,
 		busy,
 		pending_results,
+		waiting,
 		quitting
 	};
 
@@ -441,10 +442,26 @@ public:
 		spawn();
 	}
 
+
 	void quit( scoped_lock& l )
 	{
 		state_ = quitting;
 		waiting_on_work_.signal( l );
+	}
+
+
+	void wait_idle( scoped_lock& l )
+	{
+		if( state_ == idle ) {
+			return;
+		}
+		else if( state_ == pending_results ) {
+			state_ = idle;
+		}
+		else if( state_ == busy ) {
+			state_ = waiting;
+			waiting_on_work_.signal( l );
+		}
 	}
 
 	// Call locked
@@ -458,6 +475,10 @@ public:
 
 	// Call locked
 	short result() {
+		if( state_ != pending_results ) {
+			std::cerr << "Calling result in wrong state." << std::endl;
+			abort();
+		}
 		state_ = idle;
 		return result_;
 	}
@@ -575,7 +596,7 @@ void processing_thread::onRun()
 
 	while( true ) {
 
-		while( state_ != busy && state_ != quitting ) {
+		while( state_ == idle ) {
 			waiting_on_work_.wait( l );
 		}
 
@@ -590,7 +611,12 @@ void processing_thread::onRun()
 		l.lock();
 
 		result_ = result;
-		state_ = pending_results;
+		if( state_ == busy ) {
+			state_ = pending_results;
+		}
+		else if( state_ == waiting ) {
+			state_ = idle;
+		}
 		cond_.signal( l );
 	}
 }
@@ -615,7 +641,89 @@ void insert_sorted( sorted_moves& moves, int forecast, move_info const& m, pv_en
 	moves.insert( it, d );
 }
 
-bool calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long /*time_remaining*/, int clock, seen_positions& seen
+
+seen_positions::seen_positions()
+	: root_position()
+	, null_move_position()
+{
+	memset( pos, 0, (100 + MAX_DEPTH + MAX_QDEPTH + 10)*8 );
+}
+
+bool seen_positions::is_three_fold( unsigned long long hash, int ply ) const
+{
+	int count = 0;
+	for( int i = root_position + ply - 4; i >= null_move_position; i -= 2) {
+		if( pos[i] == hash ) {
+			++count;
+		}
+	}
+	return count >= 2;
+}
+
+bool seen_positions::is_two_fold( unsigned long long hash, int ply ) const
+{
+	for( int i = root_position + ply - 4; i >= null_move_position; i -= 2 ) {
+		if( pos[i] == hash ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void new_best_move_callback::on_new_best_move( position const& p, color::type c, int depth, int evaluation, unsigned long long nodes, pv_entry const* pv )
+{
+	std::stringstream ss;
+	ss << "Best so far: " << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
+	std::cerr << ss.str();
+}
+
+
+
+class calc_manager::impl
+{
+public:
+	impl() {
+		for( int t = 0; t < conf.thread_count; ++t ) {
+			threads_.push_back( new processing_thread( mtx_, cond_ ) );
+		}
+	}
+
+	~impl() {
+		{
+			scoped_lock l( mtx_ );
+
+			for( std::vector<processing_thread*>::iterator it = threads_.begin(); it != threads_.end(); ++it ) {
+				(*it)->quit( l );
+			}
+		}
+
+		for( std::vector<processing_thread*>::iterator it = threads_.begin(); it != threads_.end(); ++it ) {
+			delete *it;
+		}
+	}
+
+	mutex mtx_;
+	condition cond_;
+	std::vector<processing_thread*> threads_;
+
+	pv_entry_pool pv_pool_;
+};
+
+
+calc_manager::calc_manager()
+	: impl_( new impl() )
+{
+	
+}
+
+
+calc_manager::~calc_manager()
+{
+	delete impl_;
+}
+
+
+bool calc_manager::calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long /*time_remaining*/, int clock, seen_positions& seen
 		  , short last_mate
 		  , new_best_move_callback& new_best_cb )
 {
@@ -663,10 +771,9 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 	sorted_moves old_sorted;
 
 	{
-		pv_entry_pool pool;
 		for( move_info* it  = moves; it != pm; ++it ) {
-			pv_entry* pv = pool.get();
-			pool.append( pv, it->m, pool.get() );
+			pv_entry* pv = impl_->pv_pool_.get();
+			impl_->pv_pool_.append( pv, it->m, impl_->pv_pool_.get() );
 			// Initial order is random to get some variation into play
 			insert_sorted( old_sorted, static_cast<int>(get_random_unsigned_long_long()), *it, pv );
 		}
@@ -675,15 +782,6 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 	new_best_cb.on_new_best_move( p, c, 0, old_sorted.front().m.evaluation, 0, old_sorted.front().pv );
 
 	unsigned long long start = get_time();
-
-	mutex mtx;
-
-	condition cond;
-
-	std::vector<processing_thread*> threads;
-	for( int t = 0; t < conf.thread_count; ++t ) {
-		threads.push_back( new processing_thread( mtx, cond ) );
-	}
 
 	short alpha_at_prev_depth = result::loss;
 	int highest_depth = 0;
@@ -702,7 +800,7 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 		bool done = false;
 		while( !done ) {
 
-			scoped_lock l( mtx );
+			scoped_lock l( impl_->mtx_ );
 
 			while( it != old_sorted.end() && !do_abort ) {
 
@@ -712,12 +810,12 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 				}
 
 				std::size_t t;
-				for( t = 0; t < threads.size(); ++t ) {
-					if( !threads[t]->is_idle() ) {
+				for( t = 0; t < impl_->threads_.size(); ++t ) {
+					if( !impl_->threads_[t]->is_idle() ) {
 						continue;
 					}
 
-					threads[t]->process( l, p, c, it->m, max_depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv, seen );
+					impl_->threads_[t]->process( l, p, c, it->m, max_depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv, seen );
 
 					// First one is run on its own to get a somewhat sane lower bound for others to work with.
 					if( it++ == old_sorted.begin() ) {
@@ -726,7 +824,7 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 					break;
 				}
 
-				if( t == threads.size() ) {
+				if( t == impl_->threads_.size() ) {
 					break;
 				}
 			}
@@ -735,7 +833,7 @@ break2:
 			if( move_time_limit ) {
 				unsigned long long now = get_time();
 				if( move_time_limit > now - start ) {
-					cond.wait( l, move_time_limit - now + start );
+					impl_->cond_.wait( l, move_time_limit - now + start );
 				}
 
 				now = get_time();
@@ -745,23 +843,23 @@ break2:
 				}
 			}
 			else {
-				cond.wait( l );
+				impl_->cond_.wait( l );
 			}
 
 			bool all_idle = true;
-			for( std::size_t t = 0; t < threads.size(); ++t ) {
+			for( std::size_t t = 0; t < impl_->threads_.size(); ++t ) {
 
-				if( threads[t]->got_results() ) {
+				if( impl_->threads_[t]->got_results() ) {
 					got_first_result = true;
-					int value = threads[t]->result();
+					int value = impl_->threads_[t]->result();
 					if( !do_abort ) {
 						++evaluated;
 
-						pv_entry* pv = threads[t]->get_pv();
+						pv_entry* pv = impl_->threads_[t]->get_pv();
 						extend_pv_from_tt( pv, p, c, max_depth, conf.quiescence_depth );
 
-						insert_sorted( sorted, value, threads[t]->get_move(), pv );
-						if( threads[t]->get_move().m != pv->get_best_move() ) {
+						insert_sorted( sorted, value, impl_->threads_[t]->get_move(), pv );
+						if( impl_->threads_[t]->get_move().m != pv->get_best_move() ) {
 							std::cerr << "FAIL: Wrong PV move" << std::endl;
 						}
 
@@ -774,7 +872,7 @@ break2:
 					}
 				}
 
-				if( !threads[t]->is_idle() ) {
+				if( !impl_->threads_[t]->is_idle() ) {
 					all_idle = false;
 				}
 			}
@@ -861,52 +959,11 @@ break2:
 	print_stats( start, stop );
 	reset_stats();
 
-	scoped_lock l( mtx );
+	scoped_lock l( impl_->mtx_ );
 
-	for( std::vector<processing_thread*>::iterator it = threads.begin(); it != threads.end(); ++it ) {
-		(*it)->quit( l );
-	}
-
-	l.unlock();
-	for( std::vector<processing_thread*>::iterator it = threads.begin(); it != threads.end(); ++it ) {
-		delete *it;
+	for( std::vector<processing_thread*>::iterator it = impl_->threads_.begin(); it != impl_->threads_.end(); ++it ) {
+		(*it)->wait_idle( l );
 	}
 
 	return true;
-}
-
-
-seen_positions::seen_positions()
-	: root_position()
-	, null_move_position()
-{
-	memset( pos, 0, (100 + MAX_DEPTH + MAX_QDEPTH + 10)*8 );
-}
-
-bool seen_positions::is_three_fold( unsigned long long hash, int ply ) const
-{
-	int count = 0;
-	for( int i = root_position + ply - 4; i >= null_move_position; i -= 2) {
-		if( pos[i] == hash ) {
-			++count;
-		}
-	}
-	return count >= 2;
-}
-
-bool seen_positions::is_two_fold( unsigned long long hash, int ply ) const
-{
-	for( int i = root_position + ply - 4; i >= null_move_position; i -= 2 ) {
-		if( pos[i] == hash ) {
-			return true;
-		}
-	}
-	return false;
-}
-
-void new_best_move_callback::on_new_best_move( position const& p, color::type c, int depth, int evaluation, unsigned long long nodes, pv_entry const* pv )
-{
-	std::stringstream ss;
-	ss << "Best so far: " << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
-	std::cerr << ss.str();
 }

@@ -67,7 +67,8 @@ void auto_play()
 
 	short last_mate = 0;
 
-	while( calc( p, c, m, res, TIME_LIMIT * timer_precision() / 1000, TIME_LIMIT * timer_precision() / 1000, i, seen, last_mate ) ) {
+	calc_manager cmgr;
+	while( cmgr.calc( p, c, m, res, TIME_LIMIT * timer_precision() / 1000, TIME_LIMIT * timer_precision() / 1000, i, seen, last_mate ) ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
 		}
@@ -319,6 +320,7 @@ public:
 	virtual void on_new_best_move( position const& p, color::type c, int depth, int evaluation, unsigned long long nodes, pv_entry const* pv );
 
 private:
+	calc_manager cmgr_;
 	bool abort;
 	xboard_state& state;
 	move best_move;
@@ -373,7 +375,7 @@ void xboard_thread::onRun()
 
 	move m;
 	int res;
-	bool success = calc( state.p, state.c, m, res, time_limit, state.time_remaining, state.clock, state.seen, state.last_mate, *this );
+	bool success = cmgr_.calc( state.p, state.c, m, res, time_limit, state.time_remaining, state.clock, state.seen, state.last_mate, *this );
 
 	scoped_lock l( mtx );
 
@@ -433,7 +435,7 @@ void xboard_thread::onRun()
 
 	if( ponder ) {
 		l.unlock();
-		calc( state.p, state.c, m, res, 0, state.time_remaining, state.clock, state.seen, state.last_mate, *this );
+		cmgr_.calc( state.p, state.c, m, res, 0, state.time_remaining, state.clock, state.seen, state.last_mate, *this );
 	}
 }
 
@@ -564,6 +566,18 @@ void xboard()
 
 		logger::log_input( line );
 
+		// The following two commands do not stop the thread.
+		if( line == "hard" ) {
+			scoped_lock l( thread.mtx );
+			conf.ponder = true;
+			continue;
+		}
+		else if( line == "easy" ) {
+			scoped_lock l( thread.mtx );
+			conf.ponder = false;
+			continue;
+		}
+
 		move best_move = thread.stop();
 
 		scoped_lock l( thread.mtx );
@@ -598,12 +612,6 @@ void xboard()
 			state.force = true;
 		}
 		else if( line == "random" ) {
-			// Ignore
-		}
-		else if( line == "hard" ) {
-			// Ignore
-		}
-		else if( line == "easy" ) {
 			// Ignore
 		}
 		else if( line == "post" ) {
