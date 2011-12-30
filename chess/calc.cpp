@@ -657,7 +657,7 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 			return false;
 		}
 	}
-
+	
 	// Go through them sorted by previous evaluation. This way, if on time pressure,
 	// we can abort processing at high depths early if needed.
 	sorted_moves old_sorted;
@@ -671,6 +671,8 @@ bool calc( position& p, color::type c, move& m, int& res, unsigned long long mov
 			insert_sorted( old_sorted, static_cast<int>(get_random_unsigned_long_long()), *it, pv );
 		}
 	}
+
+	new_best_cb.on_new_best_move( p, c, 0, old_sorted.front().m.evaluation, 0, old_sorted.front().pv );
 
 	unsigned long long start = get_time();
 
