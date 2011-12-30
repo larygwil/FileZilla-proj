@@ -213,7 +213,7 @@ void* page_aligned_malloc( unsigned long long size )
 {
 	unsigned long long page_size = get_page_size();
 
-	unsigned long long alloc = page_size + size;
+	unsigned long long alloc = size;
 	if( size % page_size ) {
 		alloc += page_size - size % page_size;
 	}
@@ -221,8 +221,7 @@ void* page_aligned_malloc( unsigned long long size )
 	void* p = VirtualAlloc( 0, alloc, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE );
 
 	if( p ) {
-		*reinterpret_cast<unsigned long long*>(p) = alloc;
-		return reinterpret_cast<char*>(p) + page_size;
+		return p;
 	}
 	else {
 		DWORD err = GetLastError();
@@ -235,11 +234,7 @@ void* page_aligned_malloc( unsigned long long size )
 void aligned_free( void* p )
 {
 	if( p ) {
-		unsigned long long page_size = get_page_size();
-
-		p = reinterpret_cast<char*>(p) - page_size;
-		unsigned long long alloc = *reinterpret_cast<unsigned long long*>(p);
-		BOOL res = VirtualFree( p, alloc, MEM_RELEASE );
+		BOOL res = VirtualFree( p, 0, MEM_RELEASE );
 		if( !res ) {
 			DWORD err = GetLastError();
 			std::cerr << "Deallocation failed: " << err << std::endl;
