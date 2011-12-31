@@ -218,7 +218,13 @@ struct xboard_state
 		}
 
 		clock -= count;
-		seen.root_position -= count;
+		if( seen.root_position > count ) {
+			seen.root_position -= count;
+		}
+		else {
+			// This isn't exactly correct, would need to restore old seen state prior to a reset.
+			seen.root_position = 0;
+		}
 
 		if( count % 2 ) {
 			c = static_cast<color::type>(1 - c);
