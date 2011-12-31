@@ -1,0 +1,36 @@
+[Event "Internet"]
+[Site "?"]
+[Date "1991.??.??"]
+[Round "?"]
+[White "Elkies, Noam"]
+[Black "?"]
+[Result "1/2-1/2"]
+[SetUp "1"]
+[FEN "8/1p6/1p6/kPp2P1K/2P5/N1Pp4/q2P4/1N6 w - - 0 1"]
+[PlyCount "103"]
+[EventDate "1991.??.??"]
+
+1. f6 $1 Qb3 2. f7 $1 (2. Kh6 $2 {In this variation the drawing idea of the
+main line fails by one move.} Qd1 3. f7 Qf3 4. Kg7 Qg4+ 5. Kh8 Qf5 6. Kg7 Qg5+
+7. Kh7 Qf6 8. Kg8 Qg6+ 9. Kf8 Ka4 10. Ke7 Qg7 11. Ke8 Qe5+ 12. Kd7 Qf6 13. Ke8
+Qe6+ 14. Kf8 Kb3 15. Kg7 Qe7 16. Kg8 Qg5+ 17. Kh8 Qf6+ 18. Kg8 Qg6+ 19. Kf8 Kb2
+20. Ke7 Qg7 21. Ke8 Qe5+ 22. Kd8 Qf6+ 23. Ke8 Qe6+ 24. Kf8 Kc1 25. Kg7 Qe7 26.
+Kg8 Qg5+ 27. Kh8 Qf6+ 28. Kg8 Qg6+ 29. Kf8 Kd1 30. Ke7 Qg7 31. Ke8 Qe5+ 32. Kd7
+Qf6 33. Ke8 Qe6+ 34. Kf8 Ke2 35. Kg7 Qe7 36. Kg8 Qg5+ 37. Kh8 Qf6+ 38. Kg8 Qg6+
+39. Kf8 Kf3 40. Ke7 Qg7 41. Ke8 Qe5+ 42. Kd7 Qf6 43. Ke8 Qe6+ 44. Kf8 Kf4 45.
+Kg7 Qe7 46. Kg8 Qg5+ 47. Kh7 Qf6 48. Kg8 Qg6+ 49. Kf8 Ke5 50. Ke7 Qg7 51. Ke8
+Ke6 52. Kd8 Qxf7 {and Black has made a capture just in time to avoid a 50-move
+draw.}) 2... Qd1+ 3. Kh6 $1 Qf3 4. Kg7 Qg4+ 5. Kh8 Qf5 6. Kg7 Qg5+ 7. Kh7 Qf6
+8. Kg8 Qg6+ 9. Kf8 (9. Kh8 $2 Qxf7 10. Nc2 dxc2) 9... Ka4 $1 10. Ke7 $1 Qg7 11.
+Ke8 Qe5+ 12. Kd7 Qf6 13. Ke8 Qe6+ 14. Kf8 Kb3 15. Kg7 Qe7 16. Kg8 Qg5+ 17. Kh8
+Qf6+ 18. Kg8 Qg6+ 19. Kf8 Kb2 20. Ke7 Qg7 21. Ke8 Qe5+ 22. Kd8 Qf6+ 23. Ke8
+Qe6+ 24. Kf8 Kc1 25. Kg7 Qe7 26. Kg8 Qg5+ 27. Kh8 Qh6+ 28. Kg8 Qg6+ 29. Kf8 Kd1
+30. Ke7 Qg7 31. Ke8 Qe5+ 32. Kd7 Qf6 33. Ke8 Qe6+ 34. Kf8 Ke2 35. Kg7 Qe7 36.
+Kg8 Qg5+ 37. Kh8 Qf6+ 38. Kg8 Qg6+ 39. Kf8 Kf3 40. Ke7 Qg7 41. Ke8 Qe5+ 42. Kd7
+Qf6 43. Ke8 Qe6+ 44. Kf8 Kf4 45. Kg7 Qe7 (45... Qd7 46. Kf6 $1) 46. Kg8 Qg5+
+47. Kh7 Qf6 48. Kg8 Qg6+ 49. Kf8 Ke5 50. Ke7 $1 Qg7 (50... Qe6+ 51. Kf8 Kf6 52.
+Kg8 $11) (50... Qd6+ 51. Ke8 Ke6 52. Nc2 $1 $11) 51. Ke8 Ke6 52. Kd8 {With
+this move, White can claim the draw by the fifty-move rule! Since move two no
+piece has been captured and no pawn moved.} (52. Nc2 {is also a draw by the 50
+move rule.}) 1/2-1/2
+
