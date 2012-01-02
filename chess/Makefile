@@ -2,7 +2,7 @@ CFLAGS = -O3 -g -pipe -march=corei7 -std=gnu++0x -Wall -Wextra -flto
 #CFLAGS = -O0 -g -pipe -std=gnu++0x -Wall
 CXXFLAGS = $(CFLAGS) -std=gnu++0x
 
-all: chess bookgen
+all: octochess bookgen
 
 mobility_data.hpp : mobility_gen.cpp
 	g++ mobility_gen.cpp -o mobility_gen
@@ -40,7 +40,7 @@ sqlite/sqlite3.o: sqlite/sqlite3.c sqlite/sqlite3.h
 
 mobility.o: mobility_data.hpp
 
-chess: $(OBJECT_FILES) chess.o
+octochess: $(OBJECT_FILES) chess.o
 	g++ $(CXXFLAGS) -pthread -ldl -o $@ $^
 
 
@@ -48,7 +48,7 @@ bookgen: $(OBJECT_FILES) bookgen.o
 	g++ $(CXXFLAGS) -pthread -ldl -o $@ $^
 
 clean:
-	rm -f chess bookgen mobility_gen
+	rm -f octochess bookgen mobility_gen
 	rm -f *.gcda
 	rm -f *.o
 	rm -f mobility_data.hpp
