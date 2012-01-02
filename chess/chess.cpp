@@ -606,6 +606,7 @@ void xboard()
 		else if( line.substr( 0, 9 ) == "protover " ) {
 			//std::cout << "feature ping=1" << std::endl;
 			std::cout << "feature setboard=1" << std::endl;
+			std::cout << "feature sigint=0" << std::endl;
 			std::cout << "feature done=1" << std::endl;
 		}
 		else if( line.substr( 0, 7 ) == "result " ) {
