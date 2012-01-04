@@ -142,6 +142,7 @@ struct cb_data {
 	std::vector<book_entry>* entries;
 	position p;
 	color::type c;
+	bool print_errors;
 };
 
 unsigned char conv_to_index( unsigned char s )
@@ -164,7 +165,7 @@ unsigned char conv_to_index( unsigned char s )
 }
 
 
-bool conv_to_move( position const& p, color::type c, move& m, char const* data ) {
+bool conv_to_move( position const& p, color::type c, move& m, char const* data, bool print_errors ) {
 	unsigned char si = conv_to_index( data[0] );
 	unsigned char ti = conv_to_index( data[1] );
 
@@ -174,7 +175,7 @@ bool conv_to_move( position const& p, color::type c, move& m, char const* data )
 	ms[2] = (ti % 8) + 'a';
 	ms[3] = (ti / 8) + '1';
 
-	if( !parse_move( p, c, ms, m ) ) {
+	if( !parse_move( p, c, ms, m, print_errors ) ) {
 		return false;
 	}
 
@@ -185,7 +186,7 @@ extern "C" int get_cb( void* p, int, char** data, char** /*names*/ ) {
 	cb_data* d = reinterpret_cast<cb_data*>(p);
 
 	move m;
-	if( !conv_to_move( d->p, d->c, m, data[0] ) ) {
+	if( !conv_to_move( d->p, d->c, m, data[0], d->print_errors ) ) {
 		return 1;
 	}
 
@@ -245,6 +246,7 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 	data.p = p;
 	data.c = c;
 	data.entries = &ret;
+	data.print_errors = true;
 
 	std::string hs = history_to_string( history );
 
@@ -267,7 +269,9 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 			ss << " LIMIT " << move_limit;
 		}
 
-		if( impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data) ) ) {
+		data.print_errors = false;
+
+		if( impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data), false ) ) {
 			if( !ret.empty() ) {
 				std::cerr << "Found transposition" << std::endl;
 			}
@@ -400,7 +404,7 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 		pos = pos.substr( 2 );
 
 		move m;
-		if( !conv_to_move( w.p, w.c, m, ms.c_str() ) ) {
+		if( !conv_to_move( w.p, w.c, m, ms.c_str(), true ) ) {
 			return 1;
 		}
 
