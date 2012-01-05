@@ -139,10 +139,21 @@ bool book::is_open() const
 
 namespace {
 struct cb_data {
+	cb_data()
+		: c()
+		, pm()
+		, found_()
+	{
+	}
+
 	std::vector<book_entry>* entries;
 	position p;
 	color::type c;
-	bool print_errors;
+
+	move_info moves[200];
+	move_info* pm;
+
+	int found_;
 };
 
 unsigned char conv_to_index( unsigned char s )
@@ -165,7 +176,7 @@ unsigned char conv_to_index( unsigned char s )
 }
 
 
-bool conv_to_move( position const& p, color::type c, move& m, char const* data, bool print_errors ) {
+bool conv_to_move_slow( position const& p, color::type c, move& m, char const* data, bool print_errors ) {
 	unsigned char si = conv_to_index( data[0] );
 	unsigned char ti = conv_to_index( data[1] );
 
@@ -182,11 +193,36 @@ bool conv_to_move( position const& p, color::type c, move& m, char const* data, 
 	return true;
 }
 
+bool conv_to_move( char const* data, move& m, move_info const* begin, move_info const* end ) {
+	unsigned char si = conv_to_index( data[0] );
+	unsigned char ti = conv_to_index( data[1] );
+
+	for( ; begin != end; ++begin ) {
+		if( begin->m.source == si && begin->m.target == ti ) {
+			m = begin->m;
+			return true;
+		}
+	}
+
+	return false;
+}
+
 extern "C" int get_cb( void* p, int, char** data, char** /*names*/ ) {
 	cb_data* d = reinterpret_cast<cb_data*>(p);
 
+	if( !d->pm ) {
+		check_map check;
+		calc_check_map( d->p, d->c, check );
+		d->pm = d->moves;
+		calculate_moves( d->p, d->c, d->pm, check );
+	}
+
+	if( ++d->found_ > (d->pm - d->moves) ) {
+		return 1;
+	}
+
 	move m;
-	if( !conv_to_move( d->p, d->c, m, data[0], d->print_errors ) ) {
+	if( !conv_to_move( data[0], m, d->moves, d->pm ) ) {
 		return 1;
 	}
 
@@ -246,7 +282,6 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 	data.p = p;
 	data.c = c;
 	data.entries = &ret;
-	data.print_errors = true;
 
 	std::string hs = history_to_string( history );
 
@@ -269,8 +304,6 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 			ss << " LIMIT " << move_limit;
 		}
 
-		data.print_errors = false;
-
 		if( impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data), false ) ) {
 			if( !ret.empty() ) {
 				std::cerr << "Found transposition" << std::endl;
@@ -279,6 +312,10 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 		else {
 			ret.clear();
 		}
+	}
+
+	if( !ret.empty() && data.found_ != (data.pm - data.moves) ) {
+		ret.clear();
 	}
 
 	std::sort( ret.begin(), ret.end(), SortFolded() );
@@ -404,7 +441,7 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 		pos = pos.substr( 2 );
 
 		move m;
-		if( !conv_to_move( w.p, w.c, m, ms.c_str(), true ) ) {
+		if( !conv_to_move_slow( w.p, w.c, m, ms.c_str(), true ) ) {
 			return 1;
 		}
 

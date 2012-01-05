@@ -25,14 +25,21 @@ bool validate_move( position const& p, move const& m, color::type c )
 	move_info* pm = moves;
 	calculate_moves( p, c, pm, check );
 
-	for( move_info* it = moves; it != pm; ++it ) {
-		if( it->m == m ) {
+	return validate_move( m, moves, pm );
+}
+
+
+bool validate_move( move const& m, move_info const* begin, move_info const* end )
+{
+	for( ; begin != end; ++begin ) {
+		if( begin->m == m ) {
 			return true;
 		}
 	}
 
 	return false;
 }
+
 
 bool parse_move( position const& p, color::type c, std::string const& line, move& m, bool print_errors )
 {
