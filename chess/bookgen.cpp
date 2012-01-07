@@ -796,6 +796,13 @@ void learnpgn( book& b, std::string const& file )
 
 	bool valid = true;
 
+	// Indicates whether we're in a braced comment.
+	// Braced comments do not nest.
+	bool in_brace = false;
+
+	// Number of open Recursive Annotation Variation, started with '(', closed with ')'.
+	unsigned int rav_stack = 0;
+
 	while( std::getline( in, line ) ) {
 		if( line.empty() ) {
 			continue;
@@ -824,13 +831,56 @@ void learnpgn( book& b, std::string const& file )
 		std::istringstream ss( line );
 		std::string token;
 
-		while( ss >> token ) {
-			if( token == "1-0" || token == "0-1" || token == "1/2-1/2" || token == "*" ) {
+		while( !token.empty() || ss >> token ) {
+			if( !in_brace ) {
+				if( token[0] == ';' ) {
+					// Comment till end of line, ignore.
+					break;
+				}
+				if( token[0] == '{' ) {
+					in_brace = true;
+					token = token.substr( 1 );
+				}
+			}
+
+			if( in_brace ) {
+				std::size_t pos = token.find('}');
+				if( pos != std::string::npos ) {
+					in_brace = false;
+					token = token.substr( pos + 1 );
+				}
+				else {
+					token.clear();
+				}
+				continue;
+			}
+
+			if( token[0] == '(' ) {
+				++rav_stack;
+				token = token.substr( 1 );
+				continue;
+			}
+
+			if( rav_stack ) {
+				// Unfortunately we currently cannot handle variations properly as our move parser cannot handle praces.
+				std::size_t pos = token.find(')');
+				if( pos != std::string::npos ) {
+					--rav_stack;
+					token = token.substr( pos + 1 );
+				}
+				else {
+					token.clear();
+				}
+				continue;
+			}
+
+			if( token == "1-0" || token == "0-1" || token == "1/2-1/2" || token == "1/2" || token == "*" ) {
 				valid = false;
 				break;
 			}
 
-			if( token == "+" ) {
+			if( token == "+" || token == "#" ) {
+				token.clear();
 				continue;
 			}
 
@@ -869,7 +919,7 @@ void learnpgn( book& b, std::string const& file )
 			apply_move( p, m, c );
 			c = static_cast<color::type>(1-c);
 			move_history.push_back(m);
-
+			token.clear();
 		}
 	}
 	if( move_history.size() ) {
