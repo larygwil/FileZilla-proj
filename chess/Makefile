@@ -24,6 +24,7 @@ OBJECT_FILES = \
 	moves_checks.o \
 	pawn_structure_hash_table.o \
 	pvlist.o \
+	see.o \
 	selftest.o \
 	statistics.o \
 	tweak.o \
