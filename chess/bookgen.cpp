@@ -862,7 +862,7 @@ void learnpgn( book& b, std::string const& file )
 			}
 
 			if( rav_stack ) {
-				// Unfortunately we currently cannot handle variations properly as our move parser cannot handle praces.
+				// Unfortunately we currently cannot handle variations properly as our move parser cannot handle braces.
 				std::size_t pos = token.find(')');
 				if( pos != std::string::npos ) {
 					--rav_stack;
@@ -881,6 +881,21 @@ void learnpgn( book& b, std::string const& file )
 
 			if( token == "+" || token == "#" ) {
 				token.clear();
+				continue;
+			}
+
+			if( token[0] == '$' ) {
+				if( token.size() < 2 && !isdigit(token[1]) ) {
+					valid = false;
+					std::cerr << "Invalid token: " << token;
+					std::cerr << "Line: " << line << std::endl;
+					break;
+				}
+
+				std::size_t i = 1;
+				for( ; i < token.size() && isdigit(token[i]); ++i ) {
+				}
+				token = token.substr( i );
 				continue;
 			}
 
