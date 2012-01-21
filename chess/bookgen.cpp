@@ -612,7 +612,7 @@ void update( book& b, int entries_per_pos = 5 )
 			std::vector<book_entry>& entries = w.entries;
 
 			for( std::size_t i = 0; i < entries.size(); ) {
-				if( /*entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH && */entries[i].eval_version >= eval_version ) {
+				if( entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH && entries[i].eval_version >= eval_version ) {
 					entries.erase( entries.begin() + i );
 					++removed_moves;
 				}
