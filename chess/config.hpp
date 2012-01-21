@@ -26,6 +26,8 @@ struct config
 	std::string logfile;
 
 	bool ponder;
+
+	bool use_book;
 };
 extern config conf;
 

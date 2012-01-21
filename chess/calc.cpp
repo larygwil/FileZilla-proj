@@ -728,11 +728,13 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, unsigned
 		  , short last_mate
 		  , new_best_move_callback& new_best_cb )
 {
-	if( move_time_limit ) {
+	bool ponder = false;
+	if( move_time_limit != static_cast<unsigned long long>(-1) ) {
 		std::cerr << "Current move time limit is " << 1000 * move_time_limit / timer_precision() << " ms" << std::endl;
 	}
 	else {
 		std::cerr << "Pondering..." << std::endl;
+		ponder = true;
 	}
 
 	do_abort = false;
@@ -831,14 +833,14 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, unsigned
 			}
 break2:
 
-			if( move_time_limit ) {
+			if( !ponder ) {
 				unsigned long long now = get_time();
 				if( move_time_limit > now - start ) {
 					impl_->cond_.wait( l, move_time_limit - now + start );
 				}
 
 				now = get_time();
-				if( !do_abort && move_time_limit > 0 && (now - start) > move_time_limit  ) {
+				if( !do_abort && (now - start) > move_time_limit  ) {
 					std::cerr << "Triggering search abort due to time limit at depth " << max_depth << std::endl;
 					do_abort = true;
 				}
@@ -902,7 +904,7 @@ break2:
 			else {
 				unsigned long long now = get_time();
 				unsigned long long elapsed = now - start;
-				if( move_time_limit && elapsed * 2 > move_time_limit ) {
+				if( !ponder && elapsed * 2 > move_time_limit ) {
 					std::cerr << "Not increasing depth due to time limit. Elapsed: " << elapsed * 1000 / timer_precision() << " ms" << std::endl;
 					do_abort = true;
 				}

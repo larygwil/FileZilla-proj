@@ -133,7 +133,6 @@ struct xboard_state
 		: c()
 		, clock()
 		, book_( book_dir )
-		, in_book( book_.is_open() )
 		, time_remaining()
 		, bonus_time()
 		, force(true)
@@ -159,8 +158,7 @@ struct xboard_state
 	void reset()
 	{
 		init_board(p);
-		in_book = book_.is_open();
-		if( in_book ) {
+		if( conf.use_book && book_.is_open() ) {
 			std::cerr << "Opening book loaded" << std::endl;
 		}
 		move_history_.clear();
@@ -239,7 +237,6 @@ struct xboard_state
 		move_history_.pop_back();
 
 		bonus_time = false;
-		in_book = false;
 
 		return true;
 	}
@@ -270,7 +267,6 @@ struct xboard_state
 	int clock;
 	seen_positions seen;
 	book book_;
-	bool in_book;
 	unsigned long long time_remaining;
 	unsigned long long bonus_time;
 	bool force;
@@ -370,13 +366,12 @@ void xboard_thread::onRun()
 		time_limit -= overhead;
 	}
 	else {
-		// Any less time makes no sense.
-		time_limit = 10 * 1000 / timer_precision();
+		time_limit = 0;
 	}
 
 	// Any less time makes no sense.
-	if( time_limit < 10 * 1000 / timer_precision() ) {
-		time_limit = 10 * 1000 / timer_precision();
+	if( time_limit < 10 * timer_precision() / 1000 ) {
+		time_limit = 10 * timer_precision() / 1000;
 	}
 
 	move m;
@@ -441,7 +436,7 @@ void xboard_thread::onRun()
 
 	if( ponder ) {
 		l.unlock();
-		cmgr_.calc( state.p, state.c, m, res, 0, state.time_remaining, state.clock, state.seen, state.last_mate, *this );
+		cmgr_.calc( state.p, state.c, m, res, static_cast<unsigned long long>(-1), state.time_remaining, state.clock, state.seen, state.last_mate, *this );
 	}
 }
 
@@ -500,13 +495,10 @@ void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv
 		state.hash_initialized = true;
 	}
 	// Do a step
-	if( (state.in_book || state.clock < 30) && state.started_from_root ) {
+	if( conf.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
 		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.c, state.move_history_, -1, true );
 		if( moves.empty() ) {
-			if( state.in_book ) {
-				std::cerr << "Current position not in book" << std::endl;
-				state.in_book = false;
-			}
+			std::cerr << "Current position not in book" << std::endl;
 		}
 		else {
 			std::cerr << "Entries from book: " << std::endl;
@@ -763,7 +755,6 @@ void xboard()
 			state.p = new_pos;
 			state.c = new_c;
 			state.seen.pos[0] = get_zobrist_hash( state.p );
-			state.in_book = false;
 			state.started_from_root = false;
 		}
 		else if( line == "~score") {

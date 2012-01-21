@@ -13,7 +13,8 @@ config::config()
   quiescence_depth(MAX_QDEPTH),
   time_limit(3600*1000), // In ms
   random_seed(-1), //-1 == based on time
-  ponder()
+  ponder(),
+  use_book(true)
 {}
 
 int config::init( int argc,  char const* argv[] )
@@ -101,6 +102,9 @@ int config::init( int argc,  char const* argv[] )
 		}
 		else if( !strcmp(argv[i], "--ponder" ) ) {
 			conf.ponder = true;
+		}
+		else if( !strcmp(argv[i], "--nobook" ) ) {
+			conf.use_book = false;
 		}
 		else {
 			std::cerr << "Unknown argument " << argv[i] << std::endl;
