@@ -70,14 +70,17 @@ int see( position const& p, color::type c, move const& m )
 		attackers |= ((all_pieces & rook_attacks( target, all_pieces )) & all_rooks) |
 						((all_pieces & bishop_attacks( target, all_pieces )) & all_bishops);
 
+		if( !attackers ) {
+			break;
+		}
+
 		// Get new attacker
 		attacker_mask = least_valuable_attacker( p, static_cast<color::type>(c ^ (depth & 1)), attackers, attacker_piece );
-	} while( attacker_mask );
+	} while( true );
 
 	// Propagate scores back
-	while( depth ) {
+	while( --depth ) {
 		score[depth - 1] = -(std::max)(score[depth], -score[depth - 1]);
-		--depth;
 	}
 
 	return score[0];
