@@ -25,7 +25,7 @@ static unsigned long long least_valuable_attacker( position const& p, color::typ
 	return 0;
 }
 
-__attribute__((noinline)) int see( position const& p, color::type c, move const& m )
+int see( position const& p, color::type c, move const& m )
 {
 	// Iterative SEE algorithm as described by Fritz Reul, adapted to use bitboards.
 	unsigned char target = m.target;
