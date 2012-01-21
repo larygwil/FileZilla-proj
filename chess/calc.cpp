@@ -6,6 +6,7 @@
 #include "eval.hpp"
 #include "util.hpp"
 #include "platform.hpp"
+#include "see.hpp"
 #include "statistics.hpp"
 #include "zobrist.hpp"
 
@@ -17,6 +18,8 @@
 #include <string>
 #include <map>
 #include <vector>
+
+#define USE_SEE 0
 
 // TODO: Fine-tweak these values.
 #if 0
@@ -140,6 +143,14 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 
 	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
 		if( !check.check ) {
+#if USE_SEE
+			if( it->m.piece > it->m.captured_piece ) {
+				int see_score = see( p, c, it->m );
+				if( see_score < 0 ) {
+					continue;
+				}
+			}
+#endif
 			it->evaluation = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
 		}
 
