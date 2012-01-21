@@ -31,6 +31,8 @@
 ../pvlist.cpp
 ../pvlist.hpp
 ../random.hpp
+../see.cpp
+../see.hpp
 ../selftest.cpp
 ../selftest.hpp
 ../sliding_piece_attacks.hpp
