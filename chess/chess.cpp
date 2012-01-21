@@ -26,6 +26,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "util.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "platform.hpp"
+#include "see.hpp"
 #include "statistics.hpp"
 #include "selftest.hpp"
 #include "tweak.hpp"
@@ -763,6 +764,19 @@ void xboard()
 		}
 		else if( line == "~hash") {
 			std::cout << get_zobrist_hash( state.p ) << std::endl;
+		}
+		else if( line.substr( 0, 5 ) == "~see " ) {
+			line = line.substr(5);
+			move m;
+			if( parse_move( state.p, state.c, line, m, true ) ) {
+				if( m.captured_piece != pieces::none ) {
+					int see_score = see( state.p, state.c, m );
+					std::cout << "See score: " << see_score << std::endl;
+				}
+				else {
+					std::cerr << "Not a capture move" << std::endl;
+				}
+			}
 		}
 		else {
 			move m;
