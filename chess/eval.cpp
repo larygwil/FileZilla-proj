@@ -120,7 +120,7 @@ eval_values_t::eval_values_t()
 	material_values[pieces::bishop] = 330;
 	material_values[pieces::rook] = 524;
 	material_values[pieces::queen] = 930;
-	material_values[pieces::king] = 0;
+	material_values[pieces::king] = 20000;
 
 	double_bishop = 35;
 
@@ -174,8 +174,7 @@ void eval_values_t::update_derived()
 		material_values[pieces::knight] * 2 +
 		material_values[pieces::bishop] * 2 +
 		material_values[pieces::rook] * 2 +
-		material_values[pieces::queen] +
-		material_values[pieces::king];
+		material_values[pieces::queen];
 
 	phase_transition_material_begin = initial_material * 2 - phase_transition_begin;
 	phase_transition_material_end = phase_transition_material_begin - phase_transition_duration;

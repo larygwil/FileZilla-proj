@@ -509,7 +509,9 @@ void init_material( position& p ) {
 		color::type c = static_cast<color::type>(p.board[pi] >> 4);
 		pieces::type b = static_cast<pieces::type>(p.board[pi] & 0x0f);
 
-		p.material[c] += get_material_value( b );
+		if( b != pieces::king ) {
+			p.material[c] += get_material_value( b );
+		}
 	}
 }
 
