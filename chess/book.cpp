@@ -315,7 +315,9 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 	}
 
 	if( !ret.empty() && data.found_ != (data.pm - data.moves) ) {
-		ret.clear();
+		if( move_limit == -1 || allow_transpositions ) {
+			ret.clear();
+		}
 	}
 
 	std::sort( ret.begin(), ret.end(), SortFolded() );
