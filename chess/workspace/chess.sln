@@ -3,12 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "octochess", "chess.vcproj", "{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}"
 	ProjectSection(ProjectDependencies) = postProject
-		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D} = {4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}
+		{8B05DC85-6F69-4097-9837-D893BDF3AEF3} = {8B05DC85-6F69-4097-9837-D893BDF3AEF3}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mobility_gen", "mobility_gen.vcproj", "{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bookgen", "bookgen.vcproj", "{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8B05DC85-6F69-4097-9837-D893BDF3AEF3} = {8B05DC85-6F69-4097-9837-D893BDF3AEF3}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "octochesslib", "octochesslib.vcproj", "{8B05DC85-6F69-4097-9837-D893BDF3AEF3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D} = {4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}
 	EndProjectSection
@@ -31,6 +36,10 @@ Global
 		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Debug|x64.Build.0 = Debug|x64
 		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Release|x64.ActiveCfg = Release|x64
 		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Release|x64.Build.0 = Release|x64
+		{8B05DC85-6F69-4097-9837-D893BDF3AEF3}.Debug|x64.ActiveCfg = Debug|x64
+		{8B05DC85-6F69-4097-9837-D893BDF3AEF3}.Debug|x64.Build.0 = Debug|x64
+		{8B05DC85-6F69-4097-9837-D893BDF3AEF3}.Release|x64.ActiveCfg = Release|x64
+		{8B05DC85-6F69-4097-9837-D893BDF3AEF3}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

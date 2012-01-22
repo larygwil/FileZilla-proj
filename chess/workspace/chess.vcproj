@@ -17,10 +17,11 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)\..\$(ConfigurationName)"
-			IntermediateDirectory="..\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\build\$(ConfigurationName)"
+			IntermediateDirectory="..\build\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
+			BuildLogFile="$(IntDir)\OctochessBuildLog.htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -42,9 +43,10 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/MP"
 				Optimization="0"
-				MinimalRebuild="true"
+				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
+				ProgramDataBaseFileName="$(IntDir)\octochess.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -59,7 +61,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="$(ProjectDir)\..\octochess-debug.exe"
+				LinkIncremental="1"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(OutDir)\$(TargetName).pdb"
 				StackReserveSize="10485760"
 				TargetMachine="17"
 			/>
@@ -87,11 +92,12 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)\..\$(ConfigurationName)"
-			IntermediateDirectory="..\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\build\$(ConfigurationName)"
+			IntermediateDirectory="..\build\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
+			BuildLogFile="$(IntDir)\OctochessBuildLog.htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -136,7 +142,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="$(ProjectDir)\..\$(ProjectName).exe"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(OutDir)$(TargetName).pdb"
 				StackReserveSize="10485760"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -174,91 +182,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\book.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\calc.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\chess.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\config.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\detect_check.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\eval.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\fen.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\hash.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\logger.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\mobility.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\moves.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\moves_captures.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\moves_checks.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\pawn_structure_hash_table.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\pvlist.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\selftest.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\sqlite\sqlite3.c"
-				>
-			</File>
-			<File
-				RelativePath="..\statistics.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\tweak.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\util.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\windows.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\zobrist.cpp"
 				>
 			</File>
 		</Filter>
@@ -268,91 +196,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\assert.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\book.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\calc.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\chess.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\config.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\detect_check.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\eval.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\fen.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\hash.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\logger.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\mobility.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\moves.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\pawn_structure_hash_table.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\platform.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\pvlist.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\random.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\selftest.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\statistics.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\tweak.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\util.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\windows.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\zobrist.hpp"
 				>
 			</File>
 		</Filter>

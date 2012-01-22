@@ -18,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)\..\$(ConfigurationName)"
-			IntermediateDirectory="..\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\build\$(ConfigurationName)"
+			IntermediateDirectory="..\build\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -45,10 +45,11 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
-				MinimalRebuild="true"
+				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
+				ProgramDataBaseFileName="$(IntDir)\mobility_gen.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>

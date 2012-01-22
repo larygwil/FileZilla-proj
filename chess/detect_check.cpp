@@ -101,7 +101,7 @@ bool detect_check( position const& p, color::type c, unsigned char king, unsigne
 	unsigned long long rooks_and_queens_check = (unblocked_king_n|unblocked_king_e|unblocked_king_s|unblocked_king_w) & rooks_and_queens;
 	unsigned long long bishops_and_queens_check = (unblocked_king_ne|unblocked_king_se|unblocked_king_sw|unblocked_king_nw) & bishops_and_queens;
 
-	return rooks_and_queens_check | bishops_and_queens_check | detect_check_knights( p, c, king );
+	return rooks_and_queens_check || bishops_and_queens_check || detect_check_knights( p, c, king );
 }
 
 bool detect_check( position const& p, color::type c )
