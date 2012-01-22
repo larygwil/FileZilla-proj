@@ -4,13 +4,11 @@
 #include "util.hpp"
 #include "calc.hpp"
 #include "sliding_piece_attacks.hpp"
+#include "tables.hpp"
 
 #include <algorithm>
 #include <iostream>
 #include <string>
-
-extern unsigned long long const possible_king_moves[];
-extern unsigned long long const possible_knight_moves[];
 
 namespace {
 

@@ -4,10 +4,10 @@ CXXFLAGS = $(CFLAGS) -std=gnu++0x
 
 all: octochess bookgen
 
-mobility_data.hpp : mobility_gen.cpp
-	g++ mobility_gen.cpp -o mobility_gen
-	./mobility_gen > mobility_data.hpp
-	rm mobility_gen
+tables.cpp: tables_gen.cpp
+	g++ tables_gen.cpp -o tables_gen
+	./tables_gen > tables.cpp
+	rm tables_gen
 
 OBJECT_FILES = \
 	book.o \
@@ -27,6 +27,7 @@ OBJECT_FILES = \
 	see.o \
 	selftest.o \
 	statistics.o \
+	tables.o \
 	tweak.o \
 	unix.o \
 	util.o \
@@ -39,7 +40,6 @@ OBJECT_FILES = \
 sqlite/sqlite3.o: sqlite/sqlite3.c sqlite/sqlite3.h
 	gcc $(CFLAGS) -pthread -c -o $@ $<
 
-mobility.o: mobility_data.hpp
 
 octochess: $(OBJECT_FILES) chess.o
 	g++ $(CXXFLAGS) -pthread -ldl -o $@ $^
@@ -49,9 +49,9 @@ bookgen: $(OBJECT_FILES) bookgen.o
 	g++ $(CXXFLAGS) -pthread -ldl -o $@ $^
 
 clean:
-	rm -f octochess bookgen mobility_gen
+	rm -f octochess bookgen tables_gen
 	rm -f *.gcda
 	rm -f *.o
-	rm -f mobility_data.hpp
+	rm -f tables.cpp
 
 .PHONY: all clean

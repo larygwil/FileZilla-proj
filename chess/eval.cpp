@@ -3,6 +3,7 @@
 #include "mobility.hpp"
 #include "util.hpp"
 #include "pawn_structure_hash_table.hpp"
+#include "tables.hpp"
 #include "zobrist.hpp"
 
 #include <iostream>
@@ -1062,8 +1063,6 @@ short evaluate_full( position const& p, color::type c )
 
 	return evaluate_full( p, c, eval );
 }
-
-extern unsigned long long const pawn_control[2][64];
 
 short evaluate_full( position const& p, color::type c, short eval_fast )
 {

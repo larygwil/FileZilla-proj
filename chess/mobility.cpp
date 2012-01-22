@@ -1,13 +1,10 @@
 #include "mobility.hpp"
-#include "mobility_data.hpp"
+#include "tables.hpp"
 #include "eval.hpp"
 #include "sliding_piece_attacks.hpp"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-
-extern unsigned long long const possible_knight_moves[64];
-extern unsigned long long const possible_king_moves[64];
 
 unsigned long long const center_squares = 0x00003c3c3c3c0000ull;
 

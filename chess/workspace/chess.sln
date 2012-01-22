@@ -6,7 +6,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "octochess", "chess.vcproj",
 		{8B05DC85-6F69-4097-9837-D893BDF3AEF3} = {8B05DC85-6F69-4097-9837-D893BDF3AEF3}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mobility_gen", "mobility_gen.vcproj", "{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tables_gen", "tables_gen.vcproj", "{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bookgen", "bookgen.vcproj", "{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}"
 	ProjectSection(ProjectDependencies) = postProject

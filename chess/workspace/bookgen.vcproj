@@ -98,6 +98,7 @@
 			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
+			BuildLogFile="$(IntDir)\BookgenBuildLog.htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -124,6 +125,7 @@
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
+				ProgramDataBaseFileName="$(IntDir)\bookgen.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>

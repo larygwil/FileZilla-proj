@@ -8,6 +8,7 @@
 #include "random.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "platform.hpp"
+#include "tables.hpp"
 #include "zobrist.hpp"
 
 #include <iostream>
@@ -495,7 +496,6 @@ void init_board( position& p )
 	p.init_pawn_structure();
 }
 
-extern unsigned long long const pawn_control[2][64];
 
 void init_material( position& p ) {
 	p.material[0] = 0;

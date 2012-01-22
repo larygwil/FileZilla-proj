@@ -2,17 +2,7 @@
 #define __SLIDING_PIECE_ATTACKS_H__
 
 #include "platform.hpp"
-
-extern unsigned long long visibility_bishop[64];
-extern unsigned long long visibility_rook[64];
-extern unsigned long long ray_n[64];
-extern unsigned long long ray_e[64];
-extern unsigned long long ray_s[64];
-extern unsigned long long ray_w[64];
-extern unsigned long long ray_ne[64];
-extern unsigned long long ray_se[64];
-extern unsigned long long ray_sw[64];
-extern unsigned long long ray_nw[64];
+#include "tables.hpp"
 
 inline unsigned long long attack( unsigned long long pi, unsigned long long blockers, unsigned long long const* const ray )
 {

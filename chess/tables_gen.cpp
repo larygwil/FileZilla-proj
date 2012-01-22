@@ -65,7 +65,7 @@ int main()
 	}
 	std::cout << "};" << std::endl << std::endl << std::endl;*/
 
-	std::cout << "unsigned long long visibility_bishop[64] = {" << std::endl;
+	std::cout << "extern unsigned long long const visibility_bishop[64] = {" << std::endl;
 
 	for( unsigned int source = 0; source < 64; ++source ) {
 		std::cout << "\t0x";
@@ -97,7 +97,7 @@ int main()
 	std::cout << "};" << std::endl << std::endl << std::endl;
 
 	{
-		std::cout << "unsigned long long visibility_rook[64] = {" << std::endl;
+		std::cout << "extern unsigned long long const visibility_rook[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
@@ -181,7 +181,7 @@ int main()
 	}
 
 	{
-		std::cout << "short proximity[64][64] = {" << std::endl;
+		std::cout << "extern short const proximity[64][64] = {" << std::endl;
 
 		for( int target = 0; target < 64; ++target ) {
 			std::cout << "\t{" << std::endl;
@@ -215,7 +215,7 @@ int main()
 	}
 
 	{
-		std::cout << "unsigned long long ray_n[64] = {" << std::endl;
+		std::cout << "extern unsigned long long const ray_n[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
@@ -242,7 +242,7 @@ int main()
 	}
 
 	{
-		std::cout << "unsigned long long ray_e[64] = {" << std::endl;
+		std::cout << "extern unsigned long long const ray_e[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
@@ -269,7 +269,7 @@ int main()
 	}
 
 	{
-		std::cout << "unsigned long long ray_s[64] = {" << std::endl;
+		std::cout << "extern unsigned long long const ray_s[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
@@ -296,7 +296,7 @@ int main()
 	}
 
 	{
-		std::cout << "unsigned long long ray_w[64] = {" << std::endl;
+		std::cout << "extern unsigned long long const ray_w[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
@@ -323,7 +323,7 @@ int main()
 	}
 
 	{
-		std::cout << "unsigned long long ray_ne[64] = {" << std::endl;
+		std::cout << "extern unsigned long long const ray_ne[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
@@ -351,7 +351,7 @@ int main()
 	}
 
 	{
-		std::cout << "unsigned long long ray_se[64] = {" << std::endl;
+		std::cout << "extern unsigned long long const ray_se[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
@@ -379,7 +379,7 @@ int main()
 	}
 
 	{
-		std::cout << "unsigned long long ray_sw[64] = {" << std::endl;
+		std::cout << "extern unsigned long long const ray_sw[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
@@ -407,7 +407,7 @@ int main()
 	}
 
 	{
-		std::cout << "unsigned long long ray_nw[64] = {" << std::endl;
+		std::cout << "extern unsigned long long const ray_nw[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
@@ -508,6 +508,78 @@ int main()
 				}
 			}
 
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
+	}
+
+	{
+		std::cout << "extern unsigned long long const possible_king_moves[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			unsigned long long v = 0;
+
+			int source_col = source % 8;
+			int source_row = source / 8;
+
+			for( int cx = -1; cx <= 1; ++cx ) {
+				for( int cy = -1; cy <= 1; ++cy ) {
+					if( !cx && !cy ) {
+						continue;
+					}
+
+					int x = source_col + cx;
+					int y = source_row + cy;
+					if( x >= 0 && x <= 7 && y >= 0 && y <= 7 ) {
+						v |= 1ull << (x + y * 8);
+					}
+				}
+			}
+			
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
+	}
+
+	{
+		std::cout << "extern unsigned long long const possible_knight_moves[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			unsigned long long v = 0;
+
+			int source_col = source % 8;
+			int source_row = source / 8;
+
+			for( int cx = -2; cx <= 2; ++cx ) {
+				for( int cy = -2; cy <= 2; ++cy ) {
+					if( !cx || !cy || cx == cy || cx == -cy ) {
+						continue;
+					}
+
+					int x = source_col + cx;
+					int y = source_row + cy;
+					if( x >= 0 && x <= 7 && y >= 0 && y <= 7 ) {
+						v |= 1ull << (x + y * 8);
+					}
+				}
+			}
+			
 			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
 
 			std::cout << "ull";

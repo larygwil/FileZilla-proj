@@ -2,13 +2,10 @@
 #include "sliding_piece_attacks.hpp"
 #include "eval.hpp"
 #include "platform.hpp"
+#include "tables.hpp"
 
 #include <algorithm>
 #include <iostream>
-
-extern unsigned long long const possible_knight_moves[64];
-extern unsigned long long const possible_king_moves[64];
-extern unsigned long long const pawn_control[2][64];
 
 static unsigned long long least_valuable_attacker( position const& p, color::type c, unsigned long long attackers, pieces::type& attacker_piece_out ) {
 	// Exploit that our bitboards are sorted by piece value

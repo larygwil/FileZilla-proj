@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="mobility_gen"
+	Name="tables_gen"
 	ProjectGUID="{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}"
-	RootNamespace="mobility_gen"
+	RootNamespace="tables_gen"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -28,8 +28,8 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-				CommandLine="$(OutDir)\mobility_gen.exe &gt; $(SolutionDir)\..\mobility_data.hpp&#x0D;&#x0A;"
-				Outputs="$(SolutionDir)\..\mobility_data.hpp"
+				CommandLine="$(OutDir)\tables_gen.exe &gt; $(SolutionDir)\..\tables.cpp&#x0D;&#x0A;"
+				Outputs="$(SolutionDir)\..\tables.cpp"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -49,7 +49,7 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
-				ProgramDataBaseFileName="$(IntDir)\mobility_gen.pdb"
+				ProgramDataBaseFileName="$(IntDir)\tables_gen.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -101,7 +101,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\mobility_gen.cpp"
+				RelativePath="..\tables_gen.cpp"
 				>
 			</File>
 		</Filter>
