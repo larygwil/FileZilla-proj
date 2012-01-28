@@ -128,6 +128,14 @@ void auto_play()
 #endif
 }
 
+namespace mode {
+enum type {
+	force,
+	normal,
+	analyze
+};
+}
+
 struct xboard_state
 {
 	xboard_state()
@@ -136,7 +144,7 @@ struct xboard_state
 		, book_( book_dir )
 		, time_remaining()
 		, bonus_time()
-		, force(true)
+		, mode_(mode::force)
 		, self(color::black)
 		, hash_initialized()
 		, time_control()
@@ -175,7 +183,7 @@ struct xboard_state
 		time_remaining = conf.time_limit * timer_precision() / 1000;
 		bonus_time = 0;
 
-		force = false;
+		mode_ = mode::normal;
 		self = color::black;
 
 		last_mate = 0;
@@ -270,7 +278,7 @@ struct xboard_state
 	book book_;
 	unsigned long long time_remaining;
 	unsigned long long bonus_time;
-	bool force;
+	mode::type mode_;
 	color::type self;
 	bool hash_initialized;
 	unsigned long long time_control;
@@ -314,7 +322,7 @@ public:
 
 	virtual void onRun();
 
-	void start();
+	void start( bool just_ponder = false );
 
 	move stop();
 
@@ -327,12 +335,14 @@ private:
 	bool abort;
 	xboard_state& state;
 	move best_move;
+	bool ponder_;
 };
 
 
 xboard_thread::xboard_thread( xboard_state& s )
 : abort()
 , state(s)
+, ponder_()
 {
 }
 
@@ -345,109 +355,112 @@ xboard_thread::~xboard_thread()
 
 void xboard_thread::onRun()
 {
-	if( state.bonus_time > state.time_remaining ) {
-		state.bonus_time = 0;
-	}
-
-	unsigned long long remaining_moves;
-	if( !state.time_control ) {
-		remaining_moves = (std::max)( 15, (80 - state.clock) / 2 );
-	}
-	else {
-		remaining_moves = (state.time_control * 2) - (state.clock % (state.time_control * 2));
-	}
-	unsigned long long time_limit = (state.time_remaining - state.bonus_time) / remaining_moves + state.bonus_time;
-	unsigned long long overhead = state.internal_overhead + state.communication_overhead;
-
-	if( state.time_increment && state.time_remaining > (time_limit + state.time_increment) ) {
-		time_limit += state.time_increment;
-	}
-
-	if( time_limit > overhead ) {
-		time_limit -= overhead;
-	}
-	else {
-		time_limit = 0;
-	}
-
-	// Any less time makes no sense.
-	if( time_limit < 10 * timer_precision() / 1000 ) {
-		time_limit = 10 * timer_precision() / 1000;
-	}
-
-	move m;
-	int res;
-	bool success = cmgr_.calc( state.p, state.c, m, res, time_limit, state.time_remaining, state.clock, state.seen, state.last_mate, *this );
-
-	scoped_lock l( mtx );
-
-	if( abort ) {
-		return;
-	}
-
-	bool ponder = false;
-	if( success ) {
-
-		std::cout << "move " << move_to_string( state.p, state.c, m ) << std::endl;
-
-		state.apply( m );
-
-		{
-			int i = evaluate_fast( state.p, static_cast<color::type>(1-state.c) );
-			std::cerr << "  ; Current evaluation: " << i << " centipawns, forecast " << res << std::endl;
-			
-			//std::cerr << explain_eval( state.p, static_cast<color::type>(1-state.c), p.bitboards );
+	if( !ponder_ ) {
+		if( state.bonus_time > state.time_remaining ) {
+			state.bonus_time = 0;
 		}
 
-		if( res > result::win_threshold ) {
-			state.last_mate = res;
+		unsigned long long remaining_moves;
+		if( !state.time_control ) {
+			remaining_moves = (std::max)( 15, (80 - state.clock) / 2 );
 		}
 		else {
-			ponder = conf.ponder;
+			remaining_moves = (state.time_control * 2) - (state.clock % (state.time_control * 2));
 		}
-	}
-	else {
-		if( res == result::win ) {
-			std::cout << "1-0 (White wins)" << std::endl;
+		unsigned long long time_limit = (state.time_remaining - state.bonus_time) / remaining_moves + state.bonus_time;
+		unsigned long long overhead = state.internal_overhead + state.communication_overhead;
+
+		if( state.time_increment && state.time_remaining > (time_limit + state.time_increment) ) {
+			time_limit += state.time_increment;
 		}
-		else if( res == result::loss ) {
-			std::cout << "0-1 (Black wins)" << std::endl;
+
+		if( time_limit > overhead ) {
+			time_limit -= overhead;
 		}
 		else {
-			std::cout << "1/2-1/2 (Draw)" << std::endl;
+			time_limit = 0;
 		}
-	}
-	unsigned long long stop = get_time();
-	unsigned long long elapsed = stop - state.last_go_time;
 
-	std::cerr << "Elapsed: " << elapsed * 1000 / timer_precision() << " ms" << std::endl;
-	if( time_limit > elapsed ) {
-		state.bonus_time = (time_limit - elapsed) / 2;
-	}
-	else {
-		state.bonus_time = 0;
-
-		unsigned long long actual_overhead = elapsed - time_limit;
-		if( actual_overhead > state.internal_overhead ) {
-			std::cerr << "Updating internal overhead from " << state.internal_overhead * 1000 / timer_precision() << " ms to " << actual_overhead * 1000 / timer_precision() << " ms " << std::endl;
-			state.internal_overhead = actual_overhead;
+		// Any less time makes no sense.
+		if( time_limit < 10 * timer_precision() / 1000 ) {
+			time_limit = 10 * timer_precision() / 1000;
 		}
-	}
-	state.time_remaining -= elapsed;
 
-	if( ponder ) {
-		l.unlock();
+		move m;
+		int res;
+		bool success = cmgr_.calc( state.p, state.c, m, res, time_limit, state.time_remaining, state.clock, state.seen, state.last_mate, *this );
+
+		scoped_lock l( mtx );
+
+		if( abort ) {
+			return;
+		}
+
+		if( success ) {
+
+			std::cout << "move " << move_to_string( state.p, state.c, m ) << std::endl;
+
+			state.apply( m );
+
+			{
+				int i = evaluate_fast( state.p, static_cast<color::type>(1-state.c) );
+				std::cerr << "  ; Current evaluation: " << i << " centipawns, forecast " << res << std::endl;
+				
+				//std::cerr << explain_eval( state.p, static_cast<color::type>(1-state.c), p.bitboards );
+			}
+
+			if( res > result::win_threshold ) {
+				state.last_mate = res;
+			}
+			else {
+				ponder_ = conf.ponder;
+			}
+		}
+		else {
+			if( res == result::win ) {
+				std::cout << "1-0 (White wins)" << std::endl;
+			}
+			else if( res == result::loss ) {
+				std::cout << "0-1 (Black wins)" << std::endl;
+			}
+			else {
+				std::cout << "1/2-1/2 (Draw)" << std::endl;
+			}
+		}
+		unsigned long long stop = get_time();
+		unsigned long long elapsed = stop - state.last_go_time;
+
+		std::cerr << "Elapsed: " << elapsed * 1000 / timer_precision() << " ms" << std::endl;
+		if( time_limit > elapsed ) {
+			state.bonus_time = (time_limit - elapsed) / 2;
+		}
+		else {
+			state.bonus_time = 0;
+
+			unsigned long long actual_overhead = elapsed - time_limit;
+			if( actual_overhead > state.internal_overhead ) {
+				std::cerr << "Updating internal overhead from " << state.internal_overhead * 1000 / timer_precision() << " ms to " << actual_overhead * 1000 / timer_precision() << " ms " << std::endl;
+				state.internal_overhead = actual_overhead;
+			}
+		}
+		state.time_remaining -= elapsed;
+	}
+
+	if( ponder_ ) {
+		move m;
+		int res;
 		cmgr_.calc( state.p, state.c, m, res, static_cast<unsigned long long>(-1), state.time_remaining, state.clock, state.seen, state.last_mate, *this );
 	}
 }
 
 
-void xboard_thread::start()
+void xboard_thread::start( bool just_ponder )
 {
 	join();
 	do_abort = false;
 	abort = false;
 	best_move.flags = 0;
+	ponder_ = just_ponder;
 
 	spawn();
 }
@@ -576,6 +589,12 @@ void xboard()
 			conf.ponder = false;
 			continue;
 		}
+		else if( line == "." ) {
+			scoped_lock l( thread.mtx );
+			// TODO: Implement
+			std::cout << "Error (unknown command): .";
+			continue;
+		}
 
 		move best_move = thread.stop();
 
@@ -598,18 +617,26 @@ void xboard()
 		}
 		else if( line.substr( 0, 9 ) == "protover " ) {
 			//std::cout << "feature ping=1" << std::endl;
+			std::cout << "feature analyze=1" << std::endl;
+			std::cout << "feature myname=Octochess" << std::endl;
 			std::cout << "feature setboard=1" << std::endl;
 			std::cout << "feature sigint=0" << std::endl;
+			std::cout << "feature variants=normal" << std::endl;
 			std::cout << "feature done=1" << std::endl;
 		}
 		else if( line.substr( 0, 7 ) == "result " ) {
 			// Ignore
 		}
 		else if( line == "new" ) {
+			bool analyze = state.mode_ == mode::analyze;
 			state.reset();
+			if( analyze ) {
+				state.mode_ = mode::analyze;
+				thread.start( true );
+			}
 		}
 		else if( line == "force" ) {
-			state.force = true;
+			state.mode_ = mode::force;
 		}
 		else if( line == "random" ) {
 			// Ignore
@@ -720,10 +747,22 @@ void xboard()
 			state.time_increment = increment * timer_precision();
 		}
 		else if( line == "go" ) {
-			state.force = false;
+			state.mode_ = mode::normal;
 			state.self = state.c;
 			// TODO: clocks...
 			go( thread, state, cmd_recv_time );
+		}
+		else if( line == "analyze" ) {
+			state.mode_ = mode::analyze;
+			if( !state.hash_initialized ) {
+				transposition_table.init( conf.memory );
+				state.hash_initialized = true;
+			}
+			thread.start( true );
+		}
+		else if( line == "exit" ) {
+			state.mode_ = mode::normal;
+			state.moves_between_updates = 0;
 		}
 		else if( line == "~moves" ) {
 			check_map check;
@@ -752,11 +791,18 @@ void xboard()
 				std::cout << "Error (bad command): Not a valid FEN position" << std::endl;
 				continue;
 			}
+			bool analyze = state.mode_ == mode::analyze;
+
 			state.reset();
 			state.p = new_pos;
 			state.c = new_c;
 			state.seen.pos[0] = get_zobrist_hash( state.p );
 			state.started_from_root = false;
+
+			if( analyze ) {
+				state.mode_ = mode::analyze;
+				thread.start( true );
+			}
 		}
 		else if( line == "~score") {
 			short eval = evaluate_full( state.p, state.c );
@@ -783,8 +829,11 @@ void xboard()
 			if( parse_move( state.p, state.c, line, m ) ) {
 
 				state.apply( m );
-				if( !state.force && state.c == state.self ) {
+				if( state.mode_ == mode::normal && state.c == state.self ) {
 					go( thread, state, cmd_recv_time );
+				}
+				else if( state.mode_ == mode::analyze ) {
+					thread.start( true );
 				}
 			}
 		}
