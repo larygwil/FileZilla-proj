@@ -618,10 +618,10 @@ void xboard()
 		else if( line.substr( 0, 9 ) == "protover " ) {
 			//std::cout << "feature ping=1" << std::endl;
 			std::cout << "feature analyze=1" << std::endl;
-			std::cout << "feature myname=Octochess" << std::endl;
+			std::cout << "feature myname=\"Octochess\"" << std::endl;
 			std::cout << "feature setboard=1" << std::endl;
 			std::cout << "feature sigint=0" << std::endl;
-			std::cout << "feature variants=normal" << std::endl;
+			std::cout << "feature variants=\"normal\"" << std::endl;
 			std::cout << "feature done=1" << std::endl;
 		}
 		else if( line.substr( 0, 7 ) == "result " ) {
@@ -668,10 +668,20 @@ void xboard()
 			if( !state.undo(1) ) {
 				std::cout << "Error (command not legal now): undo" << std::endl;
 			}
+			else {
+				if( state.mode_ == mode::analyze ) {
+					thread.start( true );
+				}
+			}
 		}
 		else if( line == "remove" ) {
 			if( !state.undo(2) ) {
-				std::cout << "Error (command not legal now): undo" << std::endl;
+				std::cout << "Error (command not legal now): remove" << std::endl;
+			}
+			else {
+				if( state.mode_ == mode::analyze ) {
+					thread.start( true );
+				}
 			}
 		}
 		else if( line.substr( 0, 5 ) == "otim " ) {
