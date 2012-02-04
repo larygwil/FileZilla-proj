@@ -239,11 +239,9 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 	std::list<move_info> matches;
 
 	for( move_info* it = moves; it != pm; ++it ) {
-		unsigned char source = p.board[it->m.source] & 0xf;
-
 		char source_piece = 0;
 
-		switch( source ) {
+		switch( it->m.piece ) {
 		case pieces::king:
 			source_piece = 'K';
 			break;
@@ -347,21 +345,6 @@ std::string move_to_string( position const& p, color::type c, move const& m, boo
 {
 	std::string ret;
 
-	unsigned char source = p.board[m.source];
-
-	if( (source >> 4 ) != c ) {
-		std::cerr << "FAIL! Invalid move: "
-				  << c << " "
-				  << (source >> 4) << " "
-				  << (source & 0xf) << " "
-				  << static_cast<int>(m.source % 8) << " "
-				  << static_cast<int>(m.source / 8) << " "
-				  << static_cast<int>(m.target % 8) << " "
-				  << static_cast<int>(m.target / 8) << " "
-				  << std::endl;
-	}
-
-	source &= 0x0f;
 	if( m.flags & move_flags::castle ) {
 		if( m.target == (c ? 62 : 6 ) ) {
 			if( padding ) {
@@ -381,7 +364,7 @@ std::string move_to_string( position const& p, color::type c, move const& m, boo
 		}
 	}
 
-	switch( source ) {
+	switch( m.piece ) {
 		case pieces::bishop:
 			ret += 'B';
 			break;
@@ -750,7 +733,7 @@ void position::init_pawn_structure()
 			bitscan( cpawns, pawn );
 			cpawns &= cpawns - 1;
 
-			pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), pawn );
+			pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), static_cast<unsigned char>(pawn) );
 		}
 	}
 	short pawn_eval[2];

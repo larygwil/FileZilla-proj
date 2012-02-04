@@ -129,9 +129,10 @@ static unsigned long long get_piece_hash( pieces::type pi, color::type c, int po
 			return rooks[c][pos];
 		case pieces::queen:
 			return queens[c][pos];
-		default:
 		case pieces::king:
 			return kings[c][pos];
+		default:
+			return 0;
 	}
 }
 }
@@ -140,12 +141,10 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 {
 	hash ^= enpassant[p.can_en_passant];
 
-	int captured = p.board[m.target];
-	if( captured ) {
-		captured &= 0x0f;
-		hash ^= get_piece_hash( static_cast<pieces::type>(captured), static_cast<color::type>(1-c), m.target );
+	if( m.captured_piece != pieces::none ) {
+		hash ^= get_piece_hash( static_cast<pieces::type>(m.captured_piece), static_cast<color::type>(1-c), m.target );
 		
-		if( captured == pieces::rook ) {
+		if( m.captured_piece == pieces::rook ) {
 			if( m.target == queenside_rook_origin[1-c] && p.castle[1-c] & 0x2 ) {
 				hash ^= castle[1-c][p.castle[1-c]];
 				hash ^= castle[1-c][p.castle[1-c] & 0x5];
@@ -157,10 +156,9 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 		}
 	}
 
-	pieces::type source = static_cast<pieces::type>(p.board[m.source] & 0x0f);
-	hash ^= get_piece_hash( source, c, m.source );
+	hash ^= get_piece_hash( m.piece, c, m.source );
 
-	if( source == pieces::pawn ) {
+	if( m.piece == pieces::pawn ) {
 		unsigned char source_row = m.source / 8;
 		unsigned char target_col = m.target % 8;
 		unsigned char target_row = m.target / 8;
@@ -173,7 +171,7 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 			hash ^= enpassant[target_col + (source_row + target_row) * 4];
 		}
 	}
-	else if( source == pieces::rook ) {
+	else if( m.piece == pieces::rook ) {
 		if( m.source == queenside_rook_origin[c] && p.castle[c] & 0x2 ) {
 			hash ^= castle[c][p.castle[c]];
 			hash ^= castle[c][p.castle[c] & 0x5];
@@ -183,7 +181,7 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 			hash ^= castle[c][p.castle[c] & 0x6];
 		}
 	}
-	else if( source == pieces::king ) {
+	else if( m.piece == pieces::king ) {
 		if( m.flags & move_flags::castle ) {
 			unsigned char target_col = m.target % 8;
 			unsigned char target_row = m.target / 8;
@@ -207,7 +205,7 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 	}
 
 	if( !(m.flags & move_flags::promotion ) ) {
-		hash ^= get_piece_hash( source, c, m.target );
+		hash ^= get_piece_hash( m.piece, c, m.target );
 	}
 	else {
 		switch( m.promotion ) {
