@@ -1,6 +1,7 @@
 #include "see.hpp"
 #include "sliding_piece_attacks.hpp"
 #include "eval.hpp"
+#include "magic.hpp"
 #include "platform.hpp"
 #include "tables.hpp"
 
@@ -38,8 +39,8 @@ int see( position const& p, color::type c, move const& m )
 	unsigned long long all_pieces = p.bitboards[color::white].b[bb_type::all_pieces] | p.bitboards[color::black].b[bb_type::all_pieces];
 
 	unsigned long long attackers =
-			(rook_attacks( target, all_pieces ) & all_rooks) |
-			(bishop_attacks( target, all_pieces ) & all_bishops) |
+			(rook_magic( target, all_pieces ) & all_rooks) |
+			(bishop_magic( target, all_pieces ) & all_bishops) |
 			(possible_knight_moves[target] & (p.bitboards[color::white].b[bb_type::knights] | p.bitboards[color::black].b[bb_type::knights])) |
 			(possible_king_moves[target] & (p.bitboards[color::white].b[bb_type::king] | p.bitboards[color::black].b[bb_type::king])) |
 			(pawn_control[color::black][target] & p.bitboards[color::white].b[bb_type::pawns]) |
@@ -64,8 +65,8 @@ int see( position const& p, color::type c, move const& m )
 
 		// Update attacker list due to uncovered attacks
 		// Todo: Only update specific ray
-		attackers |= ((all_pieces & rook_attacks( target, all_pieces )) & all_rooks) |
-						((all_pieces & bishop_attacks( target, all_pieces )) & all_bishops);
+		attackers |= ((all_pieces & rook_magic( target, all_pieces )) & all_rooks) |
+						((all_pieces & bishop_magic( target, all_pieces )) & all_bishops);
 
 		if( !attackers ) {
 			break;

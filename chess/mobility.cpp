@@ -1,6 +1,7 @@
 #include "mobility.hpp"
 #include "tables.hpp"
 #include "eval.hpp"
+#include "magic.hpp"
 #include "sliding_piece_attacks.hpp"
 #include <iostream>
 #include <iomanip>
@@ -117,7 +118,7 @@ inline static void evaluate_bishop_mobility( position const& p, color::type c, u
 	unsigned long long const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
 #endif
 
-	unsigned long long moves = bishop_attacks( bishop, all_blockers );
+	unsigned long long moves = bishop_magic( bishop, all_blockers );
 	moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawn_control] );
 
 	short bev = static_cast<short>(popcount(moves));
@@ -133,10 +134,10 @@ inline static void evaluate_bishop_mobility( position const& p, color::type c, u
 inline static void evaluate_bishop_pin( position const& p, color::type c, unsigned long long bishop, eval_results& results )
 {
 	unsigned long long own_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
-	unsigned long long unblocked_moves = bishop_attacks( bishop, own_blockers );
+	unsigned long long unblocked_moves = bishop_magic( bishop, own_blockers );
 
 	unsigned long long pinned_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
-	unsigned long long blocked_moves = bishop_attacks( bishop, pinned_blockers );
+	unsigned long long blocked_moves = bishop_magic( bishop, pinned_blockers );
 
 	// Absolute pin
 	if( (unblocked_moves ^ blocked_moves) & p.bitboards[1-c].b[bb_type::king] ) {
@@ -168,7 +169,7 @@ inline static void evaluate_rook_mobility( position const& p, color::type c, uns
 	unsigned long long const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
 #endif
 
-	unsigned long long moves = rook_attacks( rook, all_blockers );
+	unsigned long long moves = rook_magic( rook, all_blockers );
 	moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawn_control] );
 
 	results.center_control += static_cast<short>(popcount( moves & center_squares ) );
@@ -189,10 +190,10 @@ inline static void evaluate_rook_mobility( position const& p, color::type c, uns
 inline static void evaluate_rook_pin( position const& p, color::type c, unsigned long long rook, eval_results& results )
 {
 	unsigned long long own_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
-	unsigned long long unblocked_moves = rook_attacks( rook, own_blockers );
+	unsigned long long unblocked_moves = rook_magic( rook, own_blockers );
 
 	unsigned long long pinned_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
-	unsigned long long blocked_moves = rook_attacks( rook, pinned_blockers );
+	unsigned long long blocked_moves = rook_magic( rook, pinned_blockers );
 
 	// Absolute pin
 	if( (unblocked_moves ^ blocked_moves) & p.bitboards[1-c].b[bb_type::king] ) {
@@ -239,7 +240,7 @@ inline static void evaluate_queen_mobility( position const& p, color::type c, un
 	unsigned long long const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
 #endif
 
-	unsigned long long moves = bishop_attacks( queen, all_blockers ) | rook_attacks( queen, all_blockers );
+	unsigned long long moves = bishop_magic( queen, all_blockers ) | rook_magic( queen, all_blockers );
 	moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawn_control] );
 
 	results.king_attack += static_cast<short>(popcount( moves & data.king_vicinity ));
@@ -255,10 +256,10 @@ inline static void evaluate_queen_mobility( position const& p, color::type c, un
 inline static void evaluate_queen_pin( position const& p, color::type c, unsigned long long queen, eval_results& results )
 {
 	unsigned long long own_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
-	unsigned long long unblocked_moves = bishop_attacks( queen, own_blockers ) | rook_attacks( queen, own_blockers );
+	unsigned long long unblocked_moves = bishop_magic( queen, own_blockers ) | rook_magic( queen, own_blockers );
 
 	unsigned long long pinned_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
-	unsigned long long blocked_moves = bishop_attacks( queen, pinned_blockers ) | rook_attacks( queen, pinned_blockers );
+	unsigned long long blocked_moves = bishop_magic( queen, pinned_blockers ) | rook_magic( queen, pinned_blockers );
 
 	// Absolute pin
 	if( (unblocked_moves ^ blocked_moves) & p.bitboards[1-c].b[bb_type::king] ) {

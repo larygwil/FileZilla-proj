@@ -187,6 +187,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\magic.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\mobility.cpp"
 				>
 			</File>
@@ -290,6 +294,10 @@
 			</File>
 			<File
 				RelativePath="..\logger.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\magic.hpp"
 				>
 			</File>
 			<File

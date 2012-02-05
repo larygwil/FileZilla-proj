@@ -3,6 +3,7 @@
 #include "config.hpp"
 #include "eval.hpp"
 #include "hash.hpp"
+#include "magic.hpp"
 #include "moves.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "platform.hpp"
@@ -1127,6 +1128,7 @@ int main( int argc, char const* argv[] )
 
 	console_init();
 
+	init_magic();
 	init_random( 1234 );
 	init_zobrist_tables();
 

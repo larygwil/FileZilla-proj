@@ -2,6 +2,7 @@
 #include "moves.hpp"
 #include "eval.hpp"
 #include "util.hpp"
+#include "magic.hpp"
 #include "calc.hpp"
 #include "sliding_piece_attacks.hpp"
 #include "tables.hpp"
@@ -101,7 +102,7 @@ void calc_moves_queen( position const& p, color::type c, move_info*& moves, chec
 {
 	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned long long possible_moves = rook_attacks( queen, all_blockers ) | bishop_attacks( queen, all_blockers );
+	unsigned long long possible_moves = rook_magic( queen, all_blockers ) | bishop_magic( queen, all_blockers );
 	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
 
 	unsigned long long queen_move;
@@ -132,7 +133,7 @@ void calc_moves_bishop( position const& p, color::type c, move_info*& moves, che
 {
 	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned long long possible_moves = bishop_attacks( bishop, all_blockers );
+	unsigned long long possible_moves = bishop_magic( bishop, all_blockers );
 	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
 
 	unsigned long long bishop_move;
@@ -163,7 +164,7 @@ void calc_moves_rook( position const& p, color::type c, move_info*& moves, check
 {
 	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned long long possible_moves = rook_attacks( rook, all_blockers );
+	unsigned long long possible_moves = rook_magic( rook, all_blockers );
 	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
 
 	unsigned long long rook_move;

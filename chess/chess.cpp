@@ -2,7 +2,7 @@
 Octochess
 ---------
 
-Copyright (C) 2011 Tim "codesquid" Kosse
+Copyright (C) 2011-2012 Tim "codesquid" Kosse
 http://filezilla-project.org/
 
 Distributed under the terms and conditions of the GNU General Public License v3.
@@ -21,6 +21,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "fen.hpp"
 #include "hash.hpp"
 #include "logger.hpp"
+#include "magic.hpp"
 #include "mobility.hpp"
 #include "moves.hpp"
 #include "util.hpp"
@@ -885,6 +886,8 @@ int main( int argc, char const* argv[] )
 	std::cerr << "  Octochess" << std::endl;
 	std::cerr << "  ---------" << std::endl;
 	std::cerr << std::endl;
+
+	init_magic();
 
 	if( conf.random_seed != -1 ) {
 		init_random( conf.random_seed );

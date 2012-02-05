@@ -1,6 +1,7 @@
 #include "chess.hpp"
 #include "detect_check.hpp"
 #include "sliding_piece_attacks.hpp"
+#include "magic.hpp"
 #include "tables.hpp"
 
 bool detect_check_knights( position const& p, color::type c, unsigned char king )
@@ -11,27 +12,17 @@ bool detect_check_knights( position const& p, color::type c, unsigned char king 
 	return knights != 0;
 }
 
-#include <iostream>
 bool detect_check( position const& p, color::type c, unsigned char king, unsigned char ignore )
 {
 	unsigned long long blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
 	blockers &= ~(1ull << ignore);
 
-	unsigned long long unblocked_king_n = attack( king, blockers, ray_n );
-	unsigned long long unblocked_king_e = attack( king, blockers, ray_e );
-	unsigned long long unblocked_king_s = attackr( king, blockers, ray_s );
-	unsigned long long unblocked_king_w = attackr( king, blockers, ray_w );
-	unsigned long long unblocked_king_ne = attack( king, blockers, ray_ne );
-	unsigned long long unblocked_king_se = attackr( king, blockers, ray_se );
-	unsigned long long unblocked_king_sw = attackr( king, blockers, ray_sw );
-	unsigned long long unblocked_king_nw = attack( king, blockers, ray_nw );
-
 	unsigned long long rooks_and_queens = p.bitboards[1-c].b[bb_type::rooks] | p.bitboards[1-c].b[bb_type::queens];
 	unsigned long long bishops_and_queens = p.bitboards[1-c].b[bb_type::bishops] | p.bitboards[1-c].b[bb_type::queens];
 	bishops_and_queens |= pawn_control[c][king] & p.bitboards[1-c].b[bb_type::pawns];
 
-	unsigned long long rooks_and_queens_check = (unblocked_king_n|unblocked_king_e|unblocked_king_s|unblocked_king_w) & rooks_and_queens;
-	unsigned long long bishops_and_queens_check = (unblocked_king_ne|unblocked_king_se|unblocked_king_sw|unblocked_king_nw) & bishops_and_queens;
+	unsigned long long rooks_and_queens_check = rook_magic( king, blockers ) & rooks_and_queens;
+	unsigned long long bishops_and_queens_check = bishop_magic( king, blockers ) & bishops_and_queens;
 
 	return rooks_and_queens_check || bishops_and_queens_check || detect_check_knights( p, c, king );
 }
