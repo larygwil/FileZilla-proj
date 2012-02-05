@@ -622,6 +622,11 @@ void xboard()
 			std::cout << "feature setboard=1" << std::endl;
 			std::cout << "feature sigint=0" << std::endl;
 			std::cout << "feature variants=\"normal\"" << std::endl;
+
+			//std::cout << "feature option=\"Apply -save\"" << std::endl;
+			//std::cout << "feature option=\"Defaults -reset\"" << std::endl;
+			//std::cout << "feature option=\"Maximum search depth -spin " << static_cast<int>(conf.depth) << " 1 40\"" << std::endl;
+
 			std::cout << "feature done=1" << std::endl;
 		}
 		else if( line.substr( 0, 7 ) == "result " ) {

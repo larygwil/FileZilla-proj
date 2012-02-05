@@ -37,4 +37,7 @@ unsigned long long get_random_unsigned_long_long();
 
 std::string board_to_string( position const& p );
 
+// Numbered square from 0 - 63
+pieces::type get_piece_on_square( position const& p, color::type c, unsigned long long square );
+
 #endif

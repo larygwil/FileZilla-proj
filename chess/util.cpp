@@ -440,31 +440,6 @@ std::string move_to_source_target_string( move const& m )
 
 void init_board( position& p )
 {
-	memset( p.board, 0, 64 );
-
-	p.board[0] = pieces::rook;
-	p.board[1] = pieces::knight;
-	p.board[2] = pieces::bishop;
-	p.board[3] = pieces::queen;
-	p.board[4] = pieces::king;
-	p.board[5] = pieces::bishop;
-	p.board[6] = pieces::knight;
-	p.board[7] = pieces::rook;
-
-	p.board[56] = pieces::rook | (1 << 4);
-	p.board[57] = pieces::knight | (1 << 4);
-	p.board[58] = pieces::bishop | (1 << 4);
-	p.board[59] = pieces::queen | (1 << 4);
-	p.board[60] = pieces::king | (1 << 4);
-	p.board[61] = pieces::bishop | (1 << 4);
-	p.board[62] = pieces::knight | (1 << 4);
-	p.board[63] = pieces::rook | (1 << 4);
-
-	for( int i = 0; i < 8; ++i ) {
-		p.board[i + 8] = pieces::pawn;
-		p.board[i + 48] = pieces::pawn | (1 << 4);
-	}
-
 	for( unsigned int c = 0; c <= 1; ++c ) {
 		p.castle[c] = 0x3;
 	}
@@ -484,34 +459,39 @@ void init_material( position& p ) {
 	p.material[0] = 0;
 	p.material[1] = 0;
 
-	for( unsigned int pi = 0; pi < 64; ++pi ) {
-		if( !p.board[pi] ) {
-			continue;
-		}
+	for( int c = 0; c < 2; ++c ) {
+		for( unsigned int pi = 0; pi < 64; ++pi ) {
+			pieces::type b = get_piece_on_square( p, static_cast<color::type>(c), pi );
 
-		color::type c = static_cast<color::type>(p.board[pi] >> 4);
-		pieces::type b = static_cast<pieces::type>(p.board[pi] & 0x0f);
-
-		if( b != pieces::king ) {
-			p.material[c] += get_material_value( b );
+			if( b != pieces::king ) {
+				p.material[c] += get_material_value( b );
+			}
 		}
 	}
 }
 
+void position::clear_bitboards()
+{
+	memset( bitboards, 0, sizeof(bitboard) * 2 );
+}
+
 void init_bitboards( position& p )
 {
-	memset( p.bitboards, 0, sizeof(bitboard) * 2 );
+	p.clear_bitboards();
 
-	for( unsigned int pi = 0; pi < 64; ++pi ) {
-		if( !p.board[pi] ) {
-			continue;
-		}
+	p.bitboards[color::white].b[bb_type::pawns]   = 0xff00ull;
+	p.bitboards[color::white].b[bb_type::knights] = (1ull << 1) + (1ull << 6);
+	p.bitboards[color::white].b[bb_type::bishops] = (1ull << 2) + (1ull << 5);
+	p.bitboards[color::white].b[bb_type::rooks]   = 1ull + (1ull << 7);
+	p.bitboards[color::white].b[bb_type::queens]  = 1ull << 3;
+	p.bitboards[color::white].b[bb_type::king]    = 1ull << 4;
 
-		color::type c = static_cast<color::type>(p.board[pi] >> 4);
-		pieces::type b = static_cast<pieces::type>(p.board[pi] & 0x0f);
-
-		p.bitboards[c].b[b] |= 1ull << pi;
-	}
+	p.bitboards[color::black].b[bb_type::pawns]   = 0xff000000000000ull;
+	p.bitboards[color::black].b[bb_type::knights] = ((1ull << 1) + (1ull << 6)) << (7*8);
+	p.bitboards[color::black].b[bb_type::bishops] = ((1ull << 2) + (1ull << 5)) << (7*8);
+	p.bitboards[color::black].b[bb_type::rooks]   = (1ull + (1ull << 7)) << (7*8);
+	p.bitboards[color::black].b[bb_type::queens]  = (1ull << 3) << (7*8);
+	p.bitboards[color::black].b[bb_type::king]    = (1ull << 4) << (7*8);
 
 	for( int c = 0; c < 2; ++c ) {
 		p.bitboards[c].b[bb_type::all_pieces] = p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::knights] | p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens] | p.bitboards[c].b[bb_type::king];
@@ -533,8 +513,6 @@ static bool do_apply_move( position& p, move const& m, color::type c )
 	unsigned long long const source_square = 1ull << m.source;
 	unsigned long long const target_square = 1ull << m.target;
 
-	p.board[m.source] = 0;
-
 	if( m.flags & move_flags::castle ) {
 		unsigned char row = c ? 56 : 0;
 		if( m.target % 8 == 6 ) {
@@ -542,18 +520,12 @@ static bool do_apply_move( position& p, move const& m, color::type c )
 			p.bitboards[c].b[bb_type::all_pieces] ^= 0xf0ull << row;
 			p.bitboards[c].b[bb_type::king] ^= 0x50ull << row;
 			p.bitboards[c].b[bb_type::rooks] ^= 0xa0ull << row;
-			p.board[6 + row] = pieces::king | (c << 4);
-			p.board[7 + row] = 0;
-			p.board[5 + row] = pieces::rook | (c << 4);
 		}
 		else {
 			// Queenside
 			p.bitboards[c].b[bb_type::all_pieces] ^= 0x1dull << row;
 			p.bitboards[c].b[bb_type::king] ^= 0x14ull << row;
 			p.bitboards[c].b[bb_type::rooks] ^= 0x09ull << row;
-			p.board[2 + row] = pieces::king | (c << 4);
-			p.board[0 + row] = 0;
-			p.board[3 + row] = pieces::rook | (c << 4);
 		}
 		p.can_en_passant = 0;
 		p.castle[c] = 0x4;
@@ -569,7 +541,6 @@ static bool do_apply_move( position& p, move const& m, color::type c )
 			unsigned long long const ep_square = 1ull << ep;
 			p.bitboards[1-c].b[bb_type::pawns] ^= ep_square;
 			p.bitboards[1-c].b[bb_type::all_pieces] ^= ep_square;
-			p.board[ep] = 0;
 		}
 		else {
 			p.bitboards[1-c].b[m.captured_piece] ^= target_square;
@@ -618,14 +589,12 @@ static bool do_apply_move( position& p, move const& m, color::type c )
 	}
 
 	if( m.flags & move_flags::promotion ) {
-		p.board[m.target] = (pieces::knight + m.promotion) | (c << 4);
 		p.bitboards[c].b[bb_type::knights + m.promotion] ^= target_square;
 
 		p.material[c] -= get_material_value( pieces::pawn );
 		p.material[c] += get_material_value( static_cast<pieces::type>(pieces::knight + m.promotion) );
 	}
 	else {
-		p.board[m.target] = m.piece | (c << 4);
 		p.bitboards[c].b[m.piece] ^= target_square;
 	}
 	p.bitboards[c].b[bb_type::all_pieces] ^= target_square;
@@ -742,48 +711,77 @@ void position::init_pawn_structure()
 }
 
 
-namespace {
-static std::string board_square_to_string( char bs )
-{
-#if _MSC_VER
-	std::string const white;
-	std::string const restore;
-#else
-	std::string white;
-	std::string restore;
-	if( isatty( 0 ) ) {
-		white = "\x1b" "[1m";
-		restore = "\x1b" "[0m";
-	}
-#endif
+bool position::is_occupied_square( unsigned long long square ) const {
+	return get_occupancy( 1ull << square ) != 0;
+}
 
-	switch (bs) {
-	case pieces::pawn:
-		return white + "P" + restore;
-	case pieces::knight:
-		return white + "N" + restore;
-	case pieces::bishop:
-		return white + "B" + restore;
-	case pieces::rook:
-		return white + "R" + restore;
-	case pieces::queen:
-		return white + "Q" + restore;
-	case pieces::king:
-		return white + "K" + restore;
-	case pieces::pawn + 16:
-		return "p";
-	case pieces::knight + 16:
-		return "n";
-	case pieces::bishop + 16:
-		return "b";
-	case pieces::rook + 16:
-		return "r";
-	case pieces::queen + 16:
-		return "q";
-	case pieces::king + 16:
-		return "k";
-	default:
-		return ".";
+
+unsigned long long position::get_occupancy( unsigned long long mask ) const
+{
+	return (bitboards[color::white].b[bb_type::all_pieces] | bitboards[color::black].b[bb_type::all_pieces]) & mask;
+}
+
+
+namespace {
+static std::string board_square_to_string( position const& p, int pi )
+{
+	pieces::type piece;
+	color::type c;
+	if( p.bitboards[color::black].b[bb_type::all_pieces] & (1ull << pi) ) {
+		c = color::black;
+		piece = get_piece_on_square( p, c, pi );
+	}
+	else {
+		c = color::white;
+		piece = get_piece_on_square( p, c, pi );
+	}
+
+	if( c == color::white ) {
+#if _MSC_VER
+		std::string const white;
+		std::string const restore;
+#else
+		std::string white;
+		std::string restore;
+		if( isatty( 0 ) ) {
+			white = "\x1b" "[1m";
+			restore = "\x1b" "[0m";cc
+		}
+#endif	
+		switch (piece) {
+		case pieces::pawn:
+			return white + "P" + restore;
+		case pieces::knight:
+			return white + "N" + restore;
+		case pieces::bishop:
+			return white + "B" + restore;
+		case pieces::rook:
+			return white + "R" + restore;
+		case pieces::queen:
+			return white + "Q" + restore;
+		case pieces::king:
+			return white + "K" + restore;
+		default:
+			return ".";
+		}
+	}
+	else {
+		switch (piece) {
+		case pieces::pawn:
+			return "p";
+		case pieces::knight:
+			return "n";
+		case pieces::bishop:
+			return "b";
+		case pieces::rook:
+			return "r";
+		case pieces::queen:
+			return "q";
+		case pieces::king:
+			return "k";
+		default:
+			return ".";
+		}
 	}
 }
 }
@@ -799,7 +797,7 @@ std::string board_to_string( position const& p )
 		ret += '1' + row;
 		ret += "| ";
 		for( int col = 0; col < 8; ++col ) {
-			ret += board_square_to_string( p.board[ row * 8 + col] );
+			ret += board_square_to_string( p, row * 8 + col );
 			ret += ' ';
 		}
 
@@ -832,5 +830,38 @@ void pop_rng_state()
 	stack.pop_back();
 	random_unsigned_char = stack.back();
 	stack.pop_back();
+}
+
+pieces::type get_piece_on_square( position const& p, color::type c, unsigned long long square )
+{
+	pieces::type ret;
+	if( p.bitboards[c].b[bb_type::all_pieces] & (1ull << square) ) {
+		if( p.bitboards[c].b[bb_type::pawns] & (1ull << square) ) {
+			ret = pieces::pawn;
+		}
+		else if( p.bitboards[c].b[bb_type::knights] & (1ull << square) ) {
+			ret = pieces::knight;
+		}
+		else if( p.bitboards[c].b[bb_type::bishops] & (1ull << square) ) {
+			ret = pieces::bishop;
+		}
+		else if( p.bitboards[c].b[bb_type::rooks] & (1ull << square) ) {
+			ret = pieces::rook;
+		}
+		else if( p.bitboards[c].b[bb_type::queens] & (1ull << square) ) {
+			ret = pieces::queen;
+		}
+		else if( p.bitboards[c].b[bb_type::king] & (1ull << square) ) {
+			ret = pieces::king;
+		}
+		else {
+			ret = pieces::none;
+		}
+	}
+	else {
+		ret = pieces::none;
+	}
+
+	return ret;
 }
 

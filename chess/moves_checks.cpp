@@ -103,7 +103,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 	unsigned char row = c ? 56 : 0;
 	// Queenside castling
 	if( p.castle[c] & 0x2 ) {
-		if( !p.board[1 + row] && !p.board[2 + row] && !p.board[3 + row] && !(possible_king_moves[2 + row] & other_kings ) ) {
+		if( p.get_occupancy( 0xeull << row ) == 0 && !(possible_king_moves[2 + row] & other_kings ) ) {
 			if( !detect_check( p, c, 3 + row, 3 + row ) ) {
 				add_if_legal_king( p, c, current_evaluation, moves, 4 + row, 2 + row, move_flags::valid | move_flags::castle );
 			}
@@ -111,7 +111,7 @@ void calc_moves_king( position const& p, color::type c, int const current_evalua
 	}
 	// Kingside castling
 	if( p.castle[c] & 0x1 ) {
-		if( !p.board[5 + row] && !p.board[6 + row] && !(possible_king_moves[6 + row] & other_kings ) ) {
+		if( p.get_occupancy( 0x60ull << row ) == 0 && !(possible_king_moves[6 + row] & other_kings ) ) {
 			if( !detect_check( p, c, 5 + row, 5 + row ) ) {
 				add_if_legal_king( p, c, current_evaluation, moves, 4 + row, 6 + row, move_flags::valid | move_flags::castle );
 			}
@@ -262,8 +262,7 @@ void calc_moves_pawn( position const& p, color::type c, int const current_evalua
 	signed char cy = (c == color::white) ? 1 : -1;
 	unsigned char new_row = cy + old_row;
 	
-	unsigned char captured = p.board[old_col + new_row * 8];
-	if( !captured ) {
+	if( !p.is_occupied_square( old_col + new_row * 8 ) ) {
 		if( inverse_check.board[pawn] ||
 			new_row == 0 || new_row == 7 ||
 			( (inverse_check.enemy_king_row == new_row + cy) &&
@@ -285,8 +284,7 @@ void calc_moves_pawn( position const& p, color::type c, int const current_evalua
 			// Moving two rows from starting row
 			new_row = (c == color::white) ? (old_row + 2) : (old_row - 2);
 
-			unsigned char captured = p.board[old_col + new_row * 8];
-			if( !captured ) {
+			if( !p.is_occupied_square( old_col + new_row * 8 ) ) {
 				if( inverse_check.board[pawn] ||
 					( (inverse_check.enemy_king_row == new_row + cy) &&
 					  ((inverse_check.enemy_king_col == old_col + 1) || (inverse_check.enemy_king_col + 1 == old_col))
@@ -314,6 +312,7 @@ void calc_moves_pawns( position const& p, color::type c, int const current_evalu
 
 void calculate_moves_checks( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, inverse_check_map const& inverse_check )
 {
+	return;
 	calc_moves_king( p, c, current_evaluation, moves, check, inverse_check );
 
 	calc_moves_pawns( p, c, current_evaluation, moves, check, inverse_check );

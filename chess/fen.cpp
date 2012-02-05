@@ -1,5 +1,6 @@
 #include "fen.hpp"
 #include "util.hpp"
+#include "tables.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -12,10 +13,17 @@ std::string position_to_fen_noclock( position const& p, color::type c )
 		int free = 0;
 
 		for( int col = 0; col < 8; ++col ) {
-			unsigned int pi = p.board[col + row * 8];
-			if( !pi ) {
-				++free;
-				continue;
+			int pi = row * 8 + col;
+
+			pieces::type piece;
+			color::type c;
+			if( p.bitboards[color::black].b[bb_type::all_pieces] & (1ull << pi) ) {
+				c = color::black;
+				piece = get_piece_on_square( p, c, pi );
+			}
+			else {
+				c = color::white;
+				piece = get_piece_on_square( p, c, pi );
 			}
 
 			if( free ) {
@@ -23,12 +31,9 @@ std::string position_to_fen_noclock( position const& p, color::type c )
 				free = 0;
 			}
 
-			int pc = pi >> 4;
-			pi &= 0x0f;
-
 			unsigned char name;
 
-			switch( pi ) {
+			switch( piece ) {
 			default:
 			case pieces::king:
 				name = 'K';
@@ -50,7 +55,7 @@ std::string position_to_fen_noclock( position const& p, color::type c )
 				break;
 			}
 
-			if( pc ) {
+			if( c == color::black ) {
 				name += 'a' - 'A';
 			}
 
@@ -174,9 +179,7 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c )
 		p.can_en_passant = (enpassant[1] - '1') * 8 + enpassant[0] - 'a';
 	}
 
-	for( unsigned int i = 0; i < 64; ++i ) {
-		p.board[i] = 0;
-	}
+	p.clear_bitboards();
 
 	int row = 7;
 	int col = 0;
@@ -213,46 +216,62 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c )
 			last_was_free = false;
 
 			unsigned char pi = col + row * 8;
+
+			pieces::type piece;
+			color::type c;
 			switch( *cur ) {
 			default:
 				return false;
 			case 'p':
-				p.board[pi] = pieces::pawn | 0x10;
+				c = color::black;
+				piece = pieces::pawn;
 				break;
 			case 'n':
-				p.board[pi] = pieces::knight | 0x10;
+				c = color::black;
+				piece = pieces::knight;
 				break;
 			case 'b':
-				p.board[pi] = pieces::bishop | 0x10;
+				c = color::black;
+				piece = pieces::bishop;
 				break;
 			case 'r':
-				p.board[pi] = pieces::rook | 0x10;
+				c = color::black;
+				piece = pieces::rook;
 				break;
 			case 'q':
-				p.board[pi] = pieces::queen | 0x10;
+				c = color::black;
+				piece = pieces::queen;
 				break;
 			case 'k':
-				p.board[pi] = pieces::king | 0x10;
+				c = color::black;
+				piece = pieces::king;
 				break;
 			case 'P':
-				p.board[pi] = pieces::pawn;
+				c = color::white;
+				piece = pieces::pawn;
 				break;
 			case 'N':
-				p.board[pi] = pieces::knight;
+				c = color::white;
+				piece = pieces::knight;
 				break;
 			case 'B':
-				p.board[pi] = pieces::bishop;
+				c = color::white;
+				piece = pieces::bishop;
 				break;
 			case 'R':
-				p.board[pi] = pieces::rook;
+				c = color::white;
+				piece = pieces::rook;
 				break;
 			case 'Q':
-				p.board[pi] = pieces::queen;
+				c = color::white;
+				piece = pieces::queen;
 				break;
 			case 'K':
-				p.board[pi] = pieces::king;
+				c = color::white;
+				piece = pieces::king;
 				break;
 			}
+			p.bitboards[c].b[piece] |= 1ull << pi;
 			++col;
 		}
 
@@ -260,8 +279,19 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c )
 		++cur;
 	}
 
+	for( int c = 0; c < 2; ++c ) {
+		p.bitboards[c].b[bb_type::all_pieces] = p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::knights] | p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens] | p.bitboards[c].b[bb_type::king];
 
-	init_bitboards( p );
+		p.bitboards[c].b[bb_type::pawn_control] = 0;
+		unsigned long long pawn;
+		unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
+		while( pawns ) {
+			bitscan( pawns, pawn );
+			pawns &= pawns - 1;
+			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
+		}
+	}
+
 	init_material( p );
 	p.init_pawn_structure();
 

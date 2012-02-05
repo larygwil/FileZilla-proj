@@ -70,12 +70,10 @@ struct position
 	// lower 6 bits, 7th bit color of pawn that is en-passantable.
 	unsigned char can_en_passant;
 
-	// board[column][row] as piece type in lower 4 bits, color in 5th bit.
-	// nil if square is empty.
-	unsigned char board[64];
-
 	// Call after initializing bitboards
 	void init_pawn_structure();
+
+	void clear_bitboards();
 
 	struct pawn_structure {
 		short eval; // From white's point of view
@@ -85,6 +83,9 @@ struct position
 	short material[2];
 
 	bitboard bitboards[2];
+
+	bool is_occupied_square( unsigned long long square ) const;
+	unsigned long long get_occupancy( unsigned long long mask ) const;
 };
 
 
