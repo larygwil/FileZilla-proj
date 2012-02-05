@@ -126,7 +126,7 @@ static bool test_position( std::string const& fen, std::string const& ref_moves 
 
 	std::vector<std::string> ms;
 	for( move_info* it = moves; it != pm; ++it ) {
-		ms.push_back( move_to_string( p, c, it->m ) );
+		ms.push_back( move_to_string( it->m ) );
 	}
 	std::sort( ms.begin(), ms.end() );
 

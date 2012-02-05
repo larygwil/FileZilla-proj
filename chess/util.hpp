@@ -14,7 +14,7 @@ bool validate_move( move const& m, move_info const* begin, move_info const* end 
 bool parse_move( position const& p, color::type c, std::string const& line, move& m, bool print_errors = true );
 
 // E.g. O-O, Na3xf6, b2-b4
-std::string move_to_string( position const& p, color::type c, move const& m, bool padding = true );
+std::string move_to_string( move const& m, bool padding = true );
 
 // E.g. c4d6
 std::string move_to_source_target_string( move const& m );

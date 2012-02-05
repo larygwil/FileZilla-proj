@@ -77,7 +77,7 @@ void auto_play()
 		if( res > result::win_threshold ) {
 			last_mate = res;
 		}
-		std::cout << " " << move_to_string(p, c, m) << std::endl;
+		std::cout << " " << move_to_string( m ) << std::endl;
 
 		if( c == color::black ) {
 			++i;
@@ -225,7 +225,7 @@ struct xboard_state
 		}
 
 		clock -= count;
-		if( seen.root_position > count ) {
+		if( seen.root_position > static_cast<int>(count) ) {
 			seen.root_position -= count;
 		}
 		else {
@@ -252,7 +252,7 @@ struct xboard_state
 
 	void update_comm_overhead( unsigned long long new_remaining )
 	{
-		if( c == last_go_color && moves_between_updates && std::abs(static_cast<signed long long>(time_remaining) - static_cast<signed long long>(new_remaining)) < 2 * timer_precision() * moves_between_updates ) {
+		if( c == last_go_color && moves_between_updates && std::abs(static_cast<signed long long>(time_remaining) - static_cast<signed long long>(new_remaining)) < static_cast<signed long long>(2 * timer_precision() * moves_between_updates) ) {
 			level_cmd_differences += (static_cast<signed long long>(time_remaining) - static_cast<signed long long>(new_remaining));
 			level_cmd_count += moves_between_updates;
 
@@ -398,7 +398,7 @@ void xboard_thread::onRun()
 
 		if( success ) {
 
-			std::cout << "move " << move_to_string( state.p, state.c, m ) << std::endl;
+			std::cout << "move " << move_to_string( m ) << std::endl;
 
 			state.apply( m );
 
@@ -516,7 +516,7 @@ void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv
 		}
 		else {
 			std::cerr << "Entries from book: " << std::endl;
-			std::cerr << entries_to_string( state.p, state.c, moves );
+			std::cerr << entries_to_string( moves );
 
 			short best = moves.front().folded_forecast;
 			int count_best = 1;
@@ -528,7 +528,7 @@ void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv
 
 			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
 
-			std::cout << "move " << move_to_string( state.p, state.c, best_move.m ) << std::endl;
+			std::cout << "move " << move_to_string( best_move.m ) << std::endl;
 
 			state.history.push_back( state.p );
 
@@ -608,7 +608,7 @@ void xboard()
 		}
 		else if( line == "?" ) {
 			if( best_move.flags & move_flags::valid ) {
-				std::cout << "move " << move_to_string( state.p, state.c, best_move ) << std::endl;
+				std::cout << "move " << move_to_string( best_move ) << std::endl;
 				state.apply( best_move );
 			}
 			else {
@@ -790,16 +790,15 @@ void xboard()
 			std::cout << "Possible moves:" << std::endl;
 			move_info* it = &moves[0];
 			for( ; it != pm; ++it ) {
-				std::cout << " " << move_to_string( state.p, state.c, it->m ) << std::endl;
+				std::cout << " " << move_to_string( it->m ) << std::endl;
 			}
 		}
-		else if( line.substr( 0, 4 ) == "~fen" || line.substr( 0, 8 ) == "setboard" ) {
-			if( line.substr( 0, 4 ) == "~fen" ) {
-				line = line.substr( 5 );
-			}
-			else {
-				line = line.substr( 9 );
-			}
+		else if( line.substr( 0, 4 ) == "~fen" ) {
+			std::cout << position_to_fen_noclock( state.p, state.c ) << std::endl;
+		}
+		else if( line.substr( 0, 8 ) == "setboard" ) {
+			line = line.substr( 9 );
+
 			position new_pos;
 			color::type new_c;
 			if( !parse_fen_noclock( line, new_pos, new_c ) ) {

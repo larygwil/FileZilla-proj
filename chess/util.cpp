@@ -239,7 +239,7 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 	std::list<move_info> matches;
 
 	for( move_info* it = moves; it != pm; ++it ) {
-		char source_piece = 0;
+		char source_piece = pieces::none;
 
 		switch( it->m.piece ) {
 		case pieces::king:
@@ -260,6 +260,11 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 		case pieces::pawn:
 			source_piece = 'P';
 			break;
+		default:
+			if( print_errors ) {
+				std::cout << "Error (corrupt internal state): Got a move that does not have a source piece.";
+			}
+			return false;
 		}
 
 		if( piecetype && piecetype != source_piece ) {
@@ -298,7 +303,7 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 			std::cout << "Illegal move (ambigious): " << line << std::endl;
 			std::cerr << "Candiates:" << std::endl;
 			for( std::list<move_info>::const_iterator it = matches.begin(); it != matches.end(); ++it ) {
-				std::cerr << move_to_string( p, c, it->m ) << std::endl;
+				std::cerr << move_to_string( it->m ) << std::endl;
 			}
 		}
 		return false;
@@ -341,12 +346,12 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 }
 
 
-std::string move_to_string( position const& p, color::type c, move const& m, bool padding )
+std::string move_to_string( move const& m, bool padding )
 {
 	std::string ret;
 
 	if( m.flags & move_flags::castle ) {
-		if( m.target == (c ? 62 : 6 ) ) {
+		if( m.target == 6 || m.target == 62 ) {
 			if( padding ) {
 				return "   O-O  ";
 			}
@@ -745,7 +750,7 @@ static std::string board_square_to_string( position const& p, int pi )
 		std::string restore;
 		if( isatty( 0 ) ) {
 			white = "\x1b" "[1m";
-			restore = "\x1b" "[0m";cc
+			restore = "\x1b" "[0m";
 		}
 #endif	
 		switch (piece) {

@@ -99,7 +99,7 @@ std::string pv_to_string( pv_entry const* pv, position p, color::type c )
 {
 	std::stringstream ss;
 	while( pv && pv->get_best_move().flags & move_flags::valid ) {
-		ss << move_to_string( p, c, pv->get_best_move() ) << " ";
+		ss << move_to_string( pv->get_best_move() ) << " ";
 		if( !apply_move( p, pv->get_best_move(), c ) ) {
 			ss << "FAIL! Invalid mode in pv: "
 					  << static_cast<int>(pv->get_best_move().flags) << " "

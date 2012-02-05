@@ -26,6 +26,11 @@ std::string position_to_fen_noclock( position const& p, color::type c )
 				piece = get_piece_on_square( p, c, pi );
 			}
 
+			if( piece == pieces::none ) {
+				++free;
+				continue;
+			}
+
 			if( free ) {
 				ss << free;
 				free = 0;
@@ -110,11 +115,13 @@ std::string position_to_fen_noclock( position const& p, color::type c )
 		ss << '-';
 	}
 
+#if 0
 	position p2;
 	color::type c2;
 	if( !parse_fen_noclock( ss.str(), p2, c2 ) ) {
 		std::cerr << "FAIL" << std::endl;
 	}
+#endif
 	return ss.str();
 }
 
