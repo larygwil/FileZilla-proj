@@ -18,6 +18,7 @@ OBJECT_FILES = \
 	fen.o \
 	hash.o \
 	logger.o \
+	magic.o \
 	mobility.o \
 	moves.o \
 	moves_captures.o \
