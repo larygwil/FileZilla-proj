@@ -870,3 +870,45 @@ pieces::type get_piece_on_square( position const& p, color::type c, unsigned lon
 	return ret;
 }
 
+bool apply_hash_move( position& p, move const& m, color::type c, check_map const& check )
+{
+	if( m.piece != get_piece_on_square( p, c, m.source ) ) {
+		return false;
+	}
+	if( m.captured_piece != get_piece_on_square( p, static_cast<color::type>(1-c), m.target ) ) {
+		if( m.piece != pieces::pawn || m.captured_piece != pieces::pawn || !(m.flags & move_flags::enpassant) ) {
+			return false;
+		}
+	}
+
+	if( m.piece == pieces::king ) {
+		if( detect_check( p, c, m.target, m.source ) ) {
+			return false;
+		}
+	}
+	else {
+		if( check.check && check.multiple() ) {
+			return false;
+		}
+
+		unsigned char const& cv_old = check.board[m.source];
+		unsigned char const& cv_new = check.board[m.target];
+		if( check.check ) {
+			if( cv_old ) {
+				// Can't come to rescue, this piece is already blocking yet another check.
+				return false;
+			}
+			if( cv_new != check.check ) {
+				// Target position does capture checking piece nor blocks check
+				return false;
+			}
+		}
+		else {
+			if( cv_old && cv_old != cv_new ) {
+				return false;
+			}
+		}
+	}
+
+	return apply_move( p, m, c );
+}

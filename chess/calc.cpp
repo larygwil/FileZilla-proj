@@ -289,7 +289,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 
 	if( tt_move.flags & move_flags::valid ) {
 		position new_pos = p;
-		if( apply_move( new_pos, tt_move, c ) ) {
+		if( apply_hash_move( new_pos, tt_move, c, check ) ) {
 			++processed_moves;
 			unsigned long long new_hash = update_zobrist_hash( p, c, hash, tt_move );
 			position::pawn_structure pawns;
