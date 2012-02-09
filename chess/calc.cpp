@@ -273,7 +273,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 	}
 #endif
 
-	if( !(tt_move.flags & move_flags::valid) && depth > 2 ) {
+	if( !(tt_move.flags & move_flags::valid) && depth > ( depth_factor * 4 + cutoff) ) {
 
 		step( depth - 2 * depth_factor, ply, ctx, p, hash, current_evaluation, c, alpha, beta, pv, false );
 
