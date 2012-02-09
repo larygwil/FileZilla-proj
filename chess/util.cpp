@@ -880,6 +880,9 @@ bool apply_hash_move( position& p, move const& m, color::type c, check_map const
 			return false;
 		}
 	}
+	if( p.bitboards[c].b[bb_type::all_pieces] & (1ull << m.target) ) {
+		return false;
+	}
 
 	if( m.piece == pieces::king ) {
 		if( detect_check( p, c, m.target, m.source ) ) {
