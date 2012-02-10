@@ -141,7 +141,11 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 {
 	hash ^= enpassant[p.can_en_passant];
 
-	if( m.captured_piece != pieces::none ) {
+	if( m.flags & move_flags::enpassant ) {
+		// Was en-passant
+		hash ^= pawns[1-c][(m.target % 8) | (m.source & 0xf8)];
+	}
+	else if( m.captured_piece != pieces::none ) {
 		hash ^= get_piece_hash( static_cast<pieces::type>(m.captured_piece), static_cast<color::type>(1-c), m.target );
 		
 		if( m.captured_piece == pieces::rook ) {
@@ -162,11 +166,7 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 		unsigned char source_row = m.source / 8;
 		unsigned char target_col = m.target % 8;
 		unsigned char target_row = m.target / 8;
-		if( m.flags & move_flags::enpassant ) {
-			// Was en-passant
-			hash ^= pawns[1-c][target_col + source_row * 8];
-		}
-		else if( m.flags & move_flags::pawn_double_move ) {
+		if( m.flags & move_flags::pawn_double_move ) {
 			// Becomes en-passantable
 			hash ^= enpassant[target_col + (source_row + target_row) * 4];
 		}

@@ -872,14 +872,13 @@ pieces::type get_piece_on_square( position const& p, color::type c, unsigned lon
 
 bool apply_hash_move( position& p, move const& m, color::type c, check_map const& check )
 {
+#if 0
+	// Must move own piece
 	if( m.piece != get_piece_on_square( p, c, m.source ) ) {
 		return false;
 	}
-	if( m.captured_piece != get_piece_on_square( p, static_cast<color::type>(1-c), m.target ) ) {
-		if( m.piece != pieces::pawn || m.captured_piece != pieces::pawn || !(m.flags & move_flags::enpassant) ) {
-			return false;
-		}
-	}
+
+	// Must move onto empty square
 	if( p.bitboards[c].b[bb_type::all_pieces] & (1ull << m.target) ) {
 		return false;
 	}
@@ -894,24 +893,105 @@ bool apply_hash_move( position& p, move const& m, color::type c, check_map const
 			return false;
 		}
 
-		unsigned char const& cv_old = check.board[m.source];
-		unsigned char const& cv_new = check.board[m.target];
-		if( check.check ) {
-			if( cv_old ) {
-				// Can't come to rescue, this piece is already blocking yet another check.
+		if( m.flags & move_flags::enpassant ) {
+			if( m.piece != pieces::pawn || m.captured_piece != pieces::pawn ) {
 				return false;
 			}
-			if( cv_new != check.check ) {
-				// Target position does capture checking piece nor blocks check
+
+			if( p.can_en_passant != m.target ) {
 				return false;
+			}
+
+			if( get_piece_on_square( p, static_cast<color::type>(1-c), m.target % 8 + (m.source & 0xf8) ) != pieces::pawn ) {
+				return false;
+			}
+
+			unsigned char new_col = m.target % 8;
+			unsigned char old_col = m.source % 8;
+			unsigned char old_row = m.source / 8;
+
+			unsigned char const& cv_old = check.board[m.source];
+			unsigned char const& cv_new = check.board[m.target];
+			if( check.check ) {
+				if( cv_old ) {
+					// Can't come to rescue, this piece is already blocking yet another check.
+					return false;
+				}
+				if( cv_new != check.check && check.check != (0x80 + new_col + old_row * 8) ) {
+					// Target position does capture checking piece nor blocks check
+					return false;
+				}
+			}
+			else {
+				if( cv_old && cv_old != cv_new ) {
+					return false;
+				}
+			}
+
+			// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
+			unsigned long long kings = p.bitboards[c].b[bb_type::king];
+			unsigned long long king;
+			bitscan(kings, king);
+			unsigned char king_col = static_cast<unsigned char>(king % 8);
+			unsigned char king_row = static_cast<unsigned char>(king / 8);
+
+			if( king_row == old_row ) {
+				signed char cx = static_cast<signed char>(old_col) - king_col;
+				if( cx > 0 ) {
+					cx = 1;
+				}
+				else {
+					cx = -1;
+				}
+				for( signed char col = old_col + cx; col < 8 && col >= 0; col += cx ) {
+					if( col == new_col ) {
+						continue;
+					}
+
+					if( p.bitboards[c].b[bb_type::all_pieces] & (1ull << (col + old_row * 8 ) ) ) {
+						// Own piece
+						continue;
+					}
+
+					pieces::type t = get_piece_on_square( p, static_cast<color::type>(1-c), col + old_row * 8 );
+					if( t == pieces::queen || t == pieces::rook ) {
+						// Not a legal move unfortunately
+						return false;
+					}
+
+					// Harmless piece
+					break;
+				}
 			}
 		}
 		else {
-			if( cv_old && cv_old != cv_new ) {
+
+			if( m.captured_piece != get_piece_on_square( p, static_cast<color::type>(1-c), m.target ) ) {
 				return false;
+			}
+
+			unsigned char const& cv_old = check.board[m.source];
+			unsigned char const& cv_new = check.board[m.target];
+			if( check.check ) {
+				if( cv_old ) {
+					// Can't come to rescue, this piece is already blocking yet another check.
+					return false;
+				}
+				if( cv_new != check.check ) {
+					// Target position does capture checking piece nor blocks check
+					return false;
+				}
+			}
+			else {
+				if( cv_old && cv_old != cv_new ) {
+					return false;
+				}
 			}
 		}
 	}
+#else
+	(void)check;
+#endif
 
 	return apply_move( p, m, c );
 }
