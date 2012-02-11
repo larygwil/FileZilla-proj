@@ -9,6 +9,8 @@
 #include "zobrist.hpp"
 
 #include <algorithm>
+#include <iomanip>
+#include <sstream>
 #include <iostream>
 #include <vector>
 
@@ -88,7 +90,21 @@ bool perft( std::size_t max_depth )
 		std::cerr << "Moves: "     << ret << std::endl;
 		std::cerr << "Took:  "     << (stop - start) * 1000 / timer_precision() << " ms" << std::endl;
 		if( ret ) {
-			std::cerr << "Time/move: " << ((stop - start) * 1000 * 1000 * 1000) / ret / timer_precision() << " ns" << std::endl;
+			// 64bit integers are getting too small too fast.
+			unsigned long long factor = 1000ull * 1000 * 1000 * 1000;
+			unsigned long long divisor;
+			if( timer_precision() > factor ) {
+				divisor = timer_precision() / factor;
+				factor = 1;
+			}
+			else {
+				factor /= timer_precision();
+				divisor = 1;
+			}
+			unsigned long long picoseconds = ((stop - start) * factor) / ret / divisor;
+			std::stringstream ss;
+			ss << "Time/move: " << picoseconds / 1000 << "." << std::setw(1) << std::setfill('0') << (picoseconds / 100) % 10 << " ns" << std::endl;
+			std::cerr << ss.str();
 		}
 
 		if( ret != perft_results[i] ) {

@@ -903,6 +903,7 @@ int main( int argc, char const* argv[] )
 		auto_play();
 	}
 	else if( i < argc && !strcmp(argv[i], "perft" ) ) {
+		pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
 		perft();
 	}
 	else if( i < argc && !strcmp(argv[i], "test" ) ) {
