@@ -6,8 +6,9 @@
 #include "util.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "config.hpp"
-#include "algorithm"
+#include "zobrist.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -55,8 +56,6 @@ void perft( perft_ctx& ctx, int depth, position const& p, color::type c, unsigne
 
 bool perft( std::size_t max_depth )
 {
-	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
-
 	unsigned long long const perft_results[] = {
 		20ull,
 		400ull,
@@ -171,13 +170,60 @@ static bool test_positions()
 
 	return true;
 }
+
+
+static bool test_zobrist()
+{
+	position p;
+	color::type c;
+	if( !parse_fen_noclock( "rnbqk2r/1p3pp1/3bpn2/p2pN2p/P1Pp4/4P3/1P1BBPPP/RN1Q1RK1 b kq c3", p, c ) ) {
+		return false;
+	}
+
+	unsigned long long old_hash = get_zobrist_hash( p );
+
+	move m;
+	if( !parse_move( p, c, "dxc3", m ) ) {
+		return false;
+	}
+
+	unsigned long long new_hash_move = update_zobrist_hash( p, c, old_hash, m );
+
+	apply_move( p, m, c );
+
+	unsigned long long new_hash_full = get_zobrist_hash( p );
+
+	if( new_hash_move != new_hash_full ) {
+		std::cerr << "Hash mismatch: " << new_hash_full << " " << new_hash_move << std::endl;
+		return false;
+	}
+
+	return true;
+}
+
+
+static bool do_selftest()
+{
+	if( !test_positions() ) {
+		return false;
+	}
+	if( !test_zobrist() ) {
+		return false;
+	}
+	if( !perft(6) ) {
+		return false;
+	}
+
+	return true;
+}
 }
 
 bool selftest()
 {
-	if( perft(6) && test_positions() ) {
-		std::cerr << "Self test passed" << std::endl;
+	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
 
+	if( do_selftest() ) {
+		std::cerr << "Self test passed" << std::endl;
 		return true;
 	}
 
@@ -185,4 +231,3 @@ bool selftest()
 	abort();
 	return false;
 }
-
