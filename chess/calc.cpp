@@ -254,7 +254,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 	}
 
 #if NULL_MOVE_REDUCTION > 0
-	if( !last_was_null && !check.check && depth > 1 && p.material[0] > 1500 && p.material[1] > 1500 ) {
+	if( !last_was_null && !check.check && depth > (cutoff + depth_factor) && p.material[0] > 1500 && p.material[1] > 1500 ) {
 		int old_null = ctx.seen.null_move_position;
 		ctx.seen.null_move_position = ctx.seen.root_position + ply - 1;
 		pv_entry* cpv = ctx.pv_pool.get();
