@@ -24,9 +24,9 @@ void init_board( position& p );
 void init_bitboards( position& p );
 void init_material( position& p );
 
-bool apply_move( position& p, move const& m, color::type c );
+void apply_move( position& p, move const& m, color::type c );
 bool apply_hash_move( position& p, move const& m, color::type c, check_map const& check );
-bool apply_move( position& p, move_info const& m, color::type c );
+void apply_move( position& p, move_info const& m, color::type c );
 
 void init_random( unsigned long long seed );
 

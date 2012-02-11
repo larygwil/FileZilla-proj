@@ -513,7 +513,7 @@ void init_bitboards( position& p )
 }
 
 namespace {
-static bool do_apply_move( position& p, move const& m, color::type c )
+static void do_apply_move( position& p, move const& m, color::type c )
 {
 	unsigned long long const source_square = 1ull << m.source;
 	unsigned long long const target_square = 1ull << m.target;
@@ -534,7 +534,7 @@ static bool do_apply_move( position& p, move const& m, color::type c )
 		}
 		p.can_en_passant = 0;
 		p.castle[c] = 0x4;
-		return true;
+		return;
 	}
 
 	p.bitboards[c].b[m.piece] ^= source_square;
@@ -614,15 +614,13 @@ static bool do_apply_move( position& p, move const& m, color::type c )
 			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
 		}
 	}
-
-	return true;
 }
 }
 
 
-bool apply_move( position& p, move const& m, color::type c )
+void apply_move( position& p, move const& m, color::type c )
 {
-	bool ret = do_apply_move( p, m, c );
+	do_apply_move( p, m, c );
 
 	if( m.piece == pieces::pawn || m.captured_piece == pieces::pawn ) {
 		if( m.captured_piece == pieces::pawn ) {
@@ -648,16 +646,13 @@ bool apply_move( position& p, move const& m, color::type c )
 		}
 		p.pawns.eval = phase_scale( p.material, pawn_eval[0], pawn_eval[1] );
 	}
-
-	return ret;
 }
 
 
-bool apply_move( position& p, move_info const& mi, color::type c )
+void apply_move( position& p, move_info const& mi, color::type c )
 {
-	bool ret = do_apply_move( p, mi.m, c );
+	do_apply_move( p, mi.m, c );
 	p.pawns = mi.pawns;
-	return ret;
 }
 
 
@@ -993,5 +988,7 @@ bool apply_hash_move( position& p, move const& m, color::type c, check_map const
 	(void)check;
 #endif
 
-	return apply_move( p, m, c );
+	apply_move( p, m, c );
+
+	return true;
 }

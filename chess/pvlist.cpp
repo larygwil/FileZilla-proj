@@ -100,16 +100,7 @@ std::string pv_to_string( pv_entry const* pv, position p, color::type c )
 	std::stringstream ss;
 	while( pv && pv->get_best_move().flags & move_flags::valid ) {
 		ss << move_to_string( pv->get_best_move() ) << " ";
-		if( !apply_move( p, pv->get_best_move(), c ) ) {
-			ss << "FAIL! Invalid mode in pv: "
-					  << static_cast<int>(pv->get_best_move().flags) << " "
-					  << static_cast<int>(pv->get_best_move().source % 8) << " "
-					  << static_cast<int>(pv->get_best_move().source / 8) << " "
-					  << static_cast<int>(pv->get_best_move().target % 8) << " "
-					  << static_cast<int>(pv->get_best_move().target / 8) << " "
-					  << std::endl;
-			return ss.str();
-		}
+		apply_move( p, pv->get_best_move(), c );
 
 		c = static_cast<color::type>(1-c);
 
@@ -127,15 +118,7 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 	pv_entry* prev = 0;
 	while( pv && pv->get_best_move().flags & move_flags::valid ) {
 		++depth;
-		if( !apply_move( p, pv->get_best_move(), c ) ) {
-			std::cerr << "FAIL! Invalid mode in pv: "
-					  << static_cast<int>(pv->get_best_move().flags) << " "
-					  << static_cast<int>(pv->get_best_move().source % 8) << " "
-					  << static_cast<int>(pv->get_best_move().source / 8) << " "
-					  << static_cast<int>(pv->get_best_move().target % 8) << " "
-					  << static_cast<int>(pv->get_best_move().target / 8) << " "
-					  << std::endl;
-		}
+		apply_move( p, pv->get_best_move(), c );
 
 		c = static_cast<color::type>(1-c);
 
@@ -165,9 +148,7 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 			break;
 		}
 
-		if( !apply_move( p, best, c) ) {
-			std::cerr << "FAIL" << std::endl;
-		}
+		apply_move( p, best, c );
 		c = static_cast<color::type>(1-c);
 
 		pv_entry_pool pool;

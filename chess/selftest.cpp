@@ -55,7 +55,6 @@ void perft( perft_ctx& ctx, int depth, position const& p, color::type c, unsigne
 	ctx.move_ptr = moves;
 }
 
-
 bool perft( std::size_t max_depth )
 {
 	unsigned long long const perft_results[] = {
@@ -69,6 +68,16 @@ bool perft( std::size_t max_depth )
 		84998978956ull
 	};
 
+	/*
+		alternate:r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -
+		6
+		264
+		9467
+		422333
+		15833292
+		706045033
+	*/
+
 	perft_ctx ctx;
 	for( unsigned int i = 0; i < (std::min)(max_depth, sizeof(perft_results)/sizeof(unsigned long long)); ++i ) {
 		ctx.move_ptr = ctx.moves;
@@ -77,13 +86,14 @@ bool perft( std::size_t max_depth )
 
 		position p;
 		init_board( p );
+		color::type c = color::white;
 
 		unsigned long long ret = 0;
 
 		int max_depth = i + 1;
 
 		unsigned long long start = get_time();
-		perft( ctx, max_depth, p, color::white, ret );
+		perft( ctx, max_depth, p, c, ret );
 		unsigned long long stop = get_time();
 
 
