@@ -18,6 +18,7 @@
 ../hash.hpp
 ../logger.cpp
 ../logger.hpp
+../magic.cpp
 ../mobility.cpp
 ../mobility_gen.cpp
 ../mobility.hpp
