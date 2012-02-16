@@ -1,6 +1,7 @@
 #include "assert.hpp"
 #include "calc.hpp"
 #include "config.hpp"
+#include "fen.hpp"
 #include "hash.hpp"
 #include "moves.hpp"
 #include "eval.hpp"
@@ -119,7 +120,20 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 	// This saves between 15-20% of all calls to full_eval.
 
 	short full_eval = result::win; // Any impossible value would do
-	if( current_evaluation + 300 > alpha && !check.check ) {
+
+#if 0
+	full_eval = evaluate_full( p, c, current_evaluation );
+	short diff = std::abs( full_eval - current_evaluation );
+	if( diff > LAZY_EVAL ) {
+		std::cerr << "Bug in lazy evaluation, full evaluation differs too much from basic evaluation:" << std::endl;
+		std::cerr << "Position:   " << position_to_fen_noclock( p, c ) << std::endl;
+		std::cerr << "Current:    " << current_evaluation << std::endl;
+		std::cerr << "Full:       " << full_eval << std::endl;
+		std::cerr << "Difference: " << full_eval - current_evaluation << std::endl;
+		abort();
+	}
+#endif
+	if( current_evaluation + LAZY_EVAL > alpha && !check.check ) {
 		full_eval = evaluate_full( p, c, current_evaluation );
 		if( full_eval > alpha ) {
 			if( full_eval >= beta ) {

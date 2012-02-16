@@ -7,6 +7,7 @@
 #include "pawn_structure_hash_table.hpp"
 #include "config.hpp"
 #include "zobrist.hpp"
+#include "eval.hpp"
 
 #include <algorithm>
 #include <iomanip>
@@ -228,12 +229,83 @@ static bool test_zobrist()
 }
 
 
+static bool test_lazy_eval( std::string const& fen )
+{
+	position p;
+	color::type c;
+	if( !parse_fen_noclock( fen, p, c ) ) {
+		std::cerr << "Could not parse fen: " << std::endl;
+		std::cerr << fen << std::endl;
+		return false;
+	}
+
+	short current = evaluate_fast( p, c );
+	short full = evaluate_full( p, c );
+
+	short diff = std::abs( full - current );
+
+	if( diff > LAZY_EVAL ) {
+		std::cerr << "Bug in lazy evaluation, full evaluation differs too much from basic evaluation:" << std::endl;
+		std::cerr << "Position:   " << fen << std::endl;
+		std::cerr << "Current:    " << current << std::endl;
+		std::cerr << "Full:       " << full << std::endl;
+		std::cerr << "Difference: " << diff << std::endl;
+		return false;
+	}
+
+	return true;
+}
+
+
+static bool test_lazy_eval()
+{
+	std::string const data[] = {
+		"1r2kr2/p3q2p/8/3b4/3P4/8/P1P1N2P/3QKB1q b - -",
+		"1n3b1r/rpB1kppp/p3bN2/8/8/4Q3/PPP1B1PP/2KR2NR w - -",
+		"r1b3nr/pp1kbQpp/8/8/3NP2P/PN2P1B1/1P4P1/R4K1R w - -",
+		"Q1bk3r/p2n1pp1/7p/2N1p3/3Q3P/P7/1P3PP1/2R1KBNR w K -",
+		"r1b2b1r/p3kppp/8/4NB2/8/1N2P1P1/PP3PP1/n2Q1K1R w - -",
+		"r1b2b1r/1p2k2p/4q1B1/p3Q3/8/4P1P1/PPP3PP/2KR1R2 w - -",
+		"r1b2b1r/pp2kppp/8/4NB2/8/1N2P1P1/PP3PP1/n2Q1K1R w - -",
+		"r1bk3r/pp3ppp/3b4/4NB2/8/1N2P1P1/PP3PP1/n2Q1K1R w - -",
+		"rnb2bnr/ppppkppp/8/4P3/4P3/2N5/PPP2PPR/R1BQKBN1 w Q -",
+		"1rb2b1r/pp1pkppp/8/3Q3n/3N4/1N1PP1B1/PP4PP/R4RK1 w - -",
+		"r1b1kb1r/pp1n1ppp/3PB3/8/Q3PB2/5N2/PP1NKPPP/n6R w kq -",
+		"r1b1kb1r/pp1pnppp/8/1N6/4Q3/1N2P1B1/PP3P1P/2KR3R w kq -",
+		"r1b1kbr1/ppBpnppp/8/8/4Q3/1N2PN2/PPP2PPP/R3KB1R w KQq -",
+		"r1b2b1r/pp1pkpp1/7p/3Q3n/3N4/1N1PP1B1/PP4PP/R4RK1 w - -",
+		"rnb2bnr/ppppkppp/8/4P3/4P3/1PN5/1PP2PPP/R1BQKBNR w KQ -",
+		"rnbqkb1Q/p1pppp1p/8/3P2p1/p4B2/8/1PP2PPP/RN2KBNn w Qq -",
+		"r1b1kb1r/pp1n1ppp/3PB3/8/Q3PB2/5N2/PP1N1PPP/n4K1R w kq -",
+		"r1b1kb1r/ppBpnppp/4Q3/8/8/1N2PN2/PPP2PPP/R3KB1R w KQkq -",
+		"rnb2bnr/ppppkppp/8/4P3/4P3/2N3P1/PPP2PP1/R1BQKBNR w KQ -",
+		"rnbq1br1/ppp1pppp/2kB4/7Q/3PP3/2N5/PPP2PPP/R3KBNR w KQ -",
+		"r1b2b1r/pp1kPppp/2n5/3n4/4NB2/4PN2/PPP2PPP/R2QKB1R w KQ -",
+		"rnbk1b1r/pp1ppppp/1np5/Q5B1/3PP3/1P6/P1P2PPP/RN2KBNR w KQ -",
+		"r1bk1br1/pp1nppp1/5N1p/1B6/1P1Q1B1P/4P3/2P2PP1/R3K1NR w KQ -",
+		"r1bqkbnr/p1pnpp1p/3p4/1B4P1/3PPB2/8/PPP2PP1/RN1QK1NR w KQkq -",
+		""
+	};
+
+	for( std::string const* p = data; !p->empty(); ++p ) {
+		if( !test_lazy_eval( *p ) ) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
 static bool do_selftest()
 {
 	if( !test_positions() ) {
 		return false;
 	}
 	if( !test_zobrist() ) {
+		return false;
+	}
+	if( !test_lazy_eval() ) {
 		return false;
 	}
 	if( !perft(6) ) {

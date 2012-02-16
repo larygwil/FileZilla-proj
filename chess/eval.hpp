@@ -3,6 +3,8 @@
 
 #include "chess.hpp"
 
+#define LAZY_EVAL 522
+
 struct eval_values_t
 {
 	eval_values_t();
