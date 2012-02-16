@@ -42,7 +42,7 @@ contact tim.kosse@filezilla-project.org for details.
 
 const int TIME_LIMIT = 90000; //30000;
 
-const int PAWN_HASH_TABLE_SIZE = 10;
+const int PAWN_HASH_TABLE_SIZE = 100;
 
 std::string book_dir;
 
@@ -545,7 +545,7 @@ void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv
 		}
 	}
 
-	if( state.clock < 21 && state.started_from_root ) {
+	if( state.clock < 22 && state.started_from_root ) {
 		state.book_.mark_for_processing( state.move_history_ );
 	}
 

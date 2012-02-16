@@ -10,7 +10,7 @@
 #include <iostream>
 #include <sstream>
 
-int const eval_version = 4;
+int const eval_version = 5;
 
 namespace {
 unsigned char const table[64] = {
