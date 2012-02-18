@@ -195,6 +195,12 @@ static bool test_positions()
 		return false;
 	}
 
+	if( !test_position( "3k4/8/8/q2pP2K/8/8/8/8 w - d6",
+						"e5-e6 Kh5-g4 Kh5-g5 Kh5-g6 Kh5-h4 Kh5-h6") )
+	{
+		return false;
+	}
+
 	return true;
 }
 

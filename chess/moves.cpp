@@ -305,6 +305,11 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 				}
 				
 				pieces::type t = get_piece_on_square( p, static_cast<color::type>(1-c), col + old_row * 8 );
+
+				if( t == pieces::none ) {
+					continue;
+				}
+
 				if( t == pieces::queen || t == pieces::rook ) {
 					// Not a legal move unfortunately
 					return;
