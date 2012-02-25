@@ -23,6 +23,7 @@ OBJECT_FILES = \
 	moves.o \
 	moves_captures.o \
 	moves_checks.o \
+	moves_noncaptures.o \
 	pawn_structure_hash_table.o \
 	pvlist.o \
 	see.o \
