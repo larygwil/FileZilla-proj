@@ -824,7 +824,7 @@ short evaluate_side( position const& p, color::type c )
 		result += eval_values.double_bishop;
 	}
 
-	if( p.castle[c] & 0x4 ) {
+	if( p.castle[c] & castles::has_castled ) {
 		result += eval_values.castled;
 	}
 

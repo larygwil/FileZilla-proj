@@ -343,11 +343,11 @@ short evaluate_mobility( position const& p, color::type c )
 }
 
 namespace {
-static std::string explain( const char* name, short left, short right ) {
-	std::stringstream ss;
-	ss << std::setw(15) << name << ": " << std::setw(5) << left - right << " = " << std::setw(5) << left << " - " << std::setw(5) << right << std::endl;
-	return ss.str();
-}
+//static std::string explain( const char* name, short left, short right ) {
+//	std::stringstream ss;
+//	ss << std::setw(15) << name << ": " << std::setw(5) << left - right << " = " << std::setw(5) << left << " - " << std::setw(5) << right << std::endl;
+//	return ss.str();
+//}
 static std::string explain( const char* name, short data ) {
 	std::stringstream ss;
 	ss << std::setw(15) << name << ": " << std::setw(5) << data << std::endl;

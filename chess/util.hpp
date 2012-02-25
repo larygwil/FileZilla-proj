@@ -28,6 +28,11 @@ void apply_move( position& p, move const& m, color::type c );
 bool apply_hash_move( position& p, move const& m, color::type c, check_map const& check );
 void apply_move( position& p, move_info const& m, color::type c );
 
+// Checks if the given move is legal in the given position.
+// Precondition: There must be some position where the move is legal, else the result is undefined.
+//				 e.g. is_valid_move might return true on Na1b1
+bool is_valid_move( position const& p, color::type c, move const& m, check_map const& check );
+
 void init_random( unsigned long long seed );
 
 void push_rng_state();

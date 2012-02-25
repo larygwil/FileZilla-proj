@@ -3,6 +3,8 @@
 #include "calc.hpp"
 #include "detect_check.hpp"
 #include "eval.hpp"
+#include "fen.hpp"
+#include "magic.hpp"
 #include "moves.hpp"
 #include "util.hpp"
 #include "random.hpp"
@@ -868,17 +870,80 @@ pieces::type get_piece_on_square( position const& p, color::type c, unsigned lon
 bool apply_hash_move( position& p, move const& m, color::type c, check_map const& check )
 {
 #if 0
+	if( !is_valid_move( p, c, m, check ) ) {
+		return false;
+	}
+#else
+	(void)check;
+#endif
+
+	apply_move( p, m, c );
+
+	return true;
+}
+
+bool do_is_valid_move( position const& p, color::type c, move const& m, check_map const& check )
+{
 	// Must move own piece
 	if( m.piece != get_piece_on_square( p, c, m.source ) ) {
 		return false;
 	}
 
-	// Must move onto empty square
+	// Must move onto square not occupied by self
 	if( p.bitboards[c].b[bb_type::all_pieces] & (1ull << m.target) ) {
 		return false;
 	}
 
 	if( m.piece == pieces::king ) {
+
+		if( m.captured_piece != get_piece_on_square( p, static_cast<color::type>(1-c), m.target ) ) {
+			return false;
+		}
+
+		unsigned long long other_kings = p.bitboards[1-c].b[bb_type::king];
+		unsigned long long other_king;
+		bitscan( other_kings, other_king );
+		if( (1ull << m.target) & possible_king_moves[other_king] ) {
+			return false;
+		}
+
+		if( m.flags & move_flags::castle ) {
+			if( check.check ) {
+				return false;
+			}
+			if( (m.target & 0x0f) == 2 ) {
+				if( !(p.castle[c] & castles::queenside) ) {
+					return false;
+				}
+				if( !p.bitboards[c].b[bb_type::rooks] & (1ull << (m.source - 4)) ) {
+					return false;
+				}
+				if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & 7ull << (m.source - 3 ) ) {
+					return false;
+				}
+				if( detect_check( p, c, m.source - 1, m.source ) ) {
+					return false;
+				}
+				if( detect_check( p, c, m.source - 2, m.source ) ) {
+					return false;
+				}
+			}
+			else {
+				if( !(p.castle[c] & castles::kingside) ) {
+					return false;
+				}
+				if( !p.bitboards[c].b[bb_type::rooks] & (1ull << (m.source + 3)) ) {
+					return false;
+				}
+				if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & 3ull << (m.source + 1 ) ) {
+					return false;
+				}
+				if( detect_check( p, c, m.source + 1, m.source ) ) {
+					return false;
+				}
+			}
+		}
+
 		if( detect_check( p, c, m.target, m.source ) ) {
 			return false;
 		}
@@ -982,13 +1047,77 @@ bool apply_hash_move( position& p, move const& m, color::type c, check_map const
 					return false;
 				}
 			}
+
+			if( m.piece == pieces::bishop ) {
+				unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+				unsigned long long possible_moves = bishop_magic( m.source, all_blockers );
+				if( !(possible_moves & (1ull << m.target ) ) ) {
+					return false;
+				}
+			}
+			else if( m.piece == pieces::rook ) {
+				unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+				unsigned long long possible_moves = rook_magic( m.source, all_blockers );
+				if( !(possible_moves & (1ull << m.target ) ) ) {
+					return false;
+				}
+			}
+			else if( m.piece == pieces::queen) {
+				unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+				unsigned long long possible_moves = rook_magic( m.source, all_blockers ) | bishop_magic( m.source, all_blockers );
+				if( !(possible_moves & (1ull << m.target ) ) ) {
+					return false;
+				}
+			}
+			else if( m.piece == pieces::pawn ) {
+				if( c == color::white ) {
+					if( m.target - m.source == 16 ) {
+						if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (1ull << (m.source + 8) ) ) {
+							return false;
+						}
+					}
+				}
+				else {
+					if( m.source - m.target == 16 ) {
+						if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (1ull << (m.source - 8) ) ) {
+							return false;
+						}
+					}
+				}
+			}
 		}
 	}
-#else
-	(void)check;
-#endif
-
-	apply_move( p, m, c );
 
 	return true;
 }
+
+bool is_valid_move( position const& p, color::type c, move const& m, check_map const& check ) {
+	bool ret = do_is_valid_move( p, c, m, check );
+
+#if 0
+	move_info moves[200];
+	move_info* it = moves;
+	move_info* end = moves;
+	calculate_moves( p, c, end, check );
+	for( ; it != end; ++it ) {
+		if( it->m == m ) {
+			if( ret ) {
+				return true;
+			}
+			else {
+				break;
+			}
+		}
+	}
+	if( ret || it != end ) {
+		std::cerr << board_to_string( p ) << std::endl;
+		std::cerr << position_to_fen_noclock( p, c ) << std::endl;
+		std::cerr << move_to_string( m ) << std::endl;
+		std::cerr << ret << std::endl;
+		abort();
+	}
+#endif
+
+	return ret;
+}
+

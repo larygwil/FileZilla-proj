@@ -78,6 +78,16 @@ void sort_moves( move_info* begin, move_info* end, position const& p, color::typ
 }
 
 
+void sort_moves_noncaptures( move_info* begin, move_info* end, position const& p, color::type c, short current_evaluation )
+{
+	for( move_info* it = begin; it != end; ++it ) {
+		it->evaluation = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
+		it->sort = it->evaluation;
+	}
+	std::sort( begin, end, moveSort2 );
+}
+
+
 killer_moves const empty_killers;
 short quiescence_search( int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, check_map const& check, color::type c, short alpha, short beta )
 {
@@ -226,6 +236,118 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 	return quiescence_search( ply, ctx, p, hash, current_evaluation, check, c, alpha, beta );
 }
 
+namespace phases {
+enum type {
+	hash_move,
+	captures_gen,
+	captures,
+	killer1,
+	killer2,
+	noncaptures_gen,
+	noncapture,
+	done
+};
+}
+
+// Multi-phase move generator
+class move_generator
+{
+public:
+	move_generator( context& cntx, killer_moves const& killers, position const& p, color::type const& c, check_map const& check, short const& eval )
+		: ctx( cntx )
+		, killers_(killers)
+		, phase( phases::hash_move )
+		, moves( ctx.move_ptr )
+		, p_(p)
+		, c_(c)
+		, check_(check)
+		, eval_(eval)
+	{
+	}
+
+	~move_generator()
+	{
+		ctx.move_ptr = moves;
+	}
+
+	// Returns the next legal move.
+	// move_info's m, evaluation and pawns are filled out, sort is undefined.
+	move_info const* next() {
+		// The fall-throughs are on purpose
+		switch( phase ) {
+		case phases::hash_move:
+			phase = phases::captures_gen;
+			if( hash_move.flags & move_flags::valid ) {
+				tmp.m = hash_move;
+				tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
+				return &tmp;
+			}
+		case phases::captures_gen:
+			ctx.move_ptr = moves;
+			it = moves;
+			calculate_moves_captures( p_, c_, ctx.move_ptr, check_ );
+			std::sort( moves, ctx.move_ptr, moveSort );
+			phase = phases::captures;
+		case phases::captures:
+			if( it != ctx.move_ptr ) {
+				it->evaluation = evaluate_move( p_, c_, eval_, it->m, it->pawns );
+
+				return it++;
+			}
+			phase = phases::killer1;
+		case phases::killer1:
+			phase = phases::killer2;
+			if( killers_.m1 != hash_move && is_valid_move( p_, c_, killers_.m1, check_ ) ) {
+				tmp.m = killers_.m1;
+				tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
+				return &tmp;
+			}
+		case phases::killer2:
+			phase = phases::noncaptures_gen;
+			if( killers_.m2 != hash_move && killers_.m1 != killers_.m2 && is_valid_move( p_, c_, killers_.m2, check_ ) ) {
+				tmp.m = killers_.m2;
+				tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
+				return &tmp;
+			}
+		case phases::noncaptures_gen:
+			ctx.move_ptr = moves;
+			it = moves;
+			calculate_moves_noncaptures( p_, c_, ctx.move_ptr, check_ );
+			sort_moves_noncaptures( moves, ctx.move_ptr, p_, c_, eval_ );
+			phase = phases::noncapture;
+		case phases::noncapture:
+			while( it != ctx.move_ptr ) {
+				if( it->m != hash_move && it->m != killers_.m1 && it->m != killers_.m2 ) {
+					return it++;
+				}
+				else {
+					++it;
+				}
+			}
+			phase = phases::done;
+		case phases::done:
+			break;
+		}
+
+		return 0;
+	}
+
+	move hash_move;
+	move_info tmp;
+
+private:
+	context& ctx;
+	killer_moves const& killers_;
+	phases::type phase;
+	move_info* moves;
+	move_info* it;
+
+	position const& p_;
+	color::type const& c_;
+	check_map const& check_;
+	short const& eval_;
+};
+
 short step( int depth, int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv, bool last_was_null )
 {
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
@@ -301,79 +423,10 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 
 	unsigned int processed_moves = 0;
 
-	if( tt_move.flags & move_flags::valid ) {
-		position new_pos = p;
-		if( apply_hash_move( new_pos, tt_move, c, check ) ) {
-			++processed_moves;
-			unsigned long long new_hash = update_zobrist_hash( p, c, hash, tt_move );
-			position::pawn_structure pawns;
-			short new_eval = evaluate_move( p, c, current_evaluation, tt_move, pawns );
-
-			pv_entry* cpv = ctx.pv_pool.get();
-
-			short value;
-			if( ctx.seen.is_two_fold( new_hash, ply ) ) {
-				value = result::draw;
-			}
-			else {
-				ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
-
-				unsigned long long new_depth = depth - depth_factor;
-				if( tt_move.piece == pieces::pawn ) {
-					new_depth += pawn_push_extension;
-				}
-				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
-			}
-			if( value > alpha ) {
-
-				alpha = value;
-
-				if( alpha >= beta ) {
-					ctx.pv_pool.release(cpv);
-
-					if( !do_abort ) {
-						transposition_table.store( hash, c, depth, ply, alpha, old_alpha, beta, tt_move, ctx.clock );
-					}
-					return alpha;
-				}
-				else {
-					best_pv = cpv;
-				}
-			}
-			else {
-				ctx.pv_pool.release(cpv);
-			}
-		}
-		else {
-			// Unfortunate type-1 collision
-			std::cerr << "Possible type-1 collision in full-width search" << std::endl;
-			tt_move.flags = 0;
-		}
-	}
-
-	move_info* moves = ctx.move_ptr;
-	calculate_moves( p, c, ctx.move_ptr, check );
-
-	if( ctx.move_ptr == moves ) {
-		if( best_pv ) {
-			ctx.pv_pool.release(best_pv);
-		}
-		ASSERT( !pv->get_best_move().other )
-		if( check.check ) {
-			return result::loss + ply;
-		}
-		else {
-			return result::draw;
-		}
-	}
-
-	sort_moves( moves, ctx.move_ptr, p, c, current_evaluation, ctx.killers[c][ply] );
-
-	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
-		if( tt_move.flags & move_flags::valid && tt_move == it->m ) {
-			continue;
-		}
-
+	move_generator gen( ctx, ctx.killers[c][ply], p, c, check, current_evaluation );
+	gen.hash_move = tt_move;
+	move_info const* it;
+	while( (it = gen.next()) ) {
 		++processed_moves;
 
 		short value;
@@ -390,7 +443,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 			ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
 
 			unsigned long long new_depth = depth - depth_factor;
-			if( tt_move.piece == pieces::pawn ) {
+			if( it->m.piece == pieces::pawn ) {
 				new_depth += pawn_push_extension;
 			}
 
@@ -433,7 +486,14 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 		}
 	}
 
-	ctx.move_ptr = moves;
+	if( !processed_moves ) {
+		if( check.check ) {
+			return result::loss + ply;
+		}
+		else {
+			return result::draw;
+		}
+	}
 
 	if( alpha < beta && alpha > old_alpha ) {
 		ctx.pv_pool.append( pv, tt_move, best_pv );

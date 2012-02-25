@@ -24,6 +24,7 @@
 ../mobility.hpp
 ../moves_captures.cpp
 ../moves_checks.cpp
+../moves_noncaptures.cpp
 ../moves.cpp
 ../moves.hpp
 ../pawn_structure_hash_table.cpp

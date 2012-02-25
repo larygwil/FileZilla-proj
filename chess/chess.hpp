@@ -58,6 +58,16 @@ struct bitboard
 };
 
 
+namespace castles {
+enum type {
+	none = 0,
+	kingside = 1,
+	queenside = 2,
+	both = 3,
+	has_castled = 4
+};
+}
+
 struct position
 {
 	// Bit 0: can castle kingside
@@ -119,10 +129,10 @@ struct move
 	unsigned char promotion;
 
 	bool operator!=( move const& rhs ) const {
-		return source != rhs.source || target != rhs.target || promotion != rhs.promotion;
+		return flags != rhs.flags || piece != rhs.piece || source != rhs.source || target != rhs.target || promotion != rhs.promotion || captured_piece != rhs.captured_piece;
 	}
 	bool operator==( move const& rhs ) const {
-		return source == rhs.source && target == rhs.target && promotion == rhs.promotion;
+		return flags == rhs.flags && piece == rhs.piece && source == rhs.source && target == rhs.target && promotion == rhs.promotion && captured_piece == rhs.captured_piece;
 	}
 };
 
