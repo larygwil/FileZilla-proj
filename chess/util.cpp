@@ -911,14 +911,14 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 			if( check.check ) {
 				return false;
 			}
-			if( (m.target & 0x0f) == 2 ) {
+			if( (m.target & 0x07) == 2 ) {
 				if( !(p.castle[c] & castles::queenside) ) {
 					return false;
 				}
 				if( !p.bitboards[c].b[bb_type::rooks] & (1ull << (m.source - 4)) ) {
 					return false;
 				}
-				if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & 7ull << (m.source - 3 ) ) {
+				if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (7ull << (m.source - 3 )) ) {
 					return false;
 				}
 				if( detect_check( p, c, m.source - 1, m.source ) ) {
@@ -935,7 +935,7 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 				if( !p.bitboards[c].b[bb_type::rooks] & (1ull << (m.source + 3)) ) {
 					return false;
 				}
-				if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & 3ull << (m.source + 1 ) ) {
+				if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (3ull << (m.source + 1 )) ) {
 					return false;
 				}
 				if( detect_check( p, c, m.source + 1, m.source ) ) {
@@ -1113,7 +1113,7 @@ bool is_valid_move( position const& p, color::type c, move const& m, check_map c
 		std::cerr << board_to_string( p ) << std::endl;
 		std::cerr << position_to_fen_noclock( p, c ) << std::endl;
 		std::cerr << move_to_string( m ) << std::endl;
-		std::cerr << ret << std::endl;
+		std::cerr << "Ret: " << ret << std::endl;
 		abort();
 	}
 #endif

@@ -278,9 +278,20 @@ public:
 		case phases::hash_move:
 			phase = phases::captures_gen;
 			if( hash_move.flags & move_flags::valid ) {
-				tmp.m = hash_move;
-				tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
-				return &tmp;
+#if 0
+				if( !is_valid_move( p_, c_, hash_move, check_ ) ) {
+					std::cerr << "Possible type-1 hash collision:" << std::endl;
+					std::cerr << board_to_string( p_ ) << std::endl;
+					std::cerr << position_to_fen_noclock( p_, c_ ) << std::endl;
+					std::cerr << move_to_string( hash_move ) << std::endl;
+				}
+				else
+#endif
+				{
+					tmp.m = hash_move;
+					tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
+					return &tmp;
+				}
 			}
 		case phases::captures_gen:
 			ctx.move_ptr = moves;
@@ -297,14 +308,14 @@ public:
 			phase = phases::killer1;
 		case phases::killer1:
 			phase = phases::killer2;
-			if( killers_.m1 != hash_move && is_valid_move( p_, c_, killers_.m1, check_ ) ) {
+			if( (killers_.m1.flags & move_flags::valid) && killers_.m1 != hash_move && is_valid_move( p_, c_, killers_.m1, check_ ) ) {
 				tmp.m = killers_.m1;
 				tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
 				return &tmp;
 			}
 		case phases::killer2:
 			phase = phases::noncaptures_gen;
-			if( killers_.m2 != hash_move && killers_.m1 != killers_.m2 && is_valid_move( p_, c_, killers_.m2, check_ ) ) {
+			if( (killers_.m2.flags & move_flags::valid) && killers_.m2 != hash_move && killers_.m1 != killers_.m2 && is_valid_move( p_, c_, killers_.m2, check_ ) ) {
 				tmp.m = killers_.m2;
 				tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
 				return &tmp;
