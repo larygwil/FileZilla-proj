@@ -348,6 +348,11 @@ static std::string explain( const char* name, short left, short right ) {
 	ss << std::setw(15) << name << ": " << std::setw(5) << left - right << " = " << std::setw(5) << left << " - " << std::setw(5) << right << std::endl;
 	return ss.str();
 }
+static std::string explain( const char* name, short data ) {
+	std::stringstream ss;
+	ss << std::setw(15) << name << ": " << std::setw(5) << data << std::endl;
+	return ss.str();
+}
 }
 
 
@@ -358,13 +363,19 @@ std::string explain_eval( position const& p, color::type c )
 	do_evaluate_mobility( p, c, results_self, results_other );
 
 	std::stringstream ss;
-	ss << explain( "Material", p.material[c], p.material[1-c] );
-	ss << explain( "Mobility", results_self.mobility, results_other.mobility );
-	ss << explain( "Absolute pins", results_self.pin, results_other.pin );
-	ss << explain( "Rook on open file bonus", results_self.rooks_on_open_file_bonus, results_other.rooks_on_open_file_bonus );
-	ss << explain( "King attack", results_self.king_attack, results_other.king_attack );
-	ss << explain( "King tropism", results_self.tropism, results_other.tropism );
-	ss << explain( "Center control", results_self.center_control, results_other.center_control );
+	ss << explain( "Material", p.material[c] - p.material[1-c] );
+	ss << explain( "Mobility",
+		((results_self.mobility - results_other.mobility) * eval_values.mobility_multiplicator) / eval_values.mobility_divisor );
+	ss << explain( "Absolute pins",
+		((results_self.pin - results_other.pin) * eval_values.pin_multiplicator) / eval_values.pin_divisor );
+	ss << explain( "Rook on open file bonus",
+		((results_self.rooks_on_open_file_bonus - results_other.rooks_on_open_file_bonus) * eval_values.rooks_on_open_file_multiplicator) / eval_values.rooks_on_open_file_divisor );
+	ss << explain( "King tropism",
+		((results_self.tropism - results_other.tropism) * eval_values.tropism_multiplicator) / eval_values.tropism_divisor );
+	ss << explain( "Center control",
+		((results_self.center_control - results_other.center_control) * eval_values.center_control_multiplicator) / eval_values.center_control_divisor );
+	ss << explain( "King attack",
+		((results_self.king_attack - results_other.king_attack) * eval_values.king_attack_multiplicator) / eval_values.king_attack_divisor );
 
 	return ss.str();
 }

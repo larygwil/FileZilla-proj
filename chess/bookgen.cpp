@@ -5,6 +5,7 @@
 #include "hash.hpp"
 #include "magic.hpp"
 #include "moves.hpp"
+#include "mobility.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "platform.hpp"
 #include "pvlist.hpp"
@@ -776,6 +777,7 @@ void print_pos( std::vector<history_entry> const& history, position const& p, co
 
 	std::string mstr = print_moves( c, moves );
 	std::string board = board_to_string( p );
+	//std::string eval = explain_eval( p, c );
 
 	std::cout << std::endl;
 	std::cout << side_by_side( mstr, board );
