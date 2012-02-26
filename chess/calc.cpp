@@ -62,16 +62,13 @@ struct MoveSort2 {
 }
 
 
-void sort_moves( move_info* begin, move_info* end, position const& p, color::type c, short current_evaluation, killer_moves const& killers )
+void sort_moves( move_info* begin, move_info* end, position const& p, color::type c, short current_evaluation )
 {
 	for( move_info* it = begin; it != end; ++it ) {
 		it->evaluation = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
 		it->sort = it->evaluation;
 		if( it->m.captured_piece != pieces::none ) {
 			it->sort += get_material_value( it->m.captured_piece ) * 1000000 - get_material_value( it->m.piece );
-		}
-		else if( killers.is_killer( it->m ) ) {
-			it->sort += 500000;
 		}
 	}
 	std::sort( begin, end, moveSort2 );
@@ -157,7 +154,7 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 
 	if( check.check ) {
 		calculate_moves( p, c, ctx.move_ptr, check );
-		sort_moves( moves, ctx.move_ptr, p, c, current_evaluation, empty_killers );
+		sort_moves( moves, ctx.move_ptr, p, c, current_evaluation );
 	}
 	else {
 		calculate_moves_captures( p, c, ctx.move_ptr, check );
@@ -841,7 +838,7 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, unsigned
 	move_info* pm = moves;
 	int current_evaluation = evaluate_fast( p, c );
 	calculate_moves( p, c, pm, check );
-	sort_moves( moves, pm, p, c, current_evaluation, empty_killers );
+	sort_moves( moves, pm, p, c, current_evaluation );
 
 	if( moves == pm ) {
 		if( check.check ) {
