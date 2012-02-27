@@ -207,6 +207,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\moves_noncaptures.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\pawn_structure_hash_table.cpp"
 				>
 			</File>
