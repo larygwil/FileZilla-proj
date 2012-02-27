@@ -465,6 +465,7 @@ int main()
 					{
 						int x = source_col - 1;
 						if( x >= 0 && x < 8 && y >= 0 && y < 8 ) {
+							v |= 1ull << (x + y * 8);
 							v |= 1ull << (x + (y + cy) * 8);
 						}
 					}
