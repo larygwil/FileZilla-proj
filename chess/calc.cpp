@@ -20,17 +20,17 @@
 #include <map>
 #include <vector>
 
-#define USE_SEE 0
+#define USE_SEE 1
 
 // TODO: Fine-tweak these values.
-#if 0
+#if 1
 int const check_extension = 5;
-int const pawn_push_extension = 3;
-int const cutoff = depth_factor - 1;
+int const pawn_push_extension = 4;
+int const cutoff = depth_factor;
 
-unsigned int const lmr_searched = 2;
-int const lmr_reduction = depth_factor;
-int const lmr_min_depth = depth_factor + 1;
+unsigned int const lmr_searched = 3;
+int const lmr_reduction = depth_factor * 2;
+int const lmr_min_depth = depth_factor * 3;
 #else
 int const check_extension = 0;
 int const pawn_push_extension = 0;
@@ -86,7 +86,7 @@ void sort_moves_noncaptures( move_info* begin, move_info* end, position const& p
 
 
 killer_moves const empty_killers;
-short quiescence_search( int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, check_map const& check, color::type c, short alpha, short beta )
+short quiescence_search( int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta )
 {
 #if 0
 	if( get_zobrist_hash(p) != hash ) {
@@ -189,7 +189,7 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 
 			ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
 
-			value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, new_check, static_cast<color::type>(1-c), -beta, -alpha );
+			value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -beta, -alpha );
 		}
 		if( value > alpha ) {
 			alpha = value;
@@ -230,7 +230,7 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 	check_map check;
 	calc_check_map( p, c, check );
 
-	return quiescence_search( ply, ctx, p, hash, current_evaluation, check, c, alpha, beta );
+	return quiescence_search( ply, ctx, p, hash, current_evaluation, c, check, alpha, beta );
 }
 
 namespace phases {
@@ -340,6 +340,10 @@ public:
 		return 0;
 	}
 
+	phases::type get_phase() const {
+		return phase;
+	}
+
 	move hash_move;
 	move_info tmp;
 
@@ -356,10 +360,10 @@ private:
 	short const& eval_;
 };
 
-short step( int depth, int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta, pv_entry* pv, bool last_was_null )
+short step( int depth, int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null )
 {
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
-		return quiescence_search( ply, ctx, p, hash, current_evaluation, c, alpha, beta );
+		return quiescence_search( ply, ctx, p, hash, current_evaluation, c, check, alpha, beta );
 	}
 
 	if( do_abort ) {
@@ -390,9 +394,6 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 	}
 
 
-	check_map check;
-	calc_check_map( p, c, check );
-
 	if( check.check ) {
 		depth += check_extension;
 	}
@@ -403,7 +404,10 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 		ctx.seen.null_move_position = ctx.seen.root_position + ply - 1;
 		pv_entry* cpv = ctx.pv_pool.get();
 
-		short value = -step( depth - (NULL_MOVE_REDUCTION + 1) * depth_factor, ply + 1, ctx, p, hash, -current_evaluation, static_cast<color::type>(1-c), -beta, -beta + 1, cpv, true );
+		check_map new_check;
+		calc_check_map( p, static_cast<color::type>(1-c), new_check );
+
+		short value = -step( depth - (NULL_MOVE_REDUCTION + 1) * depth_factor, ply + 1, ctx, p, hash, -current_evaluation, static_cast<color::type>(1-c), new_check, -beta, -beta + 1, cpv, true );
 		ctx.pv_pool.release( cpv );
 
 		ctx.seen.null_move_position = old_null;
@@ -419,7 +423,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 
 	if( !(tt_move.flags & move_flags::valid) && depth > ( depth_factor * 4 + cutoff) ) {
 
-		step( depth - 2 * depth_factor, ply, ctx, p, hash, current_evaluation, c, alpha, beta, pv, false );
+		step( depth - 2 * depth_factor, ply, ctx, p, hash, current_evaluation, c, check, alpha, beta, pv, false );
 
 		short eval;
 		transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move );
@@ -430,6 +434,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 	pv_entry* best_pv = 0;
 
 	unsigned int processed_moves = 0;
+	unsigned int searched_noncaptures = 0;
 
 	move_generator gen( ctx, ctx.killers[c][ply], p, c, check, current_evaluation );
 	gen.hash_move = tt_move;
@@ -450,24 +455,46 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 
 			ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
 
+			bool extended = false;
+
 			unsigned long long new_depth = depth - depth_factor;
 			if( it->m.piece == pieces::pawn ) {
-				new_depth += pawn_push_extension;
+				if( it->m.target < 16 || it->m.target >= 48 ) {
+					new_depth += pawn_push_extension;
+					extended = true;
+				}
 			}
 
-			if( processed_moves >= lmr_searched && !check.check && depth > lmr_min_depth && !it->m.captured_piece ) {
-				new_depth -= lmr_reduction;
-			}
+			check_map new_check;
+			calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
 
-			if( alpha != old_alpha ) {
-				value = -step(new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -alpha-1, -alpha, cpv, false );
+			// Open question: What's the exact reason for always searching exactly the first move full width?
+			// Why not always use PVS, or at least in those cases where root alpha isn't result::loss?
+			// Why not use full width unless alpha > old_alpha?
+
+			if( processed_moves ) {
+				// Open question: Use this approach or instead do PVS's null-window also when re-searching a >alpha LMR result?
+				// Barring some bugs or some weird search instability issues, it should bring the same results and speed seems similar.
+				if( processed_moves >= lmr_searched && gen.get_phase() >= phases::noncapture &&
+					!check.check && !new_check.check &&
+					depth > lmr_min_depth && !extended)
+				{
+					value = -step(new_depth - lmr_reduction, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -alpha-1, -alpha, cpv, false );
+				}
+				else {
+					value = -step(new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -alpha-1, -alpha, cpv, false );
+				}
 
 				if( value > alpha ) {
-					value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
+					value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -beta, -alpha, cpv, false );
 				}
 			}
 			else {
-				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), -beta, -alpha, cpv, false );
+				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -beta, -alpha, cpv, false );
+			}
+
+			if( it->m.captured_piece == pieces::none ) {
+				++searched_noncaptures;
 			}
 		}
 		if( value > alpha ) {
@@ -653,6 +680,9 @@ short processing_thread::processWork()
 
 	ctx_.seen.pos[++ctx_.seen.root_position] = hash;
 
+	check_map check;
+	calc_check_map( new_pos, static_cast<color::type>(1-c_), check );
+
 	// Search using aspiration window:
 	short value;
 	if( alpha_ == result::loss && alpha_at_prev_depth_ != result::loss ) {
@@ -661,7 +691,7 @@ short processing_thread::processWork()
 		short beta = (std::min)( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
 		if( alpha < beta ) {
-			value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta, -alpha, pv_->next(), false );
+			value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta, -alpha, pv_->next(), false );
 			if( value > alpha && value < beta ) {
 				// Aspiration search found something sensible
 				return value;
@@ -670,13 +700,13 @@ short processing_thread::processWork()
 	}
 
 	if( alpha_ != result::loss ) {
-		value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -alpha_-1, -alpha_, pv_->next(), false );
+		value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -alpha_-1, -alpha_, pv_->next(), false );
 		if( value > alpha_ ) {
-			value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
+			value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta_, -alpha_, pv_->next(), false );
 		}
 	}
 	else {
-		value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), -beta_, -alpha_, pv_->next(), false );
+		value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta_, -alpha_, pv_->next(), false );
 	}
 
 	return value;
