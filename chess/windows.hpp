@@ -91,7 +91,7 @@ inline unsigned long long bitscan( unsigned long long mask )
 	return static_cast<unsigned long long >(i);
 }
 
-inline void bitscan_reverse( unsigned long long mask )
+inline unsigned long long bitscan_reverse( unsigned long long mask )
 {
 	unsigned long i;
 	_BitScanReverse64( &i, mask );
