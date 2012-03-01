@@ -329,6 +329,20 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c, std
 		return false;
 	}
 
+	for( int i = 0; i < 2; ++i ) {
+		p.bitboards[i].b[bb_type::all_pieces] = p.bitboards[i].b[bb_type::pawns] | p.bitboards[i].b[bb_type::knights] | p.bitboards[i].b[bb_type::bishops] | p.bitboards[i].b[bb_type::rooks] | p.bitboards[i].b[bb_type::queens] | p.bitboards[i].b[bb_type::king];
+
+		p.bitboards[i].b[bb_type::pawn_control] = 0;
+		unsigned long long pawns = p.bitboards[i].b[bb_type::pawns];
+		while( pawns ) {
+			unsigned long long pawn = bitscan_unset( pawns );
+			p.bitboards[i].b[bb_type::pawn_control] |= pawn_control[i][pawn];
+		}
+	}
+
+	init_material( p );
+	p.init_pawn_structure();
+
 	check_map check;
 	calc_check_map( p, static_cast<color::type>(1-c), check );
 
@@ -338,20 +352,6 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c, std
 		}
 		return false;
 	}
-
-	for( int c = 0; c < 2; ++c ) {
-		p.bitboards[c].b[bb_type::all_pieces] = p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::knights] | p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens] | p.bitboards[c].b[bb_type::king];
-
-		p.bitboards[c].b[bb_type::pawn_control] = 0;
-		unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
-		while( pawns ) {
-			unsigned long long pawn = bitscan_unset( pawns );
-			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
-		}
-	}
-
-	init_material( p );
-	p.init_pawn_structure();
 
 	return true;
 }
