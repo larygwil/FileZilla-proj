@@ -7,6 +7,6 @@
 
 std::string position_to_fen_noclock( position const& p, color::type c );
 
-bool parse_fen_noclock( std::string const& fen, position&, color::type& c );
+bool parse_fen_noclock( std::string const& fen, position&, color::type& c, std::string* error = 0 );
 
 #endif

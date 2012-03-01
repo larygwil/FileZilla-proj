@@ -802,8 +802,9 @@ void xboard()
 
 			position new_pos;
 			color::type new_c;
-			if( !parse_fen_noclock( line, new_pos, new_c ) ) {
-				std::cout << "Error (bad command): Not a valid FEN position" << std::endl;
+			std::string error;
+			if( !parse_fen_noclock( line, new_pos, new_c, &error ) ) {
+				std::cout << "Error (bad command): Not a valid FEN position: " << error << std::endl;
 				continue;
 			}
 			bool analyze = state.mode_ == mode::analyze;
