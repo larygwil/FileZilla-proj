@@ -15,7 +15,14 @@ config::config()
   random_seed(-1), //-1 == based on time
   ponder(),
   use_book(true)
-{}
+{
+	if( sizeof(void*) < 8 ) {
+		// Limit default to 1GB on 32bit compile
+		if( memory > 0x100000ull ) {
+			memory = 0x100000ull;
+		}
+	}
+}
 
 int config::init( int argc,  char const* argv[] )
 {
