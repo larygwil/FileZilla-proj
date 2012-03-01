@@ -139,8 +139,10 @@ static bool test_position( std::string const& fen, std::string const& ref_moves 
 {
 	position p;
 	color::type c;
-	if( !parse_fen_noclock( fen, p, c ) ) {
-		std::cerr << "Could not parse fen: " << fen;
+	std::string error;
+	if( !parse_fen_noclock( fen, p, c, &error ) ) {
+		std::cerr << "Could not parse fen: " << error << std::endl;
+		std::cerr << "Fen: " << fen << std::endl;
 		return false;
 	}
 
@@ -239,9 +241,10 @@ static bool test_lazy_eval( std::string const& fen )
 {
 	position p;
 	color::type c;
-	if( !parse_fen_noclock( fen, p, c ) ) {
-		std::cerr << "Could not parse fen: " << std::endl;
-		std::cerr << fen << std::endl;
+	std::string error;
+	if( !parse_fen_noclock( fen, p, c, &error ) ) {
+		std::cerr << "Could not parse fen: " << error << std::endl;
+		std::cerr << "Fen: " << fen << std::endl;
 		return false;
 	}
 
