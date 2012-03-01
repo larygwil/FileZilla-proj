@@ -23,7 +23,6 @@
 ../mobility_gen.cpp
 ../mobility.hpp
 ../moves_captures.cpp
-../moves_checks.cpp
 ../moves_noncaptures.cpp
 ../moves.cpp
 ../moves.hpp

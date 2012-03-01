@@ -33,25 +33,4 @@ void calc_check_map( position const& p, color::type c, check_map& map );
 bool detect_check( position const& p, color::type c, unsigned char king, unsigned char ignore );
 bool detect_check( position const& p, color::type c );
 
-/*
- * col/row of enemy king:
- *   00000000 always
- * empty space, other enemy pieces:
- *   10xxxxxx if on king horizontal or vertical with direct sight
- *   11xxxxxx if on king diagonals with direct sight
- *   0xxxxxxx otherwise
- * own piece:
- *   10rrrccc if blocking checks with ccc and rrr being column and row of the blocked piece
- *   00000000 otherwise
- */
-
-struct inverse_check_map
-{
-	unsigned char board[64];
-	unsigned char enemy_king_col;
-	unsigned char enemy_king_row;
-};
-
-void calc_inverse_check_map( position const& p, color::type c, inverse_check_map& map );
-
 #endif

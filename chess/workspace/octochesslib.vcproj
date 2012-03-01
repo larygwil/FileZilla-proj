@@ -203,10 +203,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\moves_checks.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\moves_noncaptures.cpp"
 				>
 			</File>

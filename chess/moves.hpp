@@ -26,9 +26,4 @@ void calculate_moves_captures( position const& p, color::type c, move_info*& mov
 // Returned evaluation is fast_eval
 void calculate_moves_noncaptures( position const& p, color::type c, move_info*& moves, check_map const& check );
 
-// Returns all checks which are not captures. May return a few additional non-capture moves.
-// Precondition: Own king not in check
-// Returned evaluation is fast_eval
-void calculate_moves_checks( position const& p, color::type c, int const current_evaluation, move_info*& moves, check_map const& check, inverse_check_map const& inverse_check_map );
-
 #endif
