@@ -83,20 +83,20 @@ private:
 	HANDLE t_;
 };
 
-inline void bitscan( unsigned long long mask, unsigned long long& index )
+inline unsigned long long bitscan( unsigned long long mask )
 {
 	unsigned long i;
 	_BitScanForward64( &i, mask );
 
-	index = static_cast<unsigned long long >(i);
+	return static_cast<unsigned long long >(i);
 }
 
-inline void bitscan_reverse( unsigned long long mask, unsigned long long& index )
+inline void bitscan_reverse( unsigned long long mask )
 {
 	unsigned long i;
 	_BitScanReverse64( &i, mask );
 
-	index = static_cast<unsigned long long >(i);
+	return static_cast<unsigned long long >(i);
 }
 
 int get_cpu_count();

@@ -8,8 +8,7 @@ inline unsigned long long attack( unsigned long long pi, unsigned long long bloc
 {
 	unsigned long long attacks = ray[pi];
 	unsigned long long ray_blockers = (blockers & attacks) | 0x8000000000000000ull;
-	unsigned long long ray_blocker;
-	bitscan( ray_blockers, ray_blocker );
+	unsigned long long ray_blocker = bitscan( ray_blockers );
 	return attacks ^ ray[ray_blocker];
 }
 
@@ -18,8 +17,7 @@ inline unsigned long long attackr( unsigned long long pi, unsigned long long blo
 {
 	unsigned long long attacks = ray[pi];
 	unsigned long long ray_blockers = (blockers & attacks) | 0x1ull;
-	unsigned long long ray_blocker;
-	bitscan_reverse( ray_blockers, ray_blocker);
+	unsigned long long ray_blocker = bitscan_reverse( ray_blockers );
 	return attacks ^ ray[ray_blocker];
 }
 

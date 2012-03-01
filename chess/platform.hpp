@@ -19,4 +19,12 @@ void aligned_free( void* p );
 // Returns the system's memory page size.
 unsigned long long get_page_size();
 
+// Forward bitscan, returns zero-based index of lowest set bit and nulls said bit.
+// Precondition: mask != 0
+inline unsigned long long bitscan_unset( unsigned long long& mask ) {
+	unsigned long long index = bitscan( mask );
+	mask &= mask - 1;
+	return index;
+}
+
 #endif

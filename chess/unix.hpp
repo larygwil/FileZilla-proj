@@ -103,27 +103,39 @@ int get_cpu_count();
 // In MiB
 int get_system_memory();
 
-// Bitscan forward.
-// We cannot use the __builtin_ffsll, as it is way more expensive:
-// It always adds 1 to the result, which we then have to subtract again.
-// Not even -O3 can save us there
-#define bitscan( mask, index ) \
-asm \
-( \
-"bsfq %[" #mask "], %[" #index "]" \
-:[index] "=r" (index) \
-:[mask] "mr" (mask) \
-);
+// Forward bitscan, returns zero-based index of lowest set bit.
+// Precondition: mask != 0
+inline unsigned long long bitscan( unsigned long long mask )
+{
+	// We cannot use the __builtin_ffsll, as it is way more expensive:
+	// It always adds 1 to the result, which we then have to subtract again.
+	// Not even -O3 can save us there
+	unsigned long long index;
+	asm \
+	( \
+	"bsfq %[mask], %[index]" \
+	:[index] "=r" (index) \
+	:[mask] "mr" (mask) \
+	);
+
+	return index;
+}
 
 
-#define bitscan_reverse( mask, index ) \
-asm \
-( \
-"bsrq %[" #mask "], %[" #index "]" \
-:[index] "=r" (index) \
-:[mask] "mr" (mask) \
-);
+// Forward bitscan, returns index of highest set bit.
+// Precondition: mask != 0
+inline unsigned long long bitscan_reverse( unsigned long long mask )
+{
+	unsigned long long index;
+	asm \
+	( \
+	"bsrq %[mask], %[index]" \
+	:[index] "=r" (index) \
+	:[mask] "mr" (mask) \
+	);
 
+	return index;
+}
 
 #define popcount __builtin_popcountll
 

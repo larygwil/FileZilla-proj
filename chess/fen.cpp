@@ -343,11 +343,9 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c, std
 		p.bitboards[c].b[bb_type::all_pieces] = p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::knights] | p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens] | p.bitboards[c].b[bb_type::king];
 
 		p.bitboards[c].b[bb_type::pawn_control] = 0;
-		unsigned long long pawn;
 		unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
 		while( pawns ) {
-			bitscan( pawns, pawn );
-			pawns &= pawns - 1;
+			unsigned long long pawn = bitscan_unset( pawns );
 			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
 		}
 	}

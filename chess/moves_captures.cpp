@@ -80,18 +80,14 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves,
 void calc_moves_king( position const& p, color::type c, move_info*& moves )
 {
 	unsigned long long kings = p.bitboards[c].b[bb_type::king];
-	unsigned long long king;
-	bitscan(kings, king);
+	unsigned long long king = bitscan( kings );
 
 	unsigned long long other_kings = p.bitboards[1-c].b[bb_type::king];
-	unsigned long long other_king;
-	bitscan(other_kings, other_king);
+	unsigned long long other_king = bitscan( other_kings );
 
 	unsigned long long king_moves = possible_king_moves[king] & ~(p.bitboards[c].b[bb_type::all_pieces] | possible_king_moves[other_king]) & p.bitboards[1-c].b[bb_type::all_pieces];
 	while( king_moves ) {
-		unsigned long long i;
-		bitscan( king_moves, i );
-		king_moves &= king_moves - 1;
+		unsigned long long i = bitscan_unset( king_moves );
 		calc_moves_king( p, c, moves,
 						 king, i );
 	}
@@ -105,10 +101,8 @@ void calc_moves_queen( position const& p, color::type c, move_info*& moves, chec
 	unsigned long long possible_moves = rook_magic( queen, all_blockers ) | bishop_magic( queen, all_blockers );
 	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned long long queen_move;
 	while( possible_moves ) {
-		bitscan( possible_moves, queen_move );
-		possible_moves &= possible_moves - 1;
+		unsigned long long queen_move = bitscan_unset( possible_moves );
 
 		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), queen_move );
 		add_if_legal( moves, check, pieces::queen, queen, queen_move, move_flags::valid, captured );
@@ -120,9 +114,7 @@ void calc_moves_queens( position const& p, color::type c, move_info*& moves, che
 {
 	unsigned long long queens = p.bitboards[c].b[bb_type::queens];
 	while( queens ) {
-		unsigned long long queen;
-		bitscan( queens, queen );	
-		queens &= queens - 1;
+		unsigned long long queen = bitscan_unset( queens );
 		calc_moves_queen( p, c, moves, check, queen );
 	}
 }
@@ -136,10 +128,8 @@ void calc_moves_bishop( position const& p, color::type c, move_info*& moves, che
 	unsigned long long possible_moves = bishop_magic( bishop, all_blockers );
 	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned long long bishop_move;
 	while( possible_moves ) {
-		bitscan( possible_moves, bishop_move );
-		possible_moves &= possible_moves - 1;
+		unsigned long long bishop_move = bitscan_unset( possible_moves );
 
 		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), bishop_move );
 		add_if_legal( moves, check, pieces::bishop, bishop, bishop_move, move_flags::valid, captured );
@@ -151,9 +141,7 @@ void calc_moves_bishops( position const& p, color::type c, move_info*& moves, ch
 {
 	unsigned long long bishops = p.bitboards[c].b[bb_type::bishops];
 	while( bishops ) {
-		unsigned long long bishop;
-		bitscan( bishops, bishop );	
-		bishops &= bishops - 1;
+		unsigned long long bishop = bitscan_unset( bishops );
 		calc_moves_bishop( p, c, moves, check, bishop );
 	}
 }
@@ -167,10 +155,8 @@ void calc_moves_rook( position const& p, color::type c, move_info*& moves, check
 	unsigned long long possible_moves = rook_magic( rook, all_blockers );
 	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned long long rook_move;
 	while( possible_moves ) {
-		bitscan( possible_moves, rook_move );
-		possible_moves &= possible_moves - 1;
+		unsigned long long rook_move = bitscan_unset( possible_moves );
 
 		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), rook_move );
 		add_if_legal( moves, check, pieces::rook, rook, rook_move, move_flags::valid, captured );
@@ -182,9 +168,7 @@ void calc_moves_rooks( position const& p, color::type c, move_info*& moves, chec
 {
 	unsigned long long rooks = p.bitboards[c].b[bb_type::rooks];
 	while( rooks ) {
-		unsigned long long rook;
-		bitscan( rooks, rook );
-		rooks &= rooks - 1;
+		unsigned long long rook = bitscan_unset( rooks );
 		calc_moves_rook( p, c, moves, check, rook );
 	}
 }
@@ -202,9 +186,7 @@ void calc_moves_knight( position const& p, color::type c, move_info*& moves, che
 {
 	unsigned long long new_knights = possible_knight_moves[old_knight] & ~(p.bitboards[c].b[bb_type::all_pieces]) & p.bitboards[1-c].b[bb_type::all_pieces];
 	while( new_knights ) {
-		unsigned long long new_knight;
-		bitscan( new_knights, new_knight );
-		new_knights &= new_knights - 1;
+		unsigned long long new_knight = bitscan_unset( new_knights );
 		calc_moves_knight( p, c, moves, check,
 						   old_knight, new_knight );
 	}
@@ -215,9 +197,7 @@ void calc_moves_knights( position const& p, color::type c, move_info*& moves, ch
 {
 	unsigned long long knights = p.bitboards[c].b[bb_type::knights];
 	while( knights ) {
-		unsigned long long knight;
-		bitscan( knights, knight );
-		knights &= knights - 1;
+		unsigned long long knight = bitscan_unset( knights );
 		calc_moves_knight( p, c, moves, check, knight );
 	}
 }
@@ -229,8 +209,7 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 	unsigned long long enpassantable = 1ull << p.can_en_passant;
 	unsigned long long enpassants = pawn_control[c][pawn] & enpassantable & pawn_enpassant[c];
 	if( enpassants ) {
-		unsigned long long enpassant;
-		bitscan( enpassants, enpassant );
+		unsigned long long enpassant = bitscan( enpassants );
 
 		unsigned char new_col = enpassant % 8;
 
@@ -258,8 +237,7 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 
 		// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
 		unsigned long long kings = p.bitboards[c].b[bb_type::king];
-		unsigned long long king;
-		bitscan(kings, king);
+		unsigned long long king = bitscan( kings );
 		unsigned char king_col = static_cast<unsigned char>(king % 8);
 		unsigned char king_row = static_cast<unsigned char>(king / 8);
 
@@ -306,9 +284,7 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 {
 	unsigned long long pawn_captures = pawn_control[c][pawn] & p.bitboards[1-c].b[bb_type::all_pieces];
 	while( pawn_captures ) {
-		unsigned long long target;
-		bitscan( pawn_captures, target );
-		pawn_captures &= pawn_captures - 1;
+		unsigned long long target = bitscan_unset( pawn_captures );
 
 		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), target );
 
@@ -330,10 +306,7 @@ void calc_moves_pawns( position const& p, color::type c, move_info*& moves, chec
 {
 	unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
 	while( pawns ) {
-		unsigned long long pawn;
-		bitscan( pawns, pawn );
-		pawns &= pawns - 1;
-
+		unsigned long long pawn = bitscan_unset( pawns );
 		calc_moves_pawn( p, c, moves, check, pawn );
 	}
 }

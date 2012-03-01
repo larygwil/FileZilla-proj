@@ -81,10 +81,7 @@ unsigned long long get_zobrist_hash( position const& p ) {
 	for( unsigned int c = 0; c < 2; ++c ) {
 		unsigned long long pieces = p.bitboards[c].b[bb_type::all_pieces];
 		while( pieces ) {
-			unsigned long long piece;
-			bitscan( pieces, piece );
-
-			pieces &= pieces - 1;
+			unsigned long long piece = bitscan_unset( pieces );
 
 			unsigned long long bpiece = 1ull << piece;
 			if( p.bitboards[c].b[bb_type::pawns] & bpiece ) {

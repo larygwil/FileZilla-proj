@@ -58,11 +58,8 @@ inline static void evaluate_tropism( position const& p, color::type c, eval_data
 {
 	unsigned long long pieces = p.bitboards[c].b[bb_type::all_pieces];
 
-	unsigned long long piece;
 	while( pieces ) {
-		bitscan( pieces, piece );
-		pieces &= pieces - 1;
-
+		unsigned long long piece = bitscan_unset( pieces );
 		results.tropism += proximity[piece][data.other_king_pos];
 	}
 }
@@ -72,10 +69,8 @@ inline static void evaluate_pawns_mobility( position const& p, color::type c, ev
 {
 	unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
 
-	unsigned long long pawn;
 	while( pawns ) {
-		bitscan( pawns, pawn );
-		pawns &= pawns - 1;
+		unsigned long long pawn = bitscan_unset( pawns );
 
 		unsigned long long pc = pawn_control[c][pawn];
 		results.king_attack += static_cast<short>(popcount( pc & data.king_vicinity ) );
@@ -88,10 +83,8 @@ inline static void evaluate_knights_mobility( position const& p, color::type c, 
 {
 	unsigned long long knights = p.bitboards[c].b[bb_type::knights];
 
-	unsigned long long knight;
 	while( knights ) {
-		bitscan( knights, knight );
-		knights &= knights - 1;
+		unsigned long long knight = bitscan_unset( knights );
 
 		unsigned long long moves = possible_knight_moves[knight];
 		moves &= ~p.bitboards[c].b[bb_type::all_pieces];
@@ -150,10 +143,8 @@ inline static void evaluate_bishops_mobility( position const& p, color::type c, 
 {
 	unsigned long long bishops = p.bitboards[c].b[bb_type::bishops];
 
-	unsigned long long bishop;
 	while( bishops ) {
-		bitscan( bishops, bishop );
-		bishops &= bishops - 1;
+		unsigned long long bishop = bitscan_unset( bishops );
 
 		evaluate_bishop_mobility( p, c, bishop, data, results );
 		evaluate_bishop_pin( p, c, bishop, results );
@@ -220,10 +211,8 @@ inline static void evaluate_rooks_mobility( position const& p, color::type c, ev
 {
 	unsigned long long rooks = p.bitboards[c].b[bb_type::rooks];
 
-	unsigned long long rook;
 	while( rooks ) {
-		bitscan( rooks, rook );
-		rooks &= rooks - 1;
+		unsigned long long rook = bitscan_unset( rooks );
 
 		evaluate_rook_mobility( p, c, rook, data, results);
 		evaluate_rook_pin( p, c, rook, results );
@@ -272,10 +261,8 @@ inline static void evaluate_queens_mobility( position const& p, color::type c, e
 {
 	unsigned long long queens = p.bitboards[c].b[bb_type::queens];
 
-	unsigned long long queen;
 	while( queens ) {
-		bitscan( queens, queen );
-		queens &= queens - 1;
+		unsigned long long queen = bitscan_unset( queens );
 
 		evaluate_queen_mobility( p, c, queen, data, results );
 		evaluate_queen_pin( p, c, queen, results );
@@ -288,8 +275,7 @@ static void do_evaluate_mobility( position const& p, color::type c, eval_results
 	
 	{
 		unsigned long long kings = p.bitboards[1-c].b[bb_type::king];
-		unsigned long long king;
-		bitscan( kings, king );
+		unsigned long long king = bitscan( kings );
 		data_self.other_king_pos = king;
 	}
 	data_self.king_vicinity = possible_king_moves[data_self.other_king_pos];
@@ -308,8 +294,7 @@ static void do_evaluate_mobility( position const& p, color::type c, eval_results
 	
 	{
 		unsigned long long kings = p.bitboards[c].b[bb_type::king];
-		unsigned long long king;
-		bitscan( kings, king );
+		unsigned long long king = bitscan( kings );
 		data_other.other_king_pos = king;
 	}
 	data_other.king_vicinity = possible_king_moves[data_other.other_king_pos];

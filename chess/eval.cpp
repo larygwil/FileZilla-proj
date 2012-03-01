@@ -745,9 +745,7 @@ void evaluate_pawns( unsigned long long white_pawns, unsigned long long black_pa
 
 		unsigned long long pawns = white_pawns;
 		while( pawns ) {
-			unsigned long long pawn;
-			bitscan( pawns, pawn );
-			pawns &= pawns - 1;
+			unsigned long long pawn = bitscan_unset( pawns );
 
 			evaluate_pawn( white_pawns, black_pawns, color::white, pawn,
 								  unpassed_black, doubled_white, connected_white, unisolated_white );
@@ -759,9 +757,7 @@ void evaluate_pawns( unsigned long long white_pawns, unsigned long long black_pa
 	{
 		unsigned long long pawns = black_pawns;
 		while( pawns ) {
-			unsigned long long pawn;
-			bitscan( pawns, pawn );
-			pawns &= pawns - 1;
+			unsigned long long pawn = bitscan_unset( pawns );
 
 			evaluate_pawn( black_pawns, white_pawns, color::black, pawn,
 						   unpassed_white, doubled_black, connected_black, unisolated_black );
@@ -797,10 +793,7 @@ short evaluate_side( position const& p, color::type c )
 
 	unsigned long long all_pieces = p.bitboards[c].b[bb_type::all_pieces];
 	while( all_pieces ) {
-		unsigned long long piece;
-		bitscan( all_pieces, piece );
-
-		all_pieces &= all_pieces - 1;
+		unsigned long long piece = bitscan_unset( all_pieces );
 
 		unsigned long long bpiece = 1ull << piece;
 		if( p.bitboards[c].b[bb_type::pawns] & bpiece ) {
@@ -1036,8 +1029,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 static void evaluate_pawn_shield_side( position const& p, color::type c, short* pawn_shield )
 {
 	unsigned long long kings = p.bitboards[c].b[bb_type::king];
-	unsigned long long king;
-	bitscan( kings, king );
+	unsigned long long king = bitscan( kings );
 
 	unsigned long long shield = king_pawn_shield[c][king] & p.bitboards[c].b[bb_type::pawns];
 	pawn_shield[0] = static_cast<short>(eval_values.pawn_shield[0] * popcount(shield));

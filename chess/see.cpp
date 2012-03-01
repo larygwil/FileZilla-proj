@@ -14,8 +14,7 @@ static unsigned long long least_valuable_attacker( position const& p, color::typ
 		unsigned long long match = p.bitboards[c].b[piece] & attackers;
 		if( match ) {
 			attacker_piece_out = static_cast<pieces::type>(piece);
-			unsigned long long ret;
-			bitscan( match, ret );
+			unsigned long long ret = bitscan( match );
 			return 1ull << ret;
 		}
 	}

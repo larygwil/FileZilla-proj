@@ -18,10 +18,7 @@ unsigned long long expand( unsigned long long value, unsigned long long mask )
 	unsigned long long bitcount = 0;
 
 	while ( mask ) {
-		unsigned long long bitindex;
-		bitscan( mask, bitindex );
-		mask &= mask - 1;
-
+		unsigned long long bitindex = bitscan_unset( mask );
 		ret |= ((value >> bitcount) & 1ull) << bitindex;
 	
 		++bitcount;

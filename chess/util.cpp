@@ -504,11 +504,9 @@ void init_bitboards( position& p )
 		p.bitboards[c].b[bb_type::all_pieces] = p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::knights] | p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens] | p.bitboards[c].b[bb_type::king];
 
 		p.bitboards[c].b[bb_type::pawn_control] = 0;
-		unsigned long long pawn;
 		unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
 		while( pawns ) {
-			bitscan( pawns, pawn );
-			pawns &= pawns - 1;
+			unsigned long long pawn = bitscan_unset( pawns );
 			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
 		}
 	}
@@ -565,11 +563,9 @@ static void do_apply_move( position& p, move const& m, color::type c )
 
 		if( m.captured_piece == pieces::pawn ) {
 			p.bitboards[1-c].b[bb_type::pawn_control] = 0;
-			unsigned long long pawn;
 			unsigned long long pawns = p.bitboards[1-c].b[bb_type::pawns];
 			while( pawns ) {
-				bitscan( pawns, pawn );
-				pawns &= pawns - 1;
+				unsigned long long pawn = bitscan_unset( pawns );
 				p.bitboards[1-c].b[bb_type::pawn_control] |= pawn_control[1-c][pawn];
 			}
 		}
@@ -608,11 +604,9 @@ static void do_apply_move( position& p, move const& m, color::type c )
 	
 	if( m.piece == pieces::pawn ) {
 		p.bitboards[c].b[bb_type::pawn_control] = 0;
-		unsigned long long pawn;
 		unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
 		while( pawns ) {
-			bitscan( pawns, pawn );
-			pawns &= pawns - 1;
+			unsigned long long pawn = bitscan_unset( pawns );
 			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
 		}
 	}
@@ -700,10 +694,7 @@ void position::init_pawn_structure()
 	for( int c = 0; c < 2; ++c ) {
 		unsigned long long cpawns = bitboards[c].b[bb_type::pawns];
 		while( cpawns ) {
-			unsigned long long pawn;
-			bitscan( cpawns, pawn );
-			cpawns &= cpawns - 1;
-
+			unsigned long long pawn = bitscan_unset( cpawns );
 			pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), static_cast<unsigned char>(pawn) );
 		}
 	}
@@ -901,8 +892,7 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 		}
 
 		unsigned long long other_kings = p.bitboards[1-c].b[bb_type::king];
-		unsigned long long other_king;
-		bitscan( other_kings, other_king );
+		unsigned long long other_king = bitscan( other_kings );
 		if( (1ull << m.target) & possible_king_moves[other_king] ) {
 			return false;
 		}
@@ -990,8 +980,7 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 
 			// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
 			unsigned long long kings = p.bitboards[c].b[bb_type::king];
-			unsigned long long king;
-			bitscan(kings, king);
+			unsigned long long king = bitscan( kings );
 			unsigned char king_col = static_cast<unsigned char>(king % 8);
 			unsigned char king_row = static_cast<unsigned char>(king / 8);
 

@@ -30,8 +30,7 @@ bool detect_check( position const& p, color::type c, unsigned char king, unsigne
 bool detect_check( position const& p, color::type c )
 {
 	unsigned long long kings = p.bitboards[c].b[bb_type::king];
-	unsigned long long king;
-	bitscan( kings, king );
+	unsigned long long king = bitscan( kings );
 
 	return detect_check( p, c, king, king );
 }
@@ -59,15 +58,11 @@ static void process_ray( position const& p, color::type c, check_map& map, unsig
 	if( potential_check_givers ) {
 		unsigned long long block_count = popcount( ray & p.bitboards[c].b[bb_type::all_pieces] );
 		if( block_count < 2 ) {
-			unsigned long long cpi;
-			bitscan( potential_check_givers, cpi );
+			unsigned long long cpi = bitscan( potential_check_givers );
 			cpi |= 0x80;
 
 			while( ray ) {
-				unsigned long long pi;
-				bitscan( ray, pi );
-				ray &= ray - 1;
-
+				unsigned long long pi = bitscan_unset( ray );
 				map.board[pi] = cpi;
 			}
 
@@ -90,8 +85,7 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 	memset( &map, 0, sizeof(check_map) );
 
 	unsigned long long kings = p.bitboards[c].b[bb_type::king];
-	unsigned long long king;
-	bitscan( kings, king );
+	unsigned long long king = bitscan( kings );
 
 	unsigned long long blockers = p.bitboards[1-c].b[bb_type::all_pieces];
 	unsigned long long unblocked_king_n = attack( king, blockers, ray_n );
@@ -117,10 +111,8 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 	process_ray( p, c, map, unblocked_king_nw, bishops_and_queens, king );
 
 	unsigned long long knights = possible_knight_moves[king] & p.bitboards[1-c].b[bb_type::knights];
-	unsigned long long knight;
 	while( knights ) {
-		bitscan( knights, knight );
-		knights &= knights - 1;
+		unsigned long long knight = bitscan_unset( knights );
 		calc_check_map_knight( map, king, knight );
 	}
 
