@@ -143,7 +143,7 @@ bool thread::spawned()
 
 namespace {
 extern "C" {
-static DWORD run( void* p ) {
+static DWORD WINAPI run( void* p ) {
 	reinterpret_cast<thread*>(p)->onRun();
 	return 0;
 }
@@ -155,7 +155,7 @@ void thread::spawn()
 {
 	join();
 
-	t_ = CreateThread( 0, 0, &run, this, 0, 0 );
+	t_ = CreateThread( NULL, 0, &run, this, 0, 0 );
 }
 
 int get_cpu_count()
