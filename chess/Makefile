@@ -27,13 +27,17 @@ OBJECT_FILES = \
 	pvlist.o \
 	see.o \
 	selftest.o \
+	sqlite/sqlite3.o \
 	statistics.o \
 	tables.o \
 	tweak.o \
 	unix.o \
 	util.o \
-	sqlite/sqlite3.o \
 	zobrist.o 
+
+CHESS_FILES = $(OBJECT_FILES) \
+	chess.o \
+	xboard.o
 
 %.o: %.cpp *.hpp
 	g++ $(CXXFLAGS) -pthread -c -o $@ $<
@@ -42,7 +46,7 @@ sqlite/sqlite3.o: sqlite/sqlite3.c sqlite/sqlite3.h
 	gcc $(CFLAGS) -pthread -c -o $@ $<
 
 
-octochess: $(OBJECT_FILES) chess.o
+octochess: $(CHESS_FILES)
 	g++ $(CXXFLAGS) -pthread -ldl -o $@ $^
 
 

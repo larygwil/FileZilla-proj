@@ -190,6 +190,10 @@
 				RelativePath="..\tweak.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\xboard.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -198,6 +202,10 @@
 			>
 			<File
 				RelativePath="..\tweak.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\xboard.cpp"
 				>
 			</File>
 		</Filter>

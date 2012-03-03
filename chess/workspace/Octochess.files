@@ -49,3 +49,6 @@
 ../windows.hpp
 ../zobrist.cpp
 ../zobrist.hpp
+../xboard.cpp
+../xboard.hpp
+

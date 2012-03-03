@@ -3,16 +3,49 @@ CXXFLAGS = -O3 -g -pipe -march=corei7 -std=gnu++0x -Wall -flto -fwhole-program -
 
 all: chess-use bookgen-use
 
+GENERIC_SOURCE_FILES = \
+	book.cpp \
+	config.cpp \
+	detect_check.cpp \
+	calc.cpp \
+	fen.cpp \
+	logger.cpp \
+	magic.cpp \
+	mobility.cpp \
+	moves.cpp \
+	moves_captures.cpp \
+	moves_noncaptures.cpp \
+	pawn_structure_hash_table.cpp \
+	pvlist.cpp \
+	util.cpp \
+	see.cpp \
+	selftest.cpp \
+	statistics.cpp \
+	tables.cpp \
+	unix.cpp \
+	eval.cpp \
+	hash.cpp \
+	zobrist.cpp \
+	sqlite/sqlite3.o
+
+CHESS_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
+	chess.cpp \
+	tweak.cpp \
+	xboard.cpp
+
+BOOKGEN_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
+	bookgen.cpp
+
 chess-gen: *.cpp *.hpp
-	g++ $(CXXFLAGS) -fprofile-generate -o $@ book.cpp chess.cpp config.cpp detect_check.cpp calc.cpp fen.cpp logger.cpp magic.cpp mobility.cpp moves.cpp moves_captures.cpp moves_noncaptures.cpp pawn_structure_hash_table.cpp pvlist.cpp util.cpp see.cpp selftest.cpp statistics.cpp tables.cpp unix.cpp eval.cpp hash.cpp tweak.cpp zobrist.cpp sqlite/sqlite3.o
+	g++ $(CXXFLAGS) -fprofile-generate -o $@ $(CHESS_SOURCE_FILES)
 	./chess-gen --moves 1 --depth 11 --threads 1 auto
 	rm -f *.o
 
 chess-use: chess-gen
-	g++ $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ book.cpp chess.cpp config.cpp detect_check.cpp calc.cpp fen.cpp logger.cpp magic.cpp mobility.cpp moves.cpp moves_captures.cpp moves_noncaptures.cpp pawn_structure_hash_table.cpp pvlist.cpp util.cpp see.cpp selftest.cpp statistics.cpp tables.cpp unix.cpp eval.cpp hash.cpp tweak.cpp zobrist.cpp sqlite/sqlite3.o
+	g++ $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ $(CHESS_SOURCE_FILES)
 
 bookgen-use: chess-gen
-	g++ $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ book.cpp bookgen.cpp config.cpp detect_check.cpp calc.cpp fen.cpp logger.cpp magic.cpp mobility.cpp moves.cpp moves_captures.cpp moves_noncaptures.cpp pawn_structure_hash_table.cpp pvlist.cpp util.cpp see.cpp selftest.cpp statistics.cpp tables.cpp unix.cpp eval.cpp hash.cpp tweak.cpp zobrist.cpp sqlite/sqlite3.o
+	g++ $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ $(BOOKGEN_SOURCE_FILES)
 
 clean:
 	rm -f chess

@@ -343,8 +343,7 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c, std
 	init_material( p );
 	p.init_pawn_structure();
 
-	check_map check;
-	calc_check_map( p, static_cast<color::type>(1-c), check );
+	check_map check( p, static_cast<color::type>(1-c) );
 
 	if( check.check ) {
 		if( error ) {

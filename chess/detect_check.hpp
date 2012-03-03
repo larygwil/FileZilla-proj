@@ -21,14 +21,16 @@
  *   00000000 if not in line of sight between own king and enemy piece and not blocked by at least two own pieces
  *   10rrrccc otherwise
  */
-struct check_map
+class check_map
 {
+public:
+	check_map( position const& p, color::type c );
+
 	unsigned char board[64];
 	unsigned char check;
 
 	inline bool multiple() const { return (check & 0x40) != 0; }
 };
-void calc_check_map( position const& p, color::type c, check_map& map );
 
 bool detect_check( position const& p, color::type c, unsigned char king, unsigned char ignore );
 bool detect_check( position const& p, color::type c );

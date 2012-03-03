@@ -184,8 +184,7 @@ short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash
 		else {
 			position new_pos = p;
 			apply_move( new_pos, *it, c );
-			check_map new_check;
-			calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
+			check_map new_check( new_pos, static_cast<color::type>(1-c) );
 
 			ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
 
@@ -224,14 +223,6 @@ short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash
 	return alpha;
 }
 
-
-short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, short alpha, short beta )
-{
-	check_map check;
-	calc_check_map( p, c, check );
-
-	return quiescence_search( ply, ctx, p, hash, current_evaluation, c, check, alpha, beta );
-}
 
 namespace phases {
 enum type {
@@ -404,8 +395,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 		ctx.seen.null_move_position = ctx.seen.root_position + ply - 1;
 		pv_entry* cpv = ctx.pv_pool.get();
 
-		check_map new_check;
-		calc_check_map( p, static_cast<color::type>(1-c), new_check );
+		check_map new_check( p, static_cast<color::type>(1-c) );
 
 		short value = -step( depth - (NULL_MOVE_REDUCTION + 1) * depth_factor, ply + 1, ctx, p, hash, -current_evaluation, static_cast<color::type>(1-c), new_check, -beta, -beta + 1, cpv, true );
 		ctx.pv_pool.release( cpv );
@@ -465,8 +455,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 				}
 			}
 
-			check_map new_check;
-			calc_check_map( new_pos, static_cast<color::type>(1-c), new_check );
+			check_map new_check( new_pos, static_cast<color::type>(1-c) );
 
 			// Open question: What's the exact reason for always searching exactly the first move full width?
 			// Why not always use PVS, or at least in those cases where root alpha isn't result::loss?
@@ -680,8 +669,7 @@ short processing_thread::processWork()
 
 	ctx_.seen.pos[++ctx_.seen.root_position] = hash;
 
-	check_map check;
-	calc_check_map( new_pos, static_cast<color::type>(1-c_), check );
+	check_map check( new_pos, static_cast<color::type>(1-c_) );
 
 	// Search using aspiration window:
 	short value;
@@ -861,8 +849,7 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, uint64_t
 	}
 
 	do_abort = false;
-	check_map check;
-	calc_check_map( p, c, check );
+	check_map check( p, c );
 
 	move_info moves[200];
 	move_info* pm = moves;

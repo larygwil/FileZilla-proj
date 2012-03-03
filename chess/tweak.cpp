@@ -31,8 +31,7 @@ static bool tweak_calc( position& p, color::type c, move& m, int& res, uint64_t 
 		return cmgr.calc( p, c, m, res, move_time_limit, time_remaining, clock, seen, last_mate, new_best_cb );
 	}
 
-	check_map check;
-	calc_check_map( p, c, check );
+	check_map check( p, c );
 
 	move_info moves[200];
 	move_info* pm = moves;

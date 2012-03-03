@@ -80,9 +80,9 @@ static void process_ray( position const& p, color::type c, check_map& map, uint6
 }
 
 
-void calc_check_map( position const& p, color::type c, check_map& map )
+check_map::check_map( position const& p, color::type c )
 {
-	memset( &map, 0, sizeof(check_map) );
+	memset( board, 0, sizeof(board) );
 
 	uint64_t kings = p.bitboards[c].b[bb_type::king];
 	uint64_t king = bitscan( kings );
@@ -98,24 +98,23 @@ void calc_check_map( position const& p, color::type c, check_map& map )
 	uint64_t unblocked_king_nw = attack( king, blockers, ray_nw );
 
 	uint64_t rooks_and_queens = p.bitboards[1-c].b[bb_type::rooks] | p.bitboards[1-c].b[bb_type::queens];
-	process_ray( p, c, map, unblocked_king_n, rooks_and_queens, king );
-	process_ray( p, c, map, unblocked_king_e, rooks_and_queens, king );
-	process_ray( p, c, map, unblocked_king_s, rooks_and_queens, king );
-	process_ray( p, c, map, unblocked_king_w, rooks_and_queens, king );
+	process_ray( p, c, *this, unblocked_king_n, rooks_and_queens, king );
+	process_ray( p, c, *this, unblocked_king_e, rooks_and_queens, king );
+	process_ray( p, c, *this, unblocked_king_s, rooks_and_queens, king );
+	process_ray( p, c, *this, unblocked_king_w, rooks_and_queens, king );
 
 	uint64_t bishops_and_queens = p.bitboards[1-c].b[bb_type::bishops] | p.bitboards[1-c].b[bb_type::queens];
 	bishops_and_queens |= pawn_control[c][king] & p.bitboards[1-c].b[bb_type::pawns];
-	process_ray( p, c, map, unblocked_king_ne, bishops_and_queens, king );
-	process_ray( p, c, map, unblocked_king_se, bishops_and_queens, king );
-	process_ray( p, c, map, unblocked_king_sw, bishops_and_queens, king );
-	process_ray( p, c, map, unblocked_king_nw, bishops_and_queens, king );
+	process_ray( p, c, *this, unblocked_king_ne, bishops_and_queens, king );
+	process_ray( p, c, *this, unblocked_king_se, bishops_and_queens, king );
+	process_ray( p, c, *this, unblocked_king_sw, bishops_and_queens, king );
+	process_ray( p, c, *this, unblocked_king_nw, bishops_and_queens, king );
 
 	uint64_t knights = possible_knight_moves[king] & p.bitboards[1-c].b[bb_type::knights];
 	while( knights ) {
 		uint64_t knight = bitscan_unset( knights );
-		calc_check_map_knight( map, king, knight );
+		calc_check_map_knight( *this, king, knight );
 	}
 
-	unsigned char cv = map.board[king];
-	map.check = cv;
+	check = board[king];
 }

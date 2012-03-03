@@ -211,8 +211,7 @@ extern "C" int get_cb( void* p, int, char** data, char** /*names*/ ) {
 	cb_data* d = reinterpret_cast<cb_data*>(p);
 
 	if( !d->pm ) {
-		check_map check;
-		calc_check_map( d->p, d->c, check );
+		check_map check( d->p, d->c );
 		d->pm = d->moves;
 		calculate_moves( d->p, d->c, d->pm, check );
 	}

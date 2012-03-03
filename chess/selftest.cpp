@@ -36,8 +36,7 @@ void perft( perft_ctx& ctx, int depth, position const& p, color::type c, uint64_
 
 	move_info* moves = ctx.move_ptr;
 
-	check_map check;
-	calc_check_map( p, c, check );
+	check_map check( p, c );
 	calculate_moves( p, c, ctx.move_ptr, check );
 
 	if( !--depth ) {
@@ -146,8 +145,7 @@ static bool test_position( std::string const& fen, std::string const& ref_moves 
 
 	move_info moves[200];
 	move_info* pm = moves;
-	check_map check;
-	calc_check_map( p, c, check );
+	check_map check( p, c );
 	calculate_moves( p, c, pm, check );
 
 	std::vector<std::string> ms;
