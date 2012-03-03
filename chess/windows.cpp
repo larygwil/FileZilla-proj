@@ -163,7 +163,6 @@ int get_cpu_count()
 	PSYSTEM_LOGICAL_PROCESSOR_INFORMATION buffer = 0;
 	DWORD len = 0;
 
-	bool done = false;
 	while( !GetLogicalProcessorInformation( buffer, &len ) ) {
 		if( buffer ) {
 			free(buffer);

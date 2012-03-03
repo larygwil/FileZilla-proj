@@ -209,7 +209,7 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 		++s;
 	}
 
-	if( !piecetype && (first_col == -1 || second_col == -1 || first_row == -1 || second_col == -1) ) {
+	if( !piecetype && (first_col == -1 || second_col == -1 || first_row == -1 || second_row == -1) ) {
 		piecetype = 'P';
 	}
 
@@ -900,7 +900,7 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 				if( !(p.castle[c] & castles::queenside) ) {
 					return false;
 				}
-				if( !p.bitboards[c].b[bb_type::rooks] & (1ull << (m.source - 4)) ) {
+				if( !(p.bitboards[c].b[bb_type::rooks] & (1ull << (m.source - 4))) ) {
 					return false;
 				}
 				if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (7ull << (m.source - 3 )) ) {
@@ -917,7 +917,7 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 				if( !(p.castle[c] & castles::kingside) ) {
 					return false;
 				}
-				if( !p.bitboards[c].b[bb_type::rooks] & (1ull << (m.source + 3)) ) {
+				if( !(p.bitboards[c].b[bb_type::rooks] & (1ull << (m.source + 3))) ) {
 					return false;
 				}
 				if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (3ull << (m.source + 1 )) ) {
