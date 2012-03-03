@@ -919,6 +919,9 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 				break;
 			case promotions::bishop:
 				current_evaluation += bishop_values[c][m.target];
+				if( popcount( p.bitboards[c].b[bb_type::bishops] ) == 1 ) {
+					current_evaluation += eval_values.double_bishop;
+				}
 				break;
 			case promotions::rook:
 				current_evaluation += rook_values[c][m.target];
