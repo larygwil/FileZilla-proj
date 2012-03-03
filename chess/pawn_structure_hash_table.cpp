@@ -2,6 +2,7 @@
 #include "statistics.hpp"
 
 #include <string.h>
+#include <stdlib.h>
 
 pawn_structure_hash_table pawn_hash_table;
 
@@ -68,10 +69,20 @@ void pawn_structure_hash_table::store( uint64_t key, short const* eval )
 {
 	unsigned long long index = key % size_;
 
-	unsigned long long v = (static_cast<uint64_t>(eval[0]) << 16) + static_cast<uint64_t>(eval[1]);
+	unsigned long long v = (static_cast<uint64_t>(static_cast<unsigned short>(eval[0])) << 16) + static_cast<uint64_t>(static_cast<unsigned short>(eval[1]));
 
 	data_[index].data = v;
 	data_[index].key = v ^ key;
+
+#if 0
+	short ev2[2];
+	if( !lookup( key, ev2 ) ) {
+		abort();
+	}
+	if( eval[0] != ev2[0] || eval[1] != ev2[1] ) {
+		abort();
+	}
+#endif
 }
 
 
