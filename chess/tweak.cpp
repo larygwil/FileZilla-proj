@@ -20,8 +20,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-extern const int PAWN_HASH_TABLE_SIZE;
-
 namespace {
 
 static bool tweak_calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long time_remaining, int clock, seen_positions& seen
@@ -72,7 +70,7 @@ static void generate_test_positions_impl()
 	conf.max_moves = 20 + get_random_unsigned_long_long() % 70;
 
 	transposition_table.clear_data();
-	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
+	pawn_hash_table.init( conf.pawn_hash_table_size );
 	position p;
 
 	init_board(p);

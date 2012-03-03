@@ -1125,8 +1125,6 @@ void run( book& b )
 	}
 }
 
-const int PAWN_HASH_TABLE_SIZE = 10;
-
 int main( int argc, char const* argv[] )
 {
 	std::cout << "Initializing" << std::endl;
@@ -1149,7 +1147,7 @@ int main( int argc, char const* argv[] )
 
 	transposition_table.init( conf.memory );
 
-	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
+	pawn_hash_table.init( conf.pawn_hash_table_size );
 
 	std::cout << "Opening book" << std::endl;
 

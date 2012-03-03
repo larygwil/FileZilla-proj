@@ -14,7 +14,8 @@ config::config()
   time_limit(3600*1000), // In ms
   random_seed(-1), //-1 == based on time
   ponder(),
-  use_book(true)
+  use_book(true),
+  pawn_hash_table_size(100)
 {
 	if( sizeof(void*) < 8 ) {
 		// Limit default to 1GB on 32bit compile
@@ -24,8 +25,34 @@ config::config()
 	}
 }
 
-int config::init( int argc,  char const* argv[] )
+
+void config::init_book_dir( std::string const& self )
 {
+#if _MSC_VER
+	std::replace( self.begin(), self.end(), '\\', '/' );
+#endif
+	if( self.rfind('/') != std::string::npos ) {
+		book_dir = self.substr( 0, self.rfind('/') + 1 );
+	}
+#if _MSC_VER
+	if( GetFileAttributes( (book_dir + "/opening_book.db").c_str() ) == INVALID_FILE_ATTRIBUTES ) {
+		char buffer[MAX_PATH];
+		GetModuleFileName( 0, buffer, MAX_PATH );
+		buffer[MAX_PATH - 1] = 0;
+		book_dir = buffer;
+		std::replace( book_dir.begin(), book_dir.end(), '\\', '/' );
+		if( book_dir.rfind('/') != std::string::npos ) {
+			book_dir = book_dir.substr( 0, book_dir.rfind('/') + 1 );
+		}
+	}
+#endif
+}
+
+
+std::string config::init( int argc,  char const* argv[] )
+{
+	init_book_dir( argv[0] );
+
 	int i = 1;
 	for( i = 1; i < argc && argv[i][0] == '-'; ++i ) {
 		if( !strcmp(argv[i], "--moves" ) ) {
@@ -118,7 +145,13 @@ int config::init( int argc,  char const* argv[] )
 			exit(1);
 		}
 	}
-	return i;
+
+	std::string cmd;
+	if( i < argc ) {
+		cmd = argv[i];
+	}
+
+	return cmd;
 }
 
 config conf;

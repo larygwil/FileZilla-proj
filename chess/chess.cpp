@@ -40,11 +40,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include <stdlib.h>
 #include <sstream>
 
-const int TIME_LIMIT = 90000; //30000;
-
-const int PAWN_HASH_TABLE_SIZE = 100;
-
-std::string book_dir;
+const int TIME_LIMIT = 90000;
 
 void auto_play()
 {
@@ -52,7 +48,7 @@ void auto_play()
 		conf.depth = 8;
 	}
 	transposition_table.init( conf.memory );
-	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
+	pawn_hash_table.init( conf.pawn_hash_table_size );
 	unsigned long long start = get_time();
 	position p;
 
@@ -142,7 +138,7 @@ struct xboard_state
 	xboard_state()
 		: c()
 		, clock()
-		, book_( book_dir )
+		, book_( conf.book_dir )
 		, time_remaining()
 		, bonus_time()
 		, mode_(mode::force)
@@ -561,7 +557,7 @@ void xboard()
 		conf.depth = 40;
 	}
 
-	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
+	pawn_hash_table.init( conf.pawn_hash_table_size );
 
 	while( true ) {
 		std::string line;
@@ -859,29 +855,10 @@ void xboard()
 
 int main( int argc, char const* argv[] )
 {
-	std::string self = argv[0];
-#if _MSC_VER
-	std::replace( self.begin(), self.end(), '\\', '/' );
-#endif
-	if( self.rfind('/') != std::string::npos ) {
-		book_dir = self.substr( 0, self.rfind('/') + 1 );
-	}
-#if _MSC_VER
-	if( GetFileAttributes( (book_dir + "/opening_book.db").c_str() ) == INVALID_FILE_ATTRIBUTES ) {
-		char buffer[MAX_PATH];
-		GetModuleFileName( 0, buffer, MAX_PATH );
-		buffer[MAX_PATH - 1] = 0;
-		book_dir = buffer;
-		std::replace( book_dir.begin(), book_dir.end(), '\\', '/' );
-		if( book_dir.rfind('/') != std::string::npos ) {
-			book_dir = book_dir.substr( 0, book_dir.rfind('/') + 1 );
-		}
-	}
-#endif
-
 	console_init();
 
-	int i = conf.init( argc, argv );
+	std::string const command = conf.init( argc, argv );
+
 	logger::init( conf.logfile );
 
 	std::cerr << "  Octochess" << std::endl;
@@ -898,22 +875,23 @@ int main( int argc, char const* argv[] )
 		init_random(seed);
 		std::cerr << "Random seed is " << seed << std::endl;
 	}
+
 	init_zobrist_tables();
 
-	if( i < argc && !strcmp(argv[i], "auto" ) ) {
+	if( command == "auto" ) {
 		auto_play();
 	}
-	else if( i < argc && !strcmp(argv[i], "perft" ) ) {
-		pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
+	else if( command == "perft" ) {
+		pawn_hash_table.init( conf.pawn_hash_table_size );
 		perft();
 	}
-	else if( i < argc && !strcmp(argv[i], "test" ) ) {
+	else if( command == "test" ) {
 		selftest();
 	}
-	else if( i < argc && !strcmp(argv[i], "tweakgen" ) ) {
+	else if( command == "tweakgen" ) {
 		generate_test_positions();
 	}
-	else if( i < argc && !strcmp(argv[i], "tweak" ) ) {
+	else if( command == "tweak" ) {
 		tweak_evaluation();
 	}
 	else {

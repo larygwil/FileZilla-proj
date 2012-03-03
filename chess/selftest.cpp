@@ -15,8 +15,6 @@
 #include <iostream>
 #include <vector>
 
-extern const int PAWN_HASH_TABLE_SIZE = 10;
-
 struct perft_ctx {
 	perft_ctx()
 		: move_ptr(moves)
@@ -327,7 +325,7 @@ static bool do_selftest()
 
 bool selftest()
 {
-	pawn_hash_table.init( PAWN_HASH_TABLE_SIZE );
+	pawn_hash_table.init( conf.pawn_hash_table_size );
 
 	if( do_selftest() ) {
 		std::cerr << "Self test passed" << std::endl;

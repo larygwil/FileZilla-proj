@@ -11,7 +11,8 @@ struct config
 {
 	config();
 
-	int init( int argc,  char const* argv[] );
+	// Returns the command to execute
+	std::string init( int argc,  char const* argv[] );
 
 	int thread_count;
 	unsigned int memory;
@@ -28,6 +29,12 @@ struct config
 	bool ponder;
 
 	bool use_book;
+	std::string book_dir;
+
+	int pawn_hash_table_size; // In MiB
+
+private:
+	void init_book_dir( std::string const& self );
 };
 extern config conf;
 
