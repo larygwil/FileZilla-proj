@@ -274,7 +274,7 @@ public:
 		switch( phase ) {
 		case phases::hash_move:
 			phase = phases::captures_gen;
-			if( hash_move.flags & move_flags::valid ) {
+			if( !hash_move.empty() ) {
 #if 0
 				if( !is_valid_move( p_, c_, hash_move, check_ ) ) {
 					std::cerr << "Possible type-1 hash collision:" << std::endl;
@@ -305,14 +305,14 @@ public:
 			phase = phases::killer1;
 		case phases::killer1:
 			phase = phases::killer2;
-			if( (killers_.m1.flags & move_flags::valid) && killers_.m1 != hash_move && is_valid_move( p_, c_, killers_.m1, check_ ) ) {
+			if( !killers_.m1.empty() && killers_.m1 != hash_move && is_valid_move( p_, c_, killers_.m1, check_ ) ) {
 				tmp.m = killers_.m1;
 				tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
 				return &tmp;
 			}
 		case phases::killer2:
 			phase = phases::noncaptures_gen;
-			if( (killers_.m2.flags & move_flags::valid) && killers_.m2 != hash_move && killers_.m1 != killers_.m2 && is_valid_move( p_, c_, killers_.m2, check_ ) ) {
+			if( !killers_.m2.empty() && killers_.m2 != hash_move && killers_.m1 != killers_.m2 && is_valid_move( p_, c_, killers_.m2, check_ ) ) {
 				tmp.m = killers_.m2;
 				tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
 				return &tmp;
@@ -421,7 +421,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 	}
 #endif
 
-	if( !(tt_move.flags & move_flags::valid) && depth > ( depth_factor * 4 + cutoff) ) {
+	if( tt_move.empty() && depth > ( depth_factor * 4 + cutoff) ) {
 
 		step( depth - 2 * depth_factor, ply, ctx, p, hash, current_evaluation, c, check, alpha, beta, pv, false );
 

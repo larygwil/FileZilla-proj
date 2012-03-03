@@ -59,7 +59,7 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 
 	if( str == "0-0" || str == "O-O" ) {
 		m.captured_piece = pieces::none;
-		m.flags = move_flags::valid | move_flags::castle;
+		m.flags = move_flags::castle;
 		m.piece = pieces::king;
 		m.source = c ? 60 : 4;
 		m.target = c ? 62 : 6;
@@ -73,7 +73,7 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 	}
 	else if( str == "0-0-0" || str == "O-O-O" ) {
 		m.captured_piece = pieces::none;
-		m.flags = move_flags::valid | move_flags::castle;
+		m.flags = move_flags::castle;
 		m.piece = pieces::king;
 		m.source = c ? 60 : 4;
 		m.target = c ? 58 : 2;
@@ -89,26 +89,24 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 
 	unsigned char piecetype = 0;
 
-	bool promotion = false;
-	promotions::type promotion_type = promotions::queen;
+	pieces::type promotion = pieces::none;
 	// Small b not in this list intentionally, to avoid disambiguation with a4xb
 	if( len && (str[len - 1] == 'q' || str[len - 1] == 'Q' || str[len - 1] == 'r' || str[len - 1] == 'R' || str[len - 1] == 'B' || str[len - 1] == 'n' || str[len - 1] == 'N' ) ) {
-		promotion = true;
 		switch( str[len-1] ) {
 			case 'q':
 			case 'Q':
-				promotion_type = promotions::queen;
+				promotion = pieces::queen;
 				break;
 			case 'r':
 			case 'R':
-				promotion_type = promotions::rook;
+				promotion = pieces::rook;
 				break;
 			case 'B':
-				promotion_type = promotions::bishop;
+				promotion = pieces::bishop;
 				break;
 			case 'n':
 			case 'N':
-				promotion_type = promotions::knight;
+				promotion = pieces::knight;
 				break;
 		}
 		--len;
@@ -120,16 +118,14 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 		piecetype = 'P';
 	}
 	else if( len > 2 && str[len - 1] == 'b' && str[len - 2] == '=' ) {
-		promotion = true;
-		promotion_type = promotions::bishop;
+		promotion = pieces::bishop;
 		len -= 2;
 		str = str.substr(0, len);
 		piecetype = 'P';
 	}
 	else if( len == 5 && str[0] >= 'a' && str[0] <= 'h' && str[len - 1] == 'b' ) {
 		// e7e8b
-		promotion = true;
-		promotion_type = promotions::bishop;
+		promotion = pieces::bishop;
 		--len;
 		str = str.substr(0, len);
 		piecetype = 'P';
@@ -290,10 +286,7 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 			continue;
 		}
 
-		if( promotion && !(it->m.flags & move_flags::promotion) ) {
-			continue;
-		}
-		if( promotion && it->m.promotion != promotion_type ) {
+		if( promotion != pieces::none && promotion != ((it->m.flags & move_flags::promotion_mask) >> move_flags::promotion_shift) ) {
 			continue;
 		}
 
@@ -326,8 +319,8 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 			if( second_row != -1 ) {
 				std::cerr << " target_rank=" << second_row;
 			}
-			if( promotion ) {
-				std::cerr << " promotion=" << promotion_type << std::endl;
+			if( promotion != pieces::none ) {
+				std::cerr << " promotion=" << promotion << std::endl;
 			}
 			std::cerr << " capture=" << capture << std::endl;
 		}
@@ -409,18 +402,19 @@ std::string move_to_string( move const& m, bool padding )
 	ret += 'a' + m.target % 8;
 	ret += '1' + m.target / 8;
 
-	if( m.flags & move_flags::promotion ) {
-		switch( m.promotion ) {
-			case promotions::knight:
+	int promotion = m.flags & move_flags::promotion_mask;
+	if( promotion ) {
+		switch( promotion ) {
+			case move_flags::promotion_knight:
 				ret += "=N";
 				break;
-			case promotions::bishop:
+			case move_flags::promotion_bishop:
 				ret += "=B";
 				break;
-			case promotions::rook:
+			case move_flags::promotion_rook:
 				ret += "=R";
 				break;
-			case promotions::queen:
+			case move_flags::promotion_queen:
 				ret += "=Q";
 				break;
 		}
@@ -591,11 +585,12 @@ static void do_apply_move( position& p, move const& m, color::type c )
 		p.can_en_passant = 0;
 	}
 
-	if( m.flags & move_flags::promotion ) {
-		p.bitboards[c].b[bb_type::knights + m.promotion] ^= target_square;
+	int promotion = m.flags & move_flags::promotion_mask;
+	if( promotion ) {
+		p.bitboards[c].b[promotion >> move_flags::promotion_shift] ^= target_square;
 
 		p.material[c] -= get_material_value( pieces::pawn );
-		p.material[c] += get_material_value( static_cast<pieces::type>(pieces::knight + m.promotion) );
+		p.material[c] += get_material_value( static_cast<pieces::type>(promotion >> move_flags::promotion_shift) );
 	}
 	else {
 		p.bitboards[c].b[m.piece] ^= target_square;
@@ -618,7 +613,7 @@ void apply_move( position& p, move const& m, color::type c )
 {
 	do_apply_move( p, m, c );
 
-	if( m.piece == pieces::pawn || m.captured_piece == pieces::pawn ) {
+	if( m.piece == pieces::pawn || m.captured_piece != pieces::none ) {
 		if( m.captured_piece == pieces::pawn ) {
 			if( m.flags & move_flags::enpassant ) {
 				unsigned char ep = (m.target & 0x7) | (m.source & 0x38);
@@ -630,7 +625,7 @@ void apply_move( position& p, move const& m, color::type c )
 		}
 		if( m.piece == pieces::pawn ) {
 			p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.source);
-			if( !(m.flags & move_flags::promotion) ) {
+			if( !(m.flags & move_flags::promotion_mask) ) {
 				p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.target );
 			}
 		}
@@ -1059,15 +1054,13 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 				}
 			}
 			else if( m.piece == pieces::pawn ) {
-				if( c == color::white ) {
-					if( m.target - m.source == 16 ) {
+				if( m.flags & move_flags::pawn_double_move ) {
+					if( c == color::white ) {
 						if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (1ull << (m.source + 8) ) ) {
 							return false;
 						}
 					}
-				}
-				else {
-					if( m.source - m.target == 16 ) {
+					else {
 						if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (1ull << (m.source - 8) ) ) {
 							return false;
 						}

@@ -18,16 +18,6 @@ enum type {
 }
 
 
-namespace promotions {
-enum type {
-	knight,
-	bishop,
-	rook,
-	queen
-};
-}
-
-
 namespace color {
 enum type {
 	white = 0,
@@ -101,11 +91,16 @@ struct position
 
 namespace move_flags {
 enum type {
-	valid = 1,
-	enpassant = 2,
-	promotion = 4,
-	castle = 8,
-	pawn_double_move = 16
+	none = 0,
+	enpassant = 1,
+	castle = 2,
+	pawn_double_move = 4,
+	promotion_knight = 16,
+	promotion_bishop = 24,
+	promotion_rook = 32,
+	promotion_queen = 40,
+	promotion_mask = 56,
+	promotion_shift = 3
 };
 }
 
@@ -118,21 +113,21 @@ struct move
 		, source()
 		, target()
 		, captured_piece()
-		, promotion(promotions::queen)
 	{}
+
+	bool empty() const { return piece == pieces::none; }
 
 	unsigned char flags;
 	pieces::type piece;
 	unsigned char source;
 	unsigned char target;
 	pieces::type captured_piece;
-	unsigned char promotion;
 
 	bool operator!=( move const& rhs ) const {
-		return flags != rhs.flags || piece != rhs.piece || source != rhs.source || target != rhs.target || promotion != rhs.promotion || captured_piece != rhs.captured_piece;
+		return flags != rhs.flags || piece != rhs.piece || source != rhs.source || target != rhs.target || captured_piece != rhs.captured_piece;
 	}
 	bool operator==( move const& rhs ) const {
-		return flags == rhs.flags && piece == rhs.piece && source == rhs.source && target == rhs.target && promotion == rhs.promotion && captured_piece == rhs.captured_piece;
+		return flags == rhs.flags && piece == rhs.piece && source == rhs.source && target == rhs.target && captured_piece == rhs.captured_piece;
 	}
 };
 

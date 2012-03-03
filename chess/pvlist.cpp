@@ -39,7 +39,7 @@ pv_entry* pv_entry_pool::get()
 			last_free_ = 0;
 		}
 		ret->next_ = 0;
-		ret->best_move_.flags = 0;
+		ret->best_move_.piece = pieces::none;
 	}
 	else {
 		ret = new pv_entry();
@@ -83,7 +83,7 @@ void pv_entry_pool::set_pv_move( pv_entry* pv, move const& m )
 
 void pv_entry_pool::clear_pv_move( pv_entry* pv )
 {
-	pv->best_move_.flags = 0;
+	pv->best_move_.piece = pieces::none;
 	if( pv->next() ) {
 		release( pv->next_ );
 		pv->next_ = 0;
@@ -98,7 +98,7 @@ void print_pv( pv_entry const* pv, position p, color::type c )
 std::string pv_to_string( pv_entry const* pv, position p, color::type c )
 {
 	std::stringstream ss;
-	while( pv && pv->get_best_move().flags & move_flags::valid ) {
+	while( pv && !pv->get_best_move().empty() ) {
 		ss << move_to_string( pv->get_best_move() ) << " ";
 		apply_move( p, pv->get_best_move(), c );
 
@@ -116,7 +116,7 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 	// thus recover a more complete pv.
 	int depth = 0;
 	pv_entry* prev = 0;
-	while( pv && pv->get_best_move().flags & move_flags::valid ) {
+	while( pv && !pv->get_best_move().empty() ) {
 		++depth;
 		apply_move( p, pv->get_best_move(), c );
 
@@ -144,7 +144,7 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 		move best;
 		short ev;
 		score_type::type s = transposition_table.lookup( hash, c, r, 0, result::loss, result::win, ev, best );
-		if( s != score_type::exact || !(best.flags & move_flags::valid) ) {
+		if( s != score_type::exact || best.empty() ) {
 			break;
 		}
 

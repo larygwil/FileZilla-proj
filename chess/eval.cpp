@@ -838,6 +838,7 @@ short evaluate_fast( position const& p, color::type c )
 		value += scaled_pawns;
 	}
 
+	ASSERT( scaled_pawns == p.pawns.eval );
 	ASSERT( value > result::loss && value < result::win );
 
 	return value;
@@ -873,6 +874,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		short fresh_eval = evaluate_fast( p, c );
 		if( fresh_eval != current_evaluation ) {
 			std::cerr << "BAD" << std::endl;
+			abort();
 		}
 	}
 #endif
@@ -911,26 +913,27 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		}
 	}
 
-	if( m.flags & move_flags::promotion ) {
+	int promotion = m.flags & move_flags::promotion_mask;
+	if( promotion ) {
 		current_evaluation -= pawn_values[c][m.source] + eval_values.material_values[pieces::pawn];
-		switch( m.promotion ) {
-			case promotions::knight:
+		switch( promotion ) {
+			case move_flags::promotion_knight:
 				current_evaluation += knight_values[c][m.target];
 				break;
-			case promotions::bishop:
+			case move_flags::promotion_bishop:
 				current_evaluation += bishop_values[c][m.target];
 				if( popcount( p.bitboards[c].b[bb_type::bishops] ) == 1 ) {
 					current_evaluation += eval_values.double_bishop;
 				}
 				break;
-			case promotions::rook:
+			case move_flags::promotion_rook:
 				current_evaluation += rook_values[c][m.target];
 				break;
-			case promotions::queen:
+			case move_flags::promotion_queen:
 				current_evaluation += queen_values[c][m.target];
 				break;
 		}
-		current_evaluation += eval_values.material_values[pieces::knight + m.promotion];
+		current_evaluation += eval_values.material_values[promotion >> move_flags::promotion_shift];
 	}
 	else {
 		current_evaluation -= get_piece_square_value( c, m.piece, m.source );
@@ -938,7 +941,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 	}
 
 	outPawns = p.pawns;
-	if( m.piece == pieces::pawn || m.captured_piece == pieces::pawn ) {
+	if( m.piece == pieces::pawn || m.captured_piece != pieces::none ) {
 		short material[2];
 		material[0] = p.material[0];
 		material[1] = p.material[1];
@@ -946,9 +949,10 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		if( m.captured_piece != pieces::none ) {
 			material[1-c] -= get_material_value( m.captured_piece );
 		}
-		if( m.flags & move_flags::promotion ) {
+		int promotion = m.flags & move_flags::promotion_mask;
+		if( promotion ) {
 			material[c] -= get_material_value( pieces::pawn );
-			material[c] += get_material_value( static_cast<pieces::type>(pieces::knight + m.promotion) );
+			material[c] += get_material_value( static_cast<pieces::type>(promotion >> move_flags::promotion_shift) );
 		}
 
 		unsigned long long pawnMap[2];
@@ -969,7 +973,7 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		if( m.piece == pieces::pawn ) {
 			pawnMap[c] &= ~(1ull << m.source );
 			outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.source );
-			if( !(m.flags & move_flags::promotion) ) {
+			if( !promotion ) {
 				outPawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.target );
 				pawnMap[c] |= 1ull << m.target;
 			}
@@ -997,19 +1001,20 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 	{
 		position p2 = p;
 		p2.init_pawn_structure();
+		ASSERT( p.pawns.eval == p2.pawns.eval );
+		ASSERT( p.pawns.hash == p2.pawns.hash );
 
 		position p4 = p;
 		p4.init_pawn_structure();
 
-		bool captured;
-		apply_move( p2, m, c, captured );
+		apply_move( p2, m, c );
 		short fresh_eval = evaluate_fast( p2, c );
 		if( fresh_eval != current_evaluation ) {
+			fresh_eval = evaluate_fast( p2, c );
 			std::cerr << "BAD" << std::endl;
 
 			position p3 = p;
-			bool captured;
-			apply_move( p3, m, c, captured );
+			apply_move( p3, m, c );
 
 			evaluate_move( p, c, evaluate_fast( p, c ), m, outPawns );
 		}

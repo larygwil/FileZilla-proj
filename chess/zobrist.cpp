@@ -201,21 +201,22 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 		}
 	}
 
-	if( !(m.flags & move_flags::promotion ) ) {
+	int promotion = m.flags & move_flags::promotion_mask;
+	if( !promotion ) {
 		hash ^= get_piece_hash( m.piece, c, m.target );
 	}
 	else {
-		switch( m.promotion ) {
-			case promotions::knight:
+		switch( promotion ) {
+			case move_flags::promotion_knight:
 				hash ^= knights[c][m.target];
 				break;
-			case promotions::bishop:
+			case move_flags::promotion_bishop:
 				hash ^= bishops[c][m.target];
 				break;
-			case promotions::rook:
+			case move_flags::promotion_rook:
 				hash ^= rooks[c][m.target];
 				break;
-			case promotions::queen:
+			case move_flags::promotion_queen:
 				hash ^= queens[c][m.target];
 				break;
 		}

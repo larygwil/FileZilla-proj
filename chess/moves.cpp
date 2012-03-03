@@ -20,7 +20,7 @@ namespace {
 
 void do_add_move( move_info*& moves, pieces::type const& pi,
 				  unsigned char const& source, unsigned char const& target,
-				  int flags, pieces::type captured, promotions::type promotion = promotions::queen )
+				  int flags, pieces::type captured )
 {
 	move_info& mi= *(moves++);
 
@@ -29,14 +29,13 @@ void do_add_move( move_info*& moves, pieces::type const& pi,
 	mi.m.source = source;
 	mi.m.target = target;
 	mi.m.captured_piece = captured;
-	mi.m.promotion = promotion;
 }
 
 // Adds the move if it does not result in self getting into check
 void add_if_legal( move_info*& moves, check_map const& check,
 				  pieces::type const& pi,
 				  unsigned char const& source, unsigned char const& target,
-				  int flags, pieces::type captured, promotions::type promotion = promotions::queen )
+				  int flags, pieces::type captured )
 {
 	unsigned char const& cv_old = check.board[source];
 	unsigned char const& cv_new = check.board[target];
@@ -56,7 +55,7 @@ void add_if_legal( move_info*& moves, check_map const& check,
 		}
 	}
 
-	do_add_move( moves, pi, source, target, flags, captured, promotion );
+	do_add_move( moves, pi, source, target, flags, captured );
 }
 
 void add_if_legal_king( position const& p, color::type c,
@@ -74,7 +73,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves,
 					  unsigned char const& source, unsigned char const& target )
 {
 	pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), target );
-	add_if_legal_king( p, c, moves, source, target, move_flags::valid, captured );
+	add_if_legal_king( p, c, moves, source, target, move_flags::none, captured );
 }
 
 
@@ -102,7 +101,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 	if( p.castle[c] & 0x2 ) {
 		if( p.get_occupancy( 0xeull << row ) == 0 && !(possible_king_moves[2 + row] & other_kings ) ) {
 			if( !detect_check( p, c, 3 + row, 3 + row ) ) {
-				add_if_legal_king( p, c, moves, 4 + row, 2 + row, move_flags::valid | move_flags::castle, pieces::none );
+				add_if_legal_king( p, c, moves, 4 + row, 2 + row, move_flags::castle, pieces::none );
 			}
 		}
 	}
@@ -110,7 +109,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 	if( p.castle[c] & 0x1 ) {
 		if( p.get_occupancy( 0x60ull << row ) == 0 && !(possible_king_moves[6 + row] & other_kings ) ) {
 			if( !detect_check( p, c, 5 + row, 5 + row ) ) {
-				add_if_legal_king( p, c, moves, 4 + row, 6 + row, move_flags::valid | move_flags::castle, pieces::none );
+				add_if_legal_king( p, c, moves, 4 + row, 6 + row, move_flags::castle, pieces::none );
 			}
 		}
 	}
@@ -128,7 +127,7 @@ void calc_moves_queen( position const& p, color::type c, move_info*& moves, chec
 		unsigned long long queen_move = bitscan_unset( possible_moves );
 
 		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), queen_move );
-		add_if_legal( moves, check, pieces::queen, queen, queen_move, move_flags::valid, captured );
+		add_if_legal( moves, check, pieces::queen, queen, queen_move, move_flags::none, captured );
 	}
 }
 
@@ -155,7 +154,7 @@ void calc_moves_bishop( position const& p, color::type c, move_info*& moves, che
 		unsigned long long bishop_move = bitscan_unset( possible_moves );
 
 		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), bishop_move );
-		add_if_legal( moves, check, pieces::bishop, bishop, bishop_move, move_flags::valid, captured );
+		add_if_legal( moves, check, pieces::bishop, bishop, bishop_move, move_flags::none, captured );
 	}
 }
 
@@ -182,7 +181,7 @@ void calc_moves_rook( position const& p, color::type c, move_info*& moves, check
 		unsigned long long rook_move = bitscan_unset( possible_moves );
 
 		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), rook_move );
-		add_if_legal( moves, check, pieces::rook, rook, rook_move, move_flags::valid, captured );
+		add_if_legal( moves, check, pieces::rook, rook, rook_move, move_flags::none, captured );
 	}
 }
 
@@ -201,7 +200,7 @@ void calc_moves_knight( position const& p, color::type c, move_info*& moves, che
 						unsigned char source, unsigned char target )
 {
 	pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), target );
-	add_if_legal( moves, check, pieces::knight, source, target, move_flags::valid, captured );
+	add_if_legal( moves, check, pieces::knight, source, target, move_flags::none, captured );
 }
 
 void calc_moves_knight( position const& p, color::type c, move_info*& moves, check_map const& check,
@@ -298,7 +297,7 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 			}
 		}
 
-		do_add_move( moves, pieces::pawn, pawn, enpassant, move_flags::valid | move_flags::enpassant, pieces::pawn );
+		do_add_move( moves, pieces::pawn, pawn, enpassant, move_flags::enpassant, pieces::pawn );
 	}
 }
 
@@ -313,13 +312,13 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), pawn_move );
 
 		if( pawn_move / 8 == ( c ? 0 : 7 ) )  {
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, captured, promotions::queen );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, captured, promotions::rook );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, captured, promotions::bishop );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, captured, promotions::knight );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_queen, captured );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_rook, captured );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_bishop, captured );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_knight, captured );
 		}
 		else {
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid, captured );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::none, captured );
 		}
 	}
 
@@ -332,13 +331,13 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 	if( !p.is_occupied_square( old_col + new_row * 8 ) ) {
 		unsigned char pawn_move = old_col + new_row * 8;
 		if( new_row == 0 || new_row == 7 ) {
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, pieces::none, promotions::queen );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, pieces::none, promotions::rook );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, pieces::none, promotions::bishop );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid|move_flags::promotion, pieces::none, promotions::knight );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_queen, pieces::none );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_rook, pieces::none );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_bishop, pieces::none );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_knight, pieces::none );
 		}
 		else {
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::valid, pieces::none );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::none, pieces::none );
 		}
 
 		if( old_row == ( (c == color::white) ? 1 : 6) ) {
@@ -346,7 +345,7 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 			new_row = (c == color::white) ? (old_row + 2) : (old_row - 2);
 
 			if( !p.is_occupied_square( old_col + new_row * 8 ) ) {
-				add_if_legal( moves, check, pieces::pawn, pawn, old_col + new_row * 8, move_flags::valid | move_flags::pawn_double_move, pieces::none );
+				add_if_legal( moves, check, pieces::pawn, pawn, old_col + new_row * 8, move_flags::pawn_double_move, pieces::none );
 			}
 		}
 	}

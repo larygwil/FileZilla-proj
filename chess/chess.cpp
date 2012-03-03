@@ -456,7 +456,7 @@ void xboard_thread::start( bool just_ponder )
 	join();
 	do_abort = false;
 	abort = false;
-	best_move.flags = 0;
+	best_move.piece = pieces::none;
 	ponder_ = just_ponder;
 
 	spawn();
@@ -469,7 +469,7 @@ move xboard_thread::stop()
 	abort = true;
 	join();
 	move m = best_move;
-	best_move.flags = 0;
+	best_move.piece = pieces::none;
 
 	return m;
 }
@@ -604,7 +604,7 @@ void xboard()
 			break;
 		}
 		else if( line == "?" ) {
-			if( best_move.flags & move_flags::valid ) {
+			if( !best_move.empty() ) {
 				std::cout << "move " << move_to_string( best_move ) << std::endl;
 				state.apply( best_move );
 			}

@@ -101,11 +101,10 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, un
 	v |= static_cast<unsigned long long>(remaining_depth) << field_shifts::depth;
 	v |= (
 				(static_cast<unsigned long long>(best_move.flags) ) |
-				(static_cast<unsigned long long>(best_move.piece) << 5 ) |
-				(static_cast<unsigned long long>(best_move.source) << 8) |
-				(static_cast<unsigned long long>(best_move.target) << 14) |
-				(static_cast<unsigned long long>(best_move.captured_piece) << 20) |
-				(static_cast<unsigned long long>(best_move.promotion) << 23) ) << field_shifts::move;
+				(static_cast<unsigned long long>(best_move.piece) << 6 ) |
+				(static_cast<unsigned long long>(best_move.source) << 9) |
+				(static_cast<unsigned long long>(best_move.target) << 15) |
+				(static_cast<unsigned long long>(best_move.captured_piece) << 21) ) << field_shifts::move;
 
 	v |= static_cast<unsigned long long>(t) << field_shifts::node_type;
 	v |= static_cast<unsigned long long>(eval) << field_shifts::score;
@@ -181,12 +180,11 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 			continue;
 		}
 
-		best_move.flags = (v >> (field_shifts::move)) & 0x1F;
-		best_move.piece = static_cast<pieces::type>((v >> (field_shifts::move + 5)) & 0x07);
-		best_move.source = (v >> (field_shifts::move + 8)) & 0x3f;
-		best_move.target = (v >> (field_shifts::move + 14)) & 0x3f;
-		best_move.captured_piece = static_cast<pieces::type>((v >> (field_shifts::move + 20)) & 0x07);
-		best_move.promotion = (v >> (field_shifts::move + 23)) & 0x03;
+		best_move.flags = (v >> (field_shifts::move)) & 0x3F;
+		best_move.piece = static_cast<pieces::type>((v >> (field_shifts::move + 6)) & 0x07);
+		best_move.source = (v >> (field_shifts::move + 9)) & 0x3f;
+		best_move.target = (v >> (field_shifts::move + 15)) & 0x3f;
+		best_move.captured_piece = static_cast<pieces::type>((v >> (field_shifts::move + 21)) & 0x07);
 
 		unsigned char depth = (v >> field_shifts::depth) & field_masks::depth;
 
@@ -215,7 +213,7 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 		}
 
 #if USE_STATISTICS
-		if( best_move.flags & move_flags::valid ) {
+		if( !best_move.empty() ) {
 			++stats_.best_move;
 		}
 		else {
@@ -230,7 +228,7 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 	++stats_.misses;
 #endif
 
-	best_move.flags = 0;
+	best_move.piece = pieces::none;
 	return score_type::none;
 }
 
