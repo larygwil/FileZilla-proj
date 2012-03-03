@@ -3,8 +3,12 @@
 
 #include <cmath>
 
+#include "platform.hpp"
+
 int main()
 {
+	std::cout << "#include \"platform.hpp\"" << std::endl << std::endl;
+
 	/*std::cout << "uint64_t mobility_block[64][64] = {" << std::endl;
 
 	for( unsigned int source = 0; source < 64; ++source ) {
