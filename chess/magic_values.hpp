@@ -1,4 +1,4 @@
-extern unsigned long long const rook_magic_mask[64] = {
+extern uint64_t const rook_magic_mask[64] = {
 	0x000101010101017eull,
 	0x000202020202027cull,
 	0x000404040404047aull,
@@ -65,7 +65,7 @@ extern unsigned long long const rook_magic_mask[64] = {
 	0x7e80808080808000ull
 };
 
-extern unsigned long long const rook_magic_multiplier[64] = {
+extern uint64_t const rook_magic_multiplier[64] = {
 	0x8080008040002010ull,
 	0x4180200040008010ull,
 	0x8100104100200008ull,
@@ -132,7 +132,7 @@ extern unsigned long long const rook_magic_multiplier[64] = {
 	0x8010408409044026ull
 };
 
-extern unsigned long long const rook_magic_shift[64] = {
+extern uint64_t const rook_magic_shift[64] = {
 	12ull,
 	11ull,
 	11ull,
@@ -199,7 +199,7 @@ extern unsigned long long const rook_magic_shift[64] = {
 	12ull
 };
 
-extern unsigned long long const bishop_magic_mask[64] = {
+extern uint64_t const bishop_magic_mask[64] = {
         0x0040201008040200ull,
         0x0000402010080400ull,
         0x0000004020100a00ull,
@@ -266,7 +266,7 @@ extern unsigned long long const bishop_magic_mask[64] = {
         0x0040201008040200ull
 };
 
-extern unsigned long long const bishop_magic_multiplier[64] = {
+extern uint64_t const bishop_magic_multiplier[64] = {
         0x8040020084009082ull,
         0x0002820204050080ull,
         0x38511102060e0000ull,
@@ -333,7 +333,7 @@ extern unsigned long long const bishop_magic_multiplier[64] = {
         0x6440020400408b09ull
 };
 
-extern unsigned long long const bishop_magic_shift[64] = {
+extern uint64_t const bishop_magic_shift[64] = {
          6ull,
          5ull,
          5ull,

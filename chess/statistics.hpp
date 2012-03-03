@@ -13,14 +13,14 @@ struct type {
 	{
 	}
 
-	unsigned long long full_width_nodes;
-	unsigned long long quiescence_nodes;
+	uint64_t full_width_nodes;
+	uint64_t quiescence_nodes;
 };
 }
 
 extern statistics::type stats;
 
-void print_stats( unsigned long long start, unsigned long long stop );
+void print_stats( uint64_t start, uint64_t stop );
 void reset_stats( );
 
 #endif

@@ -5,7 +5,7 @@
 
 int main()
 {
-	/*std::cout << "unsigned long long mobility_block[64][64] = {" << std::endl;
+	/*std::cout << "uint64_t mobility_block[64][64] = {" << std::endl;
 
 	for( unsigned int source = 0; source < 64; ++source ) {
 		std::cout << "\t{" << std::endl;
@@ -13,7 +13,7 @@ int main()
 		for( unsigned int blocker = 0; blocker < 64; ++blocker ) {
 			std::cout << "\t\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;
@@ -65,12 +65,12 @@ int main()
 	}
 	std::cout << "};" << std::endl << std::endl << std::endl;*/
 
-	std::cout << "extern unsigned long long const visibility_bishop[64] = {" << std::endl;
+	std::cout << "extern uint64_t const visibility_bishop[64] = {" << std::endl;
 
 	for( unsigned int source = 0; source < 64; ++source ) {
 		std::cout << "\t0x";
 
-		unsigned long long v = 0;
+		uint64_t v = 0;
 
 		int source_col = source % 8;
 		int source_row = source / 8;
@@ -97,12 +97,12 @@ int main()
 	std::cout << "};" << std::endl << std::endl << std::endl;
 
 	{
-		std::cout << "extern unsigned long long const visibility_rook[64] = {" << std::endl;
+		std::cout << "extern uint64_t const visibility_rook[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;
@@ -133,14 +133,14 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const pawn_control[2][64] = {" << std::endl;
+		std::cout << "extern uint64_t const pawn_control[2][64] = {" << std::endl;
 
 		for( int c = 0; c < 2; ++c ) {
 			std::cout << "\t{" << std::endl;
 			for( unsigned int source = 0; source < 64; ++source ) {
 				std::cout << "\t\t0x";
 
-				unsigned long long v = 0;
+				uint64_t v = 0;
 
 				int source_col = source % 8;
 				int source_row = source / 8;
@@ -215,12 +215,12 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const ray_n[64] = {" << std::endl;
+		std::cout << "extern uint64_t const ray_n[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;
@@ -242,12 +242,12 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const ray_e[64] = {" << std::endl;
+		std::cout << "extern uint64_t const ray_e[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;
@@ -269,12 +269,12 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const ray_s[64] = {" << std::endl;
+		std::cout << "extern uint64_t const ray_s[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;
@@ -296,12 +296,12 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const ray_w[64] = {" << std::endl;
+		std::cout << "extern uint64_t const ray_w[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;
@@ -323,12 +323,12 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const ray_ne[64] = {" << std::endl;
+		std::cout << "extern uint64_t const ray_ne[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;
@@ -351,12 +351,12 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const ray_se[64] = {" << std::endl;
+		std::cout << "extern uint64_t const ray_se[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;
@@ -379,12 +379,12 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const ray_sw[64] = {" << std::endl;
+		std::cout << "extern uint64_t const ray_sw[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;
@@ -407,12 +407,12 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const ray_nw[64] = {" << std::endl;
+		std::cout << "extern uint64_t const ray_nw[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;
@@ -435,14 +435,14 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const king_pawn_shield[2][64] = {" << std::endl;
+		std::cout << "extern uint64_t const king_pawn_shield[2][64] = {" << std::endl;
 
 		for( int c = 0; c < 2; ++c ) {
 			std::cout << "\t{" << std::endl;
 			for( unsigned int source = 0; source < 64; ++source ) {
 				std::cout << "\t\t0x";
 
-				unsigned long long v = 0;
+				uint64_t v = 0;
 
 				int source_col = source % 8;
 				int source_row = source / 8;
@@ -491,12 +491,12 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const isolated_pawns[64] = {" << std::endl;
+		std::cout << "extern uint64_t const isolated_pawns[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 
@@ -521,12 +521,12 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const possible_king_moves[64] = {" << std::endl;
+		std::cout << "extern uint64_t const possible_king_moves[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;
@@ -557,12 +557,12 @@ int main()
 	}
 
 	{
-		std::cout << "extern unsigned long long const possible_knight_moves[64] = {" << std::endl;
+		std::cout << "extern uint64_t const possible_knight_moves[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
 			std::cout << "\t0x";
 
-			unsigned long long v = 0;
+			uint64_t v = 0;
 
 			int source_col = source % 8;
 			int source_row = source / 8;

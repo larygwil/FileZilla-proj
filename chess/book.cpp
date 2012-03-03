@@ -295,7 +295,7 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 	impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data) );
 
 	if( ret.empty() && allow_transpositions ) {
-		unsigned long long hash = get_zobrist_hash( p );
+		uint64_t hash = get_zobrist_hash( p );
 
 		std::stringstream ss;
 		ss << "SELECT move, forecast, searchdepth, eval_version, folded_forecast, folded_depth FROM book WHERE position = (SELECT id FROM position WHERE hash=" << static_cast<sqlite3_int64>(hash) << " LIMIT 1) ORDER BY forecast DESC,searchdepth DESC";
@@ -340,7 +340,7 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 		apply_move( p, *it, c );
 		c = static_cast<color::type>(1-c);
 	}
-	unsigned long long hash = get_zobrist_hash( p );
+	uint64_t hash = get_zobrist_hash( p );
 
 	std::stringstream ss;
 	ss << "BEGIN TRANSACTION;";
@@ -367,7 +367,7 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 
 namespace {
 extern "C" int count_cb( void* p, int, char** data, char** /*names*/ ) {
-	unsigned long long* count = reinterpret_cast<unsigned long long*>(p);
+	uint64_t* count = reinterpret_cast<uint64_t*>(p);
 	*count = atoll( *data );
 
 	return 0;
@@ -375,7 +375,7 @@ extern "C" int count_cb( void* p, int, char** data, char** /*names*/ ) {
 }
 
 
-unsigned long long book::size()
+uint64_t book::size()
 {
 	scoped_lock l(impl_->mtx);
 
@@ -385,7 +385,7 @@ unsigned long long book::size()
 
 	std::string query = "SELECT COUNT(id) FROM position;";
 
-	unsigned long long count = 0;
+	uint64_t count = 0;
 	impl_->query( query, &count_cb, reinterpret_cast<void*>(&count) );
 
 	return count;
@@ -411,7 +411,7 @@ void book::mark_for_processing( std::vector<move> const& history )
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
 		apply_move( p, *it, c );
 		c = static_cast<color::type>(1-c);
-		unsigned long long hash = get_zobrist_hash( p );
+		uint64_t hash = get_zobrist_hash( p );
 
 		std::string hs = history_to_string( history.begin(), it + 1 );
 		ss << "INSERT OR IGNORE INTO position (pos, hash) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ");";
@@ -575,7 +575,7 @@ void book::fold()
 {
 	scoped_lock l(impl_->mtx);
 
-	unsigned long long max_length = 0;
+	uint64_t max_length = 0;
 	std::string query = "BEGIN TRANSACTION; SELECT LENGTH(pos) FROM position ORDER BY LENGTH(pos) DESC LIMIT 1;";
 	if( !impl_->query( query, &count_cb, &max_length ) ) {
 		return;
@@ -596,7 +596,7 @@ void book::fold()
 	std::cerr << " done" << std::endl;
 
 	std::cerr << "Folding";
-	for( unsigned long long i = max_length; i > 0; i -= 2 ) {
+	for( uint64_t i = max_length; i > 0; i -= 2 ) {
 		std::cerr << ".";
 		std::stringstream ss;
 		ss << "SELECT id, pos FROM position WHERE length(pos) = " << i << ";";
@@ -617,12 +617,12 @@ namespace {
 extern "C" int stats_processed_cb( void* p, int, char** data, char** /*names*/ ) {
 	book_stats* stats = reinterpret_cast<book_stats*>(p);
 
-	long long depth = atoll( data[0] ) / 2;
-	long long processed = atoll( data[1] );
+	int64_t depth = atoll( data[0] ) / 2;
+	int64_t processed = atoll( data[1] );
 
 	if( depth > 0 && processed > 0 ) {
-		stats->data[depth].processed = static_cast<unsigned long long>(processed);
-		stats->total_processed += static_cast<unsigned long long>(processed);
+		stats->data[depth].processed = static_cast<uint64_t>(processed);
+		stats->total_processed += static_cast<uint64_t>(processed);
 	}
 
 	return 0;
@@ -631,12 +631,12 @@ extern "C" int stats_processed_cb( void* p, int, char** data, char** /*names*/ )
 extern "C" int stats_queued_cb( void* p, int, char** data, char** /*names*/ ) {
 	book_stats* stats = reinterpret_cast<book_stats*>(p);
 
-	long long depth = atoll( data[0] ) / 2;
-	long long queued = atoll( data[1] );
+	int64_t depth = atoll( data[0] ) / 2;
+	int64_t queued = atoll( data[1] );
 
 	if( depth > 0 && queued > 0 ) {
-		stats->data[depth].queued = static_cast<unsigned long long>(queued);
-		stats->total_queued += static_cast<unsigned long long>(queued);
+		stats->data[depth].queued = static_cast<uint64_t>(queued);
+		stats->total_queued += static_cast<uint64_t>(queued);
 	}
 
 	return 0;

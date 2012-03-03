@@ -7,17 +7,17 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-unsigned long long timer_precision()
+uint64_t timer_precision()
 {
 	return 1000000ull;
 }
 
-unsigned long long get_time()
+uint64_t get_time()
 {
 	timeval tv = {0, 0};
 	gettimeofday( &tv, 0 );
 
-	unsigned long long ret = static_cast<unsigned long long>(tv.tv_sec) * 1000 * 1000 + tv.tv_usec;
+	uint64_t ret = static_cast<uint64_t>(tv.tv_sec) * 1000 * 1000 + tv.tv_usec;
 	return ret;
 }
 
@@ -81,7 +81,7 @@ void condition::wait( scoped_lock& l )
 
 typedef char static_assertion_sizeof_tv_nsec[(sizeof(timespec::tv_nsec)==8)?1:-1];
 
-void condition::wait( scoped_lock& l, unsigned long long timeout )
+void condition::wait( scoped_lock& l, uint64_t timeout )
 {
 	if( signalled_ ) {
 		signalled_ = false;
@@ -209,10 +209,10 @@ int get_system_memory()
 }
 
 
-void* page_aligned_malloc( unsigned long long size )
+void* page_aligned_malloc( uint64_t size )
 {
-	unsigned long long page_size = get_page_size();
-	unsigned long long alloc = page_size + size;
+	uint64_t page_size = get_page_size();
+	uint64_t alloc = page_size + size;
 	if( size % page_size ) {
 		alloc += page_size - size % page_size;
 	}
@@ -220,7 +220,7 @@ void* page_aligned_malloc( unsigned long long size )
 	void* p = mmap( 0, alloc, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0 );
 
 	if( p && p != MAP_FAILED ) {
-		*reinterpret_cast<unsigned long long*>(p) = alloc;
+		*reinterpret_cast<uint64_t*>(p) = alloc;
 		return reinterpret_cast<char*>(p) + page_size;
 	}
 	else {
@@ -233,9 +233,9 @@ void* page_aligned_malloc( unsigned long long size )
 void aligned_free( void* p )
 {
 	if( p ) {
-		unsigned long long page_size = get_page_size();
+		uint64_t page_size = get_page_size();
 		p = reinterpret_cast<char*>(p) - page_size;
-		unsigned long long alloc = *reinterpret_cast<unsigned long long*>(p);
+		uint64_t alloc = *reinterpret_cast<uint64_t*>(p);
 		int res = munmap( p, alloc );
 		if( res ) {
 			std::cerr << "Deallocation failed: " << errno << std::endl;
@@ -244,8 +244,8 @@ void aligned_free( void* p )
 }
 
 
-unsigned long long get_page_size()
+uint64_t get_page_size()
 {
-	return static_cast<unsigned long long>(getpagesize());
+	return static_cast<uint64_t>(getpagesize());
 }
 

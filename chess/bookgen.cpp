@@ -51,7 +51,7 @@ bool deepen_move( book& b, position const& p, color::type c, seen_positions cons
 	position new_pos = p;
 	apply_move( new_pos, m, c );
 
-	unsigned long long new_hash = get_zobrist_hash( new_pos );
+	uint64_t new_hash = get_zobrist_hash( new_pos );
 	short value;
 	if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
 		value = 0;
@@ -94,7 +94,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 
 	std::vector<book_entry> entries;
 
-	unsigned long long const hash = get_zobrist_hash( p );
+	uint64_t const hash = get_zobrist_hash( p );
 
 	for( move_info const* it = moves; it != pm; ++it ) {
 		context ctx;
@@ -104,7 +104,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 		position new_pos = p;
 		apply_move( new_pos, it->m, c );
 
-		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
+		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
 
 		short value;
 		if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
@@ -160,7 +160,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 			position::pawn_structure pawns;
 			short new_eval = evaluate_move( p, c, eval, entry.m, pawns );
 
-			unsigned long long new_hash = update_zobrist_hash( p, c, hash, entry.m );
+			uint64_t new_hash = update_zobrist_hash( p, c, hash, entry.m );
 
 			short value;
 			if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
@@ -190,7 +190,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 
 bool update_position( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history, std::vector<book_entry> const& entries )
 {
-	unsigned long long hash = get_zobrist_hash( p );
+	uint64_t hash = get_zobrist_hash( p );
 
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 		book_entry entry = *it;
@@ -220,7 +220,7 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 			position new_pos = p;
 			apply_move( new_pos, entry.m, c );
 
-			unsigned long long new_hash = update_zobrist_hash( p, c, hash, entry.m );
+			uint64_t new_hash = update_zobrist_hash( p, c, hash, entry.m );
 
 			short value;
 			if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
@@ -448,8 +448,8 @@ void go( book& b, position const& p, color::type c, seen_positions const& seen, 
 
 	bool all_idle = true;
 
-	unsigned long long start = get_time();
-	unsigned long long calculated = 0;
+	uint64_t start = get_time();
+	uint64_t calculated = 0;
 
 	while( true ) {
 
@@ -514,7 +514,7 @@ void go( book& b, position const& p, color::type c, seen_positions const& seen, 
 			threads[t]->join();
 
 			++calculated;
-			unsigned long long now = get_time();
+			uint64_t now = get_time();
 			std::cerr << std::endl << "Remaining work " << wl.count << " being processed with " << (calculated * 3600) * timer_precision() / (now - start) << " moves/hour" << std::endl;
 		}
 
@@ -551,8 +551,8 @@ void process( book& b )
 
 	bool all_idle = true;
 
-	unsigned long long start = get_time();
-	unsigned long long calculated = 0;
+	uint64_t start = get_time();
+	uint64_t calculated = 0;
 
 	while( true ) {
 
@@ -596,7 +596,7 @@ void process( book& b )
 			threads[t]->join();
 
 			++calculated;
-			unsigned long long now = get_time();
+			uint64_t now = get_time();
 			std::cerr << std::endl << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) * timer_precision() / (now - start) << " moves/hour" << std::endl;
 		}
 
@@ -662,8 +662,8 @@ void update( book& b, int entries_per_pos = 5 )
 
 	bool all_idle = true;
 
-	unsigned long long start = get_time();
-	unsigned long long calculated = 0;
+	uint64_t start = get_time();
+	uint64_t calculated = 0;
 
 	while( true ) {
 
@@ -707,7 +707,7 @@ void update( book& b, int entries_per_pos = 5 )
 			threads[t]->join();
 
 			++calculated;
-			unsigned long long now = get_time();
+			uint64_t now = get_time();
 			std::cerr << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) * timer_precision() / (now - start) << " moves/hour" << std::endl;
 		}
 
@@ -1008,7 +1008,7 @@ void run( book& b )
 
 			ss << "Plies Processed Queued" << std::endl;
 			ss << "----------------------" << std::endl;
-			for( std::map<unsigned long long, stat_entry>::const_iterator it = stats.data.begin(); it != stats.data.end(); ++it ) {
+			for( std::map<uint64_t, stat_entry>::const_iterator it = stats.data.begin(); it != stats.data.end(); ++it ) {
 				ss << std::setw( 5 ) << it->first;
 				ss << std::setw( 10 ) << it->second.processed;
 				ss << std::setw( 7 ) << it->second.queued << std::endl;

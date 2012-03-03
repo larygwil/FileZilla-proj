@@ -60,17 +60,17 @@ struct book_entry_with_position
 struct stat_entry {
 	stat_entry() : processed(), queued() {}
 
-	unsigned long long processed;
-	unsigned long long queued;
+	uint64_t processed;
+	uint64_t queued;
 };
 
 struct book_stats {
 	book_stats() : total_processed(1), total_queued() {}
 
-	std::map<unsigned long long, stat_entry> data;
+	std::map<uint64_t, stat_entry> data;
 
-	unsigned long long total_processed;
-	unsigned long long total_queued;
+	uint64_t total_processed;
+	uint64_t total_queued;
 };
 
 
@@ -92,7 +92,7 @@ public:
 
 	void mark_for_processing( std::vector<move> const& history );
 
-	unsigned long long size();
+	uint64_t size();
 
 	book_stats stats();
 

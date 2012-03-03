@@ -28,7 +28,7 @@ struct perft_ctx {
 };
 
 
-void perft( perft_ctx& ctx, int depth, position const& p, color::type c, unsigned long long& n )
+void perft( perft_ctx& ctx, int depth, position const& p, color::type c, uint64_t& n )
 {
 	if( conf.depth == -1 ) {
 		conf.depth = 8;
@@ -56,7 +56,7 @@ void perft( perft_ctx& ctx, int depth, position const& p, color::type c, unsigne
 
 bool perft( std::size_t max_depth )
 {
-	unsigned long long const perft_results[] = {
+	uint64_t const perft_results[] = {
 		20ull,
 		400ull,
 		8902ull,
@@ -78,7 +78,7 @@ bool perft( std::size_t max_depth )
 	*/
 
 	perft_ctx ctx;
-	for( unsigned int i = 0; i < (std::min)(max_depth, sizeof(perft_results)/sizeof(unsigned long long)); ++i ) {
+	for( unsigned int i = 0; i < (std::min)(max_depth, sizeof(perft_results)/sizeof(uint64_t)); ++i ) {
 		ctx.move_ptr = ctx.moves;
 
 		std::cerr << "Calculating number of possible moves in " << (i + 1) << " plies:" << std::endl;
@@ -87,21 +87,21 @@ bool perft( std::size_t max_depth )
 		init_board( p );
 		color::type c = color::white;
 
-		unsigned long long ret = 0;
+		uint64_t ret = 0;
 
 		int max_depth = i + 1;
 
-		unsigned long long start = get_time();
+		uint64_t start = get_time();
 		perft( ctx, max_depth, p, c, ret );
-		unsigned long long stop = get_time();
+		uint64_t stop = get_time();
 
 
 		std::cerr << "Moves: "     << ret << std::endl;
 		std::cerr << "Took:  "     << (stop - start) * 1000 / timer_precision() << " ms" << std::endl;
 		if( ret ) {
 			// 64bit integers are getting too small too fast.
-			unsigned long long factor = 1000ull * 1000 * 1000 * 1000;
-			unsigned long long divisor;
+			uint64_t factor = 1000ull * 1000 * 1000 * 1000;
+			uint64_t divisor;
 			if( timer_precision() > factor ) {
 				divisor = timer_precision() / factor;
 				factor = 1;
@@ -110,7 +110,7 @@ bool perft( std::size_t max_depth )
 				factor /= timer_precision();
 				divisor = 1;
 			}
-			unsigned long long picoseconds = ((stop - start) * factor) / ret / divisor;
+			uint64_t picoseconds = ((stop - start) * factor) / ret / divisor;
 			std::stringstream ss;
 			ss << "Time/move: " << picoseconds / 1000 << "." << std::setw(1) << std::setfill('0') << (picoseconds / 100) % 10 << " ns" << std::endl;
 			std::cerr << ss.str();
@@ -213,18 +213,18 @@ static bool test_zobrist()
 		return false;
 	}
 
-	unsigned long long old_hash = get_zobrist_hash( p );
+	uint64_t old_hash = get_zobrist_hash( p );
 
 	move m;
 	if( !parse_move( p, c, "dxc3", m ) ) {
 		return false;
 	}
 
-	unsigned long long new_hash_move = update_zobrist_hash( p, c, old_hash, m );
+	uint64_t new_hash_move = update_zobrist_hash( p, c, old_hash, m );
 
 	apply_move( p, m, c );
 
-	unsigned long long new_hash_full = get_zobrist_hash( p );
+	uint64_t new_hash_full = get_zobrist_hash( p );
 
 	if( new_hash_move != new_hash_full ) {
 		std::cerr << "Hash mismatch: " << new_hash_full << " " << new_hash_move << std::endl;

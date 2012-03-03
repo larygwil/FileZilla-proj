@@ -20,7 +20,7 @@ struct config
 	signed char depth;
 	unsigned char quiescence_depth;
 
-	unsigned long long time_limit; // In milliseconds
+	uint64_t time_limit; // In milliseconds
 
 	int random_seed;
 

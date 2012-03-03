@@ -22,7 +22,7 @@
 
 namespace {
 
-static bool tweak_calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long time_remaining, int clock, seen_positions& seen
+static bool tweak_calc( position& p, color::type c, move& m, int& res, uint64_t move_time_limit, uint64_t time_remaining, int clock, seen_positions& seen
 		  , short last_mate
 		  , new_best_move_callback& new_best_cb = default_new_best_move_callback )
 {

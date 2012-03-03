@@ -15,13 +15,13 @@ namespace {
 // v = 000000abc
 // m = 001010010
 //  -> 00a0b00c0
-unsigned long long expand( unsigned long long value, unsigned long long mask )
+uint64_t expand( uint64_t value, uint64_t mask )
 {
-	unsigned long long ret = 0;
-	unsigned long long bitcount = 0;
+	uint64_t ret = 0;
+	uint64_t bitcount = 0;
 
 	while ( mask ) {
-		unsigned long long bitindex = bitscan_unset( mask );
+		uint64_t bitindex = bitscan_unset( mask );
 
 		ret |= ((value >> bitcount) & 1ull) << bitindex;
 	
@@ -31,21 +31,21 @@ unsigned long long expand( unsigned long long value, unsigned long long mask )
 	return ret;
 }
 
-unsigned long long rnd()
+uint64_t rnd()
 {
 	unsigned int v1;
 	unsigned int v2;
 	rand_s(&v1);
 	rand_s(&v2);
 
-	unsigned long long ret = static_cast<unsigned long long>(v1) | (static_cast<unsigned long long>(v2) << 32);
+	uint64_t ret = static_cast<uint64_t>(v1) | (static_cast<uint64_t>(v2) << 32);
 
 	return ret;
 }
 
-unsigned long long xrand()
+uint64_t xrand()
 {
-	unsigned long long ret;
+	uint64_t ret;
 	do {
 		ret = rnd() & rnd() & rnd();
 	}
@@ -54,9 +54,9 @@ unsigned long long xrand()
 	return ret;
 }
 
-unsigned long long gen_mask( unsigned long long pi, unsigned long long attack )
+uint64_t gen_mask( uint64_t pi, uint64_t attack )
 {
-	unsigned long long mask = attack;
+	uint64_t mask = attack;
 	if( (pi % 8) != 0 ) {
 		mask &= ~0x0101010101010101ull;
 	}
@@ -76,26 +76,26 @@ unsigned long long gen_mask( unsigned long long pi, unsigned long long attack )
 
 void rooks()
 {
-	unsigned long long rook_magic_mask[64];
-	unsigned long long rook_magic_shift[64];
-	unsigned long long rook_magic_multiplier[64];
-	unsigned long long rook_magic_value[64*4096];
+	uint64_t rook_magic_mask[64];
+	uint64_t rook_magic_shift[64];
+	uint64_t rook_magic_multiplier[64];
+	uint64_t rook_magic_value[64*4096];
 
-	for( unsigned long long pi = 0; pi < 64; ++pi ) {
-		unsigned long long const attacks = rook_attacks( pi, 0 );
+	for( uint64_t pi = 0; pi < 64; ++pi ) {
+		uint64_t const attacks = rook_attacks( pi, 0 );
 
-		unsigned long long mask = gen_mask(pi, attacks);
+		uint64_t mask = gen_mask(pi, attacks);
 
 		rook_magic_mask[pi] = mask;
 
-		unsigned long long mask_bits = popcount( mask );
-		unsigned long long magic_bits = mask_bits;
-		unsigned long long count = 1ull << mask_bits;
+		uint64_t mask_bits = popcount( mask );
+		uint64_t magic_bits = mask_bits;
+		uint64_t count = 1ull << mask_bits;
 
 		rook_magic_shift[pi] = magic_bits;
 
-		unsigned long long occ[4096];
-		unsigned long long acc[4096];
+		uint64_t occ[4096];
+		uint64_t acc[4096];
 		for( unsigned int i = 0; i < count; ++i ) {
 			occ[i] = expand( i, mask );
 			acc[i] = rook_attacks( pi, occ[i] );
@@ -104,15 +104,15 @@ void rooks()
 		bool valid;
 		do {
 			valid = true;
-			unsigned long long magic_map[4096] = {0};
+			uint64_t magic_map[4096] = {0};
 
-			unsigned long long magic = xrand();
+			uint64_t magic = xrand();
 			if( popcount( ((magic * mask) & 0xFF00000000000000ull) ) < 6 ) {
 				valid = false;
 				continue;
 			}
 			for( unsigned int i = 0; i < count; ++i ) {
-				unsigned long long key = occ[i] * magic;
+				uint64_t key = occ[i] * magic;
 
 				key >>= (64 - magic_bits);
 				if( !magic_map[key] ) {
@@ -134,8 +134,8 @@ void rooks()
 
 	}
 
-	std::cout << "extern unsigned long long const rook_magic_mask[64] = {" << std::endl;
-	for( unsigned long long pi = 0; pi < 64; ++pi ) {
+	std::cout << "extern uint64_t const rook_magic_mask[64] = {" << std::endl;
+	for( uint64_t pi = 0; pi < 64; ++pi ) {
 		std::cout << "\t0x" << std::hex << std::setw(16) << std::setfill('0') << rook_magic_mask[pi] << "ull";
 		if( pi != 63 ) {
 			std::cout << ",";
@@ -144,8 +144,8 @@ void rooks()
 	}
 	std::cout << "};" << std::endl << std::endl;
 
-	std::cout << "extern unsigned long long const rook_magic_multiplier[64] = {" << std::endl;
-	for( unsigned long long pi = 0; pi < 64; ++pi ) {
+	std::cout << "extern uint64_t const rook_magic_multiplier[64] = {" << std::endl;
+	for( uint64_t pi = 0; pi < 64; ++pi ) {
 		std::cout << "\t0x" << std::hex << std::setw(16) << std::setfill('0') << rook_magic_multiplier[pi] << "ull";
 		if( pi != 63 ) {
 			std::cout << ",";
@@ -154,8 +154,8 @@ void rooks()
 	}
 	std::cout << "};" << std::endl << std::endl;
 
-	std::cout << "extern unsigned long long const rook_magic_shift[64] = {" << std::endl;
-	for( unsigned long long pi = 0; pi < 64; ++pi ) {
+	std::cout << "extern uint64_t const rook_magic_shift[64] = {" << std::endl;
+	for( uint64_t pi = 0; pi < 64; ++pi ) {
 		std::cout << "\t" << std::dec << std::setw(2) << std::setfill(' ') << rook_magic_shift[pi] << "ull";
 		if( pi != 63 ) {
 			std::cout << ",";
@@ -167,26 +167,26 @@ void rooks()
 
 void bishops()
 {
-	unsigned long long bishop_magic_mask[64];
-	unsigned long long bishop_magic_shift[64];
-	unsigned long long bishop_magic_multiplier[64];
-	unsigned long long bishop_magic_value[64*4096];
+	uint64_t bishop_magic_mask[64];
+	uint64_t bishop_magic_shift[64];
+	uint64_t bishop_magic_multiplier[64];
+	uint64_t bishop_magic_value[64*4096];
 
-	for( unsigned long long pi = 0; pi < 64; ++pi ) {
-		unsigned long long const attacks = bishop_attacks( pi, 0 );
+	for( uint64_t pi = 0; pi < 64; ++pi ) {
+		uint64_t const attacks = bishop_attacks( pi, 0 );
 
-		unsigned long long mask = gen_mask(pi, attacks);
+		uint64_t mask = gen_mask(pi, attacks);
 
 		bishop_magic_mask[pi] = mask;
 
-		unsigned long long mask_bits = popcount( mask );
-		unsigned long long magic_bits = mask_bits;
-		unsigned long long count = 1ull << mask_bits;
+		uint64_t mask_bits = popcount( mask );
+		uint64_t magic_bits = mask_bits;
+		uint64_t count = 1ull << mask_bits;
 
 		bishop_magic_shift[pi] = magic_bits;
 
-		unsigned long long occ[4096];
-		unsigned long long acc[4096];
+		uint64_t occ[4096];
+		uint64_t acc[4096];
 		for( unsigned int i = 0; i < count; ++i ) {
 			occ[i] = expand( i, mask );
 			acc[i] = bishop_attacks( pi, occ[i] );
@@ -195,15 +195,15 @@ void bishops()
 		bool valid;
 		do {
 			valid = true;
-			unsigned long long magic_map[4096] = {0};
+			uint64_t magic_map[4096] = {0};
 
-			unsigned long long magic = xrand();
+			uint64_t magic = xrand();
 			if( popcount( ((magic * mask) & 0xFF00000000000000ull) ) < 6 ) {
 				valid = false;
 				continue;
 			}
 			for( unsigned int i = 0; i < count; ++i ) {
-				unsigned long long key = occ[i] * magic;
+				uint64_t key = occ[i] * magic;
 
 				key >>= (64 - magic_bits);
 				if( !magic_map[key] ) {
@@ -225,8 +225,8 @@ void bishops()
 
 	}
 
-	std::cout << "extern unsigned long long const bishop_magic_mask[64] = {" << std::endl;
-	for( unsigned long long pi = 0; pi < 64; ++pi ) {
+	std::cout << "extern uint64_t const bishop_magic_mask[64] = {" << std::endl;
+	for( uint64_t pi = 0; pi < 64; ++pi ) {
 		std::cout << "\t0x" << std::hex << std::setw(16) << std::setfill('0') << bishop_magic_mask[pi] << "ull";
 		if( pi != 63 ) {
 			std::cout << ",";
@@ -235,8 +235,8 @@ void bishops()
 	}
 	std::cout << "};" << std::endl << std::endl;
 
-	std::cout << "extern unsigned long long const bishop_magic_multiplier[64] = {" << std::endl;
-	for( unsigned long long pi = 0; pi < 64; ++pi ) {
+	std::cout << "extern uint64_t const bishop_magic_multiplier[64] = {" << std::endl;
+	for( uint64_t pi = 0; pi < 64; ++pi ) {
 		std::cout << "\t0x" << std::hex << std::setw(16) << std::setfill('0') << bishop_magic_multiplier[pi] << "ull";
 		if( pi != 63 ) {
 			std::cout << ",";
@@ -245,8 +245,8 @@ void bishops()
 	}
 	std::cout << "};" << std::endl << std::endl;
 
-	std::cout << "extern unsigned long long const bishop_magic_shift[64] = {" << std::endl;
-	for( unsigned long long pi = 0; pi < 64; ++pi ) {
+	std::cout << "extern uint64_t const bishop_magic_shift[64] = {" << std::endl;
+	for( uint64_t pi = 0; pi < 64; ++pi ) {
 		std::cout << "\t" << std::dec << std::setw(2) << std::setfill(' ') << bishop_magic_shift[pi] << "ull";
 		if( pi != 63 ) {
 			std::cout << ",";

@@ -55,7 +55,7 @@ private:
 	mutable stats stats_;
 
 	entry* data_;
-	unsigned long long size_;
+	uint64_t size_;
 };
 
 

@@ -44,7 +44,7 @@ enum type {
 
 struct bitboard
 {
-	mutable unsigned long long b[bb_type::value_max];
+	mutable uint64_t b[bb_type::value_max];
 };
 
 
@@ -77,15 +77,15 @@ struct position
 
 	struct pawn_structure {
 		short eval; // From white's point of view
-		unsigned long long hash;
+		uint64_t hash;
 	} pawns;
 
 	short material[2];
 
 	bitboard bitboards[2];
 
-	bool is_occupied_square( unsigned long long square ) const;
-	unsigned long long get_occupancy( unsigned long long mask ) const;
+	bool is_occupied_square( uint64_t square ) const;
+	uint64_t get_occupancy( uint64_t mask ) const;
 };
 
 

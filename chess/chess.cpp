@@ -49,7 +49,7 @@ void auto_play()
 	}
 	transposition_table.init( conf.memory );
 	pawn_hash_table.init( conf.pawn_hash_table_size );
-	unsigned long long start = get_time();
+	uint64_t start = get_time();
 	position p;
 
 	init_board(p);
@@ -116,7 +116,7 @@ void auto_play()
 		}
 	}
 
-	unsigned long long stop = get_time();
+	uint64_t stop = get_time();
 
 	std::cerr << std::endl << "Runtime: " << (stop - start) * 1000 / timer_precision() << " ms " << std::endl;
 
@@ -247,13 +247,13 @@ struct xboard_state
 		return true;
 	}
 
-	void update_comm_overhead( unsigned long long new_remaining )
+	void update_comm_overhead( uint64_t new_remaining )
 	{
-		if( c == last_go_color && moves_between_updates && std::abs(static_cast<signed long long>(time_remaining) - static_cast<signed long long>(new_remaining)) < static_cast<signed long long>(2 * timer_precision() * moves_between_updates) ) {
-			level_cmd_differences += (static_cast<signed long long>(time_remaining) - static_cast<signed long long>(new_remaining));
+		if( c == last_go_color && moves_between_updates && std::abs(static_cast<int64_t>(time_remaining) - static_cast<int64_t>(new_remaining)) < static_cast<int64_t>(2 * timer_precision() * moves_between_updates) ) {
+			level_cmd_differences += (static_cast<int64_t>(time_remaining) - static_cast<int64_t>(new_remaining));
 			level_cmd_count += moves_between_updates;
 
-			unsigned long long comm_overhead;
+			uint64_t comm_overhead;
 			if( level_cmd_differences >= 0 ) {
 				comm_overhead = level_cmd_differences / level_cmd_count;
 			}
@@ -273,13 +273,13 @@ struct xboard_state
 	int clock;
 	seen_positions seen;
 	book book_;
-	unsigned long long time_remaining;
-	unsigned long long bonus_time;
+	uint64_t time_remaining;
+	uint64_t bonus_time;
 	mode::type mode_;
 	color::type self;
 	bool hash_initialized;
-	unsigned long long time_control;
-	unsigned long long time_increment;
+	uint64_t time_control;
+	uint64_t time_increment;
 
 	std::list<position> history;
 	std::vector<move> move_history_;
@@ -292,20 +292,20 @@ struct xboard_state
 
 	// If we calculate move time of x but consume y > x amount of time, internal overhead if y - x.
 	// This is measured locally between receiving the go and sending out the reply.
-	unsigned long long internal_overhead;
+	uint64_t internal_overhead;
 
 	// If we receive time updates between moves, communication_overhead is the >=0 difference between two timer updates
 	// and the calculated time consumption.
-	unsigned long long communication_overhead;
-	unsigned long long last_go_time;
+	uint64_t communication_overhead;
+	uint64_t last_go_time;
 
 	color::type last_go_color;
 	unsigned int moves_between_updates;
 
 	// Level command is in seconds only. Hence we need to accumulate data before we can update the
 	// communication overhead.
-	signed long long level_cmd_differences;
-	unsigned long long level_cmd_count;
+	int64_t level_cmd_differences;
+	uint64_t level_cmd_count;
 };
 
 
@@ -325,7 +325,7 @@ public:
 
 	mutex mtx;
 
-	virtual void on_new_best_move( position const& p, color::type c, int depth, int evaluation, unsigned long long nodes, pv_entry const* pv );
+	virtual void on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, pv_entry const* pv );
 
 private:
 	calc_manager cmgr_;
@@ -357,15 +357,15 @@ void xboard_thread::onRun()
 			state.bonus_time = 0;
 		}
 
-		unsigned long long remaining_moves;
+		uint64_t remaining_moves;
 		if( !state.time_control ) {
 			remaining_moves = (std::max)( 15, (80 - state.clock) / 2 );
 		}
 		else {
 			remaining_moves = (state.time_control * 2) - (state.clock % (state.time_control * 2));
 		}
-		unsigned long long time_limit = (state.time_remaining - state.bonus_time) / remaining_moves + state.bonus_time;
-		unsigned long long overhead = state.internal_overhead + state.communication_overhead;
+		uint64_t time_limit = (state.time_remaining - state.bonus_time) / remaining_moves + state.bonus_time;
+		uint64_t overhead = state.internal_overhead + state.communication_overhead;
 
 		if( state.time_increment && state.time_remaining > (time_limit + state.time_increment) ) {
 			time_limit += state.time_increment;
@@ -424,8 +424,8 @@ void xboard_thread::onRun()
 				std::cout << "1/2-1/2 (Draw)" << std::endl;
 			}
 		}
-		unsigned long long stop = get_time();
-		unsigned long long elapsed = stop - state.last_go_time;
+		uint64_t stop = get_time();
+		uint64_t elapsed = stop - state.last_go_time;
 
 		std::cerr << "Elapsed: " << elapsed * 1000 / timer_precision() << " ms" << std::endl;
 		if( time_limit > elapsed ) {
@@ -434,7 +434,7 @@ void xboard_thread::onRun()
 		else {
 			state.bonus_time = 0;
 
-			unsigned long long actual_overhead = elapsed - time_limit;
+			uint64_t actual_overhead = elapsed - time_limit;
 			if( actual_overhead > state.internal_overhead ) {
 				std::cerr << "Updating internal overhead from " << state.internal_overhead * 1000 / timer_precision() << " ms to " << actual_overhead * 1000 / timer_precision() << " ms " << std::endl;
 				state.internal_overhead = actual_overhead;
@@ -446,7 +446,7 @@ void xboard_thread::onRun()
 	if( ponder_ ) {
 		move m;
 		int res;
-		cmgr_.calc( state.p, state.c, m, res, static_cast<unsigned long long>(-1), state.time_remaining, state.clock, state.seen, state.last_mate, *this );
+		cmgr_.calc( state.p, state.c, m, res, static_cast<uint64_t>(-1), state.time_remaining, state.clock, state.seen, state.last_mate, *this );
 	}
 }
 
@@ -475,12 +475,12 @@ move xboard_thread::stop()
 }
 
 
-void xboard_thread::on_new_best_move( position const& p, color::type c, int depth, int evaluation, unsigned long long nodes, pv_entry const* pv )
+void xboard_thread::on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, pv_entry const* pv )
 {
 	scoped_lock lock( mtx );
 	if( !abort ) {
 
-		unsigned long long elapsed = ( get_time() - state.last_go_time ) * 100 / timer_precision();
+		uint64_t elapsed = ( get_time() - state.last_go_time ) * 100 / timer_precision();
 		std::stringstream ss;
 		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(6) << elapsed << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
 		if( state.post ) {
@@ -495,7 +495,7 @@ void xboard_thread::on_new_best_move( position const& p, color::type c, int dept
 }
 
 
-void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv_time )
+void go( xboard_thread& thread, xboard_state& state, uint64_t cmd_recv_time )
 {
 	state.last_go_time = cmd_recv_time;
 	state.last_go_color = state.c;
@@ -534,7 +534,7 @@ void go( xboard_thread& thread, xboard_state& state, unsigned long long cmd_recv
 			state.c = static_cast<color::type>( 1 - state.c );
 			state.move_history_.push_back( best_move.m );
 
-			unsigned long long stop = get_time();
+			uint64_t stop = get_time();
 			state.time_remaining -= stop - state.last_go_time;
 			std::cerr << "Elapsed: " << (stop - state.last_go_time) * 1000 / timer_precision() << " ms" << std::endl;
 			return;
@@ -563,7 +563,7 @@ void xboard()
 		std::string line;
 		std::getline( std::cin, line );
 
-		unsigned long long cmd_recv_time = get_time();
+		uint64_t cmd_recv_time = get_time();
 
 		if( !std::cin ) {
 			std::cerr << "EOF" << std::endl;
@@ -695,13 +695,13 @@ void xboard()
 			ss.flags(std::stringstream::skipws);
 			ss.str(line);
 
-			unsigned long long t;
+			uint64_t t;
 			ss >> t;
 			if( !ss ) {
 				std::cout << "Error (bad command): Not a valid time command" << std::endl;
 			}
 			else {
-				state.time_remaining = static_cast<unsigned long long>(t) * timer_precision() / 100;
+				state.time_remaining = static_cast<uint64_t>(t) * timer_precision() / 100;
 			}
 		}
 		else if( line.substr( 0, 6 ) == "level " ) {
@@ -871,7 +871,7 @@ int main( int argc, char const* argv[] )
 		init_random( conf.random_seed );
 	}
 	else {
-		unsigned long long seed = get_time();
+		uint64_t seed = get_time();
 		init_random(seed);
 		std::cerr << "Random seed is " << seed << std::endl;
 	}

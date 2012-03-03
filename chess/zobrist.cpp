@@ -3,18 +3,18 @@
 #include "util.hpp"
 
 namespace {
-static unsigned long long pawns[2][64];
-static unsigned long long knights[2][64];
-static unsigned long long bishops[2][64];
-static unsigned long long rooks[2][64];
-static unsigned long long queens[2][64];
-static unsigned long long kings[2][64];
+static uint64_t pawns[2][64];
+static uint64_t knights[2][64];
+static uint64_t bishops[2][64];
+static uint64_t rooks[2][64];
+static uint64_t queens[2][64];
+static uint64_t kings[2][64];
 
-unsigned long long enpassant[64];
+uint64_t enpassant[64];
 
-unsigned long long castle[2][5];
+uint64_t castle[2][5];
 
-unsigned long long pawn_structure[2][64];
+uint64_t pawn_structure[2][64];
 
 bool initialized = false;
 }
@@ -75,15 +75,15 @@ void init_zobrist_tables()
 }
 
 
-unsigned long long get_zobrist_hash( position const& p ) {
-	unsigned long long ret = 0;
+uint64_t get_zobrist_hash( position const& p ) {
+	uint64_t ret = 0;
 
 	for( unsigned int c = 0; c < 2; ++c ) {
-		unsigned long long pieces = p.bitboards[c].b[bb_type::all_pieces];
+		uint64_t pieces = p.bitboards[c].b[bb_type::all_pieces];
 		while( pieces ) {
-			unsigned long long piece = bitscan_unset( pieces );
+			uint64_t piece = bitscan_unset( pieces );
 
-			unsigned long long bpiece = 1ull << piece;
+			uint64_t bpiece = 1ull << piece;
 			if( p.bitboards[c].b[bb_type::pawns] & bpiece ) {
 				ret ^= pawns[c][piece];
 			}
@@ -113,7 +113,7 @@ unsigned long long get_zobrist_hash( position const& p ) {
 }
 
 namespace {
-static unsigned long long get_piece_hash( pieces::type pi, color::type c, int pos )
+static uint64_t get_piece_hash( pieces::type pi, color::type c, int pos )
 {
 	switch( pi ) {
 		case pieces::pawn:
@@ -134,7 +134,7 @@ static unsigned long long get_piece_hash( pieces::type pi, color::type c, int po
 }
 }
 
-unsigned long long update_zobrist_hash( position const& p, color::type c, unsigned long long hash, move const& m )
+uint64_t update_zobrist_hash( position const& p, color::type c, uint64_t hash, move const& m )
 {
 	hash ^= enpassant[p.can_en_passant];
 
@@ -225,7 +225,7 @@ unsigned long long update_zobrist_hash( position const& p, color::type c, unsign
 	return hash;
 }
 
-unsigned long long get_pawn_structure_hash( color::type c, unsigned char pawn )
+uint64_t get_pawn_structure_hash( color::type c, unsigned char pawn )
 {
 	return pawn_structure[c][pawn];
 }

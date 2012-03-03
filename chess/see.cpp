@@ -8,13 +8,13 @@
 #include <algorithm>
 #include <iostream>
 
-static unsigned long long least_valuable_attacker( position const& p, color::type c, unsigned long long attackers, pieces::type& attacker_piece_out ) {
+static uint64_t least_valuable_attacker( position const& p, color::type c, uint64_t attackers, pieces::type& attacker_piece_out ) {
 	// Exploit that our bitboards are sorted by piece value
 	for( int piece = pieces::pawn; piece <= pieces::king; ++piece ) {
-		unsigned long long match = p.bitboards[c].b[piece] & attackers;
+		uint64_t match = p.bitboards[c].b[piece] & attackers;
 		if( match ) {
 			attacker_piece_out = static_cast<pieces::type>(piece);
-			unsigned long long ret = bitscan( match );
+			uint64_t ret = bitscan( match );
 			return 1ull << ret;
 		}
 	}
@@ -27,17 +27,17 @@ int see( position const& p, color::type c, move const& m )
 	// Iterative SEE algorithm as described by Fritz Reul, adapted to use bitboards.
 	unsigned char target = m.target;
 
-	unsigned long long attacker_mask = 1ull << m.source;
+	uint64_t attacker_mask = 1ull << m.source;
 	pieces::type attacker_piece = m.piece;
 
 	int score[32];
 
-	unsigned long long const all_rooks = p.bitboards[color::white].b[bb_type::rooks] | p.bitboards[color::white].b[bb_type::queens] | p.bitboards[color::black].b[bb_type::rooks] | p.bitboards[color::black].b[bb_type::queens];
-	unsigned long long const all_bishops = p.bitboards[color::white].b[bb_type::bishops] | p.bitboards[color::white].b[bb_type::queens] | p.bitboards[color::black].b[bb_type::bishops] | p.bitboards[color::black].b[bb_type::queens];
+	uint64_t const all_rooks = p.bitboards[color::white].b[bb_type::rooks] | p.bitboards[color::white].b[bb_type::queens] | p.bitboards[color::black].b[bb_type::rooks] | p.bitboards[color::black].b[bb_type::queens];
+	uint64_t const all_bishops = p.bitboards[color::white].b[bb_type::bishops] | p.bitboards[color::white].b[bb_type::queens] | p.bitboards[color::black].b[bb_type::bishops] | p.bitboards[color::black].b[bb_type::queens];
 
-	unsigned long long all_pieces = p.bitboards[color::white].b[bb_type::all_pieces] | p.bitboards[color::black].b[bb_type::all_pieces];
+	uint64_t all_pieces = p.bitboards[color::white].b[bb_type::all_pieces] | p.bitboards[color::black].b[bb_type::all_pieces];
 
-	unsigned long long attackers =
+	uint64_t attackers =
 			(rook_magic( target, all_pieces ) & all_rooks) |
 			(bishop_magic( target, all_pieces ) & all_bishops) |
 			(possible_knight_moves[target] & (p.bitboards[color::white].b[bb_type::knights] | p.bitboards[color::black].b[bb_type::knights])) |

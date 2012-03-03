@@ -73,15 +73,15 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves,
 
 void calc_moves_king( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long kings = p.bitboards[c].b[bb_type::king];
-	unsigned long long king = bitscan( kings );
+	uint64_t kings = p.bitboards[c].b[bb_type::king];
+	uint64_t king = bitscan( kings );
 
-	unsigned long long other_kings = p.bitboards[1-c].b[bb_type::king];
-	unsigned long long other_king = bitscan( other_kings );
+	uint64_t other_kings = p.bitboards[1-c].b[bb_type::king];
+	uint64_t other_king = bitscan( other_kings );
 
-	unsigned long long king_moves = possible_king_moves[king] & ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] | possible_king_moves[other_king]);
+	uint64_t king_moves = possible_king_moves[king] & ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] | possible_king_moves[other_king]);
 	while( king_moves ) {
-		unsigned long long king_move = bitscan_unset( king_moves );
+		uint64_t king_move = bitscan_unset( king_moves );
 		calc_moves_king( p, c, moves,
 						 king, king_move );
 	}
@@ -110,15 +110,15 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 }
 
 
-void calc_moves_queen( position const& p, color::type c, move_info*& moves, check_map const& check, unsigned long long queen )
+void calc_moves_queen( position const& p, color::type c, move_info*& moves, check_map const& check, uint64_t queen )
 {
-	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned long long possible_moves = rook_magic( queen, all_blockers ) | bishop_magic( queen, all_blockers );
+	uint64_t possible_moves = rook_magic( queen, all_blockers ) | bishop_magic( queen, all_blockers );
 	possible_moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
 
 	while( possible_moves ) {
-		unsigned long long queen_move = bitscan_unset( possible_moves );
+		uint64_t queen_move = bitscan_unset( possible_moves );
 		add_if_legal( moves, check, pieces::queen, queen, queen_move, move_flags::none );
 	}
 }
@@ -126,24 +126,24 @@ void calc_moves_queen( position const& p, color::type c, move_info*& moves, chec
 
 void calc_moves_queens( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long queens = p.bitboards[c].b[bb_type::queens];
+	uint64_t queens = p.bitboards[c].b[bb_type::queens];
 	while( queens ) {
-		unsigned long long queen = bitscan_unset( queens );
+		uint64_t queen = bitscan_unset( queens );
 		calc_moves_queen( p, c, moves, check, queen );
 	}
 }
 
 
 void calc_moves_bishop( position const& p, color::type c, move_info*& moves, check_map const& check,
-					    unsigned long long bishop )
+						uint64_t bishop )
 {
-	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned long long possible_moves = bishop_magic( bishop, all_blockers );
+	uint64_t possible_moves = bishop_magic( bishop, all_blockers );
 	possible_moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
 
 	while( possible_moves ) {
-		unsigned long long bishop_move = bitscan_unset( possible_moves );
+		uint64_t bishop_move = bitscan_unset( possible_moves );
 		add_if_legal( moves, check, pieces::bishop, bishop, bishop_move, move_flags::none );
 	}
 }
@@ -151,24 +151,24 @@ void calc_moves_bishop( position const& p, color::type c, move_info*& moves, che
 
 void calc_moves_bishops( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long bishops = p.bitboards[c].b[bb_type::bishops];
+	uint64_t bishops = p.bitboards[c].b[bb_type::bishops];
 	while( bishops ) {
-		unsigned long long bishop = bitscan_unset( bishops );
+		uint64_t bishop = bitscan_unset( bishops );
 		calc_moves_bishop( p, c, moves, check, bishop );
 	}
 }
 
 
 void calc_moves_rook( position const& p, color::type c, move_info*& moves, check_map const& check,
-					  unsigned long long rook )
+					  uint64_t rook )
 {
-	unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
 
-	unsigned long long possible_moves = rook_magic( rook, all_blockers );
+	uint64_t possible_moves = rook_magic( rook, all_blockers );
 	possible_moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
 
 	while( possible_moves ) {
-		unsigned long long rook_move = bitscan_unset( possible_moves);
+		uint64_t rook_move = bitscan_unset( possible_moves);
 		add_if_legal( moves, check, pieces::rook, rook, rook_move, move_flags::none );
 	}
 }
@@ -176,20 +176,20 @@ void calc_moves_rook( position const& p, color::type c, move_info*& moves, check
 
 void calc_moves_rooks( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long rooks = p.bitboards[c].b[bb_type::rooks];
+	uint64_t rooks = p.bitboards[c].b[bb_type::rooks];
 	while( rooks ) {
-		unsigned long long rook = bitscan_unset( rooks );
+		uint64_t rook = bitscan_unset( rooks );
 		calc_moves_rook( p, c, moves, check, rook );
 	}
 }
 
 
 void calc_moves_knight( position const& p, color::type c, move_info*& moves, check_map const& check,
-						unsigned long long old_knight )
+						uint64_t old_knight )
 {
-	unsigned long long new_knights = possible_knight_moves[old_knight] & ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
+	uint64_t new_knights = possible_knight_moves[old_knight] & ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
 	while( new_knights ) {
-		unsigned long long new_knight = bitscan_unset( new_knights );
+		uint64_t new_knight = bitscan_unset( new_knights );
 		add_if_legal( moves, check, pieces::knight, old_knight, new_knight, move_flags::none );
 	}
 }
@@ -197,16 +197,16 @@ void calc_moves_knight( position const& p, color::type c, move_info*& moves, che
 
 void calc_moves_knights( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long knights = p.bitboards[c].b[bb_type::knights];
+	uint64_t knights = p.bitboards[c].b[bb_type::knights];
 	while( knights ) {
-		unsigned long long knight = bitscan_unset( knights );
+		uint64_t knight = bitscan_unset( knights );
 		calc_moves_knight( p, c, moves, check, knight );
 	}
 }
 
 
 void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check_map const& check,
-					  unsigned long long pawn )
+					  uint64_t pawn )
 {
 	unsigned char old_col = static_cast<unsigned char>(pawn % 8);
 	unsigned char old_row = static_cast<unsigned char>(pawn / 8);
@@ -237,9 +237,9 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 
 void calc_moves_pawns( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
+	uint64_t pawns = p.bitboards[c].b[bb_type::pawns];
 	while( pawns ) {
-		unsigned long long pawn = bitscan_unset( pawns );
+		uint64_t pawn = bitscan_unset( pawns );
 		calc_moves_pawn( p, c, moves, check, pawn );
 	}
 }

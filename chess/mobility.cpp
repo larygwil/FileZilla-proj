@@ -7,13 +7,13 @@
 #include <iomanip>
 #include <sstream>
 
-unsigned long long const center_squares = 0x00003c3c3c3c0000ull;
+uint64_t const center_squares = 0x00003c3c3c3c0000ull;
 
 namespace {
 
 struct eval_data {
-	unsigned long long other_king_pos;
-	unsigned long long king_vicinity;
+	uint64_t other_king_pos;
+	uint64_t king_vicinity;
 };
 
 struct eval_results {
@@ -56,10 +56,10 @@ short rook_mobility_scale[] = {
 
 inline static void evaluate_tropism( position const& p, color::type c, eval_data const& data, eval_results& results )
 {
-	unsigned long long pieces = p.bitboards[c].b[bb_type::all_pieces];
+	uint64_t pieces = p.bitboards[c].b[bb_type::all_pieces];
 
 	while( pieces ) {
-		unsigned long long piece = bitscan_unset( pieces );
+		uint64_t piece = bitscan_unset( pieces );
 		results.tropism += proximity[piece][data.other_king_pos];
 	}
 }
@@ -67,12 +67,12 @@ inline static void evaluate_tropism( position const& p, color::type c, eval_data
 
 inline static void evaluate_pawns_mobility( position const& p, color::type c, eval_data const& data, eval_results& results )
 {
-	unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
+	uint64_t pawns = p.bitboards[c].b[bb_type::pawns];
 
 	while( pawns ) {
-		unsigned long long pawn = bitscan_unset( pawns );
+		uint64_t pawn = bitscan_unset( pawns );
 
-		unsigned long long pc = pawn_control[c][pawn];
+		uint64_t pc = pawn_control[c][pawn];
 		results.king_attack += static_cast<short>(popcount( pc & data.king_vicinity ) );
 		results.center_control += static_cast<short>(popcount( pc & center_squares ) );
 	}
@@ -81,12 +81,12 @@ inline static void evaluate_pawns_mobility( position const& p, color::type c, ev
 
 inline static void evaluate_knights_mobility( position const& p, color::type c, eval_data const& data, eval_results& results )
 {
-	unsigned long long knights = p.bitboards[c].b[bb_type::knights];
+	uint64_t knights = p.bitboards[c].b[bb_type::knights];
 
 	while( knights ) {
-		unsigned long long knight = bitscan_unset( knights );
+		uint64_t knight = bitscan_unset( knights );
 
-		unsigned long long moves = possible_knight_moves[knight];
+		uint64_t moves = possible_knight_moves[knight];
 		moves &= ~p.bitboards[c].b[bb_type::all_pieces];
 
 		results.king_attack += static_cast<short>(popcount( moves & data.king_vicinity ));
@@ -103,15 +103,15 @@ inline static void evaluate_knights_mobility( position const& p, color::type c, 
 }
 
 
-inline static void evaluate_bishop_mobility( position const& p, color::type c, unsigned long long bishop, eval_data const& data, eval_results& results )
+inline static void evaluate_bishop_mobility( position const& p, color::type c, uint64_t bishop, eval_data const& data, eval_results& results )
 {
 #if XRAYS
-	unsigned long long const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
+	uint64_t const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
 #else
-	unsigned long long const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
 #endif
 
-	unsigned long long moves = bishop_magic( bishop, all_blockers );
+	uint64_t moves = bishop_magic( bishop, all_blockers );
 	moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawn_control] );
 
 	short bev = static_cast<short>(popcount(moves));
@@ -124,13 +124,13 @@ inline static void evaluate_bishop_mobility( position const& p, color::type c, u
 }
 
 
-inline static void evaluate_bishop_pin( position const& p, color::type c, unsigned long long bishop, eval_results& results )
+inline static void evaluate_bishop_pin( position const& p, color::type c, uint64_t bishop, eval_results& results )
 {
-	unsigned long long own_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
-	unsigned long long unblocked_moves = bishop_magic( bishop, own_blockers );
+	uint64_t own_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
+	uint64_t unblocked_moves = bishop_magic( bishop, own_blockers );
 
-	unsigned long long pinned_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
-	unsigned long long blocked_moves = bishop_magic( bishop, pinned_blockers );
+	uint64_t pinned_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t blocked_moves = bishop_magic( bishop, pinned_blockers );
 
 	// Absolute pin
 	if( (unblocked_moves ^ blocked_moves) & p.bitboards[1-c].b[bb_type::king] ) {
@@ -141,10 +141,10 @@ inline static void evaluate_bishop_pin( position const& p, color::type c, unsign
 
 inline static void evaluate_bishops_mobility( position const& p, color::type c, eval_data const& data, eval_results& results )
 {
-	unsigned long long bishops = p.bitboards[c].b[bb_type::bishops];
+	uint64_t bishops = p.bitboards[c].b[bb_type::bishops];
 
 	while( bishops ) {
-		unsigned long long bishop = bitscan_unset( bishops );
+		uint64_t bishop = bitscan_unset( bishops );
 
 		evaluate_bishop_mobility( p, c, bishop, data, results );
 		evaluate_bishop_pin( p, c, bishop, results );
@@ -152,23 +152,23 @@ inline static void evaluate_bishops_mobility( position const& p, color::type c, 
 }
 
 
-inline static void evaluate_rook_mobility( position const& p, color::type c, unsigned long long rook, eval_data const& data, eval_results& results )
+inline static void evaluate_rook_mobility( position const& p, color::type c, uint64_t rook, eval_data const& data, eval_results& results )
 {
 #if XRAYS
-	unsigned long long const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
+	uint64_t const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
 #else
-	unsigned long long const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
 #endif
 
-	unsigned long long moves = rook_magic( rook, all_blockers );
+	uint64_t moves = rook_magic( rook, all_blockers );
 	moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawn_control] );
 
 	results.center_control += static_cast<short>(popcount( moves & center_squares ) );
 
 	results.king_attack += static_cast<short>(popcount( moves & data.king_vicinity ));
 
-	unsigned long long vertical = moves & (0x0101010101010101ull << (rook % 8));
-	unsigned long long horizontal = moves & ~vertical;
+	uint64_t vertical = moves & (0x0101010101010101ull << (rook % 8));
+	uint64_t horizontal = moves & ~vertical;
 
 	// Rooks dig verticals.
 	short rev = static_cast<short>(popcount(horizontal)) + 2 * static_cast<short>(popcount(vertical));
@@ -178,13 +178,13 @@ inline static void evaluate_rook_mobility( position const& p, color::type c, uns
 }
 
 
-inline static void evaluate_rook_pin( position const& p, color::type c, unsigned long long rook, eval_results& results )
+inline static void evaluate_rook_pin( position const& p, color::type c, uint64_t rook, eval_results& results )
 {
-	unsigned long long own_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
-	unsigned long long unblocked_moves = rook_magic( rook, own_blockers );
+	uint64_t own_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
+	uint64_t unblocked_moves = rook_magic( rook, own_blockers );
 
-	unsigned long long pinned_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
-	unsigned long long blocked_moves = rook_magic( rook, pinned_blockers );
+	uint64_t pinned_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t blocked_moves = rook_magic( rook, pinned_blockers );
 
 	// Absolute pin
 	if( (unblocked_moves ^ blocked_moves) & p.bitboards[1-c].b[bb_type::king] ) {
@@ -193,9 +193,9 @@ inline static void evaluate_rook_pin( position const& p, color::type c, unsigned
 }
 
 
-inline static void evaluate_rook_on_open_file( position const& p, color::type c, unsigned long long rook, eval_results& results )
+inline static void evaluate_rook_on_open_file( position const& p, color::type c, uint64_t rook, eval_results& results )
 {
-	unsigned long long file = 0x0101010101010101ull << (rook % 8);
+	uint64_t file = 0x0101010101010101ull << (rook % 8);
 	if( !(p.bitboards[c].b[bb_type::pawns] & file) ) {
 		if( p.bitboards[1-c].b[bb_type::pawns] & file ) {
 			results.rooks_on_open_file_bonus += static_cast<short>(popcount(p.bitboards[c].b[bb_type::pawns])) * 3;
@@ -209,10 +209,10 @@ inline static void evaluate_rook_on_open_file( position const& p, color::type c,
 
 inline static void evaluate_rooks_mobility( position const& p, color::type c, eval_data const& data, eval_results& results )
 {
-	unsigned long long rooks = p.bitboards[c].b[bb_type::rooks];
+	uint64_t rooks = p.bitboards[c].b[bb_type::rooks];
 
 	while( rooks ) {
-		unsigned long long rook = bitscan_unset( rooks );
+		uint64_t rook = bitscan_unset( rooks );
 
 		evaluate_rook_mobility( p, c, rook, data, results);
 		evaluate_rook_pin( p, c, rook, results );
@@ -221,15 +221,15 @@ inline static void evaluate_rooks_mobility( position const& p, color::type c, ev
 }
 
 
-inline static void evaluate_queen_mobility( position const& p, color::type c, unsigned long long queen, eval_data const& data, eval_results& results )
+inline static void evaluate_queen_mobility( position const& p, color::type c, uint64_t queen, eval_data const& data, eval_results& results )
 {
 #if XRAYS
-	unsigned long long const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
+	uint64_t const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
 #else
-	unsigned long long const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
 #endif
 
-	unsigned long long moves = bishop_magic( queen, all_blockers ) | rook_magic( queen, all_blockers );
+	uint64_t moves = bishop_magic( queen, all_blockers ) | rook_magic( queen, all_blockers );
 	moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawn_control] );
 
 	results.king_attack += static_cast<short>(popcount( moves & data.king_vicinity ));
@@ -242,13 +242,13 @@ inline static void evaluate_queen_mobility( position const& p, color::type c, un
 }
 
 
-inline static void evaluate_queen_pin( position const& p, color::type c, unsigned long long queen, eval_results& results )
+inline static void evaluate_queen_pin( position const& p, color::type c, uint64_t queen, eval_results& results )
 {
-	unsigned long long own_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
-	unsigned long long unblocked_moves = bishop_magic( queen, own_blockers ) | rook_magic( queen, own_blockers );
+	uint64_t own_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::king];
+	uint64_t unblocked_moves = bishop_magic( queen, own_blockers ) | rook_magic( queen, own_blockers );
 
-	unsigned long long pinned_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
-	unsigned long long blocked_moves = bishop_magic( queen, pinned_blockers ) | rook_magic( queen, pinned_blockers );
+	uint64_t pinned_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t blocked_moves = bishop_magic( queen, pinned_blockers ) | rook_magic( queen, pinned_blockers );
 
 	// Absolute pin
 	if( (unblocked_moves ^ blocked_moves) & p.bitboards[1-c].b[bb_type::king] ) {
@@ -259,10 +259,10 @@ inline static void evaluate_queen_pin( position const& p, color::type c, unsigne
 
 inline static void evaluate_queens_mobility( position const& p, color::type c, eval_data const& data, eval_results& results )
 {
-	unsigned long long queens = p.bitboards[c].b[bb_type::queens];
+	uint64_t queens = p.bitboards[c].b[bb_type::queens];
 
 	while( queens ) {
-		unsigned long long queen = bitscan_unset( queens );
+		uint64_t queen = bitscan_unset( queens );
 
 		evaluate_queen_mobility( p, c, queen, data, results );
 		evaluate_queen_pin( p, c, queen, results );
@@ -274,8 +274,8 @@ static void do_evaluate_mobility( position const& p, color::type c, eval_results
 	eval_data data_self;
 	
 	{
-		unsigned long long kings = p.bitboards[1-c].b[bb_type::king];
-		unsigned long long king = bitscan( kings );
+		uint64_t kings = p.bitboards[1-c].b[bb_type::king];
+		uint64_t king = bitscan( kings );
 		data_self.other_king_pos = king;
 	}
 	data_self.king_vicinity = possible_king_moves[data_self.other_king_pos];
@@ -293,8 +293,8 @@ static void do_evaluate_mobility( position const& p, color::type c, eval_results
 	eval_data data_other;
 	
 	{
-		unsigned long long kings = p.bitboards[c].b[bb_type::king];
-		unsigned long long king = bitscan( kings );
+		uint64_t kings = p.bitboards[c].b[bb_type::king];
+		uint64_t king = bitscan( kings );
 		data_other.other_king_pos = king;
 	}
 	data_other.king_vicinity = possible_king_moves[data_other.other_king_pos];

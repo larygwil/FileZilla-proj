@@ -7,6 +7,7 @@
 #include <intrin.h>
 
 typedef unsigned long long uint64_t;
+typedef   signed long long  int64_t;
 
 #define PACKED(c, s) \
 	__pragma( pack( push, 1 ) )\
@@ -21,8 +22,8 @@ namespace tr1 {
 using namespace tr1;
 }
 
-unsigned long long timer_precision();
-unsigned long long get_time();
+uint64_t timer_precision();
+uint64_t get_time();
 void console_init();
 
 class mutex {
@@ -60,7 +61,7 @@ public:
 	~condition();
 
 	void wait( scoped_lock& l );
-	void wait( scoped_lock& l, unsigned long long timeout );
+	void wait( scoped_lock& l, uint64_t timeout );
 	void signal( scoped_lock& l );
 
 private:
@@ -85,20 +86,20 @@ private:
 	HANDLE t_;
 };
 
-inline unsigned long long bitscan( unsigned long long mask )
+inline uint64_t bitscan( uint64_t mask )
 {
 	unsigned long i;
 	_BitScanForward64( &i, mask );
 
-	return static_cast<unsigned long long >(i);
+	return static_cast<uint64_t >(i);
 }
 
-inline unsigned long long bitscan_reverse( unsigned long long mask )
+inline uint64_t bitscan_reverse( uint64_t mask )
 {
 	unsigned long i;
 	_BitScanReverse64( &i, mask );
 
-	return static_cast<unsigned long long >(i);
+	return static_cast<uint64_t >(i);
 }
 
 int get_cpu_count();
@@ -112,7 +113,7 @@ int get_system_memory();
 
 #else
 
-inline unsigned long long popcount( unsigned long long w )
+inline uint64_t popcount( uint64_t w )
 {
       w = w - ((w >> 1) & 0x5555555555555555ull);
       w = (w & 0x3333333333333333ull) + ((w >> 2) & 0x3333333333333333ull);

@@ -9,13 +9,13 @@ using namespace tr1;
 }
 
 
-unsigned long long timer_precision()
+uint64_t timer_precision()
 {
 	return 1000;
 }
 
 
-unsigned long long get_time() {
+uint64_t get_time() {
 	return GetTickCount64();
 }
 
@@ -91,7 +91,7 @@ void condition::wait( scoped_lock& l )
 }
 
 
-void condition::wait( scoped_lock& l, unsigned long long timeout )
+void condition::wait( scoped_lock& l, uint64_t timeout )
 {
 	if( signalled_ ) {
 		signalled_ = false;
@@ -209,11 +209,11 @@ int get_system_memory()
 }
 
 
-void* page_aligned_malloc( unsigned long long size )
+void* page_aligned_malloc( uint64_t size )
 {
-	unsigned long long page_size = get_page_size();
+	uint64_t page_size = get_page_size();
 
-	unsigned long long alloc = size;
+	uint64_t alloc = size;
 	if( size % page_size ) {
 		alloc += page_size - size % page_size;
 	}
@@ -243,7 +243,7 @@ void aligned_free( void* p )
 }
 
 
-unsigned long long get_page_size()
+uint64_t get_page_size()
 {
 	SYSTEM_INFO info = {0};
 	GetSystemInfo( &info );

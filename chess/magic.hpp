@@ -5,7 +5,7 @@
 
 void init_magic();
 
-unsigned long long rook_magic( unsigned long long pi, unsigned long long occ );
-unsigned long long bishop_magic( unsigned long long pi, unsigned long long occ );
+uint64_t rook_magic( uint64_t pi, uint64_t occ );
+uint64_t bishop_magic( uint64_t pi, uint64_t occ );
 
 #endif

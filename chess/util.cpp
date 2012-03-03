@@ -498,9 +498,9 @@ void init_bitboards( position& p )
 		p.bitboards[c].b[bb_type::all_pieces] = p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::knights] | p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens] | p.bitboards[c].b[bb_type::king];
 
 		p.bitboards[c].b[bb_type::pawn_control] = 0;
-		unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
+		uint64_t pawns = p.bitboards[c].b[bb_type::pawns];
 		while( pawns ) {
-			unsigned long long pawn = bitscan_unset( pawns );
+			uint64_t pawn = bitscan_unset( pawns );
 			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
 		}
 	}
@@ -509,8 +509,8 @@ void init_bitboards( position& p )
 namespace {
 static void do_apply_move( position& p, move const& m, color::type c )
 {
-	unsigned long long const source_square = 1ull << m.source;
-	unsigned long long const target_square = 1ull << m.target;
+	uint64_t const source_square = 1ull << m.source;
+	uint64_t const target_square = 1ull << m.target;
 
 	if( m.flags & move_flags::castle ) {
 		unsigned char row = c ? 56 : 0;
@@ -537,7 +537,7 @@ static void do_apply_move( position& p, move const& m, color::type c )
 	if( m.captured_piece != pieces::none ) {
 		if( m.flags & move_flags::enpassant ) {
 			unsigned char ep = (m.target & 0x7) | (m.source & 0x38);
-			unsigned long long const ep_square = 1ull << ep;
+			uint64_t const ep_square = 1ull << ep;
 			p.bitboards[1-c].b[bb_type::pawns] ^= ep_square;
 			p.bitboards[1-c].b[bb_type::all_pieces] ^= ep_square;
 		}
@@ -557,9 +557,9 @@ static void do_apply_move( position& p, move const& m, color::type c )
 
 		if( m.captured_piece == pieces::pawn ) {
 			p.bitboards[1-c].b[bb_type::pawn_control] = 0;
-			unsigned long long pawns = p.bitboards[1-c].b[bb_type::pawns];
+			uint64_t pawns = p.bitboards[1-c].b[bb_type::pawns];
 			while( pawns ) {
-				unsigned long long pawn = bitscan_unset( pawns );
+				uint64_t pawn = bitscan_unset( pawns );
 				p.bitboards[1-c].b[bb_type::pawn_control] |= pawn_control[1-c][pawn];
 			}
 		}
@@ -599,9 +599,9 @@ static void do_apply_move( position& p, move const& m, color::type c )
 	
 	if( m.piece == pieces::pawn ) {
 		p.bitboards[c].b[bb_type::pawn_control] = 0;
-		unsigned long long pawns = p.bitboards[c].b[bb_type::pawns];
+		uint64_t pawns = p.bitboards[c].b[bb_type::pawns];
 		while( pawns ) {
-			unsigned long long pawn = bitscan_unset( pawns );
+			uint64_t pawn = bitscan_unset( pawns );
 			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
 		}
 	}
@@ -649,11 +649,11 @@ void apply_move( position& p, move_info const& mi, color::type c )
 
 namespace {
 static mutex m;
-static unsigned long long random_unsigned_long_long_pos = 0;
-static unsigned long long random_unsigned_char = 0;
+static uint64_t random_unsigned_long_long_pos = 0;
+static uint64_t random_unsigned_char = 0;
 }
 
-void init_random( unsigned long long seed )
+void init_random( uint64_t seed )
 {
 	random_unsigned_char = seed;
 	random_unsigned_long_long_pos = (seed + 0xf00) % sizeof(precomputed_random_data);
@@ -669,16 +669,16 @@ unsigned char get_random_unsigned_char()
 	return precomputed_random_data[random_unsigned_char];
 }
 
-unsigned long long get_random_unsigned_long_long()
+uint64_t get_random_unsigned_long_long()
 {
 	scoped_lock l( m );
-	random_unsigned_long_long_pos += sizeof( unsigned long long );
+	random_unsigned_long_long_pos += sizeof( uint64_t );
 
 	if( random_unsigned_long_long_pos >= (sizeof(precomputed_random_data) - 8) ) {
 		random_unsigned_long_long_pos = 0;
 	}
 
-	unsigned long long ret = *reinterpret_cast<unsigned long long*>(precomputed_random_data + random_unsigned_long_long_pos);
+	uint64_t ret = *reinterpret_cast<uint64_t*>(precomputed_random_data + random_unsigned_long_long_pos);
 	return ret;
 }
 
@@ -687,9 +687,9 @@ void position::init_pawn_structure()
 {
 	pawns.hash = 0;
 	for( int c = 0; c < 2; ++c ) {
-		unsigned long long cpawns = bitboards[c].b[bb_type::pawns];
+		uint64_t cpawns = bitboards[c].b[bb_type::pawns];
 		while( cpawns ) {
-			unsigned long long pawn = bitscan_unset( cpawns );
+			uint64_t pawn = bitscan_unset( cpawns );
 			pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), static_cast<unsigned char>(pawn) );
 		}
 	}
@@ -699,12 +699,12 @@ void position::init_pawn_structure()
 }
 
 
-bool position::is_occupied_square( unsigned long long square ) const {
+bool position::is_occupied_square( uint64_t square ) const {
 	return get_occupancy( 1ull << square ) != 0;
 }
 
 
-unsigned long long position::get_occupancy( unsigned long long mask ) const
+uint64_t position::get_occupancy( uint64_t mask ) const
 {
 	return (bitboards[color::white].b[bb_type::all_pieces] | bitboards[color::black].b[bb_type::all_pieces]) & mask;
 }
@@ -797,7 +797,7 @@ std::string board_to_string( position const& p )
 	return ret;
 }
 
-static std::list<unsigned long long> stack;
+static std::list<uint64_t> stack;
 
 void push_rng_state()
 {
@@ -820,7 +820,7 @@ void pop_rng_state()
 	stack.pop_back();
 }
 
-pieces::type get_piece_on_square( position const& p, color::type c, unsigned long long square )
+pieces::type get_piece_on_square( position const& p, color::type c, uint64_t square )
 {
 	pieces::type ret;
 	if( p.bitboards[c].b[bb_type::all_pieces] & (1ull << square) ) {
@@ -886,8 +886,8 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 			return false;
 		}
 
-		unsigned long long other_kings = p.bitboards[1-c].b[bb_type::king];
-		unsigned long long other_king = bitscan( other_kings );
+		uint64_t other_kings = p.bitboards[1-c].b[bb_type::king];
+		uint64_t other_king = bitscan( other_kings );
 		if( (1ull << m.target) & possible_king_moves[other_king] ) {
 			return false;
 		}
@@ -974,8 +974,8 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 			}
 
 			// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
-			unsigned long long kings = p.bitboards[c].b[bb_type::king];
-			unsigned long long king = bitscan( kings );
+			uint64_t kings = p.bitboards[c].b[bb_type::king];
+			uint64_t king = bitscan( kings );
 			unsigned char king_col = static_cast<unsigned char>(king % 8);
 			unsigned char king_row = static_cast<unsigned char>(king / 8);
 
@@ -1033,22 +1033,22 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 			}
 
 			if( m.piece == pieces::bishop ) {
-				unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
-				unsigned long long possible_moves = bishop_magic( m.source, all_blockers );
+				uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+				uint64_t possible_moves = bishop_magic( m.source, all_blockers );
 				if( !(possible_moves & (1ull << m.target ) ) ) {
 					return false;
 				}
 			}
 			else if( m.piece == pieces::rook ) {
-				unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
-				unsigned long long possible_moves = rook_magic( m.source, all_blockers );
+				uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+				uint64_t possible_moves = rook_magic( m.source, all_blockers );
 				if( !(possible_moves & (1ull << m.target ) ) ) {
 					return false;
 				}
 			}
 			else if( m.piece == pieces::queen) {
-				unsigned long long const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
-				unsigned long long possible_moves = rook_magic( m.source, all_blockers ) | bishop_magic( m.source, all_blockers );
+				uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+				uint64_t possible_moves = rook_magic( m.source, all_blockers ) | bishop_magic( m.source, all_blockers );
 				if( !(possible_moves & (1ull << m.target ) ) ) {
 					return false;
 				}

@@ -7,8 +7,8 @@
 #define PACKED(c, s) c s __attribute__((__packed__))
 #define NONPACKED(s) s
 
-unsigned long long timer_precision();
-unsigned long long get_time();
+uint64_t timer_precision();
+uint64_t get_time();
 
 void console_init();
 
@@ -50,7 +50,7 @@ public:
 	~condition();
 
 	void wait( scoped_lock& l );
-	void wait( scoped_lock& l, unsigned long long timeout );
+	void wait( scoped_lock& l, uint64_t timeout );
 	void signal( scoped_lock& l );
 
 private:
@@ -105,12 +105,12 @@ int get_system_memory();
 
 // Forward bitscan, returns zero-based index of lowest set bit.
 // Precondition: mask != 0
-inline unsigned long long bitscan( unsigned long long mask )
+inline uint64_t bitscan( uint64_t mask )
 {
 	// We cannot use the __builtin_ffsll, as it is way more expensive:
 	// It always adds 1 to the result, which we then have to subtract again.
 	// Not even -O3 can save us there
-	unsigned long long index;
+	uint64_t index;
 	asm \
 	( \
 	"bsfq %[mask], %[index]" \
@@ -124,9 +124,9 @@ inline unsigned long long bitscan( unsigned long long mask )
 
 // Forward bitscan, returns index of highest set bit.
 // Precondition: mask != 0
-inline unsigned long long bitscan_reverse( unsigned long long mask )
+inline uint64_t bitscan_reverse( uint64_t mask )
 {
-	unsigned long long index;
+	uint64_t index;
 	asm \
 	( \
 	"bsrq %[mask], %[index]" \

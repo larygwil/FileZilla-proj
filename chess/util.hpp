@@ -33,18 +33,18 @@ void apply_move( position& p, move_info const& m, color::type c );
 //				 e.g. is_valid_move might return true on Na1b1
 bool is_valid_move( position const& p, color::type c, move const& m, check_map const& check );
 
-void init_random( unsigned long long seed );
+void init_random( uint64_t seed );
 
 void push_rng_state();
 void pop_rng_state();
 
 unsigned char get_random_unsigned_char();
 
-unsigned long long get_random_unsigned_long_long();
+uint64_t get_random_unsigned_long_long();
 
 std::string board_to_string( position const& p );
 
 // Numbered square from 0 - 63
-pieces::type get_piece_on_square( position const& p, color::type c, unsigned long long square );
+pieces::type get_piece_on_square( position const& p, color::type c, uint64_t square );
 
 #endif

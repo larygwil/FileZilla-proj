@@ -12,17 +12,17 @@
  * integer multiple of the system's memory page size.
  * Needs to be freed using aligned_free.
  */
-void* page_aligned_malloc( unsigned long long alignment );
+void* page_aligned_malloc( uint64_t alignment );
 
 void aligned_free( void* p );
 
 // Returns the system's memory page size.
-unsigned long long get_page_size();
+uint64_t get_page_size();
 
 // Forward bitscan, returns zero-based index of lowest set bit and nulls said bit.
 // Precondition: mask != 0
-inline unsigned long long bitscan_unset( unsigned long long& mask ) {
-	unsigned long long index = bitscan( mask );
+inline uint64_t bitscan_unset( uint64_t& mask ) {
+	uint64_t index = bitscan( mask );
 	mask &= mask - 1;
 	return index;
 }

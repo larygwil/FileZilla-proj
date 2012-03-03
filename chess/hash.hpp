@@ -92,7 +92,7 @@
  * Hyatt's paper on lockless transposition tables.
  */
 
-typedef unsigned long long hash_key;
+typedef uint64_t hash_key;
 
 struct move;
 struct entry;
@@ -123,11 +123,11 @@ public:
 			, index_collisions()
 		{}
 
-		unsigned long long entries;
-		unsigned long long hits;
-		unsigned long long best_move;
-		unsigned long long misses;
-		unsigned long long index_collisions;
+		uint64_t entries;
+		uint64_t hits;
+		uint64_t best_move;
+		uint64_t misses;
+		uint64_t index_collisions;
 	};
 
 	stats get_stats( bool reset );

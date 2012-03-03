@@ -4,25 +4,25 @@
 #include "platform.hpp"
 #include "tables.hpp"
 
-inline unsigned long long attack( unsigned long long pi, unsigned long long blockers, unsigned long long const* const ray )
+inline uint64_t attack( uint64_t pi, uint64_t blockers, uint64_t const* const ray )
 {
-	unsigned long long attacks = ray[pi];
-	unsigned long long ray_blockers = (blockers & attacks) | 0x8000000000000000ull;
-	unsigned long long ray_blocker = bitscan( ray_blockers );
+	uint64_t attacks = ray[pi];
+	uint64_t ray_blockers = (blockers & attacks) | 0x8000000000000000ull;
+	uint64_t ray_blocker = bitscan( ray_blockers );
 	return attacks ^ ray[ray_blocker];
 }
 
 
-inline unsigned long long attackr( unsigned long long pi, unsigned long long blockers, unsigned long long const* const ray )
+inline uint64_t attackr( uint64_t pi, uint64_t blockers, uint64_t const* const ray )
 {
-	unsigned long long attacks = ray[pi];
-	unsigned long long ray_blockers = (blockers & attacks) | 0x1ull;
-	unsigned long long ray_blocker = bitscan_reverse( ray_blockers );
+	uint64_t attacks = ray[pi];
+	uint64_t ray_blockers = (blockers & attacks) | 0x1ull;
+	uint64_t ray_blocker = bitscan_reverse( ray_blockers );
 	return attacks ^ ray[ray_blocker];
 }
 
 
-inline unsigned long long rook_attacks( unsigned long long pi, unsigned long long blockers )
+inline uint64_t rook_attacks( uint64_t pi, uint64_t blockers )
 {
 	return attack( pi, blockers, ray_n ) |
 		   attack( pi, blockers, ray_e ) |
@@ -31,7 +31,7 @@ inline unsigned long long rook_attacks( unsigned long long pi, unsigned long lon
 }
 
 
-inline unsigned long long bishop_attacks( unsigned long long pi, unsigned long long blockers )
+inline uint64_t bishop_attacks( uint64_t pi, uint64_t blockers )
 {
 	return attack( pi, blockers, ray_ne ) |
 		   attackr( pi, blockers, ray_se ) |

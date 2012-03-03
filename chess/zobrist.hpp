@@ -5,10 +5,10 @@
 
 void init_zobrist_tables();
 
-unsigned long long get_zobrist_hash( position const& p );
+uint64_t get_zobrist_hash( position const& p );
 
-unsigned long long update_zobrist_hash( position const& p, color::type c, unsigned long long hash, move const& m );
+uint64_t update_zobrist_hash( position const& p, color::type c, uint64_t hash, move const& m );
 
-unsigned long long get_pawn_structure_hash( color::type c, unsigned char pawn );
+uint64_t get_pawn_structure_hash( color::type c, unsigned char pawn );
 
 #endif

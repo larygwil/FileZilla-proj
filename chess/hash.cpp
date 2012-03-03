@@ -94,20 +94,20 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, un
 		eval -= ply;
 	}
 
-	unsigned long long bucket_offset = (key % bucket_count_) * bucket_entries;
+	uint64_t bucket_offset = (key % bucket_count_) * bucket_entries;
 	entry* bucket = data_ + bucket_offset;
 
-	uint64_t v = static_cast<unsigned long long>(clock) << field_shifts::age;
-	v |= static_cast<unsigned long long>(remaining_depth) << field_shifts::depth;
+	uint64_t v = static_cast<uint64_t>(clock) << field_shifts::age;
+	v |= static_cast<uint64_t>(remaining_depth) << field_shifts::depth;
 	v |= (
-				(static_cast<unsigned long long>(best_move.flags) ) |
-				(static_cast<unsigned long long>(best_move.piece) << 6 ) |
-				(static_cast<unsigned long long>(best_move.source) << 9) |
-				(static_cast<unsigned long long>(best_move.target) << 15) |
-				(static_cast<unsigned long long>(best_move.captured_piece) << 21) ) << field_shifts::move;
+				(static_cast<uint64_t>(best_move.flags) ) |
+				(static_cast<uint64_t>(best_move.piece) << 6 ) |
+				(static_cast<uint64_t>(best_move.source) << 9) |
+				(static_cast<uint64_t>(best_move.target) << 15) |
+				(static_cast<uint64_t>(best_move.captured_piece) << 21) ) << field_shifts::move;
 
-	v |= static_cast<unsigned long long>(t) << field_shifts::node_type;
-	v |= static_cast<unsigned long long>(eval) << field_shifts::score;
+	v |= static_cast<uint64_t>(t) << field_shifts::node_type;
+	v |= static_cast<uint64_t>(eval) << field_shifts::score;
 
 	for( unsigned int i = 0; i < bucket_entries; ++i ) {
 		if( ((bucket + i)->v ^ (bucket + i)->key) == key ) {
@@ -171,7 +171,7 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 		key = ~key;
 	}
 
-	unsigned long long bucket_offset = (key % bucket_count_) * bucket_entries;
+	uint64_t bucket_offset = (key % bucket_count_) * bucket_entries;
 	entry const* bucket = data_ + bucket_offset;
 
 	for( unsigned int i = 0; i < bucket_entries; ++i, ++bucket ) {

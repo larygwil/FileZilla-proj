@@ -86,7 +86,7 @@ void sort_moves_noncaptures( move_info* begin, move_info* end, position const& p
 
 
 killer_moves const empty_killers;
-short quiescence_search( int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta )
+short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta )
 {
 #if 0
 	if( get_zobrist_hash(p) != hash ) {
@@ -176,7 +176,7 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 		}
 
 		short value;
-		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
+		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
 
 		if( ctx.seen.is_two_fold( new_hash, ply ) ) {
 			value = result::draw;
@@ -225,7 +225,7 @@ short quiescence_search( int ply, context& ctx, position const& p, unsigned long
 }
 
 
-short quiescence_search( int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, short alpha, short beta )
+short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, short alpha, short beta )
 {
 	check_map check;
 	calc_check_map( p, c, check );
@@ -360,7 +360,7 @@ private:
 	short const& eval_;
 };
 
-short step( int depth, int ply, context& ctx, position const& p, unsigned long long hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null )
+short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null )
 {
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
 		return quiescence_search( ply, ctx, p, hash, current_evaluation, c, check, alpha, beta );
@@ -443,7 +443,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 		++processed_moves;
 
 		short value;
-		unsigned long long new_hash = update_zobrist_hash( p, c, hash, it->m );
+		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
 
 		pv_entry* cpv = ctx.pv_pool.get();
 		if( ctx.seen.is_two_fold( new_hash, ply ) ) {
@@ -457,7 +457,7 @@ short step( int depth, int ply, context& ctx, position const& p, unsigned long l
 
 			bool extended = false;
 
-			unsigned long long new_depth = depth - depth_factor;
+			uint64_t new_depth = depth - depth_factor;
 			if( it->m.piece == pieces::pawn ) {
 				if( it->m.target < 16 || it->m.target >= 48 ) {
 					new_depth += pawn_push_extension;
@@ -666,7 +666,7 @@ short processing_thread::processWork()
 {
 	position new_pos = p_;
 	apply_move( new_pos, m_, c_ );
-	unsigned long long hash = get_zobrist_hash( new_pos );
+	uint64_t hash = get_zobrist_hash( new_pos );
 
 	ctx_.clock = clock_ % 256;
 	ctx_.seen = seen_;
@@ -773,7 +773,7 @@ seen_positions::seen_positions()
 	memset( pos, 0, (100 + MAX_DEPTH + MAX_QDEPTH + 10)*8 );
 }
 
-bool seen_positions::is_three_fold( unsigned long long hash, int ply ) const
+bool seen_positions::is_three_fold( uint64_t hash, int ply ) const
 {
 	int count = 0;
 	for( int i = root_position + ply - 4; i >= null_move_position; i -= 2) {
@@ -784,7 +784,7 @@ bool seen_positions::is_three_fold( unsigned long long hash, int ply ) const
 	return count >= 2;
 }
 
-bool seen_positions::is_two_fold( unsigned long long hash, int ply ) const
+bool seen_positions::is_two_fold( uint64_t hash, int ply ) const
 {
 	for( int i = root_position + ply - 4; i >= null_move_position; i -= 2 ) {
 		if( pos[i] == hash ) {
@@ -794,7 +794,7 @@ bool seen_positions::is_two_fold( unsigned long long hash, int ply ) const
 	return false;
 }
 
-void new_best_move_callback::on_new_best_move( position const& p, color::type c, int depth, int evaluation, unsigned long long nodes, pv_entry const* pv )
+void new_best_move_callback::on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, pv_entry const* pv )
 {
 	std::stringstream ss;
 	ss << "Best so far: " << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
@@ -847,12 +847,12 @@ calc_manager::~calc_manager()
 }
 
 
-bool calc_manager::calc( position& p, color::type c, move& m, int& res, unsigned long long move_time_limit, unsigned long long /*time_remaining*/, int clock, seen_positions& seen
+bool calc_manager::calc( position& p, color::type c, move& m, int& res, uint64_t move_time_limit, uint64_t /*time_remaining*/, int clock, seen_positions& seen
 		  , short last_mate
 		  , new_best_move_callback& new_best_cb )
 {
 	bool ponder = false;
-	if( move_time_limit != static_cast<unsigned long long>(-1) ) {
+	if( move_time_limit != static_cast<uint64_t>(-1) ) {
 		std::cerr << "Current move time limit is " << 1000 * move_time_limit / timer_precision() << " ms" << std::endl;
 	}
 	else {
@@ -907,7 +907,7 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, unsigned
 
 	new_best_cb.on_new_best_move( p, c, 0, old_sorted.front().m.evaluation, 0, old_sorted.front().pv );
 
-	unsigned long long start = get_time();
+	uint64_t start = get_time();
 
 	short alpha_at_prev_depth = result::loss;
 	int highest_depth = 0;
@@ -957,7 +957,7 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, unsigned
 break2:
 
 			if( !ponder ) {
-				unsigned long long now = get_time();
+				uint64_t now = get_time();
 				if( move_time_limit > now - start ) {
 					impl_->cond_.wait( l, move_time_limit - now + start );
 				}
@@ -1025,8 +1025,8 @@ break2:
 				}
 			}
 			else {
-				unsigned long long now = get_time();
-				unsigned long long elapsed = now - start;
+				uint64_t now = get_time();
+				uint64_t elapsed = now - start;
 				if( !ponder && elapsed * 2 > move_time_limit ) {
 					std::cerr << "Not increasing depth due to time limit. Elapsed: " << elapsed * 1000 / timer_precision() << " ms" << std::endl;
 					do_abort = true;
@@ -1081,7 +1081,7 @@ break2:
 	pv_entry const* pv = old_sorted.begin()->pv;
 	new_best_cb.on_new_best_move( p, c, highest_depth, old_sorted.begin()->forecast, stats.full_width_nodes + stats.quiescence_nodes, pv );
 
-	unsigned long long stop = get_time();
+	uint64_t stop = get_time();
 	print_stats( start, stop );
 	reset_stats();
 
