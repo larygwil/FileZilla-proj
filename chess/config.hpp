@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include "platform.hpp"
+
 // Upper limits, cannot go higher without recompilation.
 #define MAX_DEPTH  40
 #define MAX_QDEPTH 40
@@ -34,7 +36,7 @@ struct config
 	int pawn_hash_table_size; // In MiB
 
 private:
-	void init_book_dir( std::string const& self );
+	void init_book_dir( std::string self );
 };
 extern config conf;
 

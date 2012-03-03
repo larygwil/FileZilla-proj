@@ -199,7 +199,7 @@ int main()
 				int target_col = target % 8;
 				int target_row = target / 8;
 
-				v = 7 - std::max( std::abs(source_col - target_col), std::abs(source_row - target_row) );
+				v = 7 - (std::max)( std::abs(source_col - target_col), std::abs(source_row - target_row) );
 
 				std::cout << std::dec << v;
 

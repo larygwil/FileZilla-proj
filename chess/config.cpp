@@ -2,6 +2,7 @@
 #include "platform.hpp"
 
 #include <iostream>
+#include <algorithm>
 
 #include <string.h>
 
@@ -26,7 +27,7 @@ config::config()
 }
 
 
-void config::init_book_dir( std::string const& self )
+void config::init_book_dir( std::string self )
 {
 #if _MSC_VER
 	std::replace( self.begin(), self.end(), '\\', '/' );
@@ -35,9 +36,9 @@ void config::init_book_dir( std::string const& self )
 		book_dir = self.substr( 0, self.rfind('/') + 1 );
 	}
 #if _MSC_VER
-	if( GetFileAttributes( (book_dir + "/opening_book.db").c_str() ) == INVALID_FILE_ATTRIBUTES ) {
+	if( GetFileAttributesA( (book_dir + "/opening_book.db").c_str() ) == INVALID_FILE_ATTRIBUTES ) {
 		char buffer[MAX_PATH];
-		GetModuleFileName( 0, buffer, MAX_PATH );
+		GetModuleFileNameA( 0, buffer, MAX_PATH );
 		buffer[MAX_PATH - 1] = 0;
 		book_dir = buffer;
 		std::replace( book_dir.begin(), book_dir.end(), '\\', '/' );
