@@ -6,21 +6,9 @@
 #include "detect_check.hpp"
 #include "pvlist.hpp"
 #include "moves.hpp"
-
+#include "seen_positions.hpp"
 
 int const depth_factor = 6;
-
-class seen_positions {
-public:
-	seen_positions();
-
-	uint64_t pos[100 + MAX_DEPTH + MAX_QDEPTH + 10]; // Must be at least 50 full moves + max depth and add some safety margin.
-	int root_position; // Index of root position in seen_positions
-	int null_move_position;
-
-	bool is_two_fold( uint64_t hash, int ply ) const;
-	bool is_three_fold( uint64_t hash, int ply ) const;
-};
 
 struct new_best_move_callback
 {

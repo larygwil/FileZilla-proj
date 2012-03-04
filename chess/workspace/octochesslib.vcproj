@@ -219,6 +219,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\seen_positions.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\selftest.cpp"
 				>
 			</File>
@@ -326,6 +330,10 @@
 			</File>
 			<File
 				RelativePath="..\see.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\seen_positions.hpp"
 				>
 			</File>
 			<File

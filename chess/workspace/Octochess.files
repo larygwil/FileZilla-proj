@@ -34,6 +34,8 @@
 ../random.hpp
 ../see.cpp
 ../see.hpp
+../seen_positions.cpp
+../seen_positions.hpp
 ../selftest.cpp
 ../selftest.hpp
 ../sliding_piece_attacks.hpp

@@ -435,7 +435,7 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 	work w;
 	init_board( w.p );
 	w.c = color::white;
-	w.seen.pos[0] = get_zobrist_hash(w.p);
+	w.seen.reset_root( get_zobrist_hash(w.p) );
 
 	while( !pos.empty() ) {
 		std::string ms = pos.substr( 0, 2 );
@@ -449,7 +449,7 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 		apply_move( w.p, m, w.c );
 		w.c = static_cast<color::type>(1-w.c);
 		w.move_history.push_back( m );
-		w.seen.pos[++w.seen.root_position] = get_zobrist_hash(w.p);
+		w.seen.push_root( get_zobrist_hash(w.p) );
 	}
 
 	wl->push_back( w );

@@ -5,10 +5,12 @@ all: chess-use bookgen-use
 
 GENERIC_SOURCE_FILES = \
 	book.cpp \
+	calc.cpp \
 	config.cpp \
 	detect_check.cpp \
-	calc.cpp \
+	eval.cpp \
 	fen.cpp \
+	hash.cpp \
 	logger.cpp \
 	magic.cpp \
 	mobility.cpp \
@@ -19,12 +21,11 @@ GENERIC_SOURCE_FILES = \
 	pvlist.cpp \
 	util.cpp \
 	see.cpp \
+	seen_positions.cpp \
 	selftest.cpp \
 	statistics.cpp \
 	tables.cpp \
 	unix.cpp \
-	eval.cpp \
-	hash.cpp \
 	zobrist.cpp \
 	sqlite/sqlite3.o
 

@@ -63,9 +63,7 @@ struct xboard_state
 
 		clock = 1;
 
-		seen = seen_positions();
-		seen.root_position = 0;
-		seen.pos[0] = get_zobrist_hash( p );
+		seen.reset_root( get_zobrist_hash( p ) );
 
 		time_remaining = conf.time_limit * timer_precision() / 1000;
 		bonus_time = 0;
@@ -91,14 +89,13 @@ struct xboard_state
 		c = static_cast<color::type>( 1 - c );
 
 		if( !reset_seen ) {
-			seen.pos[++seen.root_position] = get_zobrist_hash( p );
+			seen.push_root( get_zobrist_hash( p ) );
 		}
 		else {
-			seen.root_position = 0;
-			seen.pos[0] = get_zobrist_hash( p );
+			seen.reset_root( get_zobrist_hash( p ) );
 		}
 
-		if( seen.root_position >= 110 ) {
+		if( seen.depth() >= 110 ) {
 			std::cout << "1/2-1/2 (Draw)" << std::endl;
 		}
 
@@ -112,13 +109,9 @@ struct xboard_state
 		}
 
 		clock -= count;
-		if( seen.root_position > static_cast<int>(count) ) {
-			seen.root_position -= count;
-		}
-		else {
-			// This isn't exactly correct, would need to restore old seen state prior to a reset.
-			seen.root_position = 0;
-		}
+
+		// This isn't exactly correct, if popping past root we would need to restore old seen state prior to a reset.
+		seen.pop_root( count );
 
 		if( count % 2 ) {
 			c = static_cast<color::type>(1 - c);
@@ -697,7 +690,7 @@ void xboard()
 			state.reset();
 			state.p = new_pos;
 			state.c = new_c;
-			state.seen.pos[0] = get_zobrist_hash( state.p );
+			state.seen.reset_root( get_zobrist_hash( state.p ) );
 			state.started_from_root = false;
 
 			if( analyze ) {

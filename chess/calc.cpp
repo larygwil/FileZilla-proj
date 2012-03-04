@@ -185,7 +185,7 @@ short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash
 			apply_move( new_pos, *it, c );
 			check_map new_check( new_pos, static_cast<color::type>(1-c) );
 
-			ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
+			ctx.seen.set( new_hash, ply );
 
 			value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -beta, -alpha );
 		}
@@ -391,16 +391,14 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 
 #if NULL_MOVE_REDUCTION > 0
 	if( !last_was_null && !check.check && depth > (cutoff + depth_factor) && p.material[0] > 1500 && p.material[1] > 1500 ) {
-		int old_null = ctx.seen.null_move_position;
-		ctx.seen.null_move_position = ctx.seen.root_position + ply - 1;
+		null_move_block seen_block( ctx.seen, ply );
+
 		pv_entry* cpv = ctx.pv_pool.get();
 
 		check_map new_check( p, static_cast<color::type>(1-c) );
 
 		short value = -step( depth - (NULL_MOVE_REDUCTION + 1) * depth_factor, ply + 1, ctx, p, hash, -current_evaluation, static_cast<color::type>(1-c), new_check, -beta, -beta + 1, cpv, true );
 		ctx.pv_pool.release( cpv );
-
-		ctx.seen.null_move_position = old_null;
 
 		if( value >= beta ) {
 			if( !do_abort ) {
@@ -443,7 +441,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 			position new_pos = p;
 			apply_move( new_pos, *it, c );
 
-			ctx.seen.pos[ctx.seen.root_position + ply] = new_hash;
+			ctx.seen.set( new_hash, ply );
 
 			bool extended = false;
 
@@ -667,7 +665,7 @@ short processing_thread::processWork()
 		return result::draw;
 	}
 
-	ctx_.seen.pos[++ctx_.seen.root_position] = hash;
+	ctx_.seen.push_root( hash );
 
 	check_map check( new_pos, static_cast<color::type>(1-c_) );
 
@@ -753,34 +751,6 @@ void insert_sorted( sorted_moves& moves, int forecast, move_info const& m, pv_en
 	moves.insert( it, d );
 }
 
-
-seen_positions::seen_positions()
-	: root_position()
-	, null_move_position()
-{
-	memset( pos, 0, (100 + MAX_DEPTH + MAX_QDEPTH + 10)*8 );
-}
-
-bool seen_positions::is_three_fold( uint64_t hash, int ply ) const
-{
-	int count = 0;
-	for( int i = root_position + ply - 4; i >= null_move_position; i -= 2) {
-		if( pos[i] == hash ) {
-			++count;
-		}
-	}
-	return count >= 2;
-}
-
-bool seen_positions::is_two_fold( uint64_t hash, int ply ) const
-{
-	for( int i = root_position + ply - 4; i >= null_move_position; i -= 2 ) {
-		if( pos[i] == hash ) {
-			return true;
-		}
-	}
-	return false;
-}
 
 void new_best_move_callback::on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, pv_entry const* pv )
 {

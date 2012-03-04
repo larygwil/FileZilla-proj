@@ -57,7 +57,7 @@ bool deepen_move( book& b, position const& p, color::type c, seen_positions cons
 		value = 0;
 	}
 	else {
-		ctx.seen.pos[++ctx.seen.root_position] = new_hash;
+		ctx.seen.push_root( new_hash );
 
 		pv_entry* pv = ctx.pv_pool.get();
 
@@ -109,7 +109,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 			value = 0;
 		}
 		else {
-			ctx.seen.pos[++ctx.seen.root_position] = new_hash;
+			ctx.seen.push_root( new_hash );
 
 			pv_entry* pv = ctx.pv_pool.get();
 
@@ -164,7 +164,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 				value = 0;
 			}
 			else {
-				ctx.seen.pos[++ctx.seen.root_position] = new_hash;
+				ctx.seen.push_root( new_hash );
 				pv_entry* pv = ctx.pv_pool.get();
 
 				check_map check( new_pos, static_cast<color::type>(1-c) );
@@ -223,7 +223,7 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 				value = 0;
 			}
 			else {
-				ctx.seen.pos[++ctx.seen.root_position] = new_hash;
+				ctx.seen.push_root( new_hash );
 
 				short eval = evaluate_fast( new_pos, c );
 
@@ -252,8 +252,7 @@ void init_book( book& b )
 	position p;
 	init_board(p);
 
-	seen_positions seen;
-	seen.pos[0] = get_zobrist_hash( p );
+	seen_positions seen( get_zobrist_hash( p ) );
 
 	std::vector<move> move_history;
 
@@ -302,7 +301,7 @@ void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, see
 		std::vector<book_entry> child_moves = b.get_entries( new_pos, static_cast<color::type>(1-c), child_history );
 
 		seen_positions child_seen = seen;
-		child_seen.pos[++child_seen.root_position] = get_zobrist_hash( new_pos );
+		child_seen.push_root( get_zobrist_hash( new_pos ) );
 
 		if( child_moves.empty() ) {
 			work w;
@@ -966,8 +965,7 @@ void run( book& b )
 	std::vector<move> move_history;
 	std::vector<history_entry> history;
 
-	seen_positions seen;
-	seen.pos[0] = get_zobrist_hash( p );
+	seen_positions seen( get_zobrist_hash( p ) );
 
 	color::type c = color::white;
 
@@ -1042,7 +1040,7 @@ void run( book& b )
 			else {
 				history_entry h = history.back();
 				move_history.pop_back();
-				--seen.root_position;
+				seen.pop_root();
 				history.pop_back();
 				p = h.p;
 				c = h.c;
@@ -1095,7 +1093,7 @@ void run( book& b )
 				apply_move( p, m, c );
 				c = static_cast<color::type>( 1 - c );
 
-				seen.pos[++seen.root_position] = get_zobrist_hash( p );
+				seen.push_root( get_zobrist_hash( p ) );
 
 				std::vector<book_entry> entries = b.get_entries( p, c, move_history );
 				if( entries.empty() ) {

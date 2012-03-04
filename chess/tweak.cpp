@@ -79,9 +79,7 @@ static void generate_test_positions_impl()
 	move m;
 	int res = 0;
 
-	seen_positions seen;
-	seen.root_position = 0;
-	seen.pos[0] = get_zobrist_hash( p );
+	seen_positions seen( get_zobrist_hash( p ) );
 
 	short last_mate = 0;
 
@@ -105,14 +103,13 @@ static void generate_test_positions_impl()
 		c = static_cast<color::type>(1-c);
 
 		if( !reset_seen ) {
-			seen.pos[++seen.root_position] = get_zobrist_hash( p );
+			seen.push_root( get_zobrist_hash( p ) );
 		}
 		else {
-			seen.root_position = 0;
-			seen.pos[0] = get_zobrist_hash( p );
+			seen.reset_root( get_zobrist_hash( p ) );
 		}
 
-		if( seen.root_position > 110 ) { // Be lenient, 55 move rule is fine for us in case we don't implement this correctly.
+		if( seen.depth() > 110 ) { // Be lenient, 55 move rule is fine for us in case we don't implement this correctly.
 			std::cerr << "DRAW" << std::endl;
 			exit(1);
 		}

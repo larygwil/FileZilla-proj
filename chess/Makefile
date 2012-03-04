@@ -26,6 +26,7 @@ OBJECT_FILES = \
 	pawn_structure_hash_table.o \
 	pvlist.o \
 	see.o \
+	seen_positions.o \
 	selftest.o \
 	sqlite/sqlite3.o \
 	statistics.o \
