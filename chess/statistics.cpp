@@ -16,7 +16,7 @@ void statistics::print( uint64_t elapsed )
 	try {
 		ss.imbue( std::locale("") );
 	}
-	catch( std::exception const& e ) {
+	catch( std::exception const& ) {
 		// Who cares
 	}
 
@@ -79,7 +79,7 @@ void statistics::print_total()
 	try {
 		ss.imbue( std::locale("") );
 	}
-	catch( std::exception const& e ) {
+	catch( std::exception const& ) {
 		// Who cares
 	}
 

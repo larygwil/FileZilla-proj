@@ -22,6 +22,8 @@
 			IntermediateDirectory="..\build\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
+			BuildLogFile="$(IntDir)\TablesGenBuildLog.htm"
+			ExcludeBuckets="5;6;8;13"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
