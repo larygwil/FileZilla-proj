@@ -245,6 +245,7 @@ public:
 		, killers_(killers)
 		, phase( phases::hash_move )
 		, moves( ctx.move_ptr )
+		, it( ctx.move_ptr )
 		, p_(p)
 		, c_(c)
 		, check_(check)
@@ -283,7 +284,6 @@ public:
 			}
 		case phases::captures_gen:
 			ctx.move_ptr = moves;
-			it = moves;
 			calculate_moves_captures( p_, c_, ctx.move_ptr, check_ );
 			std::sort( moves, ctx.move_ptr, moveSort );
 			phase = phases::captures;
