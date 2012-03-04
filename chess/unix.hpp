@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #define PACKED(c, s) c s __attribute__((__packed__))
 #define NONPACKED(s) s
