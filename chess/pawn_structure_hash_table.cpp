@@ -49,7 +49,7 @@ bool pawn_structure_hash_table::lookup( uint64_t key, short* eval ) const
 
 	if( (v ^ data_[index].key) != key ) {
 #if USE_STATISTICS
-		stats_.misses++;
+		++stats_.misses;
 #endif
 		return false;
 	}
@@ -58,7 +58,7 @@ bool pawn_structure_hash_table::lookup( uint64_t key, short* eval ) const
 	eval[1] = static_cast<short>(v & 0xFFFFull);
 
 #if USE_STATISTICS
-	stats_.hits++;
+	++stats_.hits;
 #endif
 
 	return true;

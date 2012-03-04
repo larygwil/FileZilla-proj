@@ -85,7 +85,6 @@ void sort_moves_noncaptures( move_info* begin, move_info* end, position const& p
 }
 
 
-killer_moves const empty_killers;
 short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta )
 {
 #if 0
@@ -266,6 +265,7 @@ public:
 		case phases::hash_move:
 			phase = phases::captures_gen;
 			if( !hash_move.empty() ) {
+				ctx.move_ptr = moves + 1;
 #if 0
 				if( !is_valid_move( p_, c_, hash_move, check_ ) ) {
 					std::cerr << "Possible type-1 hash collision:" << std::endl;
@@ -276,9 +276,9 @@ public:
 				else
 #endif
 				{
-					tmp.m = hash_move;
-					tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
-					return &tmp;
+					moves->m = hash_move;
+					moves->evaluation = evaluate_move( p_, c_, eval_, moves->m, moves->pawns );
+					return moves;
 				}
 			}
 		case phases::captures_gen:
@@ -296,17 +296,18 @@ public:
 			phase = phases::killer1;
 		case phases::killer1:
 			phase = phases::killer2;
+			ctx.move_ptr = moves + 1;
 			if( !killers_.m1.empty() && killers_.m1 != hash_move && is_valid_move( p_, c_, killers_.m1, check_ ) ) {
-				tmp.m = killers_.m1;
-				tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
-				return &tmp;
+				moves->m = killers_.m1;
+				moves->evaluation = evaluate_move( p_, c_, eval_, moves->m, moves->pawns );
+				return moves;
 			}
 		case phases::killer2:
 			phase = phases::noncaptures_gen;
 			if( !killers_.m2.empty() && killers_.m2 != hash_move && killers_.m1 != killers_.m2 && is_valid_move( p_, c_, killers_.m2, check_ ) ) {
-				tmp.m = killers_.m2;
-				tmp.evaluation = evaluate_move( p_, c_, eval_, tmp.m, tmp.pawns );
-				return &tmp;
+				moves->m = killers_.m2;
+				moves->evaluation = evaluate_move( p_, c_, eval_, moves->m, moves->pawns );
+				return moves;
 			}
 		case phases::noncaptures_gen:
 			ctx.move_ptr = moves;
@@ -336,7 +337,6 @@ public:
 	}
 
 	move hash_move;
-	move_info tmp;
 
 private:
 	context& ctx;
@@ -354,9 +354,6 @@ private:
 short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null )
 {
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
-		if( ply >= MAX_DEPTH ) {
-			std::cerr << "MAX" << std::endl;
-		}
 		return quiescence_search( ply, ctx, p, hash, current_evaluation, c, check, alpha, beta );
 	}
 
