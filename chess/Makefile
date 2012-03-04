@@ -25,6 +25,7 @@ OBJECT_FILES = \
 	moves_noncaptures.o \
 	pawn_structure_hash_table.o \
 	pvlist.o \
+	random.o \
 	see.o \
 	seen_positions.o \
 	selftest.o \

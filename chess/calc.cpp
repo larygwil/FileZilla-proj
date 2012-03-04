@@ -7,6 +7,7 @@
 #include "eval.hpp"
 #include "util.hpp"
 #include "platform.hpp"
+#include "random.hpp"
 #include "see.hpp"
 #include "statistics.hpp"
 #include "zobrist.hpp"

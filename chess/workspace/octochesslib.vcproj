@@ -218,6 +218,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\random.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\see.cpp"
 				>
 			</File>
@@ -325,6 +329,10 @@
 			</File>
 			<File
 				RelativePath="..\pvlist.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\random.hpp"
 				>
 			</File>
 			<File

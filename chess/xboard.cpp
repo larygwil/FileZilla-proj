@@ -7,6 +7,7 @@
 #include "hash.hpp"
 #include "logger.hpp"
 #include "pawn_structure_hash_table.hpp"
+#include "random.hpp"
 #include "see.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"

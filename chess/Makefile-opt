@@ -19,6 +19,7 @@ GENERIC_SOURCE_FILES = \
 	moves_noncaptures.cpp \
 	pawn_structure_hash_table.cpp \
 	pvlist.cpp \
+	random.cpp \
 	util.cpp \
 	see.cpp \
 	seen_positions.cpp \

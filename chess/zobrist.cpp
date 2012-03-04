@@ -1,6 +1,7 @@
 #include "zobrist.hpp"
 #include "chess.hpp"
 #include "util.hpp"
+#include "random.hpp"
 
 namespace {
 static uint64_t pawns[2][64];
