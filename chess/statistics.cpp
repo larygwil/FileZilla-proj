@@ -3,61 +3,68 @@
 #include "pawn_structure_hash_table.hpp"
 
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 
 #ifdef USE_STATISTICS
 
-statistics::type stats;
+statistics stats;
 
-void print_stats( uint64_t start, uint64_t stop )
+void statistics::print( uint64_t elapsed )
 {
 	std::stringstream ss;
+	try {
+		ss.imbue( std::locale("") );
+	}
+	catch( std::exception const& e ) {
+		// Who cares
+	}
 
 	ss << std::endl;
 	ss << "Node stats:" << std::endl;
-	ss << "  Total:            " << stats.full_width_nodes + stats.quiescence_nodes << std::endl;
-	ss << "  Full-width:       " << stats.full_width_nodes << std::endl;
-	ss << "  Quiescence:       " << stats.quiescence_nodes << std::endl;
+	ss << "  Total:            " << std::setw(11) << std::setfill(' ') << full_width_nodes + quiescence_nodes << std::endl;
+	ss << "  Full-width:       " << std::setw(11) << std::setfill(' ') << full_width_nodes << std::endl;
+	ss << "  Quiescence:       " << std::setw(11) << std::setfill(' ') << quiescence_nodes << std::endl;
 
-	if( stats.full_width_nodes || stats.quiescence_nodes ) {
-		ss << "  Time per node:    " << ((stop - start) * 1000 * 1000 * 1000) / (stats.full_width_nodes + stats.quiescence_nodes) / timer_precision() << " ns" << std::endl;
-		if( stop != start ) {
-			ss << "  Nodes per second: " << (timer_precision() * (stats.full_width_nodes + stats.quiescence_nodes) ) / (stop - start) << std::endl;
+	if( full_width_nodes || quiescence_nodes ) {
+		if( elapsed != 0 ) {
+			ss << "  Nodes per second: " << std::setw(11) << std::setfill(' ') << (timer_precision() * (full_width_nodes + quiescence_nodes) ) / elapsed << std::endl;
 		}
+		ss << "  Time per node:    " << std::setw(8) << (elapsed * 1000 * 1000 * 1000) / (full_width_nodes + quiescence_nodes) / timer_precision() << " ns" << std::endl;
 	}
 
 	ss << std::endl;
 	ss << "Transposition table stats:" << std::endl;
 	hash::stats s = transposition_table.get_stats( true );
 
-	ss << "- Number of entries: " << s.entries << " (" << 100 * static_cast<double>(s.entries) / transposition_table.max_hash_entry_count() << "%)" << std::endl;
-	ss << "- Lookup misses:     " << s.misses;
+	ss << "- Number of entries: " << std::setw(11) << s.entries << " (" << 100 * static_cast<double>(s.entries) / transposition_table.max_hash_entry_count() << "%)" << std::endl;
+	ss << "- Lookup misses:     " << std::setw(11) << s.misses;
 	if( s.misses + s.hits + s.best_move ) {
 		ss << " (" << static_cast<double>(s.misses) / (s.misses + s.hits + s.best_move) * 100 << "%)";
 	}
 	ss << std::endl;
-	ss << "- Lookup hits:       " << s.hits;
+	ss << "- Lookup hits:       " << std::setw(11) << s.hits;
 	if( s.misses + s.hits + s.best_move ) {
 		ss << " (" << static_cast<double>(s.hits) / (s.misses + s.hits + s.best_move) * 100 << "%)";
 	}
 	ss << std::endl;
-	ss << "- Lookup best moves: " << s.best_move;
+	ss << "- Lookup best moves: " << std::setw(11) << s.best_move;
 	if( s.misses + s.hits + s.best_move ) {
 		ss << " (" << static_cast<double>(s.best_move) / (s.misses + s.hits + s.best_move) * 100 << "%)";
 	}
 	ss << std::endl;
-	ss << "- Index collisions:  " << s.index_collisions << std::endl;
+	ss << "- Index collisions:  " << std::setw(11) << s.index_collisions << std::endl;
 
 	pawn_structure_hash_table::stats ps = pawn_hash_table.get_stats(true);
 
 	ss << std::endl;
 	ss << "Pawn structure hash table stats:" << std::endl;
-	ss << "- Hits:     " << ps.hits;
+	ss << "- Hits:     " << std::setw(11) << ps.hits;
 	if( ps.hits + ps.misses ) {
 		ss << " (" << 100 * static_cast<double>(ps.hits) / (ps.hits + ps.misses) << "%)";
 	}
 	ss << std::endl;
-	ss << "- Misses:   " << ps.misses;
+	ss << "- Misses:   " << std::setw(11) << ps.misses;
 	if( ps.hits + ps.misses ) {
 		ss << " (" << 100 * static_cast<double>(ps.misses) / (ps.hits + ps.misses) << "%)";
 	}
@@ -66,10 +73,52 @@ void print_stats( uint64_t start, uint64_t stop )
 	std::cerr << ss.str();
 }
 
-void reset_stats()
+void statistics::print_total()
 {
-	stats.full_width_nodes = 0;
-	stats.quiescence_nodes = 0;
+	std::stringstream ss;
+	try {
+		ss.imbue( std::locale("") );
+	}
+	catch( std::exception const& e ) {
+		// Who cares
+	}
+
+	ss << std::endl;
+	ss << "Node stats:" << std::endl;
+	ss << "  Total:            " << std::setw(14) << total_full_width_nodes + total_quiescence_nodes << std::endl;
+	ss << "  Full-width:       " << std::setw(14) << total_full_width_nodes << std::endl;
+	ss << "  Quiescence:       " << std::setw(14) << total_quiescence_nodes << std::endl;
+
+	if( total_full_width_nodes || total_quiescence_nodes ) {
+		if( total_elapsed != 0 ) {
+			ss << "  Nodes per second: " << std::setw(14) << std::setfill(' ') << (timer_precision() * (total_full_width_nodes + total_quiescence_nodes) ) / total_elapsed << std::endl;
+		}
+		ss << "  Time per node:    " << std::setw(11) << (total_elapsed * 1000 * 1000 * 1000) / (total_full_width_nodes + total_quiescence_nodes) / timer_precision() << " ns" << std::endl;
+	}
+
+	ss << std::endl;
+
+	std::cerr << ss.str();
+}
+
+
+void statistics::accumulate( uint64_t elapsed )
+{
+	total_full_width_nodes += full_width_nodes;
+	total_quiescence_nodes += quiescence_nodes;
+	total_elapsed += elapsed;
+}
+
+
+void statistics::reset( bool total )
+{
+	full_width_nodes = 0;
+	quiescence_nodes = 0;
+	if( total ) {
+		total_full_width_nodes = 0;
+		total_quiescence_nodes = 0;
+		total_elapsed = 0;
+	}
 }
 
 #endif

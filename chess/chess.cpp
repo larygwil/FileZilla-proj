@@ -122,7 +122,7 @@ void auto_play()
 	std::cerr << std::endl << "Runtime: " << (stop - start) * 1000 / timer_precision() << " ms " << std::endl;
 
 #ifdef USE_STATISTICS
-	print_stats( start, stop );
+	stats.print_total();
 #endif
 }
 

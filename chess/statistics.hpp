@@ -6,22 +6,33 @@
 #include "chess.hpp"
 
 #ifdef USE_STATISTICS
-namespace statistics {
-struct type {
-	type()
-		: full_width_nodes(), quiescence_nodes()
+class statistics {
+public:
+	statistics()
+		: full_width_nodes()
+		, quiescence_nodes()
+		, total_full_width_nodes()
+		, total_quiescence_nodes()
+		, total_elapsed()
 	{
 	}
 
+	void print( uint64_t elapsed );
+	void reset( bool total );
+	void accumulate( uint64_t elapsed );
+
+	void print_total();
+
 	uint64_t full_width_nodes;
 	uint64_t quiescence_nodes;
+
+	uint64_t total_full_width_nodes;
+	uint64_t total_quiescence_nodes;
+
+	uint64_t total_elapsed;
 };
-}
 
-extern statistics::type stats;
-
-void print_stats( uint64_t start, uint64_t stop );
-void reset_stats( );
+extern statistics stats;
 
 #endif
 

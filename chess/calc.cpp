@@ -354,6 +354,9 @@ private:
 short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null )
 {
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
+		if( ply >= MAX_DEPTH ) {
+			std::cerr << "MAX" << std::endl;
+		}
 		return quiescence_search( ply, ctx, p, hash, current_evaluation, c, check, alpha, beta );
 	}
 
@@ -1069,8 +1072,9 @@ break2:
 	new_best_cb.on_new_best_move( p, c, highest_depth, old_sorted.begin()->forecast, stats.full_width_nodes + stats.quiescence_nodes, pv );
 
 	uint64_t stop = get_time();
-	print_stats( start, stop );
-	reset_stats();
+	stats.print( stop - start );
+	stats.accumulate( stop - start );
+	stats.reset( false );
 
 	scoped_lock l( impl_->mtx_ );
 
