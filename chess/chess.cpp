@@ -166,8 +166,12 @@ int main( int argc, char const* argv[] )
 	else if( command == "tweak" ) {
 		tweak_evaluation();
 	}
-	else {
+	else if( command == "xboard" || command.empty() ) {
 		xboard();
+	}
+	else {
+		std::cerr << "Unknown command: " << command << std::endl;
+		exit(1);
 	}
 
 	logger::cleanup();

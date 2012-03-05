@@ -10,6 +10,7 @@
 #include "platform.hpp"
 #include "pvlist.hpp"
 #include "random.hpp"
+#include "string.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
 
@@ -987,14 +988,19 @@ void run( book& b )
 		if( !std::cin ) {
 			break;
 		}
-		if( line == "go" ) {
+		std::string args;
+		std::string cmd = split( line, args );
+		if( cmd.empty() ) {
+			continue;
+		}
+		else if( cmd == "go" ) {
 			go( b, p, c, seen, move_history, max_depth, max_width );
 			return;
 		}
-		else if( line == "process" ) {
+		else if( cmd == "process" ) {
 			process( b );
 		}
-		else if( line == "size" || line == "stats" ) {
+		else if( cmd == "size" || cmd == "stats" ) {
 
 			book_stats stats = b.stats();
 
@@ -1014,8 +1020,8 @@ void run( book& b )
 
 			std::cout << ss.str();
 		}
-		else if( line.substr( 0, 11 ) == "book_depth " ) {
-			int v = atoi( line.substr( 11 ).c_str() );
+		else if( cmd == "book_depth" ) {
+			int v = atoi( args.c_str() );
 			if( v <= 0 || v > static_cast<int>(MAX_BOOK_DEPTH) ) {
 				std::cerr << "Invalid depth: " << v << std::endl;
 			}
@@ -1024,8 +1030,8 @@ void run( book& b )
 				std::cout << "Book depth set to " << v << std::endl;
 			}
 		}
-		else if( line.substr( 0, 11 ) == "book_width " ) {
-			int v = atoi( line.substr( 11 ).c_str() );
+		else if( cmd == "book_width" ) {
+			int v = atoi( args.c_str() );
 			if( v <= 0 ) {
 				std::cerr << "Invalid width: " << v << std::endl;
 			}
@@ -1034,7 +1040,7 @@ void run( book& b )
 				std::cout << "Book width set to " << v << std::endl;
 			}
 		}
-		else if( line == "back" ) {
+		else if( cmd == "back" ) {
 			if( history.empty() ) {
 				std::cerr << "Already at top" << std::endl;
 			}
@@ -1050,36 +1056,40 @@ void run( book& b )
 				print_pos( history, p, c, moves );
 			}
 		}
-		else if( line.substr( 0, 6 ) == "update" ) {
+		else if( cmd == "update" ) {
 			int v = 5;
-			if( line.size() > 6 ) {
-				v = atoi( line.substr( 7 ).c_str() );
+			if( !args.empty() ) {
+				v = atoi( args.c_str() );
 			}
 			if( v <= 0 ) {
 				v = 5;
 			}
 			update( b, v );
 		}
-		else if( line.substr( 0, 9 ) == "learnpgn " ) {
-			learnpgn( b, line.substr( 9 ) );
+		else if( cmd == "learnpgn" ) {
+			if( args.empty() ) {
+				std::cerr << "Need to pass .pgn file as argument" << std::endl;
+			}
+			else {
+				learnpgn( b, args );
+			}
 		}
-		else if( line.substr( 0, 7 ) == "deepen " ) {
-			line = line.substr( 7 );
+		else if( cmd == "deepen" ) {
 			move m;
-			if( parse_move( p, c, line, m ) ) {
+			if( parse_move( p, c, args, m ) ) {
 				deepen_move( b, p, c, seen, move_history, m );
 
 				std::vector<book_entry> entries = b.get_entries( p, c, move_history );
 				print_pos( history, p, c, entries );
 			}
 		}
-		else if( line == "fold" ) {
+		else if( cmd == "fold" ) {
 			b.fold();
 		}
-		else if( line.substr( 0, 11 ) == "insert_log " ) {
-			b.set_insert_logfile( line.substr( 11 ) );
+		else if( cmd == "insert_log" ) {
+			b.set_insert_logfile( args );
 		}
-		else if( !line.empty() ) {
+		else {
 			move m;
 			if( parse_move( p, c, line, m ) ) {
 

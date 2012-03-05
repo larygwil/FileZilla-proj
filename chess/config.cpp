@@ -56,95 +56,101 @@ std::string config::init( int argc,  char const* argv[] )
 
 	int i = 1;
 	for( i = 1; i < argc && argv[i][0] == '-'; ++i ) {
-		if( !strcmp(argv[i], "--moves" ) ) {
+		std::string const opt = argv[i];
+		if( opt == "--moves" ) {
 			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				std::cerr << "Missing argument to " << opt << std::endl;
 				exit(1);
 			}
 			int v = atoi(argv[i]);
 			if( v < 0 ) {
-				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				std::cerr << "Invalid argument to " << opt << std::endl;
 				exit(1);
 			}
 			conf.max_moves = v;
 		}
-		else if( !strcmp(argv[i], "--threads" ) ) {
+		else if( opt == "--threads" ) {
 			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				std::cerr << "Missing argument to " << opt << std::endl;
 				exit(1);
 			}
 			int v = atoi(argv[i]);
 			if( v < 1 ) {
-				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				std::cerr << "Invalid argument to " << opt << std::endl;
 				exit(1);
 			}
 			conf.thread_count = v;
 		}
-		else if( !strcmp(argv[i], "--depth" ) ) {
+		else if( opt == "--depth" ) {
 			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				std::cerr << "Missing argument to " << opt << std::endl;
 				exit(1);
 			}
 			int v = atoi(argv[i]);
 			if( v < 1 || v > MAX_DEPTH ) {
-				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				std::cerr << "Invalid argument to " << opt << std::endl;
 				exit(1);
 			}
 			conf.depth = v;
 		}
-		else if( !strcmp(argv[i], "--quiescence" ) ) {
+		else if( opt == "--quiescence" ) {
 			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				std::cerr << "Missing argument to " << opt << std::endl;
 				exit(1);
 			}
 			int v = atoi(argv[i]);
 			if( v < 1 || v > MAX_QDEPTH ) {
-				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				std::cerr << "Invalid argument to " << opt << std::endl;
 				exit(1);
 			}
 			conf.quiescence_depth = v;
 		}
-		else if( !strcmp(argv[i], "--memory" ) ) {
+		else if( opt == "--memory" ) {
 			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				std::cerr << "Missing argument to " << opt << std::endl;
 				exit(1);
 			}
 			int v = atoi(argv[i]);
 			if( v < 1 ) {
-				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				std::cerr << "Invalid argument to " << opt << std::endl;
 				exit(1);
 			}
 			conf.memory = v;
 		}
-		else if( !strcmp(argv[i], "--seed" ) ) {
+		else if( opt == "--seed" ) {
 			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				std::cerr << "Missing argument to " << opt << std::endl;
 				exit(1);
 			}
 			int v = atoi(argv[i]);
 			if( v < -1 ) {
-				std::cerr << "Invalid argument to " << argv[i] << std::endl;
+				std::cerr << "Invalid argument to " << opt << std::endl;
 				exit(1);
 			}
 			conf.random_seed = v;
 		}
-		else if( !strcmp(argv[i], "--logfile" ) ) {
+		else if( opt == "--logfile" ) {
 			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << argv[i] << std::endl;
+				std::cerr << "Missing argument to " << opt << std::endl;
 				exit(1);
 			}
 			conf.logfile = argv[i];
 		}
-		else if( !strcmp(argv[i], "--ponder" ) ) {
+		else if( opt == "--ponder" ) {
 			conf.ponder = true;
 		}
-		else if( !strcmp(argv[i], "--nobook" ) ) {
+		else if( opt == "--nobook" ) {
 			conf.use_book = false;
 		}
 		else {
 			std::cerr << "Unknown argument " << argv[i] << std::endl;
 			exit(1);
 		}
+	}
+
+	if( i < argc - 1 ) {
+		std::cerr << "Command needs to be passed last on command-line." << std::endl;
+		exit(1);
 	}
 
 	std::string cmd;
