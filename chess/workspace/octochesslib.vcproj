@@ -242,6 +242,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\string.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\tables.cpp"
 				>
 			</File>
@@ -357,6 +361,10 @@
 			</File>
 			<File
 				RelativePath="..\statistics.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\string.hpp"
 				>
 			</File>
 			<File

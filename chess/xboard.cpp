@@ -9,6 +9,7 @@
 #include "pawn_structure_hash_table.hpp"
 #include "random.hpp"
 #include "see.hpp"
+#include "string.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
 
@@ -243,7 +244,7 @@ void xboard_thread::onRun()
 
 		uint64_t remaining_moves;
 		if( !state.time_control ) {
-			remaining_moves = (std::max)( 15, (80 - state.clock) / 2 );
+			remaining_moves = (std::max)( 20, (80 - state.clock) / 2 );
 		}
 		else {
 			remaining_moves = (state.time_control * 2) - (state.clock % (state.time_control * 2));
@@ -457,20 +458,23 @@ void xboard()
 			continue;
 		}
 
+		std::string args;
+		std::string cmd = split( line, args );
+
 		logger::log_input( line );
 
 		// The following two commands do not stop the thread.
-		if( line == "hard" ) {
+		if( cmd == "hard" ) {
 			scoped_lock l( thread.mtx );
 			conf.ponder = true;
 			continue;
 		}
-		else if( line == "easy" ) {
+		else if( cmd == "easy" ) {
 			scoped_lock l( thread.mtx );
 			conf.ponder = false;
 			continue;
 		}
-		else if( line == "." ) {
+		else if( cmd == "." ) {
 			scoped_lock l( thread.mtx );
 			// TODO: Implement
 			std::cout << "Error (unknown command): .";
@@ -481,13 +485,13 @@ void xboard()
 
 		scoped_lock l( thread.mtx );
 
-		if( line == "xboard" ) {
+		if( cmd == "xboard" ) {
 			std::cout << std::endl;
 		}
-		else if( line == "quit" ) {
+		else if( cmd == "quit" ) {
 			break;
 		}
-		else if( line == "?" ) {
+		else if( cmd == "?" ) {
 			if( !best_move.empty() ) {
 				std::cout << "move " << move_to_string( best_move ) << std::endl;
 				state.apply( best_move );
@@ -496,7 +500,7 @@ void xboard()
 				std::cout << "Error (command not legal now): ?" << std::endl;
 			}
 		}
-		else if( line.substr( 0, 9 ) == "protover " ) {
+		else if( cmd == "protover" ) {
 			//std::cout << "feature ping=1" << std::endl;
 			std::cout << "feature analyze=1" << std::endl;
 			std::cout << "feature myname=\"Octochess\"" << std::endl;
@@ -510,10 +514,10 @@ void xboard()
 
 			std::cout << "feature done=1" << std::endl;
 		}
-		else if( line.substr( 0, 7 ) == "result " ) {
+		else if( cmd == "result" ) {
 			// Ignore
 		}
-		else if( line == "new" ) {
+		else if( cmd == "new" ) {
 			bool analyze = state.mode_ == mode::analyze;
 			state.reset();
 			if( analyze ) {
@@ -521,36 +525,36 @@ void xboard()
 				thread.start( true );
 			}
 		}
-		else if( line == "force" ) {
+		else if( cmd == "force" ) {
 			state.mode_ = mode::force;
 		}
-		else if( line == "random" ) {
+		else if( cmd == "random" ) {
 			// Ignore
 		}
-		else if( line == "post" ) {
+		else if( cmd == "post" ) {
 			state.post = true;
 		}
-		else if( line == "nopost" ) {
+		else if( cmd == "nopost" ) {
 			state.post = false;
 		}
-		else if( line.substr( 0, 9 ) == "accepted " ) {
+		else if( cmd == "accepted" ) {
 			// Ignore
 		}
-		else if( line.substr( 0, 9 ) == "rejected " ) {
+		else if( cmd == "rejected" ) {
 			// Ignore
 		}
-		else if( line == "computer" ) {
+		else if( cmd == "computer" ) {
 			// Ignore
 		}
-		else if( line == "white" ) {
+		else if( cmd == "white" ) {
 			state.c = color::white;
 			state.self = color::black;
 		}
-		else if( line == "black" ) {
+		else if( cmd == "black" ) {
 			state.c = color::black;
 			state.self = color::white;
 		}
-		else if( line == "undo" ) {
+		else if( cmd == "undo" ) {
 			if( !state.undo(1) ) {
 				std::cout << "Error (command not legal now): undo" << std::endl;
 			}
@@ -560,7 +564,7 @@ void xboard()
 				}
 			}
 		}
-		else if( line == "remove" ) {
+		else if( cmd == "remove" ) {
 			if( !state.undo(2) ) {
 				std::cout << "Error (command not legal now): remove" << std::endl;
 			}
@@ -570,14 +574,13 @@ void xboard()
 				}
 			}
 		}
-		else if( line.substr( 0, 5 ) == "otim " ) {
+		else if( cmd == "otim" ) {
 			// Ignore
 		}
-		else if( line.substr( 0, 5 ) == "time " ) {
-			line = line.substr( 5 );
+		else if( cmd == "time" ) {
 			std::stringstream ss;
 			ss.flags(std::stringstream::skipws);
-			ss.str(line);
+			ss.str(args);
 
 			uint64_t t;
 			ss >> t;
@@ -588,11 +591,10 @@ void xboard()
 				state.time_remaining = static_cast<uint64_t>(t) * timer_precision() / 100;
 			}
 		}
-		else if( line.substr( 0, 6 ) == "level " ) {
-			line = line.substr( 6 );
+		else if( cmd == "level" ) {
 			std::stringstream ss;
 			ss.flags(std::stringstream::skipws);
-			ss.str(line);
+			ss.str(args);
 
 			int control;
 			ss >> control;
@@ -642,13 +644,13 @@ void xboard()
 			state.time_remaining *= timer_precision();
 			state.time_increment = increment * timer_precision();
 		}
-		else if( line == "go" ) {
+		else if( cmd == "go" ) {
 			state.mode_ = mode::normal;
 			state.self = state.c;
 			// TODO: clocks...
 			go( thread, state, cmd_recv_time );
 		}
-		else if( line == "analyze" ) {
+		else if( cmd == "analyze" ) {
 			state.mode_ = mode::analyze;
 			if( !state.hash_initialized ) {
 				transposition_table.init( conf.memory );
@@ -656,11 +658,11 @@ void xboard()
 			}
 			thread.start( true );
 		}
-		else if( line == "exit" ) {
+		else if( cmd == "exit" ) {
 			state.mode_ = mode::normal;
 			state.moves_between_updates = 0;
 		}
-		else if( line == "~moves" ) {
+		else if( cmd == "~moves" ) {
 			check_map check( state.p, state.c );
 
 			move_info moves[200];
@@ -673,16 +675,14 @@ void xboard()
 				std::cout << " " << move_to_string( it->m ) << std::endl;
 			}
 		}
-		else if( line.substr( 0, 4 ) == "~fen" ) {
+		else if( cmd == "~fen" ) {
 			std::cout << position_to_fen_noclock( state.p, state.c ) << std::endl;
 		}
-		else if( line.substr( 0, 8 ) == "setboard" ) {
-			line = line.substr( 9 );
-
+		else if( cmd == "setboard" ) {
 			position new_pos;
 			color::type new_c;
 			std::string error;
-			if( !parse_fen_noclock( line, new_pos, new_c, &error ) ) {
+			if( !parse_fen_noclock( args, new_pos, new_c, &error ) ) {
 				std::cout << "Error (bad command): Not a valid FEN position: " << error << std::endl;
 				continue;
 			}
@@ -699,17 +699,16 @@ void xboard()
 				thread.start( true );
 			}
 		}
-		else if( line == "~score") {
+		else if( cmd == "~score") {
 			short eval = evaluate_full( state.p, state.c );
 			std::cout << eval << std::endl;
 		}
-		else if( line == "~hash") {
+		else if( cmd == "~hash") {
 			std::cout << get_zobrist_hash( state.p ) << std::endl;
 		}
-		else if( line.substr( 0, 5 ) == "~see " ) {
-			line = line.substr(5);
+		else if( cmd == "~see" ) {
 			move m;
-			if( parse_move( state.p, state.c, line, m, true ) ) {
+			if( parse_move( state.p, state.c, args, m, true ) ) {
 				if( m.captured_piece != pieces::none ) {
 					int see_score = see( state.p, state.c, m );
 					std::cout << "See score: " << see_score << std::endl;

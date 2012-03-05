@@ -25,6 +25,7 @@ GENERIC_SOURCE_FILES = \
 	seen_positions.cpp \
 	selftest.cpp \
 	statistics.cpp \
+	string.cpp \
 	tables.cpp \
 	unix.cpp \
 	zobrist.cpp \

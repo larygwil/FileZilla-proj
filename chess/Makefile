@@ -31,6 +31,7 @@ OBJECT_FILES = \
 	selftest.o \
 	sqlite/sqlite3.o \
 	statistics.o \
+	string.o \
 	tables.o \
 	tweak.o \
 	unix.o \
