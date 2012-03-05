@@ -42,6 +42,8 @@ int const lmr_reduction = 0;
 int const lmr_min_depth = 0;
 #endif
 
+short const futility_pruning[] = { 130, 250, 400, 500 };
+
 volatile bool do_abort = false;
 
 short const ASPIRATION = 40;
@@ -459,8 +461,18 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 			// Open question: What's the exact reason for always searching exactly the first move full width?
 			// Why not always use PVS, or at least in those cases where root alpha isn't result::loss?
 			// Why not use full width unless alpha > old_alpha?
-
 			if( processed_moves ) {
+
+				// Futility pruning
+				if( gen.get_phase() >= phases::noncapture && !extended && !check.check && !new_check.check ) {
+					int plies_remaining = (depth - cutoff) / depth_factor;
+					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short)) && it->evaluation + futility_pruning[plies_remaining] < alpha ) {
+						ctx.pv_pool.release(cpv);
+						++searched_noncaptures;
+						continue;
+					}
+				}
+
 				// Open question: Use this approach or instead do PVS's null-window also when re-searching a >alpha LMR result?
 				// Barring some bugs or some weird search instability issues, it should bring the same results and speed seems similar.
 				if( processed_moves >= lmr_searched && gen.get_phase() >= phases::noncapture &&
