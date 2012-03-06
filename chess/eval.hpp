@@ -74,4 +74,11 @@ short get_material_value( pieces::type pi );
 
 short phase_scale( short const* material, short ev1, short ev2 );
 
+// Piece-square tables
+extern short const pawn_values[2][64];
+extern short const knight_values[2][64];
+extern short const bishop_values[2][64];
+extern short const rook_values[2][64];
+extern short const queen_values[2][64];
+
 #endif

@@ -266,6 +266,8 @@ static bool test_lazy_eval()
 {
 	std::string const data[] = {
 		"1r2kr2/p3q2p/8/3b4/3P4/8/P1P1N2P/3QKB1q b - -",
+		"Q7/2k4p/6p1/P1P1R3/P7/1Q4P1/2q2P1P/3R2K1 w - -",
+		"r1b4r/ppp3pp/1n6/4N3/3Qk3/R5P1/1P2P1PP/5RK1 b - -",
 		"1n3b1r/rpB1kppp/p3bN2/8/8/4Q3/PPP1B1PP/2KR2NR w - -",
 		"r1b3nr/pp1kbQpp/8/8/3NP2P/PN2P1B1/1P4P1/R4K1R w - -",
 		"Q1bk3r/p2n1pp1/7p/2N1p3/3Q3P/P7/1P3PP1/2R1KBNR w K -",
@@ -274,6 +276,7 @@ static bool test_lazy_eval()
 		"r1b2b1r/pp2kppp/8/4NB2/8/1N2P1P1/PP3PP1/n2Q1K1R w - -",
 		"r1bk3r/pp3ppp/3b4/4NB2/8/1N2P1P1/PP3PP1/n2Q1K1R w - -",
 		"rnb2bnr/ppppkppp/8/4P3/4P3/2N5/PPP2PPR/R1BQKBN1 w Q -",
+		"rnbq1b1r/ppppp1pp/2k5/3R4/8/NQ2B3/PPP1NPPP/5RK1 w - -",
 		"1rb2b1r/pp1pkppp/8/3Q3n/3N4/1N1PP1B1/PP4PP/R4RK1 w - -",
 		"r1b1kb1r/pp1n1ppp/3PB3/8/Q3PB2/5N2/PP1NKPPP/n6R w kq -",
 		"r1b1kb1r/pp1pnppp/8/1N6/4Q3/1N2P1B1/PP3P1P/2KR3R w kq -",
@@ -302,8 +305,34 @@ static bool test_lazy_eval()
 }
 
 
+static bool test_pst( short const pst[2][64], std::string const& name ) {
+	for( int i = 0; i < 64; ++i ) {
+		int opposite = (i % 8) + (7 - i / 8) * 8;
+
+		if( pst[0][i] != pst[1][opposite] ) {
+			std::cerr << name << " not symmetric for squares " << i << " and " << opposite << ": " << pst[0][i] << " " << pst[1][opposite] << std::endl;
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static bool test_pst()
+{
+	return test_pst( pawn_values, "pawn_values" ) &&
+		   test_pst( knight_values, "knight_values" ) &&
+		   test_pst( bishop_values, "bishop_values" ) &&
+		   test_pst( rook_values, "rook_values" ) &&
+		   test_pst( queen_values, "queen_values" );
+}
+
+
 static bool do_selftest()
 {
+	if( !test_pst() ) {
+		return false;
+	}
 	if( !test_positions() ) {
 		return false;
 	}
