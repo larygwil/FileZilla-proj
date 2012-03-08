@@ -143,13 +143,13 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c, std
 		return false;
 	}
 
-	if( color != "w" && color != "b" ) {
+	if( color != "w" && color != "b" && color != "W" && color != "B" ) {
 		if( error ) {
 			*error = "Invalid side-to-move.";
 		}
 		return false;
 	}
-	if( color == "w" ) {
+	if( color == "w" || color == "W" ) {
 		c = color::white;
 	}
 	else {
@@ -190,6 +190,9 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c, std
 				*error = "Invalid en-passant square.";
 			}
 			return false;
+		}
+		if( enpassant[0] >= 'A' && enpassant[0] <= 'H' ) {
+			enpassant[0] = enpassant[0] + 'a' - 'A';
 		}
 		if( enpassant[0] < 'a' || enpassant[0] > 'h' || (enpassant[1] != '3' && enpassant[1] != '6') ) {
 			if( error ) {
