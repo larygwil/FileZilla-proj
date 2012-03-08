@@ -8,12 +8,15 @@
 #include "config.hpp"
 #include "zobrist.hpp"
 #include "eval.hpp"
+#include "string.hpp"
 
 #include <algorithm>
+#include <fstream>
 #include <iomanip>
 #include <sstream>
 #include <iostream>
 #include <vector>
+
 
 struct perft_ctx {
 	perft_ctx()
@@ -132,7 +135,7 @@ bool perft( std::size_t max_depth )
 
 namespace {
 
-static bool test_position( std::string const& fen, std::string const& ref_moves )
+static bool test_move_generation( std::string const& fen, std::string const& ref_moves )
 {
 	position p;
 	color::type c;
@@ -179,21 +182,21 @@ static bool test_position( std::string const& fen, std::string const& ref_moves 
 }
 
 
-static bool test_positions()
+static bool test_move_generation()
 {
-	if( !test_position( "4R3/p1pp1p1p/b1n1rn2/1p2p1pP/1B1QPBr1/qPPb2PN/Pk1PNP2/R3K3 w Q g6",
+	if( !test_move_generation( "4R3/p1pp1p1p/b1n1rn2/1p2p1pP/1B1QPBr1/qPPb2PN/Pk1PNP2/R3K3 w Q g6",
 						"c3-c4 f2-f3 h5-h6 h5xg6 Bb4-a5 Bb4-c5 Bb4-d6 Bb4-e7 Bb4-f8 Bb4xa3 Bf4-e3 Bf4xe5 Bf4xg5 Ke1-d1 Ke1-f1 Ne2-c1 Ne2-g1 Nh3-g1 Nh3xg5 Qd4-b6 Qd4-c4 Qd4-c5 Qd4-d5 Qd4-d6 Qd4-e3 Qd4xa7 Qd4xd3 Qd4xd7 Qd4xe5 Ra1-b1 Ra1-c1 Ra1-d1 Re8-a8 Re8-b8 Re8-c8 Re8-d8 Re8-e7 Re8-f8 Re8-g8 Re8-h8 Re8xe6" ) )
 	{
 		return false;
 	}
 
-	if( !test_position( "r3k2r/8/2p5/1Q6/1q6/2P5/8/R3K2R w KqQk -",
+	if( !test_move_generation( "r3k2r/8/2p5/1Q6/1q6/2P5/8/R3K2R w KqQk -",
 						"O-O O-O-O c3xb4 Ke1-d1 Ke1-d2 Ke1-e2 Ke1-f1 Ke1-f2 Qb5-a4 Qb5-a5 Qb5-a6 Qb5-b6 Qb5-b7 Qb5-b8 Qb5-c4 Qb5-c5 Qb5-d3 Qb5-d5 Qb5-e2 Qb5-e5 Qb5-f1 Qb5-f5 Qb5-g5 Qb5-h5 Qb5xb4 Qb5xc6 Ra1-a2 Ra1-a3 Ra1-a4 Ra1-a5 Ra1-a6 Ra1-a7 Ra1-b1 Ra1-c1 Ra1-d1 Ra1xa8 Rh1-f1 Rh1-g1 Rh1-h2 Rh1-h3 Rh1-h4 Rh1-h5 Rh1-h6 Rh1-h7 Rh1xh8" ) )
 	{
 		return false;
 	}
 
-	if( !test_position( "3k4/8/8/q2pP2K/8/8/8/8 w - d6",
+	if( !test_move_generation( "3k4/8/8/q2pP2K/8/8/8/8 w - d6",
 						"e5-e6 Kh5-g4 Kh5-g5 Kh5-g6 Kh5-h4 Kh5-h6") )
 	{
 		return false;
@@ -233,7 +236,7 @@ static bool test_zobrist()
 }
 
 
-static bool test_lazy_eval( std::string const& fen )
+static bool test_lazy_eval( std::string const& fen, short& max_difference )
 {
 	position p;
 	color::type c;
@@ -258,48 +261,26 @@ static bool test_lazy_eval( std::string const& fen )
 		return false;
 	}
 
+	max_difference = (std::max)( max_difference, diff );
+
 	return true;
 }
 
 
 static bool test_lazy_eval()
 {
-	std::string const data[] = {
-		"1r2kr2/p3q2p/8/3b4/3P4/8/P1P1N2P/3QKB1q b - -",
-		"Q7/2k4p/6p1/P1P1R3/P7/1Q4P1/2q2P1P/3R2K1 w - -",
-		"r1b4r/ppp3pp/1n6/4N3/3Qk3/R5P1/1P2P1PP/5RK1 b - -",
-		"1n3b1r/rpB1kppp/p3bN2/8/8/4Q3/PPP1B1PP/2KR2NR w - -",
-		"r1b3nr/pp1kbQpp/8/8/3NP2P/PN2P1B1/1P4P1/R4K1R w - -",
-		"Q1bk3r/p2n1pp1/7p/2N1p3/3Q3P/P7/1P3PP1/2R1KBNR w K -",
-		"r1b2b1r/p3kppp/8/4NB2/8/1N2P1P1/PP3PP1/n2Q1K1R w - -",
-		"r1b2b1r/1p2k2p/4q1B1/p3Q3/8/4P1P1/PPP3PP/2KR1R2 w - -",
-		"r1b2b1r/pp2kppp/8/4NB2/8/1N2P1P1/PP3PP1/n2Q1K1R w - -",
-		"r1bk3r/pp3ppp/3b4/4NB2/8/1N2P1P1/PP3PP1/n2Q1K1R w - -",
-		"rnb2bnr/ppppkppp/8/4P3/4P3/2N5/PPP2PPR/R1BQKBN1 w Q -",
-		"rnbq1b1r/ppppp1pp/2k5/3R4/8/NQ2B3/PPP1NPPP/5RK1 w - -",
-		"1rb2b1r/pp1pkppp/8/3Q3n/3N4/1N1PP1B1/PP4PP/R4RK1 w - -",
-		"r1b1kb1r/pp1n1ppp/3PB3/8/Q3PB2/5N2/PP1NKPPP/n6R w kq -",
-		"r1b1kb1r/pp1pnppp/8/1N6/4Q3/1N2P1B1/PP3P1P/2KR3R w kq -",
-		"r1b1kbr1/ppBpnppp/8/8/4Q3/1N2PN2/PPP2PPP/R3KB1R w KQq -",
-		"r1b2b1r/pp1pkpp1/7p/3Q3n/3N4/1N1PP1B1/PP4PP/R4RK1 w - -",
-		"rnb2bnr/ppppkppp/8/4P3/4P3/1PN5/1PP2PPP/R1BQKBNR w KQ -",
-		"rnbqkb1Q/p1pppp1p/8/3P2p1/p4B2/8/1PP2PPP/RN2KBNn w Qq -",
-		"r1b1kb1r/pp1n1ppp/3PB3/8/Q3PB2/5N2/PP1N1PPP/n4K1R w kq -",
-		"r1b1kb1r/ppBpnppp/4Q3/8/8/1N2PN2/PPP2PPP/R3KB1R w KQkq -",
-		"rnb2bnr/ppppkppp/8/4P3/4P3/2N3P1/PPP2PP1/R1BQKBNR w KQ -",
-		"rnbq1br1/ppp1pppp/2kB4/7Q/3PP3/2N5/PPP2PPP/R3KBNR w KQ -",
-		"r1b2b1r/pp1kPppp/2n5/3n4/4NB2/4PN2/PPP2PPP/R2QKB1R w KQ -",
-		"rnbk1b1r/pp1ppppp/1np5/Q5B1/3PP3/1P6/P1P2PPP/RN2KBNR w KQ -",
-		"r1bk1br1/pp1nppp1/5N1p/1B6/1P1Q1B1P/4P3/2P2PP1/R3K1NR w KQ -",
-		"r1bqkbnr/p1pnpp1p/3p4/1B4P1/3PPB2/8/PPP2PP1/RN1QK1NR w KQkq -",
-		""
-	};
+	std::ifstream in_fen("test/testpositions.txt");
 
-	for( std::string const* p = data; !p->empty(); ++p ) {
-		if( !test_lazy_eval( *p ) ) {
+	short max_difference = 0;
+
+	std::string fen;
+	while( std::getline( in_fen, fen ) ) {
+		if( !test_lazy_eval( fen, max_difference ) ) {
 			return false;
 		}
 	}
+
+	std::cout << "Max positional score difference: " << max_difference << std::endl;
 
 	return true;
 }
@@ -328,12 +309,144 @@ static bool test_pst()
 }
 
 
+static bool test_evaluation( std::string const& fen )
+{
+	position p;
+	color::type c;
+	std::string error;
+	if( !parse_fen_noclock( fen, p, c, &error ) ) {
+		std::cerr << "Could not parse fen: " << error << std::endl;
+		std::cerr << "Fen: " << fen << std::endl;
+		return false;
+	}
+
+	std::string flipped;
+
+	std::string remaining;
+	std::string first_part = split( fen, remaining );
+	first_part += '/';
+	while( !first_part.empty() ) {
+		std::string segment = split( first_part, first_part, '/' );
+		if( !flipped.empty() ) {
+			flipped = '/' + flipped;
+		}
+		flipped = segment + flipped;
+	}
+
+	flipped += " ";
+	if( remaining[0] == 'b' ) {
+		flipped += "w";
+	}
+	else {
+		flipped += "b";
+	}
+
+	if( remaining[remaining.size()] == '6' ) {
+		remaining[remaining.size()] = '3';
+	}
+	else if( remaining[remaining.size()] == '3' ) {
+		remaining[remaining.size()] = '6';
+	}
+	flipped += remaining.substr(1);
+
+	for( std::size_t i = 0; i < flipped.size(); ++i ) {
+		switch( flipped[i] ) {
+		case 'p':
+			flipped[i] = 'P';
+			break;
+		case 'n':
+			flipped[i] = 'N';
+			break;
+		case 'b':
+			flipped[i] = 'B';
+			break;
+		case 'r':
+			flipped[i] = 'R';
+			break;
+		case 'q':
+			flipped[i] = 'Q';
+			break;
+		case 'k':
+			flipped[i] = 'K';
+			break;
+		case 'P':
+			flipped[i] = 'p';
+			break;
+		case 'N':
+			flipped[i] = 'n';
+			break;
+		case 'B':
+			flipped[i] = 'b';
+			break;
+		case 'R':
+			flipped[i] = 'r';
+			break;
+		case 'Q':
+			flipped[i] = 'q';
+			break;
+		case 'K':
+			flipped[i] = 'k';
+			break;
+		default:
+			break;
+		}
+	}
+
+	position p2;
+	color::type c2;
+	if( !parse_fen_noclock( flipped, p2, c2, &error ) ) {
+		std::cerr << "Could not parse fen: " << error << std::endl;
+		std::cerr << "Fen: " << flipped << std::endl;
+		return false;
+	}
+
+	if( p.material[0] != p2.material[1] || p.material[1] != p2.material[0] ) {
+		std::cerr << "Material not symmetric: " << p.material[0] << " " << p.material[1] << " " << p2.material[0] << " " << p2.material[1] << std::endl;
+		std::cerr << "Fen: " << fen << std::endl;
+		std::cerr << "Flipped: " << flipped << std::endl;
+		return false;
+	}
+
+	short eval = evaluate_fast( p, c );
+	short flipped_eval = evaluate_fast( p2, c2 );
+	short eval_full = evaluate_full( p, c );
+	short flipped_eval_full = evaluate_full( p2, c2 );
+	if( eval != flipped_eval || eval_full != flipped_eval_full ) {
+		std::cerr << "Evaluation not symmetric. Fast: " << eval << " " << flipped_eval << " Full: " << eval_full << " " << flipped_eval_full << " " << std::endl;
+		std::cerr << "Fen: " << fen << std::endl;
+		std::cerr << "Flipped: " << flipped << std::endl;
+		return false;
+	}
+
+
+	return true;
+}
+
+
+static bool test_evaluation()
+{
+	std::ifstream in_fen("test/testpositions.txt");
+
+	std::string fen;
+	while( std::getline( in_fen, fen ) ) {
+		if( !test_evaluation( fen ) ) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
 static bool do_selftest()
 {
 	if( !test_pst() ) {
 		return false;
 	}
-	if( !test_positions() ) {
+	if( !test_evaluation() ) {
+		return false;
+	}
+	if( !test_move_generation() ) {
 		return false;
 	}
 	if( !test_zobrist() ) {
