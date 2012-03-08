@@ -193,8 +193,8 @@ short phase_scale( short const* material, short ev1, short ev2 )
 	}
 	
 	int position = 256 * (eval_values.phase_transition_material_begin - m) / static_cast<int>(eval_values.phase_transition_duration);
-	return ((static_cast<int>(ev1) * position      ) >> 8) +
-		   ((static_cast<int>(ev2) * (256-position)) >> 8);
+	return ((static_cast<int>(ev1) * position      ) /256) +
+		   ((static_cast<int>(ev2) * (256-position)) /256);
 }
 
 
