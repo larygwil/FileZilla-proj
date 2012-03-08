@@ -700,8 +700,9 @@ void xboard()
 			}
 		}
 		else if( cmd == "~score") {
-			short eval = evaluate_full( state.p, state.c );
-			std::cout << eval << std::endl;
+			short eval_fast = evaluate_fast( state.p, state.c );
+			short eval_full = evaluate_full( state.p, state.c );
+			std::cout << eval_fast << " " << eval_full << std::endl;
 		}
 		else if( cmd == "~hash") {
 			std::cout << get_zobrist_hash( state.p ) << std::endl;
