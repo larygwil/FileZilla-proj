@@ -27,12 +27,12 @@ public:
 	impl( gui_interface_ptr const& p )
 		: gui_interface_(p)
 		, color_to_play_()
-		, running_(true)
 		, time_limit_()
 		, time_remaining_()
 		, bonus_time_()
 		, last_mate_()
 		, half_moves_played_()
+		, running_(true)
 	{
 		spawn();
 	}
