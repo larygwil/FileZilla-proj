@@ -36,14 +36,18 @@ OBJECT_FILES = \
 	tweak.o \
 	unix.o \
 	util.o \
-	zobrist.o 
+	zobrist.o \
+	uci/info.o \
+	uci/minimalistic_uci_protocol.o \
+	uci/octochess_impl.o \
+	uci/runner.o
 
 CHESS_FILES = $(OBJECT_FILES) \
 	chess.o \
 	xboard.o
 
 %.o: %.cpp *.hpp
-	g++ $(CXXFLAGS) -pthread -c -o $@ $<
+	g++ $(CXXFLAGS) -c -o $@ $<
 
 sqlite/sqlite3.o: sqlite/sqlite3.c sqlite/sqlite3.h
 	gcc $(CFLAGS) -pthread -c -o $@ $<

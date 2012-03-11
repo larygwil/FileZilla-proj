@@ -42,6 +42,8 @@ contact tim.kosse@filezilla-project.org for details.
 #include <stdlib.h>
 #include <sstream>
 
+void run_uci();
+
 const int TIME_LIMIT = 90000;
 
 void auto_play()
@@ -164,8 +166,11 @@ int main( int argc, char const* argv[] )
 	else if( command == "tweak" ) {
 		tweak_evaluation();
 	}
-	else if( command == "xboard" || command.empty() ) {
+	else if( command == "xboard" ) {
 		xboard();
+	}
+	else if( command == "uci" || command.empty() ) {
+		run_uci();
 	}
 	else {
 		std::cerr << "Unknown command: " << command << std::endl;

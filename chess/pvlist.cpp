@@ -95,11 +95,16 @@ void print_pv( pv_entry const* pv, position p, color::type c )
 	std::cerr << pv_to_string( pv, p, c ) << std::endl;
 }
 
-std::string pv_to_string( pv_entry const* pv, position p, color::type c )
+std::string pv_to_string( pv_entry const* pv, position p, color::type c, bool use_source_target_notation )
 {
 	std::stringstream ss;
 	while( pv && !pv->get_best_move().empty() ) {
-		ss << move_to_string( pv->get_best_move() ) << " ";
+		ss << 
+			( use_source_target_notation ? 
+				move_to_source_target_string( pv->get_best_move() ) 
+				: move_to_string( pv->get_best_move() ) ) 
+		   << " ";
+
 		apply_move( p, pv->get_best_move(), c );
 
 		c = static_cast<color::type>(1-c);
