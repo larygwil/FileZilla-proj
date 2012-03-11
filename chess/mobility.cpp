@@ -379,7 +379,7 @@ static void evaluate_king_attack( position const& p, color::type c, color::type 
 	attack += popcount( king_melee_attack_by_queen ) * eval_values.king_melee_attack_by_queen * initiative;
 	attack += popcount( king_melee_attack_by_rook ) * eval_values.king_melee_attack_by_rook * initiative;
 
-	results.king_attack[c] = eval_values.king_attack[ std::min( short(150), attack ) ];
+	results.king_attack[c] = eval_values.king_attack[ (std::min)( short(150), attack ) ];
 }
 
 
