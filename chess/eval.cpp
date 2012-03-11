@@ -7,163 +7,103 @@
 #include "zobrist.hpp"
 
 #include <iostream>
+#include <cmath>
 
 extern uint64_t const king_pawn_shield[2][64];
 extern uint64_t const isolated_pawns[64];
 
 eval_values_t eval_values;
 
-// Original values
-/*eval_values_t::eval_values_t()
-{
-	material_values[pieces::none] = 0;
-	material_values[pieces::pawn] = 100;
-	material_values[pieces::knight] = 295;
-	material_values[pieces::bishop] = 305;
-	material_values[pieces::rook] = 500;
-	material_values[pieces::queen] = 900;
-	material_values[pieces::king] = 0;
-
-	double_bishop = 25;
-	doubled_pawn = -15;
-	passed_pawn = 35;
-	isolated_pawn = -15;
-	connected_pawn = 15;
-	pawn_shield = 3;
-	castled = 25;
-
-	pin_absolute_bishop = 35;
-	pin_absolute_rook = 30;
-	pin_absolute_queen = 25;
-
-	mobility_multiplicator = 6;
-	mobility_divisor = 3;
-
-	pin_multiplicator = 5;
-	pin_divisor = 5;
-
-	rooks_on_open_file_multiplicator = 5;
-	rooks_on_open_file_divisor = 5;
-
-	tropism_multiplicator = 5;
-	tropism_divisor = 5;
-
-	king_attack_multiplicator = 5;
-	king_attack_divisor = 5;
-
-	center_control_multiplicator = 5;
-	center_control_divisor = 5;
-
-	update_derived();
-}*/
-
-// After much tweaking employing a genetic algorithm, this is better but still far from perfect.
-/*eval_values_t::eval_values_t()
-{
-	material_values[pieces::none] = 0;
-	material_values[pieces::pawn] = 100;
-	material_values[pieces::knight] = 294;
-	material_values[pieces::bishop] = 304;
-	material_values[pieces::rook] = 500;
-	material_values[pieces::queen] = 900;
-	material_values[pieces::king] = 0;
-
-	double_bishop = 28;
-
-	doubled_pawn[0] = -30;
-	passed_pawn[0] = 19;
-	isolated_pawn[0] = -10;
-	connected_pawn[0] = 0;
-
-	doubled_pawn[1] = -30;
-	passed_pawn[1] = 19;
-	isolated_pawn[1] = -10;
-	connected_pawn[1] = 0;
-
-	pawn_shield[0] = 5;
-	pawn_shield[1] = 5;
-
-	castled = 25;
-
-	pin_absolute_bishop = 16;
-	pin_absolute_rook = 0;
-	pin_absolute_queen = 49;
-
-	mobility_multiplicator = 6;
-	mobility_divisor = 2;
-
-	pin_multiplicator = 6;
-	pin_divisor = 5;
-
-	rooks_on_open_file_multiplicator = 1;
-	rooks_on_open_file_divisor = 10;
-
-	tropism_multiplicator = 0;
-	tropism_divisor = 5;
-
-	king_attack_multiplicator = 5;
-	king_attack_divisor = 1;
-
-	center_control_multiplicator = 8;
-	center_control_divisor = 1;
-
-	phase_transition_begin = 600;
-	phase_transition_duration = 1200;
-
-	update_derived();
-}*/
-
 eval_values_t::eval_values_t()
 {
-	material_values[pieces::none] = 0;
-	material_values[pieces::pawn] = 91;
-	material_values[pieces::knight] = 330;
-	material_values[pieces::bishop] = 330;
-	material_values[pieces::rook] = 524;
-	material_values[pieces::queen] = 930;
-	material_values[pieces::king] = 20000;
+	// Untweaked values
+	material_values[pieces::none] =      0;
+	material_values[pieces::king] =  20000;
+	king_attack_by_piece[pieces::none] = 0;
+	king_check_by_piece[pieces::none] = 0;
+	king_check_by_piece[pieces::pawn] = 0;
+	hanging_piece[pieces::none] = 0;
+	king_attack_min = 0;
 
-	double_bishop = 35;
-
-	doubled_pawn[0] = -14;
-	passed_pawn[0] = 1;
-	isolated_pawn[0] = 0;
-	connected_pawn[0] = 0;
-
-	doubled_pawn[1] = -24;
-	passed_pawn[1] = 44;
-	isolated_pawn[1] = -16;
-	connected_pawn[1] = 0;
-
-	pawn_shield[0] = 10;
-	pawn_shield[1] = 3;
-
-	castled = 0;
-
-	pin_absolute_bishop = 19;
-	pin_absolute_rook = 0;
-	pin_absolute_queen = 39;
-
-	mobility_multiplicator = 7;
-	mobility_divisor = 2;
-
-	pin_multiplicator = 7;
-	pin_divisor = 3;
-
-	rooks_on_open_file_multiplicator = 2;
-	rooks_on_open_file_divisor = 8;
-
-	tropism_multiplicator = 1;
-	tropism_divisor = 9;
-
-	king_attack_multiplicator = 10;
-	king_attack_divisor = 1;
-
-	center_control_multiplicator = 8;
-	center_control_divisor = 1;
-
-	phase_transition_begin = 983;
-	phase_transition_duration = 1999;
+	// Tweaked values
+	material_values[1]          =    75;
+	material_values[2]          =   313;
+	material_values[3]          =   295;
+	material_values[4]          =   568;
+	material_values[5]          =   960;
+	double_bishop               =    24;
+	doubled_pawn[0]             =   -28;
+	passed_pawn[0]              =     1;
+	isolated_pawn[0]            =   -10;
+	connected_pawn[0]           =     0;
+	doubled_pawn[1]             =    -7;
+	passed_pawn[1]              =     7;
+	isolated_pawn[1]            =   -17;
+	connected_pawn[1]           =     2;
+	pawn_shield[0]              =    13;
+	pawn_shield[1]              =     0;
+	castled                     =    24;
+	pin_absolute_bishop         =     1;
+	pin_absolute_rook           =     3;
+	pin_absolute_queen          =     1;
+	mobility_scale[0]           =   115;
+	mobility_scale[1]           =    88;
+	pin_scale[0]                =    39;
+	pin_scale[1]                =    16;
+	rooks_on_open_file_scale    =     6;
+	connected_rooks_scale[0]    =   141;
+	connected_rooks_scale[1]    =     2;
+	tropism_scale[0]            =    17;
+	tropism_scale[1]            =     1;
+	king_attack_by_piece[1]     =     2;
+	king_attack_by_piece[2]     =    15;
+	king_attack_by_piece[3]     =    14;
+	king_attack_by_piece[4]     =     3;
+	king_attack_by_piece[5]     =    12;
+	king_check_by_piece[2]      =    12;
+	king_check_by_piece[3]      =    13;
+	king_check_by_piece[4]      =     9;
+	king_check_by_piece[5]      =     1;
+	king_melee_attack_by_rook   =     2;
+	king_melee_attack_by_queen  =     9;
+	king_attack_max             =   144;
+	king_attack_rise            =     3;
+	king_attack_exponent        =   214;
+	king_attack_offset          =    48;
+	king_attack_scale[0]        =    14;
+	king_attack_scale[1]        =    16;
+	center_control_scale[0]     =    31;
+	center_control_scale[1]     =    13;
+	phase_transition_begin      =  2582;
+	phase_transition_duration   =  1105;
+	material_imbalance_scale    =     4;
+	rule_of_the_square          =    14;
+	passed_pawn_unhindered      =     8;
+	unstoppable_pawn_scale[0]   =    22;
+	unstoppable_pawn_scale[1]   =    35;
+	hanging_piece[1]            =     1;
+	hanging_piece[2]            =     1;
+	hanging_piece[3]            =     2;
+	hanging_piece[4]            =     1;
+	hanging_piece[5]            =     1;
+	hanging_piece_scale[0]      =    79;
+	hanging_piece_scale[1]      =   137;
+	mobility_knight_min         =   -18;
+	mobility_knight_max         =    44;
+	mobility_knight_rise        =     1;
+	mobility_knight_offset      =     2;
+	mobility_bishop_min         =   -11;
+	mobility_bishop_max         =    23;
+	mobility_bishop_rise        =     1;
+	mobility_bishop_offset      =     6;
+	mobility_rook_min           =   -48;
+	mobility_rook_max           =    23;
+	mobility_rook_rise          =     1;
+	mobility_rook_offset        =     2;
+	mobility_queen_min          =   -36;
+	mobility_queen_max          =    19;
+	mobility_queen_rise         =     1;
+	mobility_queen_offset       =    12;
 
 	update_derived();
 }
@@ -179,6 +119,53 @@ void eval_values_t::update_derived()
 
 	phase_transition_material_begin = initial_material * 2 - phase_transition_begin;
 	phase_transition_material_end = phase_transition_material_begin - phase_transition_duration;
+
+	for( short i = 0; i < 8; ++i ) {
+		if( i > mobility_knight_offset ) {
+			mobility_knight[i] = (std::min)(short(mobility_knight_min + mobility_knight_rise * (i - mobility_knight_offset)), mobility_knight_max);
+		}
+		else {
+			mobility_knight[i] = mobility_knight_min;
+		}
+	}
+
+	for( short i = 0; i < 13; ++i ) {
+		if( i > mobility_bishop_offset ) {
+			mobility_bishop[i] = (std::min)(short(mobility_bishop_min + mobility_bishop_rise * (i - mobility_bishop_offset)), mobility_bishop_max);
+		}
+		else {
+			mobility_bishop[i] = mobility_bishop_min;
+		}
+	}
+
+	for( short i = 0; i < 14; ++i ) {
+		if( i > mobility_rook_offset ) {
+			mobility_rook[i] = (std::min)(short(mobility_rook_min + mobility_rook_rise * (i - mobility_rook_offset)), mobility_rook_max);
+		}
+		else {
+			mobility_rook[i] = mobility_rook_min;
+		}
+	}
+
+	for( short i = 0; i < 27; ++i ) {
+		if( i > mobility_queen_offset ) {
+			mobility_queen[i] = (std::min)(short(mobility_queen_min + mobility_queen_rise * (i - mobility_queen_offset)), mobility_queen_max);
+		}
+		else {
+			mobility_queen[i] = mobility_queen_min;
+		}
+	}
+
+	for( short i = 0; i < 150; ++i ) {
+		if( i > king_attack_offset ) {
+			double factor = i - king_attack_offset;
+			factor = std::pow( factor, double(eval_values.king_attack_exponent) / 100.0 );
+			king_attack[i] = (std::min)(short(king_attack_min + king_attack_rise * factor), king_attack_max);
+		}
+		else {
+			king_attack[i] = king_attack_min;
+		}
+	}
 }
 
 
@@ -314,8 +301,7 @@ extern short const bishop_values[2][64] = {
 	}
 };
 
-namespace {
-uint64_t const passed_pawns[2][64] = {
+extern uint64_t const passed_pawns[2][64] = {
 {
 		0x0303030303030300ull,
 		0x0707070707070700ull,
@@ -449,7 +435,8 @@ uint64_t const passed_pawns[2][64] = {
 		0x00c0c0c0c0c0c0c0ull
 	}
 };
-uint64_t const doubled_pawns[2][64] = {
+
+extern uint64_t const doubled_pawns[2][64] = {
 	{
 		0x0000000000000000ull,
 		0x0000000000000000ull,
@@ -583,6 +570,8 @@ uint64_t const doubled_pawns[2][64] = {
 		0x0000000000000000ull
 	}
 };
+
+namespace {
 uint64_t const connected_pawns[2][64] = {
 {
 		0x0000000000000202ull,
@@ -729,7 +718,7 @@ void evaluate_pawn( uint64_t own_pawns, uint64_t foreign_pawns, color::type c, u
 }
 }
 
-void evaluate_pawns( uint64_t white_pawns, uint64_t black_pawns, short* eval )
+void evaluate_pawns( uint64_t white_pawns, uint64_t black_pawns, short* eval, uint64_t& passed )
 {
 	// Two while loops, otherwise nice branchless solution.
 
@@ -767,20 +756,24 @@ void evaluate_pawns( uint64_t white_pawns, uint64_t black_pawns, short* eval )
 	unpassed_white |= doubled_white;
 	unpassed_black |= doubled_black;
 
-	eval[0] = static_cast<short>(eval_values.passed_pawn[0] * popcount(white_pawns ^ unpassed_white));
+	uint64_t passed_white = white_pawns ^ unpassed_white;
+	uint64_t passed_black = black_pawns ^ unpassed_black;
+	passed = passed_white | passed_black;
+
+	eval[0] = static_cast<short>(eval_values.passed_pawn[0] * popcount(passed_white));
 	eval[0] += static_cast<short>(eval_values.doubled_pawn[0] * popcount(doubled_white));
 	eval[0] += static_cast<short>(eval_values.connected_pawn[0] * popcount(connected_white));
 	eval[0] += static_cast<short>(eval_values.isolated_pawn[0] * popcount(white_pawns ^ unisolated_white));
-	eval[0] -= static_cast<short>(eval_values.passed_pawn[0] * popcount(black_pawns ^ unpassed_black));
+	eval[0] -= static_cast<short>(eval_values.passed_pawn[0] * popcount(passed_black));
 	eval[0] -= static_cast<short>(eval_values.doubled_pawn[0] * popcount(doubled_black));
 	eval[0] -= static_cast<short>(eval_values.connected_pawn[0] * popcount(connected_black));
 	eval[0] -= static_cast<short>(eval_values.isolated_pawn[0] * popcount(black_pawns ^ unisolated_black));
 
-	eval[1] = static_cast<short>(eval_values.passed_pawn[1] * popcount(white_pawns ^ unpassed_white));
+	eval[1] = static_cast<short>(eval_values.passed_pawn[1] * popcount(passed_white));
 	eval[1] += static_cast<short>(eval_values.doubled_pawn[1] * popcount(doubled_white));
 	eval[1] += static_cast<short>(eval_values.connected_pawn[1] * popcount(connected_white));
 	eval[1] += static_cast<short>(eval_values.isolated_pawn[1] * popcount(white_pawns ^ unisolated_white));
-	eval[1] -= static_cast<short>(eval_values.passed_pawn[1] * popcount(black_pawns ^ unpassed_black));
+	eval[1] -= static_cast<short>(eval_values.passed_pawn[1] * popcount(passed_black));
 	eval[1] -= static_cast<short>(eval_values.doubled_pawn[1] * popcount(doubled_black));
 	eval[1] -= static_cast<short>(eval_values.connected_pawn[1] * popcount(connected_black));
 	eval[1] -= static_cast<short>(eval_values.isolated_pawn[1] * popcount(black_pawns ^ unisolated_black));
@@ -829,7 +822,8 @@ short evaluate_fast( position const& p, color::type c )
 	int value = evaluate_side( p, c ) - evaluate_side( p, static_cast<color::type>(1-c) );
 
 	short pawn_eval[2];
-	evaluate_pawns( p.bitboards[0].b[bb_type::pawns], p.bitboards[1].b[bb_type::pawns], pawn_eval );
+	uint64_t tmp;
+	evaluate_pawns( p.bitboards[0].b[bb_type::pawns], p.bitboards[1].b[bb_type::pawns], pawn_eval, tmp );
 	short scaled_pawns = phase_scale( p.material, pawn_eval[0], pawn_eval[1] );
 	if( c ) {
 		value -= scaled_pawns;
@@ -980,9 +974,9 @@ short evaluate_move( position const& p, color::type c, short current_evaluation,
 		}
 
 		short pawn_eval[2];
-		if( !pawn_hash_table.lookup( outPawns.hash, pawn_eval ) ) {
-			evaluate_pawns(pawnMap[0], pawnMap[1], pawn_eval);
-			pawn_hash_table.store( outPawns.hash, pawn_eval );
+		if( !pawn_hash_table.lookup( outPawns.hash, pawn_eval, outPawns.passed ) ) {
+			evaluate_pawns(pawnMap[0], pawnMap[1], pawn_eval, outPawns.passed );
+			pawn_hash_table.store( outPawns.hash, pawn_eval, outPawns.passed );
 		}
 
 		short scaled_eval = phase_scale( material, pawn_eval[0], pawn_eval[1] );
@@ -1057,9 +1051,17 @@ void evaluate_pawn_shield( position const& p, color::type c, short* pawn_shield 
 	pawn_shield[1] = own[1] - other[1];
 }
 
+
 short evaluate_full( position const& p, color::type c )
 {
 	short eval = evaluate_fast( p, c );
+
+	short mat[2];
+	mat[0] = p.material[0] - popcount( p.bitboards[0].b[bb_type::pawns]) * eval_values.material_values[pieces::pawn];
+	mat[1] = p.material[1] - popcount( p.bitboards[1].b[bb_type::pawns]) * eval_values.material_values[pieces::pawn];
+
+	short diff = mat[c] - mat[1-c];
+	eval += (diff * eval_values.material_imbalance_scale) / 20;
 
 	return evaluate_full( p, c, eval );
 }

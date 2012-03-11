@@ -98,8 +98,6 @@ void auto_play()
 		int ev = evaluate_fast( p, color::white );
 		std::cerr << "Evaluation (for white): " << ev << " centipawns" << std::endl;
 
-		//std::cerr << explain_eval( p, color::white, p.bitboards );
-
 		c = static_cast<color::type>(1-c);
 
 		if( !reset_seen ) {

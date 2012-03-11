@@ -21,5 +21,6 @@ extern uint64_t const pawn_control[2][64];
 extern uint64_t const possible_knight_moves[64];
 extern uint64_t const possible_king_moves[64];
 
+extern uint64_t const rule_of_the_square[2][2][64];
 
 #endif

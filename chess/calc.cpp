@@ -42,7 +42,7 @@ int const lmr_reduction = 0;
 int const lmr_min_depth = 0;
 #endif
 
-short const futility_pruning[] = { 130, 250, 400, 500 };
+short const futility_pruning[] = { 120, 120, 330, 330 };
 
 volatile bool do_abort = false;
 

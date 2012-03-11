@@ -44,10 +44,10 @@ public:
 	bool init( uint64_t size_in_mib );
 
 	// Pass array of two shorts
-	bool lookup( uint64_t key, short* eval ) const;
+	bool lookup( uint64_t key, short* eval, uint64_t& passed ) const;
 
 	// Pass array of two shorts
-	void store( uint64_t key, short const* eval );
+	void store( uint64_t key, short const* eval, uint64_t passed );
 
 	stats get_stats( bool reset );
 

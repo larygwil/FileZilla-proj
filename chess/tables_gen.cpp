@@ -5,6 +5,14 @@
 
 #include "platform.hpp"
 
+int dist( int x1, int y1, int x2, int y2 )
+{
+	int cx = std::abs(x1 - x2);
+	int cy = std::abs(y1 - y2);
+
+	return (std::max)(cx, cy);
+}
+
 int main()
 {
 	std::cout << "#include \"platform.hpp\"" << std::endl << std::endl;
@@ -524,6 +532,8 @@ int main()
 		std::cout << "};" << std::endl << std::endl << std::endl;
 	}
 
+	uint64_t possible_king_moves[64];
+
 	{
 		std::cout << "extern uint64_t const possible_king_moves[64] = {" << std::endl;
 
@@ -548,7 +558,9 @@ int main()
 					}
 				}
 			}
-			
+
+			possible_king_moves[source] = v;
+
 			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
 
 			std::cout << "ull";
@@ -596,5 +608,77 @@ int main()
 		std::cout << "};" << std::endl << std::endl << std::endl;
 	}
 
+	{
+		uint64_t rule_of_the_square[2][2][64];
+
+		for( int c = 0; c < 2; ++c ) {
+			for( int king = 0; king < 64; ++king ) {
+
+				uint64_t v = 0;
+
+				int king_x = king % 8;
+				int king_y = king / 8;
+
+				int king_cy = c ? king_y : (7 - king_y);
+
+				for( int pawn = 0; pawn < 64; ++pawn ) {
+					int pawn_x = pawn % 8;
+					int pawn_y = pawn / 8;
+
+					// To acccount for pawn double move
+					if( pawn_y == (c ? 6 : 1) ) {
+						pawn_y = (c ? 5 : 2);
+					}
+					int pawn_cy = c ? pawn_y : (7 - pawn_y);
+
+					int d = dist( king_x, king_y, pawn_x, c ? 0 : 7 );
+					if( d <= pawn_cy ) {
+						v |= 1ull << pawn;
+					}
+				}
+
+				rule_of_the_square[1-c][c][king] = v;
+			}
+		}
+		for( int c = 0; c < 2; ++c ) {
+			for( int king = 0; king < 64; ++king ) {
+				rule_of_the_square[c][c][king] = possible_king_moves[king];
+				uint64_t kings = possible_king_moves[king];
+				while( kings ) {
+					uint64_t kk = bitscan_unset( kings );
+					rule_of_the_square[c][c][king] |= rule_of_the_square[c][1-c][kk];
+				}
+			}
+		}
+
+		std::cout << "extern uint64_t const rule_of_the_square[2][2][64] = { " << std::endl;
+		for( int c = 0; c < 2; ++c ) {
+			std::cout << "\t{" << std::endl;
+			for( int stm = 0; stm < 2; ++stm ) {
+				std::cout << "\t\t{" << std::endl;
+				for( int king = 0; king < 64; ++king ) {
+					std::cout << "\t\t\t0x";
+					std::cout << std::hex << std::setw(16) << std::setfill('0') << rule_of_the_square[c][stm][king];
+					std::cout << "ull";
+					if( king != 63 ) {
+						std::cout << ",";
+					}
+					std::cout << std::endl;
+				}
+				std::cout << "\t\t}";
+				if( !stm ) {
+					std::cout << ",";
+				}
+				std::cout << std::endl;
+			}
+			std::cout << "\t}";
+			if( !c ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+
+		std::cout << "};" << std::endl;
+	}
 	return 0;
 }

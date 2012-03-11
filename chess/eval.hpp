@@ -3,7 +3,7 @@
 
 #include "chess.hpp"
 
-#define LAZY_EVAL 529
+#define LAZY_EVAL 1271
 
 struct eval_values_t
 {
@@ -29,32 +29,70 @@ struct eval_values_t
 	short pin_absolute_rook;
 	short pin_absolute_queen;
 
-	// Try to avoid "slow" floating point arithmetic, or at least the conversion between int and float/double.
-	// mobility = raw_data * multiplicator / divisor.
-	short mobility_multiplicator;
-	short mobility_divisor;
+	short mobility_scale[2];
 
-	short pin_multiplicator;
-	short pin_divisor;
+	short pin_scale[2];
 
-	short rooks_on_open_file_multiplicator;
-	short rooks_on_open_file_divisor;
+	short rooks_on_open_file_scale;
 
-	short tropism_multiplicator;
-	short tropism_divisor;
+	short connected_rooks_scale[2];
 
-	short king_attack_multiplicator;
-	short king_attack_divisor;
+	short tropism_scale[2];
 
-	short center_control_multiplicator;
-	short center_control_divisor;
+	short king_attack_by_piece[6];
+	short king_check_by_piece[6];
+	short king_melee_attack_by_rook;
+	short king_melee_attack_by_queen;
+
+	short king_attack_min;
+	short king_attack_max;
+	short king_attack_rise;
+	short king_attack_exponent;
+	short king_attack_offset;
+	short king_attack_scale[2];
+
+	short center_control_scale[2];
 
 	short phase_transition_begin;
 	short phase_transition_duration;
 
+	short material_imbalance_scale;
+
+	short rule_of_the_square;
+	short passed_pawn_unhindered;
+
+	short unstoppable_pawn_scale[2];
+
+	short hanging_piece[6];
+	short hanging_piece_scale[2];
+
+	short mobility_knight_min;
+	short mobility_knight_max;
+	short mobility_knight_rise;
+	short mobility_knight_offset;
+	short mobility_bishop_min;
+	short mobility_bishop_max;
+	short mobility_bishop_rise;
+	short mobility_bishop_offset;
+	short mobility_rook_min;
+	short mobility_rook_max;
+	short mobility_rook_rise;
+	short mobility_rook_offset;
+	short mobility_queen_min;
+	short mobility_queen_max;
+	short mobility_queen_rise;
+	short mobility_queen_offset;
+
 	// Derived
 	int phase_transition_material_begin;
 	int phase_transition_material_end;
+
+	short mobility_knight[8];
+	short mobility_bishop[13];
+	short mobility_rook[14];
+	short mobility_queen[7+7+7+6];
+
+	short king_attack[150];
 
 	void update_derived();
 };
@@ -68,7 +106,7 @@ short evaluate_full( position const& p, color::type c, short eval_fast );
 
 short evaluate_move( position const& p, color::type c, short current_evaluation, move const& m, position::pawn_structure& outPawns );
 
-void evaluate_pawns( uint64_t const white_pawns, uint64_t const black_pawns, short* eval );
+void evaluate_pawns( uint64_t const white_pawns, uint64_t const black_pawns, short* eval, uint64_t& passed );
 
 short get_material_value( pieces::type pi );
 

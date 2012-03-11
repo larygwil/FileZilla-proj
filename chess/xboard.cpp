@@ -6,6 +6,7 @@
 #include "fen.hpp"
 #include "hash.hpp"
 #include "logger.hpp"
+#include "mobility.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "random.hpp"
 #include "see.hpp"
@@ -287,8 +288,6 @@ void xboard_thread::onRun()
 			{
 				int i = evaluate_fast( state.p, static_cast<color::type>(1-state.c) );
 				std::cerr << "  ; Current evaluation: " << i << " centipawns, forecast " << res << std::endl;
-
-				//std::cerr << explain_eval( state.p, static_cast<color::type>(1-state.c), p.bitboards );
 			}
 
 			if( res > result::win_threshold ) {
@@ -703,6 +702,8 @@ void xboard()
 			short eval_fast = evaluate_fast( state.p, state.c );
 			short eval_full = evaluate_full( state.p, state.c );
 			std::cout << eval_fast << " " << eval_full << std::endl;
+
+			std::cout << explain_eval( state.p, state.c ) << std::endl;
 		}
 		else if( cmd == "~hash") {
 			std::cout << get_zobrist_hash( state.p ) << std::endl;

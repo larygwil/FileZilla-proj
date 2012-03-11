@@ -78,6 +78,7 @@ struct position
 	struct pawn_structure {
 		short eval; // From white's point of view
 		uint64_t hash;
+		uint64_t passed;
 	} pawns;
 
 	short material[2];
