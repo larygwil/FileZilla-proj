@@ -35,6 +35,8 @@ contact tim.kosse@filezilla-project.org for details.
 #include "xboard.hpp"
 #include "zobrist.hpp"
 
+#include "uci/runner.hpp"
+
 #include <algorithm>
 #include <list>
 #include <iostream>
@@ -42,7 +44,6 @@ contact tim.kosse@filezilla-project.org for details.
 #include <stdlib.h>
 #include <sstream>
 
-void run_uci();
 
 const int TIME_LIMIT = 90000;
 
@@ -167,10 +168,25 @@ int main( int argc, char const* argv[] )
 		tweak_evaluation();
 	}
 	else if( command == "xboard" ) {
-		xboard();
+		xboard( false );
 	}
-	else if( command == "uci" || command.empty() ) {
-		run_uci();
+	else if( command == "uci" ) {
+		run_uci( false );
+	}
+	else if( command.empty() ) {
+		std::string line;
+		if( !line.empty() ) {
+			logger::log_input( line );
+		}
+		if( !std::getline(std::cin, line) ) {
+			std::cerr << "Could not read command" << std::endl;
+		}
+		else if( line == "uci" ) {
+			run_uci( true );
+		}
+		else {
+			xboard( line );
+		}
 	}
 	else {
 		std::cerr << "Unknown command: " << command << std::endl;

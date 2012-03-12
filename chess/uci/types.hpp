@@ -1,11 +1,13 @@
 #ifndef OCTOCHESS_UCI_TYPES_HEADER
 #define OCTOCHESS_UCI_TYPES_HEADER
 
+#include "../platform.hpp"
+
 namespace octochess {
 namespace uci {
 
-typedef unsigned int uint;
-typedef uint time;
+typedef uint64_t uint;
+typedef uint64_t time;
 
 }
 }

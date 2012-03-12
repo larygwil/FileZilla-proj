@@ -1,6 +1,8 @@
 #ifndef __XBOARD_H__
 #define __XBOARD_H__
 
-void xboard();
+#include <string>
+
+void xboard( std::string line );
 
 #endif

@@ -432,7 +432,7 @@ void go( xboard_thread& thread, xboard_state& state, uint64_t cmd_recv_time )
 	thread.start();
 }
 
-void xboard()
+void xboard( std::string line)
 {
 	xboard_state state;
 	xboard_thread thread( state );
@@ -443,9 +443,13 @@ void xboard()
 
 	pawn_hash_table.init( conf.pawn_hash_table_size );
 
+	if( !line.empty() ) {
+		goto skip_getline;
+	}
+
 	while( true ) {
-		std::string line;
 		std::getline( std::cin, line );
+skip_getline:
 
 		uint64_t cmd_recv_time = get_time();
 

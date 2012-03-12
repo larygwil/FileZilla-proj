@@ -16,7 +16,11 @@ minimalistic_uci_protocol::minimalistic_uci_protocol()
 	: connected_(false)
 {}
 
-void minimalistic_uci_protocol::thread_entry_point() {
+void minimalistic_uci_protocol::thread_entry_point( bool already_got_init ) {
+	if( already_got_init ) {
+		init();
+	}
+
 	std::string line;
 	while( std::getline(std::cin, line) ) {
 		logger::log_input(line);
@@ -30,14 +34,19 @@ void minimalistic_uci_protocol::thread_entry_point() {
 
 void minimalistic_uci_protocol::parse_init( std::string const& line ) {
 	if( line == "uci" ) {
-		assert( callbacks_ && "callbacks not set" );
-		identify( callbacks_->name(), callbacks_->author() );
-		//send options in future version
-		std::cout << "uciok" << std::endl;
-		connected_ = true;
+		init();
 	} else {
 		std::cerr << "unknown command when not connected: " << line << std::endl;
 	}
+}
+
+void minimalistic_uci_protocol::init()
+{
+	assert( callbacks_ && "callbacks not set" );
+	identify( callbacks_->name(), callbacks_->author() );
+	//send options in future version
+	std::cout << "uciok" << std::endl;
+	connected_ = true;
 }
 
 void minimalistic_uci_protocol::parse_command( std::string const& line ) {

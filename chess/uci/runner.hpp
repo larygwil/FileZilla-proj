@@ -1,6 +1,6 @@
 #ifndef OCTOCHESS_UCI_RUNNER_HEADER
 #define OCTOCHESS_UCI_RUNNER_HEADER
 
-void run_uci();
+void run_uci( bool already_got_init );
 
 #endif

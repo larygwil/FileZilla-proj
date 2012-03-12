@@ -189,6 +189,22 @@
 				>
 			</File>
 			<File
+				RelativePath="..\uci\info.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\uci\minimalistic_uci_protocol.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\uci\octochess_impl.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\uci\runner.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\tweak.cpp"
 				>
 			</File>
@@ -203,7 +219,35 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\uci\info.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\uci\interface.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\uci\minimalistic_uci_protocol.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\uci\octochess_impl.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\uci\runner.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\uci\time.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\tweak.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\uci\types.hpp"
 				>
 			</File>
 			<File

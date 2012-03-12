@@ -7,6 +7,15 @@
 #include <memory>
 #include <string>
 
+#if _MSC_VER && _MSC_VER < 1600
+namespace std {
+namespace tr1 {
+	// Stupid hack to get tr1::shared_ptr into std
+}
+using namespace tr1;
+}
+#endif
+
 namespace octochess {
 namespace uci {
 
