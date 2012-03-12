@@ -173,7 +173,7 @@ void octochess_uci::impl::onRun() {
 
 			bool ret = calc_manager_.calc( pos_, color_to_play_, m, res, time_limit_, time_remaining_, half_moves_played_, seen_positions_, last_mate_, *this );
 			if( ret ) {
-				gui_interface_->tell_best_move( move_to_source_target_string( m ) );
+				gui_interface_->tell_best_move( move_to_long_algebraic( m ) );
 
 				lock.lock();
 

@@ -17,8 +17,8 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 // E.g. O-O, Na3xf6, b2-b4
 std::string move_to_string( move const& m, bool padding = true );
 
-// E.g. c4d6
-std::string move_to_source_target_string( move const& m );
+// E.g. c4d6, e1g1, e7e8q
+std::string move_to_long_algebraic( move const& m );
 
 void init_board( position& p );
 void init_bitboards( position& p );
