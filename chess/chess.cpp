@@ -168,7 +168,7 @@ int main( int argc, char const* argv[] )
 		tweak_evaluation();
 	}
 	else if( command == "xboard" ) {
-		xboard( false );
+		xboard( "" );
 	}
 	else if( command == "uci" ) {
 		run_uci( false );
