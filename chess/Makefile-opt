@@ -34,7 +34,11 @@ GENERIC_SOURCE_FILES = \
 CHESS_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
 	chess.cpp \
 	tweak.cpp \
-	xboard.cpp
+	xboard.cpp \
+	uci/info.cpp \
+	uci/minimalistic_uci_protocol.cpp \
+	uci/octochess_impl.cpp \
+	uci/runner.cpp
 
 BOOKGEN_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
 	bookgen.cpp

@@ -37,14 +37,15 @@ OBJECT_FILES = \
 	unix.o \
 	util.o \
 	zobrist.o \
+
+CHESS_FILES = $(OBJECT_FILES) \
+	chess.o \
+	xboard.o \
 	uci/info.o \
 	uci/minimalistic_uci_protocol.o \
 	uci/octochess_impl.o \
 	uci/runner.o
 
-CHESS_FILES = $(OBJECT_FILES) \
-	chess.o \
-	xboard.o
 
 %.o: %.cpp *.hpp
 	g++ $(CXXFLAGS) -c -o $@ $<
@@ -64,6 +65,8 @@ clean:
 	rm -f octochess bookgen tables_gen
 	rm -f *.gcda
 	rm -f *.o
+	rm -f uci/*.o
+	rm -f uci/*.gcda
 	rm -f tables.cpp
 
 .PHONY: all clean
