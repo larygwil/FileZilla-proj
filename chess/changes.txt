@@ -1,0 +1,11 @@
+Octochess r???? (2012-03-??):
+- Improved playing strenght
+- Experimental UCI implementation
+- Many small bugs fixed
+- Add alternative popcount implemention for systems without POPCOUNT. Needs to be enabled through a #define
+- If compiled as 32bit program, clamp transposition table size to 1GB
+- Some code refactoring
+
+
+Octochess r4452 (2012-02-28)
+-  Initial version
