@@ -214,6 +214,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\phased_move_generator.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\pvlist.cpp"
 				>
 			</File>
@@ -329,6 +333,10 @@
 			</File>
 			<File
 				RelativePath="..\platform.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\phased_move_generator.hpp"
 				>
 			</File>
 			<File

@@ -11,6 +11,9 @@
 #include <iostream>
 #include <string>
 
+MoveSortEval moveSortEval;
+MoveSort moveSort;
+
 extern uint64_t const pawn_enpassant[2] = {
 	0x0000ff0000000000ull,
 	0x0000000000ff0000ull

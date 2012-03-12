@@ -18,6 +18,7 @@ GENERIC_SOURCE_FILES = \
 	moves_captures.cpp \
 	moves_noncaptures.cpp \
 	pawn_structure_hash_table.cpp \
+	phased_move_generator.cpp \
 	pvlist.cpp \
 	random.cpp \
 	util.cpp \
@@ -46,7 +47,7 @@ BOOKGEN_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
 chess-gen: *.cpp *.hpp
 	g++ $(CXXFLAGS) -fprofile-generate -o $@ $(CHESS_SOURCE_FILES)
 	./chess-gen --moves 1 --depth 11 --threads 1 auto
-	rm -f *.o
+	rm -f *.o uci/*.o
 
 chess-use: chess-gen
 	g++ $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ $(CHESS_SOURCE_FILES)
@@ -55,5 +56,5 @@ bookgen-use: chess-gen
 	g++ $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ $(BOOKGEN_SOURCE_FILES)
 
 clean:
-	rm -f chess
-	rm -f *.o
+	rm -f chess-gen
+	rm -f *.o uci/*.o

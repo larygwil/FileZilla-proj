@@ -19,7 +19,7 @@ struct config
 	int thread_count;
 	unsigned int memory;
 	unsigned int max_moves; // only for auto play
-	signed char depth;
+	signed short depth;
 	unsigned char quiescence_depth;
 
 	uint64_t time_limit; // In milliseconds

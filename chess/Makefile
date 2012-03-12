@@ -24,6 +24,7 @@ OBJECT_FILES = \
 	moves_captures.o \
 	moves_noncaptures.o \
 	pawn_structure_hash_table.o \
+	phased_move_generator.o \
 	pvlist.o \
 	random.o \
 	see.o \
@@ -36,7 +37,7 @@ OBJECT_FILES = \
 	tweak.o \
 	unix.o \
 	util.o \
-	zobrist.o \
+	zobrist.o
 
 CHESS_FILES = $(OBJECT_FILES) \
 	chess.o \

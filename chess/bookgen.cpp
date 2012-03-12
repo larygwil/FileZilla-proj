@@ -66,7 +66,7 @@ bool deepen_move( book& b, position const& p, color::type c, seen_positions cons
 		check_map check( new_pos, static_cast<color::type>(1-c) );
 
 		short new_eval = evaluate_fast( new_pos, c );
-		value = -step( depth * depth_factor, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
+		value = -step( depth * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
 		ctx.pv_pool.release(pv);
 	}
 
@@ -118,7 +118,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 			check_map check( new_pos, static_cast<color::type>(1-c) );
 
 			short new_eval = evaluate_fast( new_pos, c );
-			value = -step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
+			value = -step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
 			ctx.pv_pool.release(pv);
 		}
 
@@ -171,7 +171,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 
 				check_map check( new_pos, static_cast<color::type>(1-c) );
 
-				value = -step( MAX_BOOKSEARCH_DEPTH * depth_factor, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
+				value = -step( MAX_BOOKSEARCH_DEPTH * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, -new_eval, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
 				ctx.pv_pool.release(pv);
 			}
 
@@ -232,7 +232,7 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 				check_map check( new_pos, static_cast<color::type>(1-c) );
 
 				pv_entry* pv = ctx.pv_pool.get();
-				value = -step( new_depth * depth_factor, 1, ctx, new_pos, new_hash, -eval, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
+				value = -step( new_depth * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, -eval, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
 				ctx.pv_pool.release(pv);
 			}
 

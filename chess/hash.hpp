@@ -36,17 +36,18 @@
  * likely be best to adjust it dynamically which would directly contradict
  * requirement 1).
  *
- * Using an bucket approach, two things are still missing: Number of buckets
+ * Using a bucket approach, two things are still missing: Number of buckets
  * and a replacement strategy.
  * Number of buckets should play along nicely with point 2), exploiting the
  * cache line size.
  *
  * We have:
- * - 64 bit zobrist hash of position
- * - 16 bit score
+ * - 48 bit of 48 uppermost bits of zobrist hash of position
+ * - 16 bit full static evaluation score
+ * - 16 bit search score
  * -  2 bit node type
- * - 25 bit move (row/col for source and target: 4 * 3 bit, piece: 3 bit, flags: 5 bit, capture: 3 bit, promotion: 2 bit)
- * -  8 bit remaining depth
+ * - 24 bit move (row/col for source and target: 4 * 3 bit, piece: 3 bit, flags: 6 bit, capture: 3 bit)
+ * -  9 bit remaining depth
  * -  8 bit age
  * Total: 123 bits.
  *
@@ -57,7 +58,7 @@
  * If we were to spare a few more bits, we could even squeeze another position
  * into the bucket. We could do so, by e.g. only storing the partial zobrist
  * hash, given a large enough cache. Unfortunately, during earlier experinents
- * with the naive hashing, the extra arithmetic was shown negatively impact
+ * with the naive hashing, the extra arithmetic was shown to negatively impact
  * performance, so we stick with the 4 entries per bucket for now.
  * Another nice benefit with the 4 entries:
  * 64 bytes / 4 = 16 bytes, or two uint64_t which makes handling the data
@@ -137,9 +138,9 @@ public:
 
 	// Returns true on hit, caller should return eval.
 	// If it returns false and best_move.other==1, there is a best move.
-	score_type::type lookup( hash_key key, color::type c, unsigned char depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move );
+	score_type::type lookup( hash_key key, color::type c, unsigned short depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move, short& full_eval );
 
-	void store( hash_key key, color::type c, unsigned char depth, unsigned char ply, short eval, short alpha, short beta, move const& best_move, unsigned char clock );
+	void store( hash_key key, color::type c, unsigned short depth, unsigned char ply, short eval, short alpha, short beta, move const& best_move, unsigned char clock, short full_eval );
 
 	void free_hash();
 

@@ -3,7 +3,7 @@
 
 #include "chess.hpp"
 
-#define LAZY_EVAL 1271
+#define LAZY_EVAL 481
 
 struct eval_values_t
 {

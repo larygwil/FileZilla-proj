@@ -1,15 +1,16 @@
 #include "assert.hpp"
 #include "calc.hpp"
 #include "config.hpp"
+#include "eval.hpp"
 #include "fen.hpp"
 #include "hash.hpp"
 #include "moves.hpp"
-#include "eval.hpp"
-#include "util.hpp"
+#include "phased_move_generator.hpp"
 #include "platform.hpp"
 #include "random.hpp"
 #include "see.hpp"
 #include "statistics.hpp"
+#include "util.hpp"
 #include "zobrist.hpp"
 
 #include <algorithm>
@@ -21,13 +22,11 @@
 #include <map>
 #include <vector>
 
-#define USE_SEE 1
-
 // TODO: Fine-tweak these values.
 #if 1
 int const check_extension = 5;
 int const pawn_push_extension = 4;
-int const cutoff = depth_factor;
+int const cutoff = depth_factor + MAX_QDEPTH + 1;
 
 unsigned int const lmr_searched = 3;
 int const lmr_reduction = depth_factor * 2;
@@ -42,27 +41,15 @@ int const lmr_reduction = 0;
 int const lmr_min_depth = 0;
 #endif
 
-short const futility_pruning[] = { 120, 120, 330, 330 };
+short const razor_pruning[] = { 220, 250, 290 };
+short const futility_pruning[] = { 110, 130, 170, 210 };
+
 
 volatile bool do_abort = false;
 
 short const ASPIRATION = 40;
 
 new_best_move_callback default_new_best_move_callback;
-
-namespace {
-struct MoveSort {
-	bool operator()( move_info const& lhs, move_info const& rhs ) const {
-		return lhs.evaluation > rhs.evaluation;
-	}
-} moveSort;
-
-struct MoveSort2 {
-	bool operator()( move_info const& lhs, move_info const& rhs ) const {
-		return lhs.sort > rhs.sort;
-	}
-} moveSort2;
-}
 
 
 void sort_moves( move_info* begin, move_info* end, position const& p, color::type c, short current_evaluation )
@@ -74,21 +61,11 @@ void sort_moves( move_info* begin, move_info* end, position const& p, color::typ
 			it->sort += get_material_value( it->m.captured_piece ) * 1000000 - get_material_value( it->m.piece );
 		}
 	}
-	std::sort( begin, end, moveSort2 );
+	std::sort( begin, end, moveSort );
 }
 
 
-void sort_moves_noncaptures( move_info* begin, move_info* end, position const& p, color::type c, short current_evaluation )
-{
-	for( move_info* it = begin; it != end; ++it ) {
-		it->evaluation = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
-		it->sort = it->evaluation;
-	}
-	std::sort( begin, end, moveSort2 );
-}
-
-
-short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta )
+short quiescence_search( int ply, int depth, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta, short full_eval = result::win )
 {
 #if 0
 	if( get_zobrist_hash(p) != hash ) {
@@ -117,18 +94,24 @@ short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash
 	++stats.quiescence_nodes;
 #endif
 
-	int const limit = MAX_DEPTH + MAX_QDEPTH;
-
-	if( ply >= limit ) {
+	if( !depth ) {
 		return beta;
 	}
 
-	// Do lazy evaluation.
-	// Assumes that full eval does not differ from fast one by more than 300 centipawns.
-	// If this assumption holds, outcome is equivalent to non-lazy eval.
-	// This saves between 15-20% of all calls to full_eval.
+	bool pv_node = alpha + 1 != beta;
 
-	short full_eval = result::win; // Any impossible value would do
+	short eval;
+	move tt_move;
+	score_type::type t = transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move, full_eval );
+
+	if ( !pv_node && t != score_type::none ) {
+		return eval;
+	}
+
+
+	if( !check.check && tt_move.captured_piece != pieces::none ) {
+		tt_move.piece = pieces::none;
+	}
 
 #if 0
 	full_eval = evaluate_full( p, c, current_evaluation );
@@ -142,8 +125,12 @@ short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash
 		abort();
 	}
 #endif
-	if( current_evaluation + LAZY_EVAL > alpha && !check.check ) {
-		full_eval = evaluate_full( p, c, current_evaluation );
+
+	if( !check.check ) {
+		if( full_eval == result::win ) {
+			full_eval = evaluate_full( p, c, current_evaluation );
+			transposition_table.store( hash, c, 0, ply, 0, 0, 0, tt_move, ctx.clock, full_eval );
+		}
 		if( full_eval > alpha ) {
 			if( full_eval >= beta ) {
 				return full_eval;
@@ -152,30 +139,18 @@ short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash
 		}
 	}
 
-	move_info* moves = ctx.move_ptr;
+	bool got_moves = false;
 
-	if( check.check ) {
-		calculate_moves( p, c, ctx.move_ptr, check );
-		sort_moves( moves, ctx.move_ptr, p, c, current_evaluation );
-	}
-	else {
-		calculate_moves_captures( p, c, ctx.move_ptr, check );
-		std::sort( moves, ctx.move_ptr, moveSort );
-	}
-	bool got_moves = moves != ctx.move_ptr;
+	qsearch_move_generator gen( ctx, p, c, check, current_evaluation, pv_node );
+	gen.hash_move = tt_move;
 
-	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
-		if( !check.check ) {
-#if USE_SEE
-			if( it->m.piece > it->m.captured_piece ) {
-				int see_score = see( p, c, it->m );
-				if( see_score < 0 ) {
-					continue;
-				}
-			}
-#endif
-			it->evaluation = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
-		}
+	move best_move;
+
+	short old_alpha = alpha;
+
+	move_info const* it;
+	while( (it = gen.next()) ) {
+		got_moves = true;
 
 		short value;
 		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
@@ -190,9 +165,10 @@ short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash
 
 			ctx.seen.set( new_hash, ply );
 
-			value = -quiescence_search( ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -beta, -alpha );
+			value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -beta, -alpha );
 		}
 		if( value > alpha ) {
+			best_move = it->m;
 			alpha = value;
 
 			if( alpha >= beta ) {
@@ -201,19 +177,15 @@ short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash
 		}
 	}
 
-	ctx.move_ptr = moves;
-
 	if( !got_moves ) {
 		if( check.check ) {
 			return result::loss + ply;
 		}
 		else {
-			calculate_moves( p, c, ctx.move_ptr, check );
+			move_info* moves = ctx.move_ptr;
+			calculate_moves_noncaptures( p, c, ctx.move_ptr, check );
 			if( ctx.move_ptr != moves ) {
 				ctx.move_ptr = moves;
-				if( full_eval == result::win ) {
-					full_eval = evaluate_full( p, c, current_evaluation );
-				}
 				return full_eval;
 			}
 			else {
@@ -222,142 +194,16 @@ short quiescence_search( int ply, context& ctx, position const& p, uint64_t hash
 		}
 	}
 
+	transposition_table.store( hash, c, depth, ply, alpha, old_alpha, beta, best_move, ctx.clock, full_eval );
+
 	return alpha;
 }
 
 
-namespace phases {
-enum type {
-	hash_move,
-	captures_gen,
-	captures,
-	killer1,
-	killer2,
-	noncaptures_gen,
-	noncapture,
-	done
-};
-}
-
-// Multi-phase move generator
-class move_generator
-{
-public:
-	move_generator( context& cntx, killer_moves const& killers, position const& p, color::type const& c, check_map const& check, short const& eval )
-		: ctx( cntx )
-		, killers_(killers)
-		, phase( phases::hash_move )
-		, moves( ctx.move_ptr )
-		, it( ctx.move_ptr )
-		, p_(p)
-		, c_(c)
-		, check_(check)
-		, eval_(eval)
-	{
-	}
-
-	~move_generator()
-	{
-		ctx.move_ptr = moves;
-	}
-
-	// Returns the next legal move.
-	// move_info's m, evaluation and pawns are filled out, sort is undefined.
-	move_info const* next() {
-		// The fall-throughs are on purpose
-		switch( phase ) {
-		case phases::hash_move:
-			phase = phases::captures_gen;
-			if( !hash_move.empty() ) {
-				ctx.move_ptr = moves + 1;
-#if 0
-				if( !is_valid_move( p_, c_, hash_move, check_ ) ) {
-					std::cerr << "Possible type-1 hash collision:" << std::endl;
-					std::cerr << board_to_string( p_ ) << std::endl;
-					std::cerr << position_to_fen_noclock( p_, c_ ) << std::endl;
-					std::cerr << move_to_string( hash_move ) << std::endl;
-				}
-				else
-#endif
-				{
-					moves->m = hash_move;
-					moves->evaluation = evaluate_move( p_, c_, eval_, moves->m, moves->pawns );
-					return moves;
-				}
-			}
-		case phases::captures_gen:
-			ctx.move_ptr = moves;
-			calculate_moves_captures( p_, c_, ctx.move_ptr, check_ );
-			std::sort( moves, ctx.move_ptr, moveSort );
-			phase = phases::captures;
-		case phases::captures:
-			if( it != ctx.move_ptr ) {
-				it->evaluation = evaluate_move( p_, c_, eval_, it->m, it->pawns );
-
-				return it++;
-			}
-			phase = phases::killer1;
-		case phases::killer1:
-			phase = phases::killer2;
-			ctx.move_ptr = moves + 1;
-			if( !killers_.m1.empty() && killers_.m1 != hash_move && is_valid_move( p_, c_, killers_.m1, check_ ) ) {
-				moves->m = killers_.m1;
-				moves->evaluation = evaluate_move( p_, c_, eval_, moves->m, moves->pawns );
-				return moves;
-			}
-		case phases::killer2:
-			phase = phases::noncaptures_gen;
-			if( !killers_.m2.empty() && killers_.m2 != hash_move && killers_.m1 != killers_.m2 && is_valid_move( p_, c_, killers_.m2, check_ ) ) {
-				moves->m = killers_.m2;
-				moves->evaluation = evaluate_move( p_, c_, eval_, moves->m, moves->pawns );
-				return moves;
-			}
-		case phases::noncaptures_gen:
-			ctx.move_ptr = moves;
-			it = moves;
-			calculate_moves_noncaptures( p_, c_, ctx.move_ptr, check_ );
-			sort_moves_noncaptures( moves, ctx.move_ptr, p_, c_, eval_ );
-			phase = phases::noncapture;
-		case phases::noncapture:
-			while( it != ctx.move_ptr ) {
-				if( it->m != hash_move && it->m != killers_.m1 && it->m != killers_.m2 ) {
-					return it++;
-				}
-				else {
-					++it;
-				}
-			}
-			phase = phases::done;
-		case phases::done:
-			break;
-		}
-
-		return 0;
-	}
-
-	phases::type get_phase() const {
-		return phase;
-	}
-
-	move hash_move;
-
-private:
-	context& ctx;
-	killer_moves const& killers_;
-	phases::type phase;
-	move_info* moves;
-	move_info* it;
-
-	position const& p_;
-	color::type const& c_;
-	check_map const& check_;
-	short const& eval_;
-};
-
 short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null )
 {
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
-		return quiescence_search( ply, ctx, p, hash, current_evaluation, c, check, alpha, beta );
+		return quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, current_evaluation, c, check, alpha, beta );
 	}
 
 	if( do_abort ) {
@@ -370,20 +216,26 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 		}
 	}
 
+	bool pv_node = alpha + 1 != beta;
+
 #ifdef USE_STATISTICS
 	++stats.full_width_nodes;
 #endif
 
+	short full_eval = result::win;
 	move tt_move;
 
 	{
 		short eval;
-		score_type::type t = transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move );
+		score_type::type t = transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move, full_eval );
 		if( t != score_type::none ) {
 			if( t == score_type::exact ) {
 				ctx.pv_pool.set_pv_move( pv, tt_move );
+				return eval;
 			}
-			return eval;
+			else if( !pv_node ) {
+				return eval;
+			}
 		}
 	}
 
@@ -392,8 +244,25 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 		depth += check_extension;
 	}
 
+	int plies_remaining = (depth - cutoff) / depth_factor;
+
+	if( !pv_node && !check.check && plies_remaining < 4 && full_eval == result::win ) {
+		full_eval = evaluate_full( p, c, current_evaluation );
+		transposition_table.store( hash, c, 0, ply, 0, 0, 0, tt_move, ctx.clock, full_eval );
+	}
+
+	if( !pv_node && !check.check && plies_remaining < static_cast<int>(sizeof(razor_pruning)/sizeof(short)) && full_eval + razor_pruning[plies_remaining] < beta &&
+		   tt_move.empty() && beta < result::win_threshold && beta > result::loss_threshold )
+	{
+		short new_beta = beta - razor_pruning[plies_remaining];
+		short value = quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, current_evaluation, c, check, new_beta - 1, new_beta, full_eval );
+		if( value < new_beta ) {
+			return value;
+		}
+	}
+
 #if NULL_MOVE_REDUCTION > 0
-	if( !last_was_null && !check.check && depth > (cutoff + depth_factor) && p.material[0] > 1500 && p.material[1] > 1500 ) {
+	if( !pv_node && !last_was_null && !check.check && depth > (cutoff + depth_factor) && p.material[0] > 1500 && p.material[1] > 1500 ) {
 		null_move_block seen_block( ctx.seen, ply );
 
 		pv_entry* cpv = ctx.pv_pool.get();
@@ -404,8 +273,14 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 		ctx.pv_pool.release( cpv );
 
 		if( value >= beta ) {
+
+			if( value >= result::win_threshold ) {
+				value = beta;
+			}
+
 			if( !do_abort ) {
-				transposition_table.store( hash, c, depth, ply, value, alpha, beta, tt_move, ctx.clock );
+				tt_move.piece = pieces::none;
+				transposition_table.store( hash, c, depth, ply, value, alpha, beta, tt_move, ctx.clock, full_eval );
 			}
 			return value;
 		}
@@ -414,10 +289,10 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 
 	if( tt_move.empty() && depth > ( depth_factor * 4 + cutoff) ) {
 
-		step( depth - 2 * depth_factor, ply, ctx, p, hash, current_evaluation, c, check, alpha, beta, pv, false );
+		step( depth - 2 * depth_factor, ply, ctx, p, hash, current_evaluation, c, check, alpha, beta, pv, true );
 
 		short eval;
-		transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move );
+		transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move, full_eval );
 	}
 
 	short old_alpha = alpha;
@@ -430,6 +305,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	move_generator gen( ctx, ctx.killers[c][ply], p, c, check, current_evaluation );
 	gen.hash_move = tt_move;
 	move_info const* it;
+
 	while( (it = gen.next()) ) {
 		++processed_moves;
 
@@ -461,12 +337,12 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 			// Open question: What's the exact reason for always searching exactly the first move full width?
 			// Why not always use PVS, or at least in those cases where root alpha isn't result::loss?
 			// Why not use full width unless alpha > old_alpha?
-			if( processed_moves ) {
+			if( processed_moves || !pv_node ) {
 
 				// Futility pruning
-				if( gen.get_phase() >= phases::noncapture && !extended && !check.check && !new_check.check ) {
+				if( !pv_node && gen.get_phase() >= phases::noncapture && !extended && !check.check && !new_check.check && processed_moves > 2 ) {
 					int plies_remaining = (depth - cutoff) / depth_factor;
-					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short)) && it->evaluation + futility_pruning[plies_remaining] < alpha ) {
+					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short)) && full_eval + futility_pruning[plies_remaining] < beta ) {
 						ctx.pv_pool.release(cpv);
 						++searched_noncaptures;
 						continue;
@@ -475,7 +351,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 
 				// Open question: Use this approach or instead do PVS's null-window also when re-searching a >alpha LMR result?
 				// Barring some bugs or some weird search instability issues, it should bring the same results and speed seems similar.
-				if( processed_moves >= lmr_searched && gen.get_phase() >= phases::noncapture &&
+				if( !pv_node && processed_moves >= lmr_searched && gen.get_phase() >= phases::noncapture &&
 					!check.check && !new_check.check &&
 					depth > lmr_min_depth && !extended)
 				{
@@ -538,7 +414,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	}
 
 	if( !do_abort ) {
-		transposition_table.store( hash, c, depth, ply, alpha, old_alpha, beta, tt_move, ctx.clock );
+		transposition_table.store( hash, c, depth, ply, alpha, old_alpha, beta, tt_move, ctx.clock, full_eval );
 	}
 
 	return alpha;
@@ -690,7 +566,7 @@ short processing_thread::processWork()
 		short beta = (std::min)( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
 		if( alpha < beta ) {
-			value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta, -alpha, pv_->next(), false );
+			value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta, -alpha, pv_->next(), false );
 			if( value > alpha && value < beta ) {
 				// Aspiration search found something sensible
 				return value;
@@ -699,13 +575,13 @@ short processing_thread::processWork()
 	}
 
 	if( alpha_ != result::loss ) {
-		value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -alpha_-1, -alpha_, pv_->next(), false );
+		value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -alpha_-1, -alpha_, pv_->next(), false );
 		if( value > alpha_ ) {
-			value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta_, -alpha_, pv_->next(), false );
+			value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta_, -alpha_, pv_->next(), false );
 		}
 	}
 	else {
-		value = -step( max_depth_ * depth_factor, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta_, -alpha_, pv_->next(), false );
+		value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta_, -alpha_, pv_->next(), false );
 	}
 
 	return value;
@@ -867,7 +743,7 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, uint64_t
 	sorted_moves old_sorted;
 
 	{
-		for( move_info* it  = moves; it != pm; ++it ) {
+		for( move_info* it = moves; it != pm; ++it ) {
 			pv_entry* pv = impl_->pv_pool_.get();
 			impl_->pv_pool_.append( pv, it->m, impl_->pv_pool_.get() );
 			// Initial order is random to get some variation into play

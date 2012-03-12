@@ -31,11 +31,15 @@ hash::~hash()
 
 bool hash::init( unsigned int max_size )
 {
-	size_ = static_cast<hash_key>(max_size) * 1024 * 1024;
+	hash_key max = static_cast<hash_key>(max_size) * 1024 * 1024;
+
+	size_ = 4 * 1024 * 1024;
+	while( size_ * 2 < max ) {
+		size_ *= 2;
+	}
 
 	// Make sure size is a multiple of block size
 	bucket_count_ = size_ / bucket_size;
-	size_ = bucket_count_ * bucket_size;
 	aligned_free( data_ );
 	data_ = reinterpret_cast<entry*>(page_aligned_malloc( bucket_count_ * bucket_size ));
 	return data_ != 0;
@@ -52,7 +56,7 @@ namespace field_shifts {
 enum type {
 	age = 0,
 	depth = 8,
-	move = 16,
+	move = 17,
 	node_type = 46,
 	score = 48
 };
@@ -61,14 +65,14 @@ enum type {
 namespace field_masks {
 enum type {
 	age = 0xff,
-	depth = 0xff,
+	depth = 0x1ff,
 	move = 0x1ffffff,
 	node_type = 0x3,
 	score = 0xffff
 };
 }
 
-void hash::store( hash_key key, color::type c, unsigned char remaining_depth, unsigned char ply, short eval, short alpha, short beta, move const& best_move, unsigned char clock )
+void hash::store( hash_key key, color::type c, unsigned short remaining_depth, unsigned char ply, short eval, short alpha, short beta, move const& best_move, unsigned char clock, short full_eval )
 {
 	if( c ) {
 		key = ~key;
@@ -109,15 +113,17 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, un
 	v |= static_cast<uint64_t>(t) << field_shifts::node_type;
 	v |= static_cast<uint64_t>(eval) << field_shifts::score;
 
+	unsigned long long save_key = ((key ^ v) & 0xffffffffffff0000ull) | static_cast<unsigned short>(full_eval);
+
 	for( unsigned int i = 0; i < bucket_entries; ++i ) {
-		if( ((bucket + i)->v ^ (bucket + i)->key) == key ) {
+		if( !((((bucket + i)->v ^ (bucket + i)->key) ^ key) & 0xffffffffffff0000ull ) ) {
 			(bucket + i)->v = v;
-			(bucket + i)->key = key ^ v;
+			(bucket + i)->key = save_key;
 			return;
 		}
 	}
 
-	unsigned char lowest_depth = 255;
+	unsigned short lowest_depth = 511;
 	entry* pos = 0;
 	for( unsigned int i = 0; i < bucket_entries; ++i ) {
 		unsigned char old_age = ((bucket + i)->v >> field_shifts::age) & field_masks::age;
@@ -138,12 +144,12 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, un
 			++stats_.index_collisions;
 		}
 #endif
-		pos->key = v ^ key;
+		pos->key = save_key;
 
 		return;
 	}
 
-	lowest_depth = 255;
+	lowest_depth = 511;
 	for( unsigned int i = 0; i < bucket_entries; ++i ) {
 		unsigned char old_depth = ((bucket + i)->v >> field_shifts::depth) & field_masks::depth;
 		if( old_depth < lowest_depth ) {
@@ -161,11 +167,11 @@ void hash::store( hash_key key, color::type c, unsigned char remaining_depth, un
 		++stats_.index_collisions;
 	}
 #endif
-	pos->key = v ^ key;
+	pos->key = save_key;
 }
 
 
-score_type::type hash::lookup( hash_key key, color::type c, unsigned char remaining_depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move )
+score_type::type hash::lookup( hash_key key, color::type c, unsigned short remaining_depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move, short& full_eval )
 {
 	if( c ) {
 		key = ~key;
@@ -176,9 +182,11 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 
 	for( unsigned int i = 0; i < bucket_entries; ++i, ++bucket ) {
 		uint64_t v = bucket->v;
-		if( (v ^ bucket->key) != key ) {
+		uint64_t stored_key = bucket->key;
+		if( ((v ^ stored_key) ^ key) & 0xffffffffffff0000ull ) {
 			continue;
 		}
+		full_eval = static_cast<short>(static_cast<unsigned short>(stored_key & 0xFFFFull));
 
 		best_move.flags = (v >> (field_shifts::move)) & 0x3F;
 		best_move.piece = static_cast<pieces::type>((v >> (field_shifts::move + 6)) & 0x07);
@@ -186,7 +194,7 @@ score_type::type hash::lookup( hash_key key, color::type c, unsigned char remain
 		best_move.target = (v >> (field_shifts::move + 15)) & 0x3f;
 		best_move.captured_piece = static_cast<pieces::type>((v >> (field_shifts::move + 21)) & 0x07);
 
-		unsigned char depth = (v >> field_shifts::depth) & field_masks::depth;
+		unsigned short depth = (v >> field_shifts::depth) & field_masks::depth;
 
 		if( depth >= remaining_depth ) {
 			unsigned char type = (v >> field_shifts::node_type) & field_masks::node_type;

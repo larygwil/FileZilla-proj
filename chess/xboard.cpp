@@ -438,7 +438,7 @@ void xboard( std::string line)
 	xboard_thread thread( state );
 
 	if( conf.depth == -1 ) {
-		conf.depth = 40;
+		conf.depth = MAX_DEPTH;
 	}
 
 	pawn_hash_table.init( conf.pawn_hash_table_size );

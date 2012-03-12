@@ -13,6 +13,21 @@ struct move_info {
 	position::pawn_structure pawns;
 };
 
+struct MoveSortEval {
+	inline bool operator()( move_info const& lhs, move_info const& rhs ) const {
+		return lhs.evaluation > rhs.evaluation;
+	}
+};
+extern MoveSortEval moveSortEval;
+
+struct MoveSort {
+	inline bool operator()( move_info const& lhs, move_info const& rhs ) const {
+		return lhs.sort > rhs.sort;
+	}
+};
+extern MoveSort moveSort;
+
+
 // Calculates all legal moves
 // Returned evaluation is fast_eval
 void calculate_moves( position const& p, color::type c, move_info*& moves, check_map const& check );

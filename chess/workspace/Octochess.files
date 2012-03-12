@@ -28,6 +28,8 @@
 ../moves.hpp
 ../pawn_structure_hash_table.cpp
 ../pawn_structure_hash_table.hpp
+../phased_move_generator.cpp
+../phased_move_generator.hpp
 ../platform.hpp
 ../pvlist.cpp
 ../pvlist.hpp
