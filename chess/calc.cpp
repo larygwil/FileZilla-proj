@@ -155,18 +155,12 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		short value;
 		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
 
-		if( ctx.seen.is_two_fold( new_hash, ply ) ) {
-			value = result::draw;
-		}
-		else {
-			position new_pos = p;
-			apply_move( new_pos, *it, c );
-			check_map new_check( new_pos, static_cast<color::type>(1-c) );
+		position new_pos = p;
+		apply_move( new_pos, *it, c );
+		check_map new_check( new_pos, static_cast<color::type>(1-c) );
 
-			ctx.seen.set( new_hash, ply );
+		value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -beta, -alpha );
 
-			value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -beta, -alpha );
-		}
 		if( value > alpha ) {
 			best_move = it->m;
 			alpha = value;
