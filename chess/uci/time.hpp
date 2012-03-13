@@ -29,6 +29,21 @@ private:
 	time black_inc_;
 };
 
+class time_calculation {
+public:
+	time_calculation();
+
+	void set_infinite_time();
+	void update(position_time const&, bool is_white, int half_moves);
+	void after_move_update( uint elapsed_time );
+
+	uint64_t time_for_this_move() const { return time_limit_; }
+private:
+	uint64_t time_limit_;
+	uint64_t time_remaining_;
+	uint64_t bonus_time_;
+};
+
 }
 }
 

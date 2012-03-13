@@ -27,9 +27,6 @@ public:
 	impl( gui_interface_ptr const& p )
 		: gui_interface_(p)
 		, color_to_play_()
-		, time_limit_()
-		, time_remaining_()
-		, bonus_time_()
 		, last_mate_()
 		, half_moves_played_()
 		, running_(true)
@@ -60,9 +57,7 @@ public:
 
 	calc_manager calc_manager_;
 
-	uint64_t time_limit_;
-	uint64_t time_remaining_;
-	uint64_t bonus_time_;
+	time_calculation times_;
 
 	short last_mate_;
 	int half_moves_played_;
@@ -87,6 +82,7 @@ octochess_uci::octochess_uci( gui_interface_ptr const& p )
 void octochess_uci::new_game() {
 	impl_->color_to_play_ = color::white;
 	init_board(impl_->pos_);
+	impl_->times_ = time_calculation();
 }
 
 void octochess_uci::set_position( std::string const& fen ) {
@@ -120,33 +116,11 @@ void octochess_uci::make_moves( std::string const& moves ) {
 
 void octochess_uci::calculate( calculate_mode_type mode, position_time const& t ) {
 	scoped_lock lock(impl_->mutex_);
-	
-	uint64_t remaining_moves = (std::max)( 20, (80 - impl_->half_moves_played_) / 2 );
 
 	if( mode == calculate_mode::infinite ) {
-		impl_->time_limit_ = static_cast<uint64_t>(-1);
-		impl_->time_remaining_ = static_cast<uint64_t>(-1);
+		impl_->times_.set_infinite_time();
 	} else {
-		time inc = 0;
-		if( impl_->color_to_play_ == color::white ) {
-			impl_->time_remaining_ = t.white_time_left();
-			inc = (t.white_increment() * timer_precision()) / 1000;
-		} else {
-			impl_->time_remaining_ = t.black_time_left();
-			inc = (t.black_increment() * timer_precision()) / 1000;
-		}
-
-		impl_->time_remaining_ = (impl_->time_remaining_ * timer_precision()) / 1000;
-		impl_->time_limit_ = (impl_->time_remaining_ - impl_->bonus_time_) / remaining_moves + impl_->bonus_time_;
-
-		if( inc && impl_->time_remaining_ > (impl_->time_limit_ + inc) ) {
-			impl_->time_limit_ += inc;
-		}
-		
-		// Any less time makes no sense.
-		if( impl_->time_limit_ < 10 * timer_precision() / 1000 ) {
-			impl_->time_limit_ = 10 * timer_precision() / 1000;
-		}
+		impl_->times_.update( t, impl_->color_to_play_ == color::white, impl_->half_moves_played_ );
 	}
 	impl_->calc_cond_.signal(lock);
 }
@@ -171,7 +145,7 @@ void octochess_uci::impl::onRun() {
 
 			uint64_t start_time = get_time();
 
-			bool ret = calc_manager_.calc( pos_, color_to_play_, m, res, time_limit_, time_remaining_, half_moves_played_, seen_positions_, last_mate_, *this );
+			bool ret = calc_manager_.calc( pos_, color_to_play_, m, res, times_.time_for_this_move(), 0/*will be removed!*/, half_moves_played_, seen_positions_, last_mate_, *this );
 			if( ret ) {
 				gui_interface_->tell_best_move( move_to_long_algebraic( m ) );
 
@@ -192,12 +166,7 @@ void octochess_uci::impl::onRun() {
 				uint64_t elapsed = stop - start_time;
 
 				std::cerr << "Elapsed: " << elapsed * 1000 / timer_precision() << " ms" << std::endl;
-				if( time_limit_ > elapsed ) {
-					bonus_time_ = (time_limit_ - elapsed) / 2;
-				} else {
-					bonus_time_ = 0;
-				}
-				time_remaining_ -= elapsed;
+				times_.after_move_update( elapsed );
 			}
 		}
 	}
@@ -210,9 +179,9 @@ void octochess_uci::impl::on_new_best_move( position const& p, color::type c, in
 
 	int mate = 0;
 	if( evaluation > result::win_threshold ) {
-		mate = (evaluation - result::win) / 2;
-	} else if( evaluation < -result::win_threshold ) {
-		mate = (result::win + evaluation) / 2;
+		mate = (result::win - evaluation) / 2;
+	} else if( evaluation < result::loss_threshold ) {
+		mate = (result::loss - evaluation) / 2;
 	}
 
 	if( mate == 0 ) {

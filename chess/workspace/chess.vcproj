@@ -205,6 +205,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\uci\time.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\tweak.cpp"
 				>
 			</File>
