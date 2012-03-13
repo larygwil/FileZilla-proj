@@ -1056,13 +1056,6 @@ short evaluate_full( position const& p, color::type c )
 {
 	short eval = evaluate_fast( p, c );
 
-	short mat[2];
-	mat[0] = p.material[0] - popcount( p.bitboards[0].b[bb_type::pawns]) * eval_values.material_values[pieces::pawn];
-	mat[1] = p.material[1] - popcount( p.bitboards[1].b[bb_type::pawns]) * eval_values.material_values[pieces::pawn];
-
-	short diff = mat[c] - mat[1-c];
-	eval += (diff * eval_values.material_imbalance_scale) / 20;
-
 	return evaluate_full( p, c, eval );
 }
 
@@ -1085,6 +1078,13 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 	else if( eval_fast < 0 ) {
 		eval_fast -= v;
 	}
+
+	short mat[2];
+	mat[0] = p.material[0] - popcount( p.bitboards[0].b[bb_type::pawns]) * eval_values.material_values[pieces::pawn];
+	mat[1] = p.material[1] - popcount( p.bitboards[1].b[bb_type::pawns]) * eval_values.material_values[pieces::pawn];
+
+	short diff = mat[c] - mat[1-c];
+	eval_fast += (diff * eval_values.material_imbalance_scale) / 20;
 
 	return eval_fast;
 }
