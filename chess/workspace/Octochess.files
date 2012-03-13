@@ -57,4 +57,17 @@
 ../zobrist.hpp
 ../xboard.cpp
 ../xboard.hpp
+../uci/info.cpp
+../uci/info.hpp
+../uci/interface.hpp
+../uci/minimalistic_uci_protocol.cpp
+../uci/minimalistic_uci_protocol.hpp
+../uci/octochess_impl.cpp
+../uci/octochess_impl.hpp
+../uci/runner.cpp
+../uci/runner.hpp
+../uci/time.cpp
+../uci/time.hpp
+../uci/types.hpp
+
 
