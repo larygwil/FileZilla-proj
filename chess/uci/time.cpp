@@ -3,7 +3,7 @@
 
 #include "../chess.hpp"
 
-#include <numeric>
+#include <algorithm>
 
 namespace octochess {
 namespace uci {
