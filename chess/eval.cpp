@@ -23,85 +23,90 @@ eval_values_t::eval_values_t()
 	king_check_by_piece[pieces::none] = 0;
 	king_check_by_piece[pieces::pawn] = 0;
 	hanging_piece[pieces::none] = 0;
-	king_attack_min = 0;
 	castled                     =     0;
 
 	// Tweaked values
-	material_values[1]          =    75;
-	material_values[2]          =   313;
-	material_values[3]          =   295;
-	material_values[4]          =   568;
-	material_values[5]          =   960;
-	double_bishop               =    24;
-	doubled_pawn[0]             =   -28;
-	passed_pawn[0]              =     1;
-	isolated_pawn[0]            =   -10;
-	connected_pawn[0]           =     0;
-	doubled_pawn[1]             =    -7;
-	passed_pawn[1]              =     7;
-	isolated_pawn[1]            =   -17;
+	// 13.0108 173
+	material_values[1]          =    80;
+	material_values[2]          =   315;
+	material_values[3]          =   291;
+	material_values[4]          =   488;
+	material_values[5]          =   874;
+	double_bishop               =    30;
+	doubled_pawn[0]             =    -4;
+	passed_pawn[0]              =    28;
+	isolated_pawn[0]            =   -27;
+	connected_pawn[0]           =     2;
+	doubled_pawn[1]             =   -28;
+	passed_pawn[1]              =    12;
+	isolated_pawn[1]            =    -1;
 	connected_pawn[1]           =     2;
-	pawn_shield[0]              =    13;
-	pawn_shield[1]              =     0;
-	pin_absolute_bishop         =     1;
-	pin_absolute_rook           =     3;
+	pawn_shield[0]              =     0;
+	pawn_shield[1]              =    23;
+	pin_absolute_bishop         =    30;
+	pin_absolute_rook           =     4;
 	pin_absolute_queen          =     1;
-	mobility_scale[0]           =   115;
-	mobility_scale[1]           =    88;
-	pin_scale[0]                =    39;
-	pin_scale[1]                =    16;
-	rooks_on_open_file_scale    =     6;
-	connected_rooks_scale[0]    =   141;
-	connected_rooks_scale[1]    =     2;
-	tropism_scale[0]            =    17;
-	tropism_scale[1]            =     1;
-	king_attack_by_piece[1]     =     2;
-	king_attack_by_piece[2]     =    15;
-	king_attack_by_piece[3]     =    14;
-	king_attack_by_piece[4]     =     3;
-	king_attack_by_piece[5]     =    12;
-	king_check_by_piece[2]      =    12;
-	king_check_by_piece[3]      =    13;
+	mobility_scale[0]           =    38;
+	mobility_scale[1]           =    46;
+	pin_scale[0]                =    86;
+	pin_scale[1]                =    25;
+	rooks_on_open_file_scale    =    11;
+	connected_rooks_scale[0]    =    84;
+	connected_rooks_scale[1]    =   232;
+	tropism_scale[0]            =     1;
+	tropism_scale[1]            =    20;
+	king_attack_by_piece[1]     =     1;
+	king_attack_by_piece[2]     =     8;
+	king_attack_by_piece[3]     =     5;
+	king_attack_by_piece[4]     =     1;
+	king_attack_by_piece[5]     =    15;
+	king_check_by_piece[2]      =     4;
+	king_check_by_piece[3]      =    10;
 	king_check_by_piece[4]      =     9;
-	king_check_by_piece[5]      =     1;
-	king_melee_attack_by_rook   =     2;
-	king_melee_attack_by_queen  =     9;
-	king_attack_max             =   144;
-	king_attack_rise            =     3;
-	king_attack_exponent        =   214;
-	king_attack_offset          =    48;
-	king_attack_scale[0]        =    14;
-	king_attack_scale[1]        =    16;
+	king_check_by_piece[5]      =     2;
+	king_melee_attack_by_rook   =    13;
+	king_melee_attack_by_queen  =    12;
+	king_attack_min[0]          =    55;
+	king_attack_max[0]          =   675;
+	king_attack_rise[0]         =     2;
+	king_attack_exponent[0]     =   160;
+	king_attack_offset[0]       =    75;
+	king_attack_min[1]          =    69;
+	king_attack_max[1]          =   150;
+	king_attack_rise[1]         =    21;
+	king_attack_exponent[1]     =   143;
+	king_attack_offset[1]       =    31;
 	center_control_scale[0]     =    31;
-	center_control_scale[1]     =    13;
-	material_imbalance_scale    =     4;
-	rule_of_the_square          =    14;
-	passed_pawn_unhindered      =     8;
-	unstoppable_pawn_scale[0]   =    22;
-	unstoppable_pawn_scale[1]   =    35;
-	hanging_piece[1]            =     1;
-	hanging_piece[2]            =     1;
-	hanging_piece[3]            =     2;
-	hanging_piece[4]            =     1;
-	hanging_piece[5]            =     1;
-	hanging_piece_scale[0]      =    79;
-	hanging_piece_scale[1]      =   137;
-	mobility_knight_min         =   -18;
-	mobility_knight_max         =    44;
-	mobility_knight_rise        =     1;
-	mobility_knight_offset      =     2;
-	mobility_bishop_min         =   -11;
-	mobility_bishop_max         =    23;
+	center_control_scale[1]     =    44;
+	material_imbalance_scale[0] =     6;
+	material_imbalance_scale[1] =     5;
+	rule_of_the_square          =    20;
+	passed_pawn_unhindered      =     2;
+	unstoppable_pawn_scale[0]   =    41;
+	unstoppable_pawn_scale[1]   =    10;
+	hanging_piece[1]            =     3;
+	hanging_piece[2]            =     4;
+	hanging_piece[3]            =     3;
+	hanging_piece[4]            =     4;
+	hanging_piece[5]            =     2;
+	hanging_piece_scale[0]      =    51;
+	hanging_piece_scale[1]      =    86;
+	mobility_knight_min         =   -37;
+	mobility_knight_max         =    41;
+	mobility_knight_rise        =     4;
+	mobility_knight_offset      =     1;
+	mobility_bishop_min         =   -10;
+	mobility_bishop_max         =    42;
 	mobility_bishop_rise        =     1;
-	mobility_bishop_offset      =     6;
-	mobility_rook_min           =   -48;
-	mobility_rook_max           =    23;
-	mobility_rook_rise          =     1;
+	mobility_bishop_offset      =     0;
+	mobility_rook_min           =   -42;
+	mobility_rook_max           =    30;
+	mobility_rook_rise          =     2;
 	mobility_rook_offset        =     2;
-	mobility_queen_min          =   -36;
-	mobility_queen_max          =    19;
-	mobility_queen_rise         =     1;
-	mobility_queen_offset       =    12;
+	mobility_queen_min          =   -15;
+	mobility_queen_max          =     3;
+	mobility_queen_rise         =     6;
+	mobility_queen_offset       =     1;
 
 	update_derived();
 }
@@ -158,14 +163,16 @@ void eval_values_t::update_derived()
 		}
 	}
 
-	for( short i = 0; i < 150; ++i ) {
-		if( i > king_attack_offset ) {
-			double factor = i - king_attack_offset;
-			factor = std::pow( factor, double(eval_values.king_attack_exponent) / 100.0 );
-			king_attack[i] = (std::min)(short(king_attack_min + king_attack_rise * factor), king_attack_max);
-		}
-		else {
-			king_attack[i] = king_attack_min;
+	for( int c = 0; c < 2; ++c ) {
+		for( short i = 0; i < 150; ++i ) {
+			if( i > king_attack_offset[c] ) {
+				double factor = i - king_attack_offset[c];
+				factor = std::pow( factor, double(eval_values.king_attack_exponent[c]) / 100.0 );
+				king_attack[c][i] = (std::min)(short(king_attack_min[c] + king_attack_rise[c] * factor), short(king_attack_min[c] + king_attack_max[c]));
+			}
+			else {
+				king_attack[c][i] = 0;
+			}
 		}
 	}
 }
@@ -1086,7 +1093,7 @@ short evaluate_full( position const& p, color::type c, short eval_fast )
 	mat[1] = p.material[1] - popcount( p.bitboards[1].b[bb_type::pawns]) * eval_values.material_values[pieces::pawn];
 
 	short diff = mat[c] - mat[1-c];
-	eval_fast += (diff * eval_values.material_imbalance_scale) / 20;
+	eval_fast += (diff * phase_scale( p.material, eval_values.material_imbalance_scale[0], eval_values.material_imbalance_scale[1] )) / 20;
 
 	return eval_fast;
 }

@@ -680,5 +680,41 @@ int main()
 
 		std::cout << "};" << std::endl;
 	}
+
+
+	{
+		std::cout << "extern uint64_t const king_attack_zone[2][64] = {" << std::endl;
+
+		for( int c = 0; c < 2; ++c ) {
+			std::cout << "\t{" << std::endl;
+			for( unsigned int source = 0; source < 64; ++source ) {
+				std::cout << "\t0x";
+
+				uint64_t v = possible_king_moves[source];
+				if( c ) {
+					v >>= 8;
+				}
+				else {
+					v <<= 8;
+				}
+				v |= possible_king_moves[source];
+
+				std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+				std::cout << "ull";
+				if( source != 63 ) {
+					std::cout << ",";
+				}
+				std::cout << std::endl;
+			}
+			std::cout << "\t}";
+			if( !c ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
+	}
+
 	return 0;
 }

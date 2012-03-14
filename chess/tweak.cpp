@@ -170,7 +170,9 @@ public:
 struct reference_data {
 	position p;
 	color::type c;
-	double target_eval;
+	short min_eval;
+	short max_eval;
+	double avg_eval;
 	std::string fen;
 };
 
@@ -218,17 +220,22 @@ void init_genes()
 	genes.push_back( gene_t( &eval_values.king_check_by_piece[5], 1, 15, "king_check_by_piece[5]") );
 	genes.push_back( gene_t( &eval_values.king_melee_attack_by_rook, 1, 15, "king_melee_attack_by_rook") );
 	genes.push_back( gene_t( &eval_values.king_melee_attack_by_queen, 1, 15, "king_melee_attack_by_queen") );
-	genes.push_back( gene_t( &eval_values.king_attack_max, 100, 1000, "king_attack_max" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_rise, 1, 30, "king_attack_rise" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_exponent, 100, 300, "king_attack_exponent" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_offset, 0, 50, "king_attack_offset" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_scale[0], 0, 500, "king_attack_scale[0]" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_scale[1], 0, 500, "king_attack_scale[1]" ) );
+	genes.push_back( gene_t( &eval_values.king_attack_min[0], 0, 1000, "king_attack_min[0]" ) );
+	genes.push_back( gene_t( &eval_values.king_attack_max[0], 100, 1000, "king_attack_max[0]" ) );
+	genes.push_back( gene_t( &eval_values.king_attack_rise[0], 1, 30, "king_attack_rise[0]" ) );
+	genes.push_back( gene_t( &eval_values.king_attack_exponent[0], 100, 300, "king_attack_exponent[0]" ) );
+	genes.push_back( gene_t( &eval_values.king_attack_offset[0], 0, 100, "king_attack_offset[0]" ) );
+	genes.push_back( gene_t( &eval_values.king_attack_min[1], 0, 1000, "king_attack_min[1]" ) );
+	genes.push_back( gene_t( &eval_values.king_attack_max[1], 100, 1000, "king_attack_max[1]" ) );
+	genes.push_back( gene_t( &eval_values.king_attack_rise[1], 1, 30, "king_attack_rise[1]" ) );
+	genes.push_back( gene_t( &eval_values.king_attack_exponent[1], 100, 300, "king_attack_exponent[1]" ) );
+	genes.push_back( gene_t( &eval_values.king_attack_offset[1], 0, 100, "king_attack_offset[1]" ) );
 	genes.push_back( gene_t( &eval_values.center_control_scale[0], 0, 500, "center_control_scale[0]" ) );
 	genes.push_back( gene_t( &eval_values.center_control_scale[1], 0, 500, "center_control_scale[1]" ) );
 	//genes.push_back( gene_t( &eval_values.phase_transition_begin, 0, 3000, "phase_transition_begin" ) );
 	//genes.push_back( gene_t( &eval_values.phase_transition_duration, 1000, 4000, "phase_transition_duration" ) );
-	genes.push_back( gene_t( &eval_values.material_imbalance_scale, 0, 500, "material_imbalance_scale" ) );
+	genes.push_back( gene_t( &eval_values.material_imbalance_scale[0], 0, 500, "material_imbalance_scale[0]" ) );
+	genes.push_back( gene_t( &eval_values.material_imbalance_scale[1], 0, 500, "material_imbalance_scale[1]" ) );
 	genes.push_back( gene_t( &eval_values.rule_of_the_square, 0, 20, "rule_of_the_square" ) );
 	genes.push_back( gene_t( &eval_values.passed_pawn_unhindered, 0, 20, "passed_pawn_unhindered" ) );
 	genes.push_back( gene_t( &eval_values.unstoppable_pawn_scale[0], 0, 200, "unstoppable_pawn_scale[0]" ) );
@@ -312,13 +319,20 @@ struct individual
 			init_material( ref.p );
 			short score = evaluate_full( ref.p, ref.c );
 
-			if( verbose ) {
-				if( std::abs(ref.target_eval - score) > 400  ) {
-					std::cerr << "Ref: " << ref.target_eval << " Actual: " << score << " Fen: " << ref.fen << std::endl;
-				}
+//			double difference = std::abs( ref.avg_eval - static_cast<double>(score) );
+			short difference = 0;
+			if( score < ref.min_eval ) {
+				difference = ref.min_eval - score;
+			}
+			else if( score > ref.max_eval ) {
+				difference = score - ref.max_eval;
 			}
 
-			double difference = std::abs( ref.target_eval - static_cast<double>(score) );
+			if( verbose ) {
+				if( difference > 200  ) {
+					std::cerr << "Ref: min=" << ref.min_eval << " max=" << ref.max_eval << " avg=" << ref.avg_eval << " Actual: " << score << " Fen: " << ref.fen << std::endl;
+				}
+			}
 
 			fitness_ += difference;
 
@@ -538,11 +552,17 @@ std::vector<reference_data> load_data()
 		short score = 0;
 		int count = 0;
 
+		reference_data entry;
+		entry.min_eval = result::win;
+		entry.max_eval = result::loss;
+
 		std::istringstream ss(score_line);
 		short tmp;
-		if( (ss >> tmp) ) {
+		while( (ss >> tmp) ) {
 			score += tmp;
 			++count;
+			entry.min_eval = (std::min)(entry.min_eval, tmp);
+			entry.max_eval = (std::max)(entry.max_eval, tmp);
 		}
 
 		score /= count;
@@ -550,12 +570,11 @@ std::vector<reference_data> load_data()
 		if( !in_scores ) {
 			abort();
 		}
-		reference_data entry;
 		if( !parse_fen_noclock( fen, entry.p, entry.c ) ) {
 			abort();
 		}
 
-		entry.target_eval = score;
+		entry.avg_eval = score;
 		entry.fen = fen;
 
 		ret.push_back(entry);
@@ -587,7 +606,7 @@ void tweak_evaluation()
 
 	population pop;
 	pop.push_back( new individual() );
-	//pop[0]->randomize();
+	pop[0]->randomize();
 	pop[0]->calc_fitness( data );
 	
 	while( true ) {

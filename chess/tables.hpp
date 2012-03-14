@@ -23,4 +23,6 @@ extern uint64_t const possible_king_moves[64];
 
 extern uint64_t const rule_of_the_square[2][2][64];
 
+extern uint64_t const king_attack_zone[2][64];
+
 #endif

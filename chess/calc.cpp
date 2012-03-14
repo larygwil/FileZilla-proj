@@ -272,10 +272,10 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 				value = beta;
 			}
 
-			if( !do_abort ) {
-				tt_move.piece = pieces::none;
-				transposition_table.store( hash, c, depth, ply, value, alpha, beta, tt_move, ctx.clock, full_eval );
-			}
+//			if( !do_abort ) {
+//				tt_move.piece = pieces::none;
+//				transposition_table.store( hash, c, depth, ply, value, alpha, beta, tt_move, ctx.clock, full_eval );
+//			}
 			return value;
 		}
 	}

@@ -3,7 +3,7 @@
 
 #include "chess.hpp"
 
-#define LAZY_EVAL 481
+#define LAZY_EVAL 756
 
 struct eval_values_t
 {
@@ -44,19 +44,18 @@ struct eval_values_t
 	short king_melee_attack_by_rook;
 	short king_melee_attack_by_queen;
 
-	short king_attack_min;
-	short king_attack_max;
-	short king_attack_rise;
-	short king_attack_exponent;
-	short king_attack_offset;
-	short king_attack_scale[2];
+	short king_attack_min[2];
+	short king_attack_max[2];
+	short king_attack_rise[2];
+	short king_attack_exponent[2];
+	short king_attack_offset[2];
 
 	short center_control_scale[2];
 
 	short phase_transition_begin;
 	short phase_transition_duration;
 
-	short material_imbalance_scale;
+	short material_imbalance_scale[2];
 
 	short rule_of_the_square;
 	short passed_pawn_unhindered;
@@ -92,7 +91,7 @@ struct eval_values_t
 	short mobility_rook[14];
 	short mobility_queen[7+7+7+6];
 
-	short king_attack[150];
+	short king_attack[2][150];
 
 	void update_derived();
 };
