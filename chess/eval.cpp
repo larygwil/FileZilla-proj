@@ -24,6 +24,7 @@ eval_values_t::eval_values_t()
 	king_check_by_piece[pieces::pawn] = 0;
 	hanging_piece[pieces::none] = 0;
 	king_attack_min = 0;
+	castled                     =     0;
 
 	// Tweaked values
 	material_values[1]          =    75;
@@ -42,7 +43,6 @@ eval_values_t::eval_values_t()
 	connected_pawn[1]           =     2;
 	pawn_shield[0]              =    13;
 	pawn_shield[1]              =     0;
-	castled                     =    24;
 	pin_absolute_bishop         =     1;
 	pin_absolute_rook           =     3;
 	pin_absolute_queen          =     1;
@@ -74,8 +74,6 @@ eval_values_t::eval_values_t()
 	king_attack_scale[1]        =    16;
 	center_control_scale[0]     =    31;
 	center_control_scale[1]     =    13;
-	phase_transition_begin      =  2582;
-	phase_transition_duration   =  1105;
 	material_imbalance_scale    =     4;
 	rule_of_the_square          =    14;
 	passed_pawn_unhindered      =     8;
@@ -117,8 +115,12 @@ void eval_values_t::update_derived()
 		material_values[pieces::rook] * 2 +
 		material_values[pieces::queen];
 
-	phase_transition_material_begin = initial_material * 2 - phase_transition_begin;
-	phase_transition_material_end = phase_transition_material_begin - phase_transition_duration;
+	//phase_transition_material_begin = initial_material * 2; - phase_transition_begin;
+	//phase_transition_material_end = phase_transition_material_begin - phase_transition_duration;
+	phase_transition_material_begin = initial_material * 2;
+	phase_transition_material_end = 1000;
+	phase_transition_begin = 0;
+	phase_transition_duration = phase_transition_material_begin - phase_transition_material_end;
 
 	for( short i = 0; i < 8; ++i ) {
 		if( i > mobility_knight_offset ) {

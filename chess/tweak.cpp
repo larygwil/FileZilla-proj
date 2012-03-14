@@ -195,7 +195,6 @@ void init_genes()
 	genes.push_back( gene_t( &eval_values.connected_pawn[1], 0, 30, "connected_pawn[1]" ) );
 	genes.push_back( gene_t( &eval_values.pawn_shield[0], 0, 100, "pawn_shield[0]" ) );
 	genes.push_back( gene_t( &eval_values.pawn_shield[1], 0, 100, "pawn_shield[1]" ) );
-	genes.push_back( gene_t( &eval_values.castled, 0, 50, "castled" ) );
 	genes.push_back( gene_t( &eval_values.pin_absolute_bishop, 1, 30, "pin_absolute_bishop" ) );
 	genes.push_back( gene_t( &eval_values.pin_absolute_rook, 1, 30, "pin_absolute_rook" ) );
 	genes.push_back( gene_t( &eval_values.pin_absolute_queen, 1, 30, "pin_absolute_queen" ) );
@@ -227,8 +226,8 @@ void init_genes()
 	genes.push_back( gene_t( &eval_values.king_attack_scale[1], 0, 500, "king_attack_scale[1]" ) );
 	genes.push_back( gene_t( &eval_values.center_control_scale[0], 0, 500, "center_control_scale[0]" ) );
 	genes.push_back( gene_t( &eval_values.center_control_scale[1], 0, 500, "center_control_scale[1]" ) );
-	genes.push_back( gene_t( &eval_values.phase_transition_begin, 0, 3000, "phase_transition_begin" ) );
-	genes.push_back( gene_t( &eval_values.phase_transition_duration, 1000, 4000, "phase_transition_duration" ) );
+	//genes.push_back( gene_t( &eval_values.phase_transition_begin, 0, 3000, "phase_transition_begin" ) );
+	//genes.push_back( gene_t( &eval_values.phase_transition_duration, 1000, 4000, "phase_transition_duration" ) );
 	genes.push_back( gene_t( &eval_values.material_imbalance_scale, 0, 500, "material_imbalance_scale" ) );
 	genes.push_back( gene_t( &eval_values.rule_of_the_square, 0, 20, "rule_of_the_square" ) );
 	genes.push_back( gene_t( &eval_values.passed_pawn_unhindered, 0, 20, "passed_pawn_unhindered" ) );
