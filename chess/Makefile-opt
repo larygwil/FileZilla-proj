@@ -18,6 +18,7 @@ GENERIC_SOURCE_FILES = \
 	moves_captures.cpp \
 	moves_noncaptures.cpp \
 	pawn_structure_hash_table.cpp \
+	pgn.cpp \
 	phased_move_generator.cpp \
 	pvlist.cpp \
 	random.cpp \

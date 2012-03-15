@@ -25,6 +25,7 @@ OBJECT_FILES = \
 	moves_noncaptures.o \
 	pawn_structure_hash_table.o \
 	phased_move_generator.o \
+	pgn.o \
 	pvlist.o \
 	random.o \
 	see.o \

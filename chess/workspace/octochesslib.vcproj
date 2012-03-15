@@ -214,6 +214,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\pgn.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\phased_move_generator.cpp"
 				>
 			</File>
@@ -332,11 +336,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\platform.hpp"
+				RelativePath="..\pgn.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\phased_move_generator.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\platform.hpp"
 				>
 			</File>
 			<File
