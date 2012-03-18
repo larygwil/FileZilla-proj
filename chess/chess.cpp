@@ -98,8 +98,8 @@ void auto_play()
 		}
 
 		apply_move( p, m, c );
-		int ev = evaluate_fast( p, color::white );
-		std::cerr << "Evaluation (for white): " << ev << " centipawns" << std::endl;
+		score base_eval = p.base_eval;
+		std::cerr << "Base evaluation (for white): " << base_eval << " centipawns" << std::endl;
 
 		c = static_cast<color::type>(1-c);
 
@@ -139,6 +139,7 @@ int main( int argc, char const* argv[] )
 	std::cerr << std::endl;
 
 	init_magic();
+	init_pst();
 
 	if( conf.random_seed != -1 ) {
 		init_random( conf.random_seed );

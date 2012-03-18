@@ -52,40 +52,33 @@ short const ASPIRATION = 40;
 new_best_move_callback default_new_best_move_callback;
 
 
-void sort_moves( move_info* begin, move_info* end, position const& p, color::type c, short current_evaluation )
+void sort_moves( move_info* begin, move_info* end, position const& p, color::type c )
 {
 	for( move_info* it = begin; it != end; ++it ) {
-		it->evaluation = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
-		it->sort = it->evaluation;
+		it->sort = evaluate_move( p, c, it->m );
 		if( it->m.captured_piece != pieces::none ) {
-			it->sort += get_material_value( it->m.captured_piece ) * 1000000 - get_material_value( it->m.piece );
+			it->sort += eval_values.mg_material_values[ it->m.captured_piece ] * 1000000 - eval_values.mg_material_values[ it->m.piece ];
 		}
 	}
 	std::sort( begin, end, moveSort );
 }
 
 
-short quiescence_search( int ply, int depth, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta, short full_eval = result::win )
+short quiescence_search( int ply, int depth, context& ctx, position const& p, uint64_t hash, color::type c, check_map const& check, short alpha, short beta, short full_eval = result::win )
 {
 #if 0
 	if( get_zobrist_hash(p) != hash ) {
 		std::cerr << "FAIL HASH!" << std::endl;
 	}
-	if( evaluate_fast(p, c) != current_evaluation ) {
-		std::cerr << "FAIL EVAL!" << std::endl;
-	}
-	position p2 = p;
-	p2.init_pawn_structure();
-	if( p2.pawns.hash != p.pawns.hash ) {
-		std::cerr << "PAWN HASH FAIL" << std::endl;
-	}
 #endif
+	ASSERT( p.verify() );
+
 	if( do_abort ) {
 		return result::loss;
 	}
 
 	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
-		if( p.material[color::white] + p.material[color::black] < 400 ) {
+		if( p.material[color::white].eg() + p.material[color::black].eg() < 400 ) {
 			return result::draw;
 		}
 	}
@@ -128,7 +121,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 	if( !check.check ) {
 		if( full_eval == result::win ) {
-			full_eval = evaluate_full( p, c, current_evaluation );
+			full_eval = evaluate_full( p, c );
 			transposition_table.store( hash, c, 0, ply, 0, 0, 0, tt_move, ctx.clock, full_eval );
 		}
 		if( full_eval > alpha ) {
@@ -141,7 +134,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 	bool got_moves = false;
 
-	qsearch_move_generator gen( ctx, p, c, check, current_evaluation, pv_node );
+	qsearch_move_generator gen( ctx, p, c, check, pv_node );
 	gen.hash_move = tt_move;
 
 	move best_move;
@@ -156,10 +149,10 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
 
 		position new_pos = p;
-		apply_move( new_pos, *it, c );
+		apply_move( new_pos, it->m, c );
 		check_map new_check( new_pos, static_cast<color::type>(1-c) );
 
-		value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -beta, -alpha );
+		value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -beta, -alpha );
 
 		if( value > alpha ) {
 			best_move = it->m;
@@ -194,10 +187,17 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 }
 
 
-short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, int current_evaluation, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null )
+short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null )
 {
+#if 0
+	if( get_zobrist_hash(p) != hash ) {
+		std::cerr << "FAIL HASH!" << std::endl;
+	}
+#endif
+	ASSERT( p.verify() );
+
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
-		return quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, current_evaluation, c, check, alpha, beta );
+		return quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, c, check, alpha, beta );
 	}
 
 	if( do_abort ) {
@@ -205,7 +205,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	}
 
 	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
-		if( p.material[color::white] + p.material[color::black] < 400 ) {
+		if( p.material[color::white].eg() + p.material[color::black].eg() < 400 ) {
 			return result::draw;
 		}
 	}
@@ -241,7 +241,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	int plies_remaining = (depth - cutoff) / depth_factor;
 
 	if( !pv_node && !check.check && plies_remaining < 4 && full_eval == result::win ) {
-		full_eval = evaluate_full( p, c, current_evaluation );
+		full_eval = evaluate_full( p, c );
 		transposition_table.store( hash, c, 0, ply, 0, 0, 0, tt_move, ctx.clock, full_eval );
 	}
 
@@ -249,21 +249,21 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 		   tt_move.empty() && beta < result::win_threshold && beta > result::loss_threshold )
 	{
 		short new_beta = beta - razor_pruning[plies_remaining];
-		short value = quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, current_evaluation, c, check, new_beta - 1, new_beta, full_eval );
+		short value = quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, c, check, new_beta - 1, new_beta, full_eval );
 		if( value < new_beta ) {
 			return value;
 		}
 	}
 
 #if NULL_MOVE_REDUCTION > 0
-	if( !pv_node && !last_was_null && !check.check && depth > (cutoff + depth_factor) && p.material[0] > 1500 && p.material[1] > 1500 ) {
+	if( !pv_node && !last_was_null && !check.check && depth > (cutoff + depth_factor) && p.material[0].mg() > 1500 && p.material[1].mg() > 1500 ) {
 		null_move_block seen_block( ctx.seen, ply );
 
 		pv_entry* cpv = ctx.pv_pool.get();
 
 		check_map new_check( p, static_cast<color::type>(1-c) );
 
-		short value = -step( depth - (NULL_MOVE_REDUCTION + 1) * depth_factor, ply + 1, ctx, p, hash, -current_evaluation, static_cast<color::type>(1-c), new_check, -beta, -beta + 1, cpv, true );
+		short value = -step( depth - (NULL_MOVE_REDUCTION + 1) * depth_factor, ply + 1, ctx, p, hash, static_cast<color::type>(1-c), new_check, -beta, -beta + 1, cpv, true );
 		ctx.pv_pool.release( cpv );
 
 		if( value >= beta ) {
@@ -283,7 +283,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 
 	if( tt_move.empty() && depth > ( depth_factor * 4 + cutoff) ) {
 
-		step( depth - 2 * depth_factor, ply, ctx, p, hash, current_evaluation, c, check, alpha, beta, pv, true );
+		step( depth - 2 * depth_factor, ply, ctx, p, hash, c, check, alpha, beta, pv, true );
 
 		short eval;
 		transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move, full_eval );
@@ -296,7 +296,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	unsigned int processed_moves = 0;
 	unsigned int searched_noncaptures = 0;
 
-	move_generator gen( ctx, ctx.killers[c][ply], p, c, check, current_evaluation );
+	move_generator gen( ctx, ctx.killers[c][ply], p, c, check );
 	gen.hash_move = tt_move;
 	move_info const* it;
 
@@ -312,7 +312,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 		}
 		else {
 			position new_pos = p;
-			apply_move( new_pos, *it, c );
+			apply_move( new_pos, it->m, c );
 
 			ctx.seen.set( new_hash, ply );
 
@@ -349,18 +349,18 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 					!check.check && !new_check.check &&
 					depth > lmr_min_depth && !extended)
 				{
-					value = -step(new_depth - lmr_reduction, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -alpha-1, -alpha, cpv, false );
+					value = -step(new_depth - lmr_reduction, ply + 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -alpha-1, -alpha, cpv, false );
 				}
 				else {
-					value = -step(new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -alpha-1, -alpha, cpv, false );
+					value = -step(new_depth, ply + 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -alpha-1, -alpha, cpv, false );
 				}
 
 				if( value > alpha ) {
-					value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -beta, -alpha, cpv, false );
+					value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -beta, -alpha, cpv, false );
 				}
 			}
 			else {
-				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, -it->evaluation, static_cast<color::type>(1-c), new_check, -beta, -alpha, cpv, false );
+				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -beta, -alpha, cpv, false );
 			}
 
 			if( it->m.captured_piece == pieces::none ) {
@@ -535,7 +535,7 @@ private:
 short processing_thread::processWork()
 {
 	position new_pos = p_;
-	apply_move( new_pos, m_, c_ );
+	apply_move( new_pos, m_.m, c_ );
 	uint64_t hash = get_zobrist_hash( new_pos );
 
 	ctx_.clock = clock_ % 256;
@@ -560,7 +560,7 @@ short processing_thread::processWork()
 		short beta = (std::min)( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
 		if( alpha < beta ) {
-			value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta, -alpha, pv_->next(), false );
+			value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, static_cast<color::type>(1-c_), check, -beta, -alpha, pv_->next(), false );
 			if( value > alpha && value < beta ) {
 				// Aspiration search found something sensible
 				return value;
@@ -569,13 +569,13 @@ short processing_thread::processWork()
 	}
 
 	if( alpha_ != result::loss ) {
-		value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -alpha_-1, -alpha_, pv_->next(), false );
+		value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, static_cast<color::type>(1-c_), check, -alpha_-1, -alpha_, pv_->next(), false );
 		if( value > alpha_ ) {
-			value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta_, -alpha_, pv_->next(), false );
+			value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, static_cast<color::type>(1-c_), check, -beta_, -alpha_, pv_->next(), false );
 		}
 	}
 	else {
-		value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, -m_.evaluation, static_cast<color::type>(1-c_), check, -beta_, -alpha_, pv_->next(), false );
+		value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, static_cast<color::type>(1-c_), check, -beta_, -alpha_, pv_->next(), false );
 	}
 
 	return value;
@@ -706,9 +706,9 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, uint64_t
 
 	move_info moves[200];
 	move_info* pm = moves;
-	int current_evaluation = evaluate_fast( p, c );
+
 	calculate_moves( p, c, pm, check );
-	sort_moves( moves, pm, p, c, current_evaluation );
+	sort_moves( moves, pm, p, c );
 
 	if( moves == pm ) {
 		if( check.check ) {
@@ -745,7 +745,8 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, uint64_t
 		}
 	}
 
-	new_best_cb.on_new_best_move( p, c, 0, old_sorted.front().m.evaluation, 0, old_sorted.front().pv );
+	short ev = evaluate_full( p, c );
+	new_best_cb.on_new_best_move( p, c, 0, ev, 0, old_sorted.front().pv );
 
 	uint64_t start = get_time();
 

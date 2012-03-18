@@ -15,7 +15,7 @@ bool pgn_reader::open( std::string const& file )
 		std::cerr << "No filename given" << std::endl;
 	}
 
-	in_.open( file );
+	in_.open( file.c_str() );
 	return in_.is_open();
 }
 
@@ -27,7 +27,7 @@ bool pgn_reader::next_line( std::string& line ) {
 		return true;
 	}
 
-	return std::getline( in_, line );
+	return std::getline( in_, line ) != 0;
 }
 
 bool pgn_reader::next( game& g )

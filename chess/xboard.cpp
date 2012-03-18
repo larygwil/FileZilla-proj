@@ -286,8 +286,8 @@ void xboard_thread::onRun()
 			state.apply( m );
 
 			{
-				int i = evaluate_fast( state.p, static_cast<color::type>(1-state.c) );
-				std::cerr << "  ; Current evaluation: " << i << " centipawns, forecast " << res << std::endl;
+				score base_eval = state.c ? -state.p.base_eval : state.p.base_eval;
+				std::cerr << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << res << std::endl;
 			}
 
 			if( res > result::win_threshold ) {
@@ -703,9 +703,9 @@ skip_getline:
 			}
 		}
 		else if( cmd == "~score") {
-			short eval_fast = evaluate_fast( state.p, state.c );
+			score base_eval = base_eval = state.c ? -state.p.base_eval : state.p.base_eval;
 			short eval_full = evaluate_full( state.p, state.c );
-			std::cout << eval_fast << " " << eval_full << std::endl;
+			std::cout << base_eval << " " << eval_full << std::endl;
 
 			std::cout << explain_eval( state.p, state.c ) << std::endl;
 		}

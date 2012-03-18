@@ -154,8 +154,8 @@ void octochess_uci::impl::onRun() {
 				apply_move( m );
 
 				{
-					int i = evaluate_fast( pos_, static_cast<color::type>(1-color_to_play_) );
-					std::cerr << "  ; Current evaluation: " << i << " centipawns, forecast " << res << std::endl;
+					score base_eval = color_to_play_ ? -pos_.base_eval : pos_.base_eval;
+					std::cerr << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << res << std::endl;
 				}
 
 				if( res > result::win_threshold ) {

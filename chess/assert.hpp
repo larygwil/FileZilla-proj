@@ -4,6 +4,7 @@
 //#include <assert.h>
 //#define ASSERT(x) assert(x);
 
+#include <iostream>
 
 #define ASSERT(x) do{ \
 	if( !(x) ) { \

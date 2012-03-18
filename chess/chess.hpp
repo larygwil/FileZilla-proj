@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "platform.hpp"
+#include "score.hpp"
 
 namespace pieces {
 enum type {
@@ -58,8 +59,9 @@ enum type {
 };
 }
 
-struct position
+class position
 {
+public:
 	// Bit 0: can castle kingside
 	// Bit 1: can castle queenside
 	// Bit 2: has castled
@@ -70,23 +72,30 @@ struct position
 	// lower 6 bits, 7th bit color of pawn that is en-passantable.
 	unsigned char can_en_passant;
 
-	// Call after initializing bitboards
-	void init_pawn_structure();
+	// After setting bitboards, castling rights and en-passant square,
+	// call this function to 
+	void update_derived();
 
 	void clear_bitboards();
 
-	struct pawn_structure {
-		short eval; // From white's point of view
-		uint64_t hash;
-		uint64_t passed;
-	} pawns;
+	uint64_t pawn_hash;
 
-	short material[2];
+	score material[2];
+
+	// Material and pst, nothing else.
+	score base_eval;
 
 	bitboard bitboards[2];
 
 	bool is_occupied_square( uint64_t square ) const;
 	uint64_t get_occupancy( uint64_t mask ) const;
+
+	bool verify() const;
+
+private:
+	void init_pawn_hash();
+	void init_material();
+	void init_eval();
 };
 
 

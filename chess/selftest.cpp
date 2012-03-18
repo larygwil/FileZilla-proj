@@ -247,7 +247,8 @@ static bool test_lazy_eval( std::string const& fen, short& max_difference )
 		return false;
 	}
 
-	short current = evaluate_fast( p, c );
+	score currents = c ? -p.base_eval : p.base_eval;
+	short current = currents.scale( p.material[0].mg() + p.material[1].mg() );
 	short full = evaluate_full( p, c );
 
 	short diff = std::abs( full - current );
@@ -286,26 +287,23 @@ static bool test_lazy_eval()
 }
 
 
-static bool test_pst( short const pst[2][64], std::string const& name ) {
+static bool test_pst() {
 	for( int i = 0; i < 64; ++i ) {
 		int opposite = (i % 8) + (7 - i / 8) * 8;
-
-		if( pst[0][i] != pst[1][opposite] ) {
-			std::cerr << name << " not symmetric for squares " << i << " and " << opposite << ": " << pst[0][i] << " " << pst[1][opposite] << std::endl;
-			return false;
+		int mirror = (i / 8) * 8 + 7 - i % 8;
+		for( int p = 1; p < 7; ++p ) {
+			if( pst[0][p][i] != pst[1][p][opposite] ) {
+				std::cerr << "PST not symmetric for piece " << p << ", squares " << i << " and " << opposite << ": " << pst[0][p][i] << " " << pst[1][p][opposite] << std::endl;
+				return false;
+			}
+			if( pst[0][p][i] != pst[0][p][mirror] ) {
+				std::cerr << "PST not symmetric for piece " << p << ", squares " << i << " and " << mirror << ": " << pst[0][p][i] << " " << pst[0][p][mirror] << std::endl;
+				return false;
+			}
 		}
 	}
 
 	return true;
-}
-
-static bool test_pst()
-{
-	return test_pst( pawn_values, "pawn_values" ) &&
-		   test_pst( knight_values, "knight_values" ) &&
-		   test_pst( bishop_values, "bishop_values" ) &&
-		   test_pst( rook_values, "rook_values" ) &&
-		   test_pst( queen_values, "queen_values" );
 }
 
 
@@ -407,12 +405,10 @@ static bool test_evaluation( std::string const& fen )
 		return false;
 	}
 
-	short eval = evaluate_fast( p, c );
-	short flipped_eval = evaluate_fast( p2, c2 );
 	short eval_full = evaluate_full( p, c );
 	short flipped_eval_full = evaluate_full( p2, c2 );
-	if( eval != flipped_eval || eval_full != flipped_eval_full ) {
-		std::cerr << "Evaluation not symmetric. Fast: " << eval << " " << flipped_eval << " Full: " << eval_full << " " << flipped_eval_full << " " << std::endl;
+	if( eval_full != flipped_eval_full ) {
+		std::cerr << "Evaluation not symmetric: " << eval_full << " " << flipped_eval_full << " " << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
 		std::cerr << "Flipped: " << flipped << std::endl;
 		return false;

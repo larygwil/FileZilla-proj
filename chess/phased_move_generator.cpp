@@ -6,17 +6,17 @@
 #include <algorithm>
 
 namespace {
-void sort_moves_noncaptures( move_info* begin, move_info* end, position const& p, color::type c, short current_evaluation )
+void sort_moves_noncaptures( move_info* begin, move_info* end, position const& p, color::type c )
 {
 	for( move_info* it = begin; it != end; ++it ) {
-		it->evaluation = evaluate_move( p, c, current_evaluation, it->m, it->pawns );
+		it->sort = evaluate_move( p, c, it->m );
 	}
-	std::sort( begin, end, moveSortEval );
+	std::sort( begin, end, moveSort );
 }
 }
 
 
-phased_move_generator_base::phased_move_generator_base( context& cntx, position const& p, color::type const& c, check_map const& check, short const& eval )
+phased_move_generator_base::phased_move_generator_base( context& cntx, position const& p, color::type const& c, check_map const& check )
 	: ctx( cntx )
 	, phase( phases::hash_move )
 	, moves( ctx.move_ptr )
@@ -24,7 +24,6 @@ phased_move_generator_base::phased_move_generator_base( context& cntx, position 
 	, p_(p)
 	, c_(c)
 	, check_(check)
-	, eval_(eval)
 {
 }
 
@@ -34,8 +33,8 @@ phased_move_generator_base::~phased_move_generator_base()
 }
 
 
-qsearch_move_generator::qsearch_move_generator( context& cntx, position const& p, color::type const& c, check_map const& check, short const& eval, bool pv_node )
-	: phased_move_generator_base( cntx, p, c, check, eval )
+qsearch_move_generator::qsearch_move_generator( context& cntx, position const& p, color::type const& c, check_map const& check, bool pv_node )
+	: phased_move_generator_base( cntx, p, c, check )
 	, pv_node_( pv_node )
 {
 }
@@ -62,14 +61,13 @@ move_info const* qsearch_move_generator::next()
 #endif
 			{
 				moves->m = hash_move;
-				moves->evaluation = evaluate_move( p_, c_, eval_, moves->m, moves->pawns );
 				return moves;
 			}
 		}
 	case phases::captures_gen:
 		ctx.move_ptr = moves;
 		calculate_moves_captures( p_, c_, ctx.move_ptr, check_ );
-		std::sort( moves, ctx.move_ptr, moveSortEval );
+		std::sort( moves, ctx.move_ptr, moveSort );
 		phase = phases::captures;
 	case phases::captures:
 		while( it != ctx.move_ptr ) {
@@ -84,8 +82,6 @@ move_info const* qsearch_move_generator::next()
 				}
 			}
 
-			it->evaluation = evaluate_move( p_, c_, eval_, it->m, it->pawns );
-
 			return it++;
 		}
 		if( check_.check ) {
@@ -99,7 +95,7 @@ move_info const* qsearch_move_generator::next()
 		ctx.move_ptr = moves;
 		it = moves;
 		calculate_moves_noncaptures( p_, c_, ctx.move_ptr, check_ );
-		sort_moves_noncaptures( moves, ctx.move_ptr, p_, c_, eval_ );
+		sort_moves_noncaptures( moves, ctx.move_ptr, p_, c_ );
 		phase = phases::noncapture;
 	case phases::noncapture:
 		while( it != ctx.move_ptr ) {
@@ -120,8 +116,8 @@ move_info const* qsearch_move_generator::next()
 }
 
 
-move_generator::move_generator( context& cntx, killer_moves const& killers, position const& p, color::type const& c, check_map const& check, short const& eval )
-	: phased_move_generator_base( cntx, p, c, check, eval )
+move_generator::move_generator( context& cntx, killer_moves const& killers, position const& p, color::type const& c, check_map const& check )
+	: phased_move_generator_base( cntx, p, c, check )
 	, killers_(killers)
 {
 }
@@ -147,19 +143,16 @@ move_info const* move_generator::next() {
 #endif
 			{
 				moves->m = hash_move;
-				moves->evaluation = evaluate_move( p_, c_, eval_, moves->m, moves->pawns );
 				return moves;
 			}
 		}
 	case phases::captures_gen:
 		ctx.move_ptr = moves;
 		calculate_moves_captures( p_, c_, ctx.move_ptr, check_ );
-		std::sort( moves, ctx.move_ptr, moveSortEval );
+		std::sort( moves, ctx.move_ptr, moveSort );
 		phase = phases::captures;
 	case phases::captures:
 		if( it != ctx.move_ptr ) {
-			it->evaluation = evaluate_move( p_, c_, eval_, it->m, it->pawns );
-
 			return it++;
 		}
 		phase = phases::killer1;
@@ -168,21 +161,21 @@ move_info const* move_generator::next() {
 		ctx.move_ptr = moves + 1;
 		if( !killers_.m1.empty() && killers_.m1 != hash_move && is_valid_move( p_, c_, killers_.m1, check_ ) ) {
 			moves->m = killers_.m1;
-			moves->evaluation = evaluate_move( p_, c_, eval_, moves->m, moves->pawns );
+			moves->sort = evaluate_move( p_, c_, moves->m );
 			return moves;
 		}
 	case phases::killer2:
 		phase = phases::noncaptures_gen;
 		if( !killers_.m2.empty() && killers_.m2 != hash_move && killers_.m1 != killers_.m2 && is_valid_move( p_, c_, killers_.m2, check_ ) ) {
 			moves->m = killers_.m2;
-			moves->evaluation = evaluate_move( p_, c_, eval_, moves->m, moves->pawns );
+			moves->sort = evaluate_move( p_, c_, moves->m );
 			return moves;
 		}
 	case phases::noncaptures_gen:
 		ctx.move_ptr = moves;
 		it = moves;
 		calculate_moves_noncaptures( p_, c_, ctx.move_ptr, check_ );
-		sort_moves_noncaptures( moves, ctx.move_ptr, p_, c_, eval_ );
+		sort_moves_noncaptures( moves, ctx.move_ptr, p_, c_ );
 		phase = phases::noncapture;
 	case phases::noncapture:
 		while( it != ctx.move_ptr ) {

@@ -8,17 +8,8 @@ class killer_moves;
 
 struct move_info {
 	move m;
-	short evaluation;
 	int sort;
-	position::pawn_structure pawns;
 };
-
-struct MoveSortEval {
-	inline bool operator()( move_info const& lhs, move_info const& rhs ) const {
-		return lhs.evaluation > rhs.evaluation;
-	}
-};
-extern MoveSortEval moveSortEval;
 
 struct MoveSort {
 	inline bool operator()( move_info const& lhs, move_info const& rhs ) const {

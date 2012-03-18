@@ -15,14 +15,6 @@ namespace {
 
 struct eval_results {
 	eval_results() 
-		: mobility_scale()
-		, pin_scale()
-		, king_attack_scale()
-		, unstoppable_pawn_scale()
-		, hanging_piece_scale()
-		, center_control_scale()
-		, connected_rooks_scale()
-		, tropism_scale()
 	{
 		for( int c = 0; c < 2; ++c ) {
 			king_pos[c] = 0;
@@ -34,15 +26,8 @@ struct eval_results {
 			count_king_attackers[c] = 0;
 			king_attacker_sum[c] = 0;
 
-			mobility[c] = 0;
-			king_attack[c] = 0;
-			pin[c] = 0;
-			rooks_on_open_file_bonus[c] = 0;
 			tropism[c] = 0;
 			center_control[c] = 0;
-			rooks_connected[c] = 0;
-			hanging[c] = 0;
-			unstoppable_pawns[c] = 0;
 		}
 	}
 
@@ -54,25 +39,15 @@ struct eval_results {
 	short king_attacker_sum[2];
 
 	// End results
-	short mobility[2];
-	short king_attack[2];
-	short pin[2];
-	short rooks_on_open_file_bonus[2];
+	score mobility[2];
+	score king_attack[2];
+	score pin[2];
+	score rooks_on_open_file[2];
 	short tropism[2];
 	short center_control[2];
-	short rooks_connected[2];
-	short hanging[2];
-	short unstoppable_pawns[2];
-
-	// Phase scales
-	short mobility_scale;
-	short pin_scale;
-	short king_attack_scale;
-	short unstoppable_pawn_scale;
-	short hanging_piece_scale;
-	short center_control_scale;
-	short connected_rooks_scale;
-	short tropism_scale;
+	score rooks_connected[2];
+	score hanging[2];
+	score unstoppable_pawns[2];
 };
 
 
@@ -199,7 +174,7 @@ inline static void evaluate_rook_mobility( position const& p, color::type c, uin
 	results.attacks[c][pieces::rook] |= moves;
 
 	if( moves & p.bitboards[c].b[bb_type::rooks] ) {
-		results.rooks_connected[c] = 2;
+		results.rooks_connected[c] = eval_values.connected_rooks;
 	}
 	moves &= ~p.bitboards[c].b[bb_type::all_pieces];
 
@@ -229,10 +204,10 @@ inline static void evaluate_rook_on_open_file( position const& p, color::type c,
 	uint64_t file = 0x0101010101010101ull << (rook % 8);
 	if( !(p.bitboards[c].b[bb_type::pawns] & file) ) {
 		if( p.bitboards[1-c].b[bb_type::pawns] & file ) {
-			results.rooks_on_open_file_bonus[c] += static_cast<short>(popcount(p.bitboards[c].b[bb_type::pawns])) * 3;
+			results.rooks_on_open_file[c] += eval_values.rooks_on_half_open_file;
 		}
 		else {
-			results.rooks_on_open_file_bonus[c] += static_cast<short>(popcount(p.bitboards[c].b[bb_type::pawns])) * 6;
+			results.rooks_on_open_file[c] += eval_values.rooks_on_open_file;
 		}
 	}
 }
@@ -302,12 +277,12 @@ inline static void evaluate_queens_mobility( position const& p, color::type c, e
 
 
 short advance_bonus[] = { 1, 1, 1, 2, 3, 6 };
-void evaluate_unstoppable_pawns( position const& p, color::type c, eval_results& results )
+
+void evaluate_unstoppable_pawns( position const& p, color::type c, eval_results& results, uint64_t passed_pawns )
 {
 	for( int i = 0; i < 2; ++i ) {
-		uint64_t passed = (p.bitboards[i].b[bb_type::pawns] & p.pawns.passed);
+		uint64_t passed = (p.bitboards[i].b[bb_type::pawns] & passed_pawns);
 		uint64_t unstoppable = passed & ~rule_of_the_square[1-i][c][results.king_pos[1-i]];
-		//results.unstoppable_pawns[i] = popcount( unstoppable ) * eval_values.rule_of_the_square;
 
 		while( passed ) {
 			uint64_t pawn = bitscan_unset( passed );
@@ -372,11 +347,17 @@ static void evaluate_king_attack( position const& p, color::type c, color::type 
 	attack += popcount( king_melee_attack_by_queen ) * eval_values.king_melee_attack_by_queen * initiative;
 	attack += popcount( king_melee_attack_by_rook ) * eval_values.king_melee_attack_by_rook * initiative;
 
-	results.king_attack[c] = (std::min)( short(150), attack );
+	int offset = (std::min)( short(150), attack );
+
+	results.king_attack[c] = eval_values.king_attack[offset];
 }
 
+short phase_scale( score const* material, short ev1, short ev2 )
+{
+	return score( ev1, ev2).scale( material[0].mg() + material[1].mg() );
+}
 
-static void do_evaluate_mobility( position const& p, color::type to_move, eval_results& results )
+static void do_evaluate_mobility( position const& p, color::type to_move, eval_results& results, uint64_t passed_pawns )
 {
 	results.king_pos[0] = bitscan( p.bitboards[0].b[bb_type::king] );
 	results.king_pos[1] = bitscan( p.bitboards[1].b[bb_type::king] );
@@ -406,44 +387,34 @@ static void do_evaluate_mobility( position const& p, color::type to_move, eval_r
 		// Undefended are those attacked by self, not attacked by enemy
 		uint64_t undefended = results.attacks[c][pieces::none] & ~results.attacks[1-c][pieces::none];
 		for( unsigned int piece = 1; piece < 6; ++piece ) {
-			results.hanging[c] += popcount( p.bitboards[1-c].b[piece] & undefended ) * eval_values.hanging_piece[piece];
+			results.hanging[c] += eval_values.hanging_piece[piece] * popcount( p.bitboards[1-c].b[piece] & undefended );
 		}
 
 		evaluate_king_attack( p, static_cast<color::type>(c), to_move, results );
 	}
 
-	int king_attack_mg = (eval_values.king_attack[0][results.king_attack[to_move]] - eval_values.king_attack[0][results.king_attack[1-to_move]]);
-	int king_attack_eg = (eval_values.king_attack[1][results.king_attack[to_move]] - eval_values.king_attack[1][results.king_attack[1-to_move]]);
-
-	evaluate_unstoppable_pawns( p, to_move, results );
-
-	results.mobility_scale = phase_scale( p.material, eval_values.mobility_scale[0], eval_values.mobility_scale[1]);
-	results.pin_scale = phase_scale( p.material, eval_values.pin_scale[0], eval_values.pin_scale[1]);
-	results.king_attack_scale = phase_scale( p.material, king_attack_mg, king_attack_eg );
-	results.unstoppable_pawn_scale = phase_scale( p.material, eval_values.unstoppable_pawn_scale[0], eval_values.unstoppable_pawn_scale[1]);
-	results.hanging_piece_scale = phase_scale( p.material, eval_values.hanging_piece_scale[0], eval_values.hanging_piece_scale[1]);
-	results.center_control_scale = phase_scale( p.material, eval_values.center_control_scale[0], eval_values.center_control_scale[1]);
-	results.connected_rooks_scale = phase_scale( p.material, eval_values.connected_rooks_scale[0], eval_values.connected_rooks_scale[1] );
-	results.tropism_scale = phase_scale( p.material, eval_values.tropism_scale[0], eval_values.tropism_scale[1] );
+	evaluate_unstoppable_pawns( p, to_move, results, passed_pawns );
 }
 }
 
-short evaluate_mobility( position const& p, color::type c )
+score evaluate_mobility( position const& p, color::type c, uint64_t passed_pawns )
 {
-	eval_results results;
-	do_evaluate_mobility( p, c, results );
+	score ret;
 
-	return
-		((results.mobility[c] - results.mobility[1-c]) * results.mobility_scale) / 20 +
-		((results.pin[c] - results.pin[1-c]) * results.pin_scale) / 20 +
-		((results.rooks_on_open_file_bonus[c] - results.rooks_on_open_file_bonus[1-c]) * eval_values.rooks_on_open_file_scale) / 20 +
-		((results.tropism[c] - results.tropism[1-c]) * results.tropism_scale) / 20 +
-		results.king_attack_scale +
-		((results.center_control[c] - results.center_control[1-c]) * results.center_control_scale) / 20 +
-		((results.rooks_connected[c] - results.rooks_connected[1-c]) * results.connected_rooks_scale) / 20 +
-		((results.hanging[c] - results.hanging[1-c]) * results.hanging_piece_scale) / 20 +
-		((results.unstoppable_pawns[c] - results.unstoppable_pawns[1-c]) * results.unstoppable_pawn_scale) / 20 +
-		0;
+	eval_results results;
+	do_evaluate_mobility( p, c, results, passed_pawns );
+
+	ret += results.king_attack[color::white] - results.king_attack[color::black];
+	ret += results.pin[color::white] - results.pin[color::black];
+	ret += results.hanging[color::white] - results.hanging[color::black];
+	ret += eval_values.center_control * (results.center_control[color::white] - results.center_control[color::black]);
+	ret += eval_values.tropism * (results.tropism[color::white] - results.tropism[color::black]);
+	ret += results.rooks_connected[color::white] - results.rooks_connected[color::black];
+	ret += results.rooks_on_open_file[color::white] - results.rooks_on_open_file[color::black];
+	ret += results.unstoppable_pawns[color::white] - results.unstoppable_pawns[color::black];
+	ret += results.mobility[color::white] - results.mobility[color::black];
+
+	return ret;
 }
 
 namespace {
@@ -458,10 +429,10 @@ static std::string explain( const char* name, short data ) {
 std::string explain_eval( position const& p, color::type c )
 {
 	eval_results results;
-	do_evaluate_mobility( p, c, results );
+	do_evaluate_mobility( p, c, results, 0 );
 
 	std::stringstream ss;
-	ss << explain( "Material", p.material[c] - p.material[1-c] );
+/*	ss << explain( "Material", p.material[c] - p.material[1-c] );
 	ss << explain( "Mobility",
 		((results.mobility[c] - results.mobility[1-c]) * results.mobility_scale) / 20 );
 	ss << explain( "Absolute pins",
@@ -480,6 +451,6 @@ std::string explain_eval( position const& p, color::type c )
 		((results.hanging[c] - results.hanging[1-c]) * results.hanging_piece_scale) / 20 );
 	ss << explain( "Unstoppable pawns",
 		((results.unstoppable_pawns[c] - results.unstoppable_pawns[1-c]) * results.unstoppable_pawn_scale) / 20 );
-
+*/
 	return ss.str();
 }

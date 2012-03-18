@@ -462,26 +462,54 @@ void init_board( position& p )
 
 	p.can_en_passant = 0;
 
-	p.material[0] = eval_values.initial_material;
-	p.material[1] = p.material[0];
-
 	init_bitboards( p );
 
-	p.init_pawn_structure();
+	p.update_derived();
 }
 
 
-void init_material( position& p ) {
-	p.material[0] = 0;
-	p.material[1] = 0;
+void position::update_derived()
+{
+	init_material();
+	init_eval();
+	init_pawn_hash();
+}
+
+
+void position::init_material()
+{
+	material[0] = score();
+	material[1] = score();
 
 	for( int c = 0; c < 2; ++c ) {
 		for( unsigned int pi = 0; pi < 64; ++pi ) {
-			pieces::type b = get_piece_on_square( p, static_cast<color::type>(c), pi );
+			pieces::type b = get_piece_on_square( *this, static_cast<color::type>(c), pi );
 
 			if( b != pieces::king ) {
-				p.material[c] += get_material_value( b );
+				material[c] += get_material_value( b );
 			}
+		}
+	}
+}
+
+
+void position::init_eval()
+{
+	base_eval = material[0] - material[1];
+
+	for( int c = 0; c < 2; ++c ) {
+		score side;
+		for( unsigned int sq = 0; sq < 64; ++sq ) {
+			pieces::type pi = get_piece_on_square( *this, static_cast<color::type>(c), sq );
+
+			side += pst[c][pi][sq];
+		}
+
+		if( c ) {
+			base_eval -= side;
+		}
+		else {
+			base_eval += side;
 		}
 	}
 }
@@ -521,28 +549,43 @@ void init_bitboards( position& p )
 	}
 }
 
-namespace {
-static void do_apply_move( position& p, move const& m, color::type c )
+void apply_move( position& p, move const& m, color::type c )
 {
 	uint64_t const source_square = 1ull << m.source;
 	uint64_t const target_square = 1ull << m.target;
 
+	score delta = -pst[c][m.piece][m.source];
+
 	if( m.flags & move_flags::castle ) {
+		delta += pst[c][pieces::king][m.target];
+
 		unsigned char row = c ? 56 : 0;
 		if( m.target % 8 == 6 ) {
 			// Kingside
 			p.bitboards[c].b[bb_type::all_pieces] ^= 0xf0ull << row;
 			p.bitboards[c].b[bb_type::king] ^= 0x50ull << row;
 			p.bitboards[c].b[bb_type::rooks] ^= 0xa0ull << row;
+
+			delta += pst[c][pieces::rook][row + 5] - pst[c][pieces::rook][row + 7];
 		}
 		else {
 			// Queenside
 			p.bitboards[c].b[bb_type::all_pieces] ^= 0x1dull << row;
 			p.bitboards[c].b[bb_type::king] ^= 0x14ull << row;
 			p.bitboards[c].b[bb_type::rooks] ^= 0x09ull << row;
+			delta += pst[c][pieces::rook][row + 3] - pst[c][pieces::rook][row];
 		}
 		p.can_en_passant = 0;
 		p.castle[c] = 0x4;
+
+		if( c ) {
+			p.base_eval -= delta;
+		}
+		else {
+			p.base_eval += delta;
+		}
+
+		ASSERT( p.verify() );
 		return;
 	}
 
@@ -577,6 +620,19 @@ static void do_apply_move( position& p, move const& m, color::type c )
 				uint64_t pawn = bitscan_unset( pawns );
 				p.bitboards[1-c].b[bb_type::pawn_control] |= pawn_control[1-c][pawn];
 			}
+
+			if( m.flags & move_flags::enpassant ) {
+				unsigned char ep = (m.target & 0x7) | (m.source & 0x38);
+				p.pawn_hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), ep );
+				delta += pst[1-c][pieces::pawn][ep] + eval_values.material_values[ pieces::pawn ];
+			}
+			else {
+				p.pawn_hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target );
+				delta += pst[1-c][pieces::pawn][m.target] + eval_values.material_values[ pieces::pawn ];
+			}
+		}
+		else {
+			delta += pst[1-c][m.captured_piece][m.target] + eval_values.material_values[ m.captured_piece ];
 		}
 		p.material[1-c] -= get_material_value( m.captured_piece );
 	}
@@ -602,13 +658,19 @@ static void do_apply_move( position& p, move const& m, color::type c )
 
 	int promotion = m.flags & move_flags::promotion_mask;
 	if( promotion ) {
-		p.bitboards[c].b[promotion >> move_flags::promotion_shift] ^= target_square;
+		pieces::type promotion_piece = static_cast<pieces::type>(promotion >> move_flags::promotion_shift);
+
+		p.bitboards[c].b[promotion_piece] ^= target_square;
 
 		p.material[c] -= get_material_value( pieces::pawn );
-		p.material[c] += get_material_value( static_cast<pieces::type>(promotion >> move_flags::promotion_shift) );
+		p.material[c] += get_material_value( promotion_piece );
+
+		delta -= eval_values.material_values[pieces::pawn];
+		delta += eval_values.material_values[promotion_piece] + pst[c][m.piece][m.target];
 	}
 	else {
 		p.bitboards[c].b[m.piece] ^= target_square;
+		delta += pst[c][m.piece][m.target];
 	}
 	p.bitboards[c].b[bb_type::all_pieces] ^= target_square;
 	
@@ -619,62 +681,34 @@ static void do_apply_move( position& p, move const& m, color::type c )
 			uint64_t pawn = bitscan_unset( pawns );
 			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
 		}
+
+		p.pawn_hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.source);
+		if( !(m.flags & move_flags::promotion_mask) ) {
+			p.pawn_hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.target );
+		}
 	}
-}
-}
 
-
-void apply_move( position& p, move const& m, color::type c )
-{
-	do_apply_move( p, m, c );
-
-	if( m.piece == pieces::pawn || m.captured_piece != pieces::none ) {
-		if( m.captured_piece == pieces::pawn ) {
-			if( m.flags & move_flags::enpassant ) {
-				unsigned char ep = (m.target & 0x7) | (m.source & 0x38);
-				p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), ep );
-			}
-			else {
-				p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target );
-			}
-		}
-		if( m.piece == pieces::pawn ) {
-			p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.source);
-			if( !(m.flags & move_flags::promotion_mask) ) {
-				p.pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), m.target );
-			}
-		}
-
-		short pawn_eval[2];
-		if( !pawn_hash_table.lookup( p.pawns.hash, pawn_eval, p.pawns.passed ) ) {
-			evaluate_pawns( p.bitboards[0].b[bb_type::pawns], p.bitboards[1].b[bb_type::pawns], pawn_eval, p.pawns.passed );
-			pawn_hash_table.store( p.pawns.hash, pawn_eval, p.pawns.passed );
-		}
-		p.pawns.eval = phase_scale( p.material, pawn_eval[0], pawn_eval[1] );
+	if( c ) {
+		p.base_eval -= delta;
 	}
+	else {
+		p.base_eval += delta;
+	}
+
+	ASSERT( p.verify() );
 }
 
 
-void apply_move( position& p, move_info const& mi, color::type c )
+void position::init_pawn_hash()
 {
-	do_apply_move( p, mi.m, c );
-	p.pawns = mi.pawns;
-}
-
-
-void position::init_pawn_structure()
-{
-	pawns.hash = 0;
+	pawn_hash = 0;
 	for( int c = 0; c < 2; ++c ) {
 		uint64_t cpawns = bitboards[c].b[bb_type::pawns];
 		while( cpawns ) {
 			uint64_t pawn = bitscan_unset( cpawns );
-			pawns.hash ^= get_pawn_structure_hash( static_cast<color::type>(c), static_cast<unsigned char>(pawn) );
+			pawn_hash ^= get_pawn_structure_hash( static_cast<color::type>(c), static_cast<unsigned char>(pawn) );
 		}
 	}
-	short pawn_eval[2];
-	evaluate_pawns( bitboards[0].b[bb_type::pawns], bitboards[1].b[bb_type::pawns], pawn_eval, pawns.passed );
-	pawns.eval = phase_scale( material, pawn_eval[0], pawn_eval[1] );
 }
 
 
@@ -1057,4 +1091,23 @@ bool is_valid_move( position const& p, color::type c, move const& m, check_map c
 #endif
 
 	return ret;
+}
+
+bool position::verify() const {
+	position p2 = *this;
+	p2.update_derived();
+	if( base_eval != p2.base_eval ) {
+		std::cerr << "FAIL BASE EVAL!" << std::endl;
+		return false;
+	}
+	if( pawn_hash != p2.pawn_hash ) {
+		std::cerr << "PAWN HASH FAIL" << std::endl;
+		return false;
+	}
+	if( material[0] != p2.material[0] || material[1] != p2.material[1] ) {
+		std::cerr << "Material mismatch!" << std::endl;
+		return false;
+	}
+
+	return true;
 }

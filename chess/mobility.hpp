@@ -5,7 +5,7 @@
 
 #include "chess.hpp"
 
-short evaluate_mobility( position const& p, color::type c );
+score evaluate_mobility( position const& p, color::type c, uint64_t passed_pawns );
 
 std::string explain_eval( position const& p, color::type c );
 

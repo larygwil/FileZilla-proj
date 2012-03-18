@@ -47,12 +47,12 @@ int see( position const& p, color::type c, move const& m )
 
 	int depth = 0;
 
-	score[0] = get_material_value( m.captured_piece );
+	score[0] = eval_values.mg_material_values[ m.captured_piece ];
 
 	// Can "do", as we always have at least one.
 	do {
 		++depth;
-		score[depth] = get_material_value( attacker_piece ) - score[depth - 1];
+		score[depth] = eval_values.mg_material_values[ attacker_piece ] - score[depth - 1];
 
 		if( score[depth] < 0 && score[depth - 1] < 0 ) {
 			break; // Bad capture

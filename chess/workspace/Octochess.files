@@ -36,6 +36,8 @@
 ../pvlist.cpp
 ../pvlist.hpp
 ../random.hpp
+../score.cpp
+../score.hpp
 ../see.cpp
 ../see.hpp
 ../seen_positions.cpp

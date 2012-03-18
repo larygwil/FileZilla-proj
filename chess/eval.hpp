@@ -2,6 +2,7 @@
 #define __EVAL_H__
 
 #include "chess.hpp"
+#include "score.hpp"
 
 #define LAZY_EVAL 756
 
@@ -9,35 +10,30 @@ struct eval_values_t
 {
 	eval_values_t();
 
-	short material_values[7];
+	short mg_material_values[7];
+	short eg_material_values[7];
 
-	// Derived
-	short initial_material;
+	score double_bishop;
 
-	short double_bishop;
-
-	short doubled_pawn[2];
-	short passed_pawn[2];
-	short isolated_pawn[2];
-	short connected_pawn[2];
+	score doubled_pawn;
+	score passed_pawn;
+	score isolated_pawn;
+	score connected_pawn;
 	
-	short pawn_shield[2];
+	score pawn_shield;
 
 	short castled;
 
-	short pin_absolute_bishop;
-	short pin_absolute_rook;
-	short pin_absolute_queen;
+	score pin_absolute_bishop;
+	score pin_absolute_rook;
+	score pin_absolute_queen;
 
-	short mobility_scale[2];
+	score rooks_on_open_file;
+	score rooks_on_half_open_file;
 
-	short pin_scale[2];
+	score connected_rooks;
 
-	short rooks_on_open_file_scale;
-
-	short connected_rooks_scale[2];
-
-	short tropism_scale[2];
+	score tropism;
 
 	short king_attack_by_piece[6];
 	short king_check_by_piece[6];
@@ -50,72 +46,68 @@ struct eval_values_t
 	short king_attack_exponent[2];
 	short king_attack_offset[2];
 
-	short center_control_scale[2];
+	score center_control;
 
 	short phase_transition_begin;
 	short phase_transition_duration;
 
-	short material_imbalance_scale[2];
+	score material_imbalance;
 
-	short rule_of_the_square;
-	short passed_pawn_unhindered;
+	score rule_of_the_square;
+	score passed_pawn_unhindered;
 
-	short unstoppable_pawn_scale[2];
+	score hanging_piece[6];
 
-	short hanging_piece[6];
-	short hanging_piece_scale[2];
+	score mobility_knight_min;
+	score mobility_knight_max;
+	score mobility_knight_rise;
+	score mobility_knight_offset;
+	score mobility_bishop_min;
+	score mobility_bishop_max;
+	score mobility_bishop_rise;
+	score mobility_bishop_offset;
+	score mobility_rook_min;
+	score mobility_rook_max;
+	score mobility_rook_rise;
+	score mobility_rook_offset;
+	score mobility_queen_min;
+	score mobility_queen_max;
+	score mobility_queen_rise;
+	score mobility_queen_offset;
 
-	short mobility_knight_min;
-	short mobility_knight_max;
-	short mobility_knight_rise;
-	short mobility_knight_offset;
-	short mobility_bishop_min;
-	short mobility_bishop_max;
-	short mobility_bishop_rise;
-	short mobility_bishop_offset;
-	short mobility_rook_min;
-	short mobility_rook_max;
-	short mobility_rook_rise;
-	short mobility_rook_offset;
-	short mobility_queen_min;
-	short mobility_queen_max;
-	short mobility_queen_rise;
-	short mobility_queen_offset;
+	score side_to_move;
 
 	// Derived
+	score material_values[7];
+
+	score initial_material;
+
 	int phase_transition_material_begin;
 	int phase_transition_material_end;
 
-	short mobility_knight[8];
-	short mobility_bishop[13];
-	short mobility_rook[14];
-	short mobility_queen[7+7+7+6];
+	score mobility_knight[8];
+	score mobility_bishop[13];
+	score mobility_rook[14];
+	score mobility_queen[7+7+7+6];
 
-	short king_attack[2][150];
+	score king_attack[150];
 
 	void update_derived();
 };
 
 extern eval_values_t eval_values;
 
-short evaluate_fast( position const& p, color::type c );
-
 short evaluate_full( position const& p, color::type c );
-short evaluate_full( position const& p, color::type c, short eval_fast );
+short evaluate_full( position const& p, color::type c );
 
-short evaluate_move( position const& p, color::type c, short current_evaluation, move const& m, position::pawn_structure& outPawns );
+short evaluate_move( position const& p, color::type c, move const& m );
 
-void evaluate_pawns( uint64_t const white_pawns, uint64_t const black_pawns, short* eval, uint64_t& passed );
+score evaluate_pawns( uint64_t const white_pawns, uint64_t const black_pawns, uint64_t& passed );
 
-short get_material_value( pieces::type pi );
+score get_material_value( pieces::type pi );
 
-short phase_scale( short const* material, short ev1, short ev2 );
+void init_pst();
+extern score pst[2][7][64];
 
-// Piece-square tables
-extern short const pawn_values[2][64];
-extern short const knight_values[2][64];
-extern short const bishop_values[2][64];
-extern short const rook_values[2][64];
-extern short const queen_values[2][64];
 
 #endif

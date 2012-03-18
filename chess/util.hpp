@@ -22,11 +22,8 @@ std::string move_to_long_algebraic( move const& m );
 
 void init_board( position& p );
 void init_bitboards( position& p );
-void init_material( position& p );
 
 void apply_move( position& p, move const& m, color::type c );
-bool apply_hash_move( position& p, move const& m, color::type c, check_map const& check );
-void apply_move( position& p, move_info const& m, color::type c );
 
 // Checks if the given move is legal in the given position.
 // Precondition: There must be some position where the move is legal, else the result is undefined.
