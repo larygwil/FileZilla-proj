@@ -28,6 +28,7 @@ OBJECT_FILES = \
 	pgn.o \
 	pvlist.o \
 	random.o \
+	score.o \
 	see.o \
 	seen_positions.o \
 	selftest.o \

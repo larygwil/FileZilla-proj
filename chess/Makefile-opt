@@ -23,6 +23,7 @@ GENERIC_SOURCE_FILES = \
 	pvlist.cpp \
 	random.cpp \
 	util.cpp \
+	score.cpp \
 	see.cpp \
 	seen_positions.cpp \
 	selftest.cpp \
