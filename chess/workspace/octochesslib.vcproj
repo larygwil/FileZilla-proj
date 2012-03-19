@@ -230,6 +230,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\score.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\see.cpp"
 				>
 			</File>
@@ -357,6 +361,10 @@
 			</File>
 			<File
 				RelativePath="..\random.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\score.hpp"
 				>
 			</File>
 			<File
