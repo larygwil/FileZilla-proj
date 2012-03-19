@@ -48,7 +48,7 @@ CHESS_FILES = $(OBJECT_FILES) \
 	uci/minimalistic_uci_protocol.o \
 	uci/octochess_impl.o \
 	uci/runner.o \
-	uci/time.o
+	uci/time_calculation.o
 
 
 %.o: %.cpp *.hpp

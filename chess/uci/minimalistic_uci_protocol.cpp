@@ -1,7 +1,7 @@
 
 #include "minimalistic_uci_protocol.hpp"
 #include "info.hpp"
-#include "time.hpp"
+#include "time_calculation.hpp"
 
 #include "../logger.hpp"
 

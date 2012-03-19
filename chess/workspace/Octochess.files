@@ -70,8 +70,8 @@
 ../uci/octochess_impl.hpp
 ../uci/runner.cpp
 ../uci/runner.hpp
-../uci/time.cpp
-../uci/time.hpp
+../uci/time_calculation.cpp
+../uci/time_calculation.hpp
 ../uci/types.hpp
 
 

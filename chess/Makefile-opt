@@ -42,7 +42,7 @@ CHESS_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
 	uci/minimalistic_uci_protocol.cpp \
 	uci/octochess_impl.cpp \
 	uci/runner.cpp \
-	uci/time.cpp
+	uci/time_calculation.cpp
 
 BOOKGEN_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
 	bookgen.cpp
