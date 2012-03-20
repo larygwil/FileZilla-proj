@@ -11,12 +11,16 @@ using namespace tr1;
 
 uint64_t timer_precision()
 {
-	return 1000;
+	return 1000000;
 }
 
 
 uint64_t get_time() {
-	return GetTickCount64();
+	FILETIME ft;
+	GetSystemTimeAsFileTime(&ft);
+
+	uint64_t t = (static_cast<uint64_t>(ft.dwHighDateTime) << 32) + ft.dwLowDateTime;
+	return t / 10; // From 100 nanoseconds to microseconds.
 }
 
 

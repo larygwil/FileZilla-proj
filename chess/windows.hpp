@@ -22,7 +22,9 @@ namespace tr1 {
 using namespace tr1;
 }
 
+// Precision, not accuracy.
 uint64_t timer_precision();
+
 uint64_t get_time();
 void console_init();
 
