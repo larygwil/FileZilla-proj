@@ -748,7 +748,7 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, duration
 	short ev = evaluate_full( p, c );
 	new_best_cb.on_new_best_move( p, c, 0, ev, 0, old_sorted.front().pv );
 
-	time start;
+	timestamp start;
 
 	short alpha_at_prev_depth = result::loss;
 	int highest_depth = 0;
@@ -798,12 +798,12 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, duration
 break2:
 
 			if( !ponder ) {
-				time now;
+				timestamp now;
 				if( move_time_limit > now - start ) {
 					impl_->cond_.wait( l, (start + move_time_limit - now).milliseconds() );
 				}
 
-				now = time();
+				now = timestamp();
 				if( !do_abort && (now - start) > move_time_limit  ) {
 					std::cerr << "Triggering search abort due to time limit at depth " << max_depth << std::endl;
 					do_abort = true;
@@ -866,7 +866,7 @@ break2:
 				}
 			}
 			else {
-				duration elapsed = time() - start;
+				duration elapsed = timestamp() - start;
 				if( !ponder && elapsed * 2 > move_time_limit ) {
 					std::cerr << "Not increasing depth due to time limit. Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
 					do_abort = true;
@@ -921,7 +921,7 @@ break2:
 	pv_entry const* pv = old_sorted.begin()->pv;
 	new_best_cb.on_new_best_move( p, c, highest_depth, old_sorted.begin()->forecast, stats.full_width_nodes + stats.quiescence_nodes, pv );
 
-	time stop;
+	timestamp stop;
 	stats.print( stop - start );
 	stats.accumulate( stop - start );
 	stats.reset( false );

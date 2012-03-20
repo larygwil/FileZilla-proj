@@ -93,9 +93,9 @@ bool perft( std::size_t max_depth )
 
 		int max_depth = i + 1;
 
-		time start;
+		timestamp start;
 		perft( ctx, max_depth, p, c, ret );
-		time stop;
+		timestamp stop;
 
 
 		std::cerr << "Moves: "     << ret << std::endl;

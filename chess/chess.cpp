@@ -55,7 +55,7 @@ void auto_play()
 	}
 	transposition_table.init( conf.memory );
 	pawn_hash_table.init( conf.pawn_hash_table_size );
-	time start;
+	timestamp start;
 	position p;
 
 	init_board(p);
@@ -117,7 +117,7 @@ void auto_play()
 		}
 	}
 
-	time stop;
+	timestamp stop;
 
 	std::cerr << std::endl << "Runtime: " << (stop - start).milliseconds() << " ms " << std::endl;
 
@@ -125,7 +125,6 @@ void auto_play()
 	stats.print_total();
 #endif
 }
-
 
 int main( int argc, char const* argv[] )
 {

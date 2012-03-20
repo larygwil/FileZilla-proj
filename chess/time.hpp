@@ -4,18 +4,17 @@
 #include "platform.hpp"
 
 #include <algorithm>
-#include <limits>
 
 class duration;
 
-class time
+class timestamp
 {
 public:
-	time();
+	timestamp();
 
-	bool operator<( time const& rhs ) const;
+	bool operator<( timestamp const& rhs ) const;
 
-	time operator+( duration const& rhs ) const;
+	timestamp operator+( duration const& rhs ) const;
 private:
 	friend class duration;
 	int64_t t_;
@@ -26,7 +25,7 @@ class duration
 {
 public:
 	duration();
-	duration( time const& start, time const& stop );
+	duration( timestamp const& start, timestamp const& stop );
 
 	int64_t hours() const;
 	int64_t minutes() const;
@@ -73,12 +72,12 @@ public:
 
 	static duration infinity();
 private:
-	friend class time;
+	friend class timestamp;
 
 	int64_t d_;
 };
 
-duration operator-( time const& lhs, time const& rhs );
+duration operator-( timestamp const& lhs, timestamp const& rhs );
 
 namespace std {
 inline duration abs( duration const& rhs ) {

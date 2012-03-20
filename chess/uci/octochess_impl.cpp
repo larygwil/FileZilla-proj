@@ -143,7 +143,7 @@ void octochess_uci::impl::onRun() {
 			move m;
 			int res;
 
-			time start_time;
+			timestamp start_time;
 
 			bool ret = calc_manager_.calc( pos_, color_to_play_, m, res, times_.time_for_this_move(), half_moves_played_, seen_positions_, last_mate_, *this );
 			if( ret ) {
@@ -162,7 +162,7 @@ void octochess_uci::impl::onRun() {
 					last_mate_ = res;
 				}
 
-				time stop;
+				timestamp stop;
 				duration elapsed = stop - start_time;
 
 				std::cerr << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;

@@ -180,7 +180,7 @@ struct xboard_state
 	// If we receive time updates between moves, communication_overhead is the >=0 difference between two timer updates
 	// and the calculated time consumption.
 	duration communication_overhead;
-	time last_go_time;
+	timestamp last_go_time;
 
 	color::type last_go_color;
 	unsigned int moves_between_updates;
@@ -305,8 +305,8 @@ void xboard_thread::onRun()
 				std::cout << "1/2-1/2 (Draw)" << std::endl;
 			}
 		}
-		time stop;
-		duration elapsed = time() - state.last_go_time;
+		timestamp stop;
+		duration elapsed = timestamp() - state.last_go_time;
 
 		std::cerr << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
 		if( time_limit > elapsed ) {
@@ -361,7 +361,7 @@ void xboard_thread::on_new_best_move( position const& p, color::type c, int dept
 	scoped_lock lock( mtx );
 	if( !abort ) {
 
-		int64_t elapsed = ( time() - state.last_go_time ).milliseconds() / 10;
+		int64_t elapsed = ( timestamp() - state.last_go_time ).milliseconds() / 10;
 		std::stringstream ss;
 		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(6) << elapsed << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
 		if( state.post ) {
@@ -376,7 +376,7 @@ void xboard_thread::on_new_best_move( position const& p, color::type c, int dept
 }
 
 
-void go( xboard_thread& thread, xboard_state& state, time const& cmd_recv_time )
+void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_time )
 {
 	state.last_go_time = cmd_recv_time;
 	state.last_go_color = state.c;
@@ -415,7 +415,7 @@ void go( xboard_thread& thread, xboard_state& state, time const& cmd_recv_time )
 			state.c = static_cast<color::type>( 1 - state.c );
 			state.move_history_.push_back( best_move.m );
 
-			time stop;
+			timestamp stop;
 			state.time_remaining -= stop - state.last_go_time;
 			std::cerr << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 			return;
@@ -448,7 +448,7 @@ void xboard( std::string line)
 		std::getline( std::cin, line );
 skip_getline:
 
-		time cmd_recv_time;
+		timestamp cmd_recv_time;
 
 		if( !std::cin ) {
 			std::cerr << "EOF" << std::endl;

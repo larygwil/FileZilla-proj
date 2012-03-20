@@ -46,21 +46,21 @@ int64_t muldiv( int64_t v, int64_t mul, int64_t div )
 }
 
 
-time::time()
+timestamp::timestamp()
 : t_( get_time() )
 {
 }
 
 
-bool time::operator<( time const& rhs ) const
+bool timestamp::operator<( timestamp const& rhs ) const
 {
 	return t_ < rhs.t_;
 }
 
 
-time time::operator+( duration const& rhs ) const
+timestamp timestamp::operator+( duration const& rhs ) const
 {
-	time ret( *this );
+	timestamp ret( *this );
 	ret.t_ += rhs.d_;
 	return ret;
 }
@@ -72,7 +72,7 @@ duration::duration()
 }
 
 
-duration::duration( time const& lhs, time const& rhs )
+duration::duration( timestamp const& lhs, timestamp const& rhs )
 	: d_( lhs.t_ - rhs.t_ )
 {
 }
@@ -175,7 +175,7 @@ duration duration::operator-() const
 }
 
 
-duration operator-( time const& lhs, time const& rhs )
+duration operator-( timestamp const& lhs, timestamp const& rhs )
 {
 	return duration( lhs, rhs );
 }
