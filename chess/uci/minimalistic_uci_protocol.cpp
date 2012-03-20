@@ -105,13 +105,13 @@ void minimalistic_uci_protocol::handle_go( std::string const& params ) {
 	std::string cmd;
 	while( in >> cmd ) {
 		if( cmd == "wtime" ) {
-			t.set_white_time( extract<uint>(in) );
+			t.set_white_time( duration::milliseconds(extract<uint>(in)) );
 		} else if( cmd == "btime" ) {
-			t.set_black_time( extract<uint>(in) );
+			t.set_black_time( duration::milliseconds(extract<uint>(in)) );
 		} else if( cmd == "winc" ) {
-			t.set_white_increment( extract<uint>(in) );
+			t.set_white_increment( duration::milliseconds(extract<uint>(in)) );
 		} else if( cmd == "winc" ) {
-			t.set_black_increment( extract<uint>(in) );
+			t.set_black_increment( duration::milliseconds(extract<uint>(in)) );
 		}
 	}
 

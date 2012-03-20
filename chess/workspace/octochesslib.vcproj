@@ -262,6 +262,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\time.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\tweak.cpp"
 				>
 			</File>
@@ -389,6 +393,10 @@
 			</File>
 			<File
 				RelativePath="..\string.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\time.hpp"
 				>
 			</File>
 			<File

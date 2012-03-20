@@ -1,5 +1,7 @@
 #include "info.hpp"
 
+#include "../time.hpp"
+
 #include <sstream>
 
 namespace octochess {
@@ -9,8 +11,8 @@ void info::depth( uint v ) {
 	set_value( "depth", v );
 }
 		
-void info::time_spent( time v ) {
-	set_value( "time", v );
+void info::time_spent( duration const& v ) {
+	set_value( "time", v.milliseconds() );
 }
 
 void info::principal_variation( std::string const& v ) {

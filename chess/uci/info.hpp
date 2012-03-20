@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 
+class duration;
+
 namespace octochess {
 namespace uci {
 
@@ -17,8 +19,8 @@ public:
 	// search depth in plies
 	void depth( uint );
 		
-	// the time searched in ms, this should be sent together with the principal variation.
-	void time_spent( time );
+	// the duration searched, this should be sent together with the principal variation.
+	void time_spent( duration const& );
 
 	// the best line found
 	void principal_variation( std::string const& line );

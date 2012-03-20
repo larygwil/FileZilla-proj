@@ -24,7 +24,7 @@ public:
 
 	// May modify seen_positions at indexes > root_position
 	bool calc( position& p, color::type c, move& m, int& res,
-		   uint64_t move_time_limit, uint64_t time_remaining, int clock,
+		   duration const& move_time_limit, int clock,
 		   seen_positions& seen, short last_mate,
 		   new_best_move_callback& new_best_cb = default_new_best_move_callback );
 

@@ -93,26 +93,18 @@ bool perft( std::size_t max_depth )
 
 		int max_depth = i + 1;
 
-		uint64_t start = get_time();
+		time start;
 		perft( ctx, max_depth, p, c, ret );
-		uint64_t stop = get_time();
+		time stop;
 
 
 		std::cerr << "Moves: "     << ret << std::endl;
-		std::cerr << "Took:  "     << (stop - start) * 1000 / timer_precision() << " ms" << std::endl;
+		std::cerr << "Took:  "     << (stop - start).milliseconds() << " ms" << std::endl;
 		if( ret ) {
-			// 64bit integers are getting too small too fast.
-			uint64_t factor = 1000ull * 1000 * 1000 * 1000;
-			uint64_t divisor;
-			if( timer_precision() > factor ) {
-				divisor = timer_precision() / factor;
-				factor = 1;
-			}
-			else {
-				factor /= timer_precision();
-				divisor = 1;
-			}
-			uint64_t picoseconds = ((stop - start) * factor) / ret / divisor;
+			// Will overflow after ~3 months
+			int64_t picoseconds = (stop-start).picoseconds();
+			picoseconds /= ret;
+
 			std::stringstream ss;
 			ss << "Time/move: " << picoseconds / 1000 << "." << std::setw(1) << std::setfill('0') << (picoseconds / 100) % 10 << " ns" << std::endl;
 			std::cerr << ss.str();

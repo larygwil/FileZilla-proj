@@ -24,13 +24,13 @@
 
 namespace {
 
-static bool tweak_calc( position& p, color::type c, move& m, int& res, uint64_t move_time_limit, uint64_t time_remaining, int clock, seen_positions& seen
+static bool tweak_calc( position& p, color::type c, move& m, int& res, duration const& move_time_limit, int clock, seen_positions& seen
 		  , short last_mate
 		  , new_best_move_callback& new_best_cb = default_new_best_move_callback )
 {
 	if( clock > 10 ) {
 		calc_manager cmgr;
-		return cmgr.calc( p, c, m, res, move_time_limit, time_remaining, clock, seen, last_mate, new_best_cb );
+		return cmgr.calc( p, c, m, res, move_time_limit, clock, seen, last_mate, new_best_cb );
 	}
 
 	check_map check( p, c );
@@ -85,7 +85,7 @@ static void generate_test_positions_impl()
 
 	short last_mate = 0;
 
-	while( tweak_calc( p, c, m, res, 0, 0, i, seen, last_mate ) ) {
+	while( tweak_calc( p, c, m, res, duration(), i, seen, last_mate ) ) {
 		if( res > result::win_threshold ) {
 			last_mate = res;
 		}

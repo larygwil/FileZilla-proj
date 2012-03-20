@@ -30,6 +30,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "see.hpp"
 #include "statistics.hpp"
 #include "selftest.hpp"
+#include "time.hpp"
 #include "tweak.hpp"
 #include "util.hpp"
 #include "xboard.hpp"
@@ -45,7 +46,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include <sstream>
 
 
-const int TIME_LIMIT = 90000;
+duration const TIME_LIMIT = duration::seconds(90);
 
 void auto_play()
 {
@@ -54,7 +55,7 @@ void auto_play()
 	}
 	transposition_table.init( conf.memory );
 	pawn_hash_table.init( conf.pawn_hash_table_size );
-	uint64_t start = get_time();
+	time start;
 	position p;
 
 	init_board(p);
@@ -69,7 +70,7 @@ void auto_play()
 	short last_mate = 0;
 
 	calc_manager cmgr;
-	while( cmgr.calc( p, c, m, res, TIME_LIMIT * timer_precision() / 1000, TIME_LIMIT * timer_precision() / 1000, i, seen, last_mate ) ) {
+	while( cmgr.calc( p, c, m, res, TIME_LIMIT, i, seen, last_mate ) ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
 		}
@@ -116,9 +117,9 @@ void auto_play()
 		}
 	}
 
-	uint64_t stop = get_time();
+	time stop;
 
-	std::cerr << std::endl << "Runtime: " << (stop - start) * 1000 / timer_precision() << " ms " << std::endl;
+	std::cerr << std::endl << "Runtime: " << (stop - start).milliseconds() << " ms " << std::endl;
 
 #ifdef USE_STATISTICS
 	stats.print_total();

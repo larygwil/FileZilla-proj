@@ -4,6 +4,7 @@
 #define USE_STATISTICS 1
 
 #include "chess.hpp"
+#include "time.hpp"
 
 #ifdef USE_STATISTICS
 class statistics {
@@ -17,9 +18,9 @@ public:
 	{
 	}
 
-	void print( uint64_t elapsed );
+	void print( duration const& elapsed );
 	void reset( bool total );
-	void accumulate( uint64_t elapsed );
+	void accumulate( duration const& elapsed );
 
 	void print_total();
 
@@ -29,7 +30,7 @@ public:
 	uint64_t total_full_width_nodes;
 	uint64_t total_quiescence_nodes;
 
-	uint64_t total_elapsed;
+	duration total_elapsed;
 };
 
 extern statistics stats;

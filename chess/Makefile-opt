@@ -30,6 +30,7 @@ GENERIC_SOURCE_FILES = \
 	statistics.cpp \
 	string.cpp \
 	tables.cpp \
+	time.cpp \
 	unix.cpp \
 	zobrist.cpp \
 	sqlite/sqlite3.o

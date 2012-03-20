@@ -12,7 +12,7 @@ config::config()
   max_moves(0),
   depth(-1),
   quiescence_depth(MAX_QDEPTH),
-  time_limit(3600*1000), // In ms
+  time_limit( duration::hours(1) ),
   random_seed(-1), //-1 == based on time
   ponder(),
   use_book(true),

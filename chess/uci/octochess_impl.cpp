@@ -143,9 +143,9 @@ void octochess_uci::impl::onRun() {
 			move m;
 			int res;
 
-			uint64_t start_time = get_time();
+			time start_time;
 
-			bool ret = calc_manager_.calc( pos_, color_to_play_, m, res, times_.time_for_this_move(), 0/*will be removed!*/, half_moves_played_, seen_positions_, last_mate_, *this );
+			bool ret = calc_manager_.calc( pos_, color_to_play_, m, res, times_.time_for_this_move(), half_moves_played_, seen_positions_, last_mate_, *this );
 			if( ret ) {
 				gui_interface_->tell_best_move( move_to_long_algebraic( m ) );
 
@@ -162,10 +162,10 @@ void octochess_uci::impl::onRun() {
 					last_mate_ = res;
 				}
 
-				uint64_t stop = get_time();
-				uint64_t elapsed = stop - start_time;
+				time stop;
+				duration elapsed = stop - start_time;
 
-				std::cerr << "Elapsed: " << elapsed * 1000 / timer_precision() << " ms" << std::endl;
+				std::cerr << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
 				times_.after_move_update( elapsed );
 			}
 		}

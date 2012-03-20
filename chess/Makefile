@@ -36,6 +36,7 @@ OBJECT_FILES = \
 	statistics.o \
 	string.o \
 	tables.o \
+	time.o \
 	tweak.o \
 	unix.o \
 	util.o \

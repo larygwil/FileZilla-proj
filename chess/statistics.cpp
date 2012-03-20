@@ -10,7 +10,7 @@
 
 statistics stats;
 
-void statistics::print( uint64_t elapsed )
+void statistics::print( duration const& elapsed )
 {
 	std::stringstream ss;
 	try {
@@ -27,10 +27,10 @@ void statistics::print( uint64_t elapsed )
 	ss << "  Quiescence:       " << std::setw(11) << std::setfill(' ') << quiescence_nodes << std::endl;
 
 	if( full_width_nodes || quiescence_nodes ) {
-		if( elapsed != 0 ) {
-			ss << "  Nodes per second: " << std::setw(11) << std::setfill(' ') << (timer_precision() * (full_width_nodes + quiescence_nodes) ) / elapsed << std::endl;
+		if( !elapsed.empty() ) {
+			ss << "  Nodes per second: " << std::setw(11) << std::setfill(' ') << elapsed.get_items_per_second(full_width_nodes + quiescence_nodes) << std::endl;
 		}
-		ss << "  Time per node:    " << std::setw(8) << (elapsed * 1000 * 1000 * 1000) / (full_width_nodes + quiescence_nodes) / timer_precision() << " ns" << std::endl;
+		ss << "  Time per node:    " << std::setw(8) << (elapsed / (full_width_nodes + quiescence_nodes)).nanoseconds() << " ns" << std::endl;
 	}
 
 	ss << std::endl;
@@ -90,10 +90,10 @@ void statistics::print_total()
 	ss << "  Quiescence:       " << std::setw(14) << total_quiescence_nodes << std::endl;
 
 	if( total_full_width_nodes || total_quiescence_nodes ) {
-		if( total_elapsed != 0 ) {
-			ss << "  Nodes per second: " << std::setw(14) << std::setfill(' ') << (timer_precision() * (total_full_width_nodes + total_quiescence_nodes) ) / total_elapsed << std::endl;
+		if( !total_elapsed.empty() ) {
+			ss << "  Nodes per second: " << std::setw(14) << std::setfill(' ') << total_elapsed.get_items_per_second(total_full_width_nodes + total_quiescence_nodes) << std::endl;
 		}
-		ss << "  Time per node:    " << std::setw(11) << (total_elapsed * 1000 * 1000 * 1000) / (total_full_width_nodes + total_quiescence_nodes) / timer_precision() << " ns" << std::endl;
+		ss << "  Time per node:    " << std::setw(11) << (total_elapsed / (total_full_width_nodes + total_quiescence_nodes)).nanoseconds() << " ns" << std::endl;
 	}
 
 	ss << std::endl;
@@ -102,7 +102,7 @@ void statistics::print_total()
 }
 
 
-void statistics::accumulate( uint64_t elapsed )
+void statistics::accumulate( duration const& elapsed )
 {
 	total_full_width_nodes += full_width_nodes;
 	total_quiescence_nodes += quiescence_nodes;
@@ -117,7 +117,7 @@ void statistics::reset( bool total )
 	if( total ) {
 		total_full_width_nodes = 0;
 		total_quiescence_nodes = 0;
-		total_elapsed = 0;
+		total_elapsed = duration();
 	}
 }
 

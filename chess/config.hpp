@@ -4,6 +4,7 @@
 #include <string>
 
 #include "platform.hpp"
+#include "time.hpp"
 
 // Upper limits, cannot go higher without recompilation.
 #define MAX_DEPTH  40
@@ -22,7 +23,7 @@ struct config
 	signed short depth;
 	unsigned char quiescence_depth;
 
-	uint64_t time_limit; // In milliseconds
+	duration time_limit;
 
 	int random_seed;
 
