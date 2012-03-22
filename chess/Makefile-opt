@@ -9,11 +9,11 @@ GENERIC_SOURCE_FILES = \
 	config.cpp \
 	detect_check.cpp \
 	eval.cpp \
+	eval_values.cpp \
 	fen.cpp \
 	hash.cpp \
 	logger.cpp \
 	magic.cpp \
-	mobility.cpp \
 	moves.cpp \
 	moves_captures.cpp \
 	moves_noncaptures.cpp \

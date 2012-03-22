@@ -15,11 +15,11 @@ OBJECT_FILES = \
 	config.o \
 	detect_check.o \
 	eval.o \
+	eval_values.o \
 	fen.o \
 	hash.o \
 	logger.o \
 	magic.o \
-	mobility.o \
 	moves.o \
 	moves_captures.o \
 	moves_noncaptures.o \
