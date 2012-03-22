@@ -30,7 +30,7 @@ void statistics::print( duration const& elapsed )
 		if( !elapsed.empty() ) {
 			ss << "  Nodes per second: " << std::setw(11) << std::setfill(' ') << elapsed.get_items_per_second(full_width_nodes + quiescence_nodes) << std::endl;
 		}
-		ss << "  Time per node:    " << std::setw(8) << (elapsed / (full_width_nodes + quiescence_nodes)).nanoseconds() << " ns" << std::endl;
+		ss << "  Time per node:    " << std::setw(8) << elapsed.nanoseconds() / (full_width_nodes + quiescence_nodes) << " ns" << std::endl;
 	}
 
 	ss << std::endl;
@@ -93,7 +93,7 @@ void statistics::print_total()
 		if( !total_elapsed.empty() ) {
 			ss << "  Nodes per second: " << std::setw(14) << std::setfill(' ') << total_elapsed.get_items_per_second(total_full_width_nodes + total_quiescence_nodes) << std::endl;
 		}
-		ss << "  Time per node:    " << std::setw(11) << (total_elapsed / (total_full_width_nodes + total_quiescence_nodes)).nanoseconds() << " ns" << std::endl;
+		ss << "  Time per node:    " << std::setw(11) << total_elapsed.nanoseconds() / (total_full_width_nodes + total_quiescence_nodes) << " ns" << std::endl;
 	}
 
 	ss << std::endl;

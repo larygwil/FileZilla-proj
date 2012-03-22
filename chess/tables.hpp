@@ -23,6 +23,14 @@ extern uint64_t const possible_king_moves[64];
 
 extern uint64_t const rule_of_the_square[2][2][64];
 
+extern uint64_t const king_pawn_shield[2][64];
 extern uint64_t const king_attack_zone[2][64];
+
+extern uint64_t const between_squares[64][64];
+
+extern uint64_t const connected_pawns[64];
+extern uint64_t const isolated_pawns[64];
+extern uint64_t const passed_pawns[2][64];
+extern uint64_t const doubled_pawns[2][64];
 
 #endif

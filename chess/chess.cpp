@@ -18,11 +18,11 @@ contact tim.kosse@filezilla-project.org for details.
 #include "config.hpp"
 #include "calc.hpp"
 #include "eval.hpp"
+#include "eval_values.hpp"
 #include "fen.hpp"
 #include "hash.hpp"
 #include "logger.hpp"
 #include "magic.hpp"
-#include "mobility.hpp"
 #include "moves.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "platform.hpp"
@@ -140,6 +140,7 @@ int main( int argc, char const* argv[] )
 
 	init_magic();
 	init_pst();
+	eval_values::init();
 
 	if( conf.random_seed != -1 ) {
 		init_random( conf.random_seed );

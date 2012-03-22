@@ -6,7 +6,6 @@
 #include "fen.hpp"
 #include "hash.hpp"
 #include "logger.hpp"
-#include "mobility.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "random.hpp"
 #include "see.hpp"
@@ -699,10 +698,6 @@ skip_getline:
 			}
 		}
 		else if( cmd == "~score") {
-			score base_eval = base_eval = state.c ? -state.p.base_eval : state.p.base_eval;
-			short eval_full = evaluate_full( state.p, state.c );
-			std::cout << base_eval << " " << eval_full << std::endl;
-
 			std::cout << explain_eval( state.p, state.c ) << std::endl;
 		}
 		else if( cmd == "~hash") {

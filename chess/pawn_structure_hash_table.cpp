@@ -43,24 +43,45 @@ bool pawn_structure_hash_table::init( uint64_t size_in_mib )
 }
 
 
-bool pawn_structure_hash_table::lookup( uint64_t key, short* eval, uint64_t& passed ) const
+union uv1 {
+	uint64_t p;
+	struct {
+		short mg0;
+		short mg1;
+		short eg0;
+		short eg1;
+	} s;
+};
+
+
+void pawn_structure_hash_table::clear( uint64_t key )
+{
+	uint64_t index = key % size_;
+	data_[index].key = 0;
+}
+
+
+bool pawn_structure_hash_table::lookup( uint64_t key, score* eval, uint64_t& passed ) const
 {
 	uint64_t index = key % size_;
 
-	uint64_t v1 = data_[index].data1;
+	uv1 v1;
+	v1.p = data_[index].data1;
 	uint64_t v2 = data_[index].data2;
 
 	uint64_t dk = data_[index].key;
 
-	if( (v1 ^ v2 ^ dk) != key) {
+	if( (v1.p ^ v2 ^ dk) != key) {
 #if USE_STATISTICS
 		++stats_.misses;
 #endif
 		return false;
 	}
 
-	eval[0] = static_cast<short>(v1 >> 16);
-	eval[1] = static_cast<short>(v1 & 0xFFFFull);
+	eval[0].mg() = v1.s.mg0;
+	eval[1].mg() = v1.s.mg1;
+	eval[0].eg() = v1.s.eg0;
+	eval[1].eg() = v1.s.eg1;
 
 	passed = v2;
 
@@ -72,16 +93,21 @@ bool pawn_structure_hash_table::lookup( uint64_t key, short* eval, uint64_t& pas
 }
 
 
-void pawn_structure_hash_table::store( uint64_t key, short const* eval, uint64_t passed )
+void pawn_structure_hash_table::store( uint64_t key, score const* eval, uint64_t passed )
 {
 	uint64_t index = key % size_;
 
-	uint64_t v1 = (static_cast<uint64_t>(static_cast<unsigned short>(eval[0])) << 16) + static_cast<uint64_t>(static_cast<unsigned short>(eval[1]));
+	uv1 v1;
+	v1.s.mg0 = eval[0].mg();
+	v1.s.mg1 = eval[1].mg();
+	v1.s.eg0 = eval[0].eg();
+	v1.s.eg1 = eval[1].eg();
+
 	uint64_t v2 = passed;
 
-	data_[index].data1 = v1;
+	data_[index].data1 = v1.p;
 	data_[index].data2 = v2;
-	data_[index].key = v1 ^ v2 ^ key;
+	data_[index].key = v1.p ^ v2 ^ key;
 
 #if 0
 	short ev2[2];

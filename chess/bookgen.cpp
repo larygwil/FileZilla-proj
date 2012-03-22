@@ -5,7 +5,6 @@
 #include "hash.hpp"
 #include "magic.hpp"
 #include "moves.hpp"
-#include "mobility.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "pgn.hpp"
 #include "platform.hpp"

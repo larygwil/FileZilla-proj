@@ -12,6 +12,8 @@
 ../detect_check.hpp
 ../eval.cpp
 ../eval.hpp
+../eval_values.cpp
+../eval_values.hpp
 ../fen.cpp
 ../fen.hpp
 ../hash.cpp
@@ -19,9 +21,6 @@
 ../logger.cpp
 ../logger.hpp
 ../magic.cpp
-../mobility.cpp
-../mobility_gen.cpp
-../mobility.hpp
 ../moves_captures.cpp
 ../moves_noncaptures.cpp
 ../moves.cpp

@@ -2,6 +2,7 @@
 #include "chess.hpp"
 #include "config.hpp"
 #include "eval.hpp"
+#include "eval_values.hpp"
 #include "fen.hpp"
 #include "hash.hpp"
 #include "pawn_structure_hash_table.hpp"
@@ -181,115 +182,129 @@ std::vector<gene_t> genes;
 
 void init_genes()
 {
-	genes.push_back( gene_t( &eval_values.mg_material_values[pieces::pawn], 70, 110, "mg_material_values[1]") );
-	genes.push_back( gene_t( &eval_values.mg_material_values[pieces::knight], 270, 460, "mg_material_values[2]" ) );
-	genes.push_back( gene_t( &eval_values.mg_material_values[pieces::bishop], 270, 460, "mg_material_values[3]" ) );
-	genes.push_back( gene_t( &eval_values.mg_material_values[pieces::rook], 450, 680, "mg_material_values[4]" ) );
-	genes.push_back( gene_t( &eval_values.mg_material_values[pieces::queen], 870, 1500, "mg_material_values[5]" ) );
-	genes.push_back( gene_t( &eval_values.eg_material_values[pieces::pawn], 70, 110, "eg_material_values[1]") );
-	genes.push_back( gene_t( &eval_values.eg_material_values[pieces::knight], 270, 460, "eg_material_values[2]" ) );
-	genes.push_back( gene_t( &eval_values.eg_material_values[pieces::bishop], 270, 460, "eg_material_values[3]" ) );
-	genes.push_back( gene_t( &eval_values.eg_material_values[pieces::rook], 450, 680, "eg_material_values[4]" ) );
-	genes.push_back( gene_t( &eval_values.eg_material_values[pieces::queen], 870, 1500, "eg_material_values[5]" ) );
-	genes.push_back( gene_t( &eval_values.double_bishop.mg(), 0, 100, "double_bishop.mg()" ) );
-	genes.push_back( gene_t( &eval_values.double_bishop.eg(), 0, 100, "double_bishop.eg()" ) );
-	genes.push_back( gene_t( &eval_values.doubled_pawn.mg(), -35, 0, "doubled_pawn.mg()" ) );
-	genes.push_back( gene_t( &eval_values.passed_pawn.mg(), 0, 60, "passed_pawn.mg()" ) );
-	genes.push_back( gene_t( &eval_values.isolated_pawn.mg(), -30, 0, "isolated_pawn.mg()" ) );
-	genes.push_back( gene_t( &eval_values.connected_pawn.mg(), 0, 30, "connected_pawn.mg()" ) );
-	genes.push_back( gene_t( &eval_values.doubled_pawn.eg(), -35, 0, "doubled_pawn.eg()" ) );
-	genes.push_back( gene_t( &eval_values.passed_pawn.eg(), 0, 60, "passed_pawn.eg()" ) );
-	genes.push_back( gene_t( &eval_values.isolated_pawn.eg(), -30, 0, "isolated_pawn.eg()" ) );
-	genes.push_back( gene_t( &eval_values.connected_pawn.eg(), 0, 30, "connected_pawn.eg()" ) );
-	genes.push_back( gene_t( &eval_values.pawn_shield.mg(), 0, 100, "pawn_shield.mg()" ) );
-	genes.push_back( gene_t( &eval_values.pawn_shield.eg(), 0, 100, "pawn_shield.eg()" ) );
-	genes.push_back( gene_t( &eval_values.pin_absolute_bishop.mg(), 0, 50, "pin_absolute_bishop.mg()" ) );
-	genes.push_back( gene_t( &eval_values.pin_absolute_bishop.eg(), 0, 50, "pin_absolute_bishop.eg()" ) );
-	genes.push_back( gene_t( &eval_values.pin_absolute_rook.mg(), 0, 50, "pin_absolute_rook.mg()" ) );
-	genes.push_back( gene_t( &eval_values.pin_absolute_rook.eg(), 0, 50, "pin_absolute_rook.eg()" ) );
-	genes.push_back( gene_t( &eval_values.pin_absolute_queen.mg(), 0, 50, "pin_absolute_queen.mg()" ) );
-	genes.push_back( gene_t( &eval_values.pin_absolute_queen.eg(), 0, 50, "pin_absolute_queen.eg()" ) );
-	genes.push_back( gene_t( &eval_values.rooks_on_open_file.mg(), 0, 50, "rooks_on_open_file.mg()" ) );
-	genes.push_back( gene_t( &eval_values.rooks_on_open_file.eg(), 0, 50, "rooks_on_open_file.eg()" ) );
-	genes.push_back( gene_t( &eval_values.rooks_on_half_open_file.mg(), 0, 50, "rooks_on_half_open_file.mg()" ) );
-	genes.push_back( gene_t( &eval_values.rooks_on_half_open_file.eg(), 0, 50, "rooks_on_half_open_file.eg()" ) );
-	genes.push_back( gene_t( &eval_values.connected_rooks.mg(), 0, 500, "connected_rooks.mg()" ) );
-	genes.push_back( gene_t( &eval_values.connected_rooks.eg(), 0, 500, "connected_rooks.eg()" ) );
-	genes.push_back( gene_t( &eval_values.tropism.mg(), 0, 500, "tropism.mg()" ) );
-	genes.push_back( gene_t( &eval_values.tropism.eg(), 0, 500, "tropism.eg()" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_by_piece[1], 0, 50, "king_attack_by_piece[1]") );
-	genes.push_back( gene_t( &eval_values.king_attack_by_piece[2], 0, 50, "king_attack_by_piece[2]") );
-	genes.push_back( gene_t( &eval_values.king_attack_by_piece[3], 0, 50, "king_attack_by_piece[3]") );
-	genes.push_back( gene_t( &eval_values.king_attack_by_piece[4], 0, 50, "king_attack_by_piece[4]") );
-	genes.push_back( gene_t( &eval_values.king_attack_by_piece[5], 0, 50, "king_attack_by_piece[5]") );
-	genes.push_back( gene_t( &eval_values.king_check_by_piece[2], 0, 50, "king_check_by_piece[2]") );
-	genes.push_back( gene_t( &eval_values.king_check_by_piece[3], 0, 50, "king_check_by_piece[3]") );
-	genes.push_back( gene_t( &eval_values.king_check_by_piece[4], 0, 50, "king_check_by_piece[4]") );
-	genes.push_back( gene_t( &eval_values.king_check_by_piece[5], 0, 50, "king_check_by_piece[5]") );
-	genes.push_back( gene_t( &eval_values.king_melee_attack_by_rook, 0, 50, "king_melee_attack_by_rook") );
-	genes.push_back( gene_t( &eval_values.king_melee_attack_by_queen, 0, 50, "king_melee_attack_by_queen") );
-	genes.push_back( gene_t( &eval_values.king_attack_min[0], 0, 1000, "king_attack_min[0]" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_max[0], 100, 1000, "king_attack_max[0]" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_rise[0], 1, 30, "king_attack_rise[0]" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_exponent[0], 100, 300, "king_attack_exponent[0]" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_offset[0], 0, 100, "king_attack_offset[0]" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_min[1], 0, 1000, "king_attack_min[1]" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_max[1], 100, 1000, "king_attack_max[1]" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_rise[1], 1, 50, "king_attack_rise[1]" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_exponent[1], 100, 300, "king_attack_exponent[1]" ) );
-	genes.push_back( gene_t( &eval_values.king_attack_offset[1], 0, 100, "king_attack_offset[1]" ) );
-	genes.push_back( gene_t( &eval_values.center_control.mg(), 0, 500, "center_control.mg()" ) );
-	genes.push_back( gene_t( &eval_values.center_control.eg(), 0, 500, "center_control.eg()" ) );
-	genes.push_back( gene_t( &eval_values.material_imbalance.mg(), 0, 500, "material_imbalance.mg()" ) );
-	genes.push_back( gene_t( &eval_values.material_imbalance.eg(), 0, 500, "material_imbalance.eg()" ) );
-	genes.push_back( gene_t( &eval_values.rule_of_the_square.mg(), 0, 100, "rule_of_the_square.mg()" ) );
-	genes.push_back( gene_t( &eval_values.rule_of_the_square.eg(), 0, 100, "rule_of_the_square.eg()" ) );
-	genes.push_back( gene_t( &eval_values.passed_pawn_unhindered.mg(), 0, 100, "passed_pawn_unhindered.mg()" ) );
-	genes.push_back( gene_t( &eval_values.passed_pawn_unhindered.eg(), 0, 100, "passed_pawn_unhindered.eg()" ) );
-	genes.push_back( gene_t( &eval_values.hanging_piece[1].mg(), 0, 100, "hanging_piece[1].mg()") );
-	genes.push_back( gene_t( &eval_values.hanging_piece[1].eg(), 0, 100, "hanging_piece[1].eg()") );
-	genes.push_back( gene_t( &eval_values.hanging_piece[2].mg(), 0, 100, "hanging_piece[2].mg()") );
-	genes.push_back( gene_t( &eval_values.hanging_piece[2].eg(), 0, 100, "hanging_piece[2].eg()") );
-	genes.push_back( gene_t( &eval_values.hanging_piece[3].mg(), 0, 100, "hanging_piece[3].mg()") );
-	genes.push_back( gene_t( &eval_values.hanging_piece[3].eg(), 0, 100, "hanging_piece[3].eg()") );
-	genes.push_back( gene_t( &eval_values.hanging_piece[4].mg(), 0, 100, "hanging_piece[4].mg()") );
-	genes.push_back( gene_t( &eval_values.hanging_piece[4].eg(), 0, 100, "hanging_piece[4].eg()") );
-	genes.push_back( gene_t( &eval_values.hanging_piece[5].mg(), 0, 100, "hanging_piece[5].mg()") );
-	genes.push_back( gene_t( &eval_values.hanging_piece[5].eg(), 0, 100, "hanging_piece[5].eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_knight_min.mg(), -100, 0, "mobility_knight_min.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_knight_max.mg(), 0, 100, "mobility_knight_max.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_knight_rise.mg(), 1, 50, "mobility_knight_rise.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_knight_offset.mg(), 0, 4, "mobility_knight_offset.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_bishop_min.mg(), -100, 0, "mobility_bishop_min.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_bishop_max.mg(), 0, 100, "mobility_bishop_max.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_bishop_rise.mg(), 1, 50, "mobility_bishop_rise.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_bishop_offset.mg(), 0, 7, "mobility_bishop_offset.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_rook_min.mg(), -100, 0, "mobility_rook_min.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_rook_max.mg(), 0, 100, "mobility_rook_max.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_rook_rise.mg(), 1, 50, "mobility_rook_rise.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_rook_offset.mg(), 0, 7, "mobility_rook_offset.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_queen_min.mg(), -100, 0, "mobility_queen_min.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_queen_max.mg(), 0, 100, "mobility_queen_max.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_queen_rise.mg(), 1, 50, "mobility_queen_rise.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_queen_offset.mg(), 0, 14, "mobility_queen_offset.mg()") );
-	genes.push_back( gene_t( &eval_values.mobility_knight_min.eg(), -100, 0, "mobility_knight_min.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_knight_max.eg(), 0, 100, "mobility_knight_max.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_knight_rise.eg(), 1, 50, "mobility_knight_rise.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_knight_offset.eg(), 0, 4, "mobility_knight_offset.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_bishop_min.eg(), -100, 0, "mobility_bishop_min.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_bishop_max.eg(), 0, 100, "mobility_bishop_max.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_bishop_rise.eg(), 1, 50, "mobility_bishop_rise.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_bishop_offset.eg(), 0, 7, "mobility_bishop_offset.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_rook_min.eg(), -100, 0, "mobility_rook_min.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_rook_max.eg(), 0, 50, "mobility_rook_max.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_rook_rise.eg(), 1, 50, "mobility_rook_rise.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_rook_offset.eg(), 0, 7, "mobility_rook_offset.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_queen_min.eg(), -100, 0, "mobility_queen_min.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_queen_max.eg(), 0, 100, "mobility_queen_max.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_queen_rise.eg(), 1, 50, "mobility_queen_rise.eg()") );
-	genes.push_back( gene_t( &eval_values.mobility_queen_offset.eg(), 0, 14, "mobility_queen_offset.eg()") );
-	genes.push_back( gene_t( &eval_values.side_to_move.mg(), 0, 100, "side_to_move.mg()") );
-	genes.push_back( gene_t( &eval_values.side_to_move.eg(), 0, 100, "side_to_move.eg()") );
+	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::pawn], 70, 110, "mg_material_values[1]") );
+	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::knight], 270, 460, "mg_material_values[2]" ) );
+	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::bishop], 270, 460, "mg_material_values[3]" ) );
+	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::rook], 450, 680, "mg_material_values[4]" ) );
+	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::queen], 870, 1500, "mg_material_values[5]" ) );
+	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::pawn], 70, 110, "eg_material_values[1]") );
+	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::knight], 270, 460, "eg_material_values[2]" ) );
+	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::bishop], 270, 460, "eg_material_values[3]" ) );
+	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::rook], 450, 680, "eg_material_values[4]" ) );
+	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::queen], 870, 1500, "eg_material_values[5]" ) );
+	genes.push_back( gene_t( &eval_values::double_bishop.mg(), 0, 100, "double_bishop.mg()" ) );
+	genes.push_back( gene_t( &eval_values::double_bishop.eg(), 0, 100, "double_bishop.eg()" ) );
+	genes.push_back( gene_t( &eval_values::doubled_pawn.mg(), -50, 0, "doubled_pawn.mg()" ) );
+	genes.push_back( gene_t( &eval_values::doubled_pawn.eg(), -50, 0, "doubled_pawn.eg()" ) );
+	genes.push_back( gene_t( &eval_values::passed_pawn.mg(), 0, 100, "passed_pawn.mg()" ) );
+	genes.push_back( gene_t( &eval_values::passed_pawn.eg(), 0, 100, "passed_pawn.eg()" ) );
+	genes.push_back( gene_t( &eval_values::isolated_pawn.mg(), -50, 0, "isolated_pawn.mg()" ) );
+	genes.push_back( gene_t( &eval_values::isolated_pawn.eg(), -50, 0, "isolated_pawn.eg()" ) );
+	genes.push_back( gene_t( &eval_values::connected_pawn.mg(), 0, 50, "connected_pawn.mg()" ) );
+	genes.push_back( gene_t( &eval_values::connected_pawn.eg(), 0, 50, "connected_pawn.eg()" ) );
+	genes.push_back( gene_t( &eval_values::candidate_passed_pawn.mg(), 0, 50, "candidate_passed_pawn.mg()" ) );
+	genes.push_back( gene_t( &eval_values::candidate_passed_pawn.eg(), 0, 50, "candidate_passed_pawn.eg()" ) );
+	genes.push_back( gene_t( &eval_values::pawn_shield.mg(), 0, 100, "pawn_shield.mg()" ) );
+	genes.push_back( gene_t( &eval_values::pawn_shield.eg(), 0, 100, "pawn_shield.eg()" ) );
+	genes.push_back( gene_t( &eval_values::absolute_pin[1].mg(), 0, 100, "absolute_pin[1].mg()" ) );
+	genes.push_back( gene_t( &eval_values::absolute_pin[1].eg(), 0, 100, "absolute_pin[1].eg()" ) );
+	genes.push_back( gene_t( &eval_values::absolute_pin[2].mg(), 0, 100, "absolute_pin[2].mg()" ) );
+	genes.push_back( gene_t( &eval_values::absolute_pin[2].eg(), 0, 100, "absolute_pin[2].eg()" ) );
+	genes.push_back( gene_t( &eval_values::absolute_pin[3].mg(), 0, 100, "absolute_pin[3].mg()" ) );
+	genes.push_back( gene_t( &eval_values::absolute_pin[3].eg(), 0, 100, "absolute_pin[3].eg()" ) );
+	genes.push_back( gene_t( &eval_values::absolute_pin[4].mg(), 0, 100, "absolute_pin[4].mg()" ) );
+	genes.push_back( gene_t( &eval_values::absolute_pin[4].eg(), 0, 100, "absolute_pin[4].eg()" ) );
+	genes.push_back( gene_t( &eval_values::absolute_pin[5].mg(), 0, 100, "absolute_pin[5].mg()" ) );
+	genes.push_back( gene_t( &eval_values::absolute_pin[5].eg(), 0, 100, "absolute_pin[5].eg()" ) );
+	genes.push_back( gene_t( &eval_values::rooks_on_open_file.mg(), 0, 100, "rooks_on_open_file.mg()" ) );
+	genes.push_back( gene_t( &eval_values::rooks_on_open_file.eg(), 0, 100, "rooks_on_open_file.eg()" ) );
+	genes.push_back( gene_t( &eval_values::rooks_on_half_open_file.mg(), 0, 100, "rooks_on_half_open_file.mg()" ) );
+	genes.push_back( gene_t( &eval_values::rooks_on_half_open_file.eg(), 0, 100, "rooks_on_half_open_file.eg()" ) );
+	genes.push_back( gene_t( &eval_values::connected_rooks.mg(), 0, 500, "connected_rooks.mg()" ) );
+	genes.push_back( gene_t( &eval_values::connected_rooks.eg(), 0, 500, "connected_rooks.eg()" ) );
+	genes.push_back( gene_t( &eval_values::tropism[1].mg(), 0, 50, "tropism[1].mg()" ) );
+	genes.push_back( gene_t( &eval_values::tropism[1].eg(), 0, 50, "tropism[1].eg()" ) );
+	genes.push_back( gene_t( &eval_values::tropism[2].mg(), 0, 50, "tropism[2].mg()" ) );
+	genes.push_back( gene_t( &eval_values::tropism[2].eg(), 0, 50, "tropism[2].eg()" ) );
+	genes.push_back( gene_t( &eval_values::tropism[3].mg(), 0, 50, "tropism[3].mg()" ) );
+	genes.push_back( gene_t( &eval_values::tropism[3].eg(), 0, 50, "tropism[3].eg()" ) );
+	genes.push_back( gene_t( &eval_values::tropism[4].mg(), 0, 50, "tropism[4].mg()" ) );
+	genes.push_back( gene_t( &eval_values::tropism[4].eg(), 0, 50, "tropism[4].eg()" ) );
+	genes.push_back( gene_t( &eval_values::tropism[5].mg(), 0, 50, "tropism[5].mg()" ) );
+	genes.push_back( gene_t( &eval_values::tropism[5].eg(), 0, 50, "tropism[5].eg()" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_by_piece[1], 0, 100, "king_attack_by_piece[1]") );
+	genes.push_back( gene_t( &eval_values::king_attack_by_piece[2], 0, 100, "king_attack_by_piece[2]") );
+	genes.push_back( gene_t( &eval_values::king_attack_by_piece[3], 0, 100, "king_attack_by_piece[3]") );
+	genes.push_back( gene_t( &eval_values::king_attack_by_piece[4], 0, 100, "king_attack_by_piece[4]") );
+	genes.push_back( gene_t( &eval_values::king_attack_by_piece[5], 0, 100, "king_attack_by_piece[5]") );
+	genes.push_back( gene_t( &eval_values::king_check_by_piece[2], 0, 100, "king_check_by_piece[2]") );
+	genes.push_back( gene_t( &eval_values::king_check_by_piece[3], 0, 100, "king_check_by_piece[3]") );
+	genes.push_back( gene_t( &eval_values::king_check_by_piece[4], 0, 100, "king_check_by_piece[4]") );
+	genes.push_back( gene_t( &eval_values::king_check_by_piece[5], 0, 100, "king_check_by_piece[5]") );
+	genes.push_back( gene_t( &eval_values::king_melee_attack_by_rook, 0, 100, "king_melee_attack_by_rook") );
+	genes.push_back( gene_t( &eval_values::king_melee_attack_by_queen, 0, 100, "king_melee_attack_by_queen") );
+	genes.push_back( gene_t( &eval_values::king_attack_min[0], 0, 1000, "king_attack_min[0]" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_max[0], 100, 1000, "king_attack_max[0]" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_rise[0], 1, 30, "king_attack_rise[0]" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_exponent[0], 100, 300, "king_attack_exponent[0]" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_offset[0], 0, 100, "king_attack_offset[0]" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_min[1], 0, 1000, "king_attack_min[1]" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_max[1], 100, 1000, "king_attack_max[1]" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_rise[1], 1, 50, "king_attack_rise[1]" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_exponent[1], 100, 300, "king_attack_exponent[1]" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_offset[1], 0, 100, "king_attack_offset[1]" ) );
+	genes.push_back( gene_t( &eval_values::center_control.mg(), 0, 500, "center_control.mg()" ) );
+	genes.push_back( gene_t( &eval_values::center_control.eg(), 0, 500, "center_control.eg()" ) );
+	genes.push_back( gene_t( &eval_values::material_imbalance.mg(), 0, 500, "material_imbalance.mg()" ) );
+	genes.push_back( gene_t( &eval_values::material_imbalance.eg(), 0, 500, "material_imbalance.eg()" ) );
+	genes.push_back( gene_t( &eval_values::rule_of_the_square.mg(), 0, 100, "rule_of_the_square.mg()" ) );
+	genes.push_back( gene_t( &eval_values::rule_of_the_square.eg(), 0, 100, "rule_of_the_square.eg()" ) );
+	genes.push_back( gene_t( &eval_values::passed_pawn_unhindered.mg(), 0, 100, "passed_pawn_unhindered.mg()" ) );
+	genes.push_back( gene_t( &eval_values::passed_pawn_unhindered.eg(), 0, 100, "passed_pawn_unhindered.eg()" ) );
+	genes.push_back( gene_t( &eval_values::hanging_piece[1].mg(), 0, 100, "hanging_piece[1].mg()") );
+	genes.push_back( gene_t( &eval_values::hanging_piece[1].eg(), 0, 100, "hanging_piece[1].eg()") );
+	genes.push_back( gene_t( &eval_values::hanging_piece[2].mg(), 0, 100, "hanging_piece[2].mg()") );
+	genes.push_back( gene_t( &eval_values::hanging_piece[2].eg(), 0, 100, "hanging_piece[2].eg()") );
+	genes.push_back( gene_t( &eval_values::hanging_piece[3].mg(), 0, 100, "hanging_piece[3].mg()") );
+	genes.push_back( gene_t( &eval_values::hanging_piece[3].eg(), 0, 100, "hanging_piece[3].eg()") );
+	genes.push_back( gene_t( &eval_values::hanging_piece[4].mg(), 0, 100, "hanging_piece[4].mg()") );
+	genes.push_back( gene_t( &eval_values::hanging_piece[4].eg(), 0, 100, "hanging_piece[4].eg()") );
+	genes.push_back( gene_t( &eval_values::hanging_piece[5].mg(), 0, 100, "hanging_piece[5].mg()") );
+	genes.push_back( gene_t( &eval_values::hanging_piece[5].eg(), 0, 100, "hanging_piece[5].eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_knight_min.mg(), -100, 0, "mobility_knight_min.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_knight_max.mg(), 0, 100, "mobility_knight_max.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_knight_rise.mg(), 1, 50, "mobility_knight_rise.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_knight_offset.mg(), 0, 4, "mobility_knight_offset.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_bishop_min.mg(), -100, 0, "mobility_bishop_min.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_bishop_max.mg(), 0, 100, "mobility_bishop_max.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_bishop_rise.mg(), 1, 50, "mobility_bishop_rise.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_bishop_offset.mg(), 0, 7, "mobility_bishop_offset.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_rook_min.mg(), -100, 0, "mobility_rook_min.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_rook_max.mg(), 0, 100, "mobility_rook_max.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_rook_rise.mg(), 1, 50, "mobility_rook_rise.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_rook_offset.mg(), 0, 7, "mobility_rook_offset.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_queen_min.mg(), -100, 0, "mobility_queen_min.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_queen_max.mg(), 0, 100, "mobility_queen_max.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_queen_rise.mg(), 1, 50, "mobility_queen_rise.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_queen_offset.mg(), 0, 14, "mobility_queen_offset.mg()") );
+	genes.push_back( gene_t( &eval_values::mobility_knight_min.eg(), -100, 0, "mobility_knight_min.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_knight_max.eg(), 0, 100, "mobility_knight_max.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_knight_rise.eg(), 1, 50, "mobility_knight_rise.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_knight_offset.eg(), 0, 4, "mobility_knight_offset.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_bishop_min.eg(), -100, 0, "mobility_bishop_min.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_bishop_max.eg(), 0, 100, "mobility_bishop_max.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_bishop_rise.eg(), 1, 50, "mobility_bishop_rise.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_bishop_offset.eg(), 0, 7, "mobility_bishop_offset.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_rook_min.eg(), -100, 0, "mobility_rook_min.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_rook_max.eg(), 0, 50, "mobility_rook_max.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_rook_rise.eg(), 1, 50, "mobility_rook_rise.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_rook_offset.eg(), 0, 7, "mobility_rook_offset.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_queen_min.eg(), -100, 0, "mobility_queen_min.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_queen_max.eg(), 0, 100, "mobility_queen_max.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_queen_rise.eg(), 1, 50, "mobility_queen_rise.eg()") );
+	genes.push_back( gene_t( &eval_values::mobility_queen_offset.eg(), 0, 14, "mobility_queen_offset.eg()") );
+	genes.push_back( gene_t( &eval_values::side_to_move.mg(), 0, 100, "side_to_move.mg()") );
+	genes.push_back( gene_t( &eval_values::side_to_move.eg(), 0, 100, "side_to_move.eg()") );
 }
 
 struct individual
@@ -332,7 +347,7 @@ struct individual
 		for( unsigned int i = 0; i < values_.size(); ++i ) {
 			*genes[i].target_ = values_[i];
 		}
-		eval_values.update_derived();
+		eval_values::update_derived();
 	}
 
 	void calc_fitness( std::vector<reference_data>& data, bool verbose = false ) {
@@ -344,16 +359,17 @@ struct individual
 			reference_data& ref = data[i];
 
 			ref.p.update_derived();
+			pawn_hash_table.clear( ref.p.pawn_hash );
 			short score = evaluate_full( ref.p, ref.c );
 
-//			double difference = std::abs( ref.avg_eval - static_cast<double>(score) );
-			short difference = 0;
-			if( score < ref.min_eval ) {
-				difference = ref.min_eval - score;
-			}
-			else if( score > ref.max_eval ) {
-				difference = score - ref.max_eval;
-			}
+			double difference = std::abs( ref.avg_eval - static_cast<double>(score) );
+//			int difference = 0;
+//			if( score < ref.min_eval ) {
+//				difference = int(ref.avg_eval) - score;
+//			}
+//			else if( score > ref.max_eval ) {
+//				difference = int(score) - ref.avg_eval;
+//			}
 
 			if( verbose ) {
 				if( difference > 200  ) {
@@ -394,16 +410,11 @@ struct individual
 typedef std::vector<individual*> population;
 
 
-void mutate( population& pop, std::vector<reference_data>& data )
+void mutate( population& pop, std::set<individual>& seen, std::vector<reference_data>& data )
 {
 	// Randomly mutates elements and adds the resulting mutants to the container
 	std::size_t orig_count = pop.size();
 
-	std::set<individual> seen;
-	for( std::size_t i = 0; i < orig_count; ++i ) {
-		seen.insert( *pop[i] );
-	}
-	
 	for( int x = 0; x < 4; ++x ) {
 		std::size_t loop_count = pop.size();
 		for( std::size_t i = 0; i < loop_count; ++i ) {
@@ -464,18 +475,13 @@ void mutate( population& pop, std::vector<reference_data>& data )
 	}
 }
 
-void combine( population& pop,  std::vector<reference_data>& data )
+void combine( population& pop, std::set<individual>& seen, std::vector<reference_data>& data )
 {
 	// Sex :)
 	// Hopefully by coupling up, we end up with a child that's better than each of its parents.
 	std::size_t orig_count = pop.size();
 	if( orig_count < 1 ) {
 		return;
-	}
-
-	std::set<individual> seen;
-	for( std::size_t i = 0; i < orig_count; ++i ) {
-		seen.insert( *pop[i] );
 	}
 
 	for( std::size_t r1 = 0; r1 < orig_count; ++r1 ) {
@@ -517,7 +523,7 @@ void sort( population& pop )
 	std::sort( pop.begin(), pop.end(), fitnessSort );
 }
 
-void select( population& pop )
+void select( population& pop, std::set<individual>& seen )
 {
 	// Cull population. Always keep the first n best 
 	// individuals (elitism).
@@ -549,6 +555,11 @@ void select( population& pop )
 	}
 
 	std::swap( out, pop );
+
+	seen.clear();
+	for( population::const_iterator it = pop.begin(); it != pop.end(); ++it ) {
+		seen.insert( **it );
+	}
 }
 
 
@@ -584,12 +595,17 @@ std::vector<reference_data> load_data()
 		entry.max_eval = result::loss;
 
 		std::istringstream ss(score_line);
-		short tmp;
+		double tmp;
 		while( (ss >> tmp) ) {
-			score += tmp;
+			short v = static_cast<short>(tmp * 100);
+			score += v;
 			++count;
-			entry.min_eval = (std::min)(entry.min_eval, tmp);
-			entry.max_eval = (std::max)(entry.max_eval, tmp);
+			entry.min_eval = (std::min)(entry.min_eval, v);
+			entry.max_eval = (std::max)(entry.max_eval, v);
+		}
+
+		if( !count ) {
+			continue;
 		}
 
 		score /= count;
@@ -612,18 +628,24 @@ std::vector<reference_data> load_data()
 }
 
 
-void add_random( population & pop, std::vector<reference_data>& data, unsigned int count = 10 ) {
+void add_random( population & pop, std::set<individual>& seen, std::vector<reference_data>& data, unsigned int count = 10 ) {
 	for( unsigned int i = 0; i < count; ++i ) {
 		individual* p = new individual;
 		p->randomize();
 		p->calc_fitness( data );
-		pop.push_back( p );
+		if( seen.insert( *p ).second ) {
+			pop.push_back( p );
+		}
+		else {
+			delete p;
+		}
 	}
 }
 
 
 void tweak_evaluation()
 {
+	pawn_hash_table.init( conf.pawn_hash_table_size );
 	std::vector<reference_data> data = load_data();
 
 	init_genes();
@@ -632,23 +654,26 @@ void tweak_evaluation()
 	double best_fitness = original_fitness;
 
 	population pop;
+	std::set<individual> seen;
+
 #if 0
 	pop.push_back( new individual() );
 	pop[0]->calc_fitness( data );
+	seen.insert( *pop[0] );
 #else
-	add_random( pop, data, 50 );
+	add_random( pop, seen, data, 50 );
 #endif
-	
+
 	while( true ) {
 		std::cout << ".";
 		std::flush( std::cout );
 		srand ( time(NULL) );
 
-		mutate( pop, data );
-		add_random( pop, data );
-		combine( pop, data );
+		mutate( pop, seen, data );
+		add_random( pop, seen, data );
+		combine( pop, seen, data );
 		sort( pop );
-		select( pop );
+		select( pop, seen );
 
 		if( pop.front()->fitness_ < best_fitness ) {
 			save_new_best( *pop.front(), data );
@@ -657,6 +682,8 @@ void tweak_evaluation()
 				delete pop[i];
 			}
 			pop.resize(1);
+			seen.clear();
+			seen.insert( *pop[0] );
 		}
 	}
 }

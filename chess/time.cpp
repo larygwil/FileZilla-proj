@@ -291,7 +291,7 @@ bool duration::operator>=( duration const& rhs ) const
 
 int64_t duration::get_items_per_second( int64_t count ) const
 {
-	return muldiv( d_, timer_precision(), count );
+	return muldiv( count, timer_precision(), d_ );
 }
 
 

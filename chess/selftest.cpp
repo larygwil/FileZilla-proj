@@ -1,14 +1,15 @@
 #include "calc.hpp"
 #include "chess.hpp"
+#include "config.hpp"
+#include "eval.hpp"
+#include "eval_values.hpp"
 #include "fen.hpp"
 #include "moves.hpp"
-#include "selftest.hpp"
-#include "util.hpp"
 #include "pawn_structure_hash_table.hpp"
-#include "config.hpp"
-#include "zobrist.hpp"
-#include "eval.hpp"
+#include "selftest.hpp"
 #include "string.hpp"
+#include "util.hpp"
+#include "zobrist.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -397,12 +398,23 @@ static bool test_evaluation( std::string const& fen )
 		return false;
 	}
 
+	if( p.base_eval.mg() != -p2.base_eval.mg() ||
+		p.base_eval.eg() != -p2.base_eval.eg() )
+	{
+		std::cerr << "Base evaluation not symmetric: " << p.base_eval << " " << p2.base_eval << std::endl;
+		std::cerr << "Fen: " << fen << std::endl;
+		std::cerr << "Flipped: " << flipped << std::endl;
+		return false;
+	}
+
 	short eval_full = evaluate_full( p, c );
 	short flipped_eval_full = evaluate_full( p2, c2 );
 	if( eval_full != flipped_eval_full ) {
 		std::cerr << "Evaluation not symmetric: " << eval_full << " " << flipped_eval_full << " " << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
+		std::cerr << explain_eval( p, c ) << std::endl;
 		std::cerr << "Flipped: " << flipped << std::endl;
+		std::cerr << explain_eval( p2, c2 ) << std::endl;
 		return false;
 	}
 

@@ -3,6 +3,7 @@
 #include "calc.hpp"
 #include "detect_check.hpp"
 #include "eval.hpp"
+#include "eval_values.hpp"
 #include "fen.hpp"
 #include "magic.hpp"
 #include "moves.hpp"
@@ -486,7 +487,7 @@ void position::init_material()
 			pieces::type b = get_piece_on_square( *this, static_cast<color::type>(c), pi );
 
 			if( b != pieces::king ) {
-				material[c] += get_material_value( b );
+				material[c] += eval_values::material_values[b];
 			}
 		}
 	}
@@ -624,17 +625,17 @@ void apply_move( position& p, move const& m, color::type c )
 			if( m.flags & move_flags::enpassant ) {
 				unsigned char ep = (m.target & 0x7) | (m.source & 0x38);
 				p.pawn_hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), ep );
-				delta += pst[1-c][pieces::pawn][ep] + eval_values.material_values[ pieces::pawn ];
+				delta += pst[1-c][pieces::pawn][ep] + eval_values::material_values[ pieces::pawn ];
 			}
 			else {
 				p.pawn_hash ^= get_pawn_structure_hash( static_cast<color::type>(1-c), m.target );
-				delta += pst[1-c][pieces::pawn][m.target] + eval_values.material_values[ pieces::pawn ];
+				delta += pst[1-c][pieces::pawn][m.target] + eval_values::material_values[ pieces::pawn ];
 			}
 		}
 		else {
-			delta += pst[1-c][m.captured_piece][m.target] + eval_values.material_values[ m.captured_piece ];
+			delta += pst[1-c][m.captured_piece][m.target] + eval_values::material_values[ m.captured_piece ];
 		}
-		p.material[1-c] -= get_material_value( m.captured_piece );
+		p.material[1-c] -= eval_values::material_values[ m.captured_piece ];
 	}
 
 	if( m.piece == pieces::rook ) {
@@ -662,11 +663,11 @@ void apply_move( position& p, move const& m, color::type c )
 
 		p.bitboards[c].b[promotion_piece] ^= target_square;
 
-		p.material[c] -= get_material_value( pieces::pawn );
-		p.material[c] += get_material_value( promotion_piece );
+		p.material[c] -= eval_values::material_values[ pieces::pawn ];
+		p.material[c] += eval_values::material_values[ promotion_piece ];
 
-		delta -= eval_values.material_values[pieces::pawn];
-		delta += eval_values.material_values[promotion_piece] + pst[c][m.piece][m.target];
+		delta -= eval_values::material_values[pieces::pawn];
+		delta += eval_values::material_values[promotion_piece] + pst[c][m.piece][m.target];
 	}
 	else {
 		p.bitboards[c].b[m.piece] ^= target_square;

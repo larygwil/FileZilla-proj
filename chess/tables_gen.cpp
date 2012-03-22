@@ -688,7 +688,7 @@ int main()
 		for( int c = 0; c < 2; ++c ) {
 			std::cout << "\t{" << std::endl;
 			for( unsigned int source = 0; source < 64; ++source ) {
-				std::cout << "\t0x";
+				std::cout << "\t\t0x";
 
 				uint64_t v = possible_king_moves[source];
 				if( c ) {
@@ -715,6 +715,186 @@ int main()
 		}
 		std::cout << "};" << std::endl << std::endl << std::endl;
 	}
+
+
+	{
+		std::cout << "extern uint64_t const between_squares[64][64] = {" << std::endl;
+
+		for( int source = 0; source < 64; ++source ) {
+			std::cout << "\t{" << std::endl;
+			for( int target = 0; target < 64; ++target ) {
+				std::cout << "\t\t0x";
+
+				uint64_t v = 0;
+
+				int cx = target % 8 - source % 8;
+				int cy = target / 8 - source / 8;
+
+				if( cx || cy ) {
+					if( cx == cy || cx == -cy || !cx || !cy ) {
+						if( cx > 0 ) {
+							cx = 1;
+						}
+						else if( cx < 0 ) {
+							cx = -1;
+						}
+						if( cy > 0 ) {
+							cy = 1;
+						}
+						else if( cy < 0 ) {
+							cy = -1;
+						}
+
+						for( int sq = source + cx + cy * 8; sq != target; sq += cx + cy * 8 ) {
+							v |= 1ull << sq;
+						}
+					}
+				}
+
+				std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+				std::cout << "ull";
+				if( target != 63 ) {
+					std::cout << ",";
+				}
+				std::cout << std::endl;
+			}
+			std::cout << "\t}";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl << std::endl;
+	}
+
+
+	{
+		std::cout << "extern uint64_t const connected_pawns[64] = {" << std::endl;
+
+		for( unsigned int source = 0; source < 64; ++source ) {
+			std::cout << "\t0x";
+
+			uint64_t v = 0;
+
+			int source_col = source % 8;
+			int source_row = source / 8;
+
+			for( int cy = -1; cy <= 1; ++cy ) {
+				int y = source_row + cy;
+				if( y < 0 || y > 7 ) {
+					continue;
+				}
+
+				{
+					int x = source_col + 1;
+					if( x >= 0 && x < 8 ) {
+						v |= 1ull << (x + y * 8);
+					}
+				}
+				{
+					int x = source_col - 1;
+					if( x >= 0 && x < 8 ) {
+						v |= 1ull << (x + y * 8);
+					}
+				}
+			}
+
+			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+			std::cout << "ull";
+			if( source != 63 ) {
+				std::cout << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "};" << std::endl << std::endl;
+	}
+
+
+	{
+		std::cout << "extern uint64_t const passed_pawns[2][64] = {" << std::endl;
+
+		for( int c = 0; c < 2; ++c ) {
+			std::cout << "\t{" << std::endl;
+			for( unsigned int source = 0; source < 64; ++source ) {
+				std::cout << "\t\t0x";
+
+				uint64_t v = 0;
+
+				int source_col = source % 8;
+				int source_row = source / 8;
+
+				int cy = c ? -1 : 1;
+
+				for( int y = source_row + cy; y > 0 && y < 7; y += cy ) {
+					for( int cx = -1; cx <= 1; ++cx ) {
+						int x = source_col + cx;
+						if( x >= 0 && x < 8 ) {
+							v |= 1ull << (x + y * 8);
+						}
+					}
+				}
+
+				std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+				std::cout << "ull";
+				if( source != 63 ) {
+					std::cout << ",";
+				}
+				std::cout << std::endl;
+			}
+			if( c ) {
+				std::cout << "\t}" << std::endl;
+			}
+			else {
+				std::cout << "\t}," << std::endl;
+			}
+		}
+		std::cout << "};" << std::endl << std::endl;
+	}
+
+
+	{
+		std::cout << "extern uint64_t const doubled_pawns[2][64] = {" << std::endl;
+
+		for( int c = 0; c < 2; ++c ) {
+			std::cout << "\t{" << std::endl;
+			for( unsigned int source = 0; source < 64; ++source ) {
+				std::cout << "\t\t0x";
+
+				uint64_t v = 0;
+
+				int source_col = source % 8;
+				int source_row = source / 8;
+
+				if( source_row > 0 && source_row < 7 ) {
+
+					int cy = c ? 1 : -1;
+
+					for( int y = source_row + cy; y > 0 && y < 7; y += cy ) {
+						v |= 1ull << (source_col + y * 8);
+					}
+				}
+
+				std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+				std::cout << "ull";
+				if( source != 63 ) {
+					std::cout << ",";
+				}
+				std::cout << std::endl;
+			}
+			if( c ) {
+				std::cout << "\t}" << std::endl;
+			}
+			else {
+				std::cout << "\t}," << std::endl;
+			}
+		}
+		std::cout << "};" << std::endl << std::endl;
+	}
+
 
 	return 0;
 }

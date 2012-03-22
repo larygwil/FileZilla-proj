@@ -1,5 +1,5 @@
 #include "assert.hpp"
-#include "eval.hpp"
+#include "eval_values.hpp"
 #include "score.hpp"
 
 
@@ -35,16 +35,16 @@ score& score::operator=( score const& rhs )
 
 short score::scale( short material ) const
 {
-	if( material >= eval_values.phase_transition_material_begin ) {
+	if( material >= eval_values::phase_transition_material_begin ) {
 		return mg_;
 	}
-	else if( material <= eval_values.phase_transition_material_end ) {
+	else if( material <= eval_values::phase_transition_material_end ) {
 		return eg_;
 	}
 	
-	int position = 256 * (eval_values.phase_transition_material_begin - material) / static_cast<int>(eval_values.phase_transition_duration);
-	return ((static_cast<int>(mg_) * position      ) /256) +
-		   ((static_cast<int>(eg_) * (256-position)) /256);
+	int position = 256 * (eval_values::phase_transition_material_begin - material) / static_cast<int>(eval_values::phase_transition_duration);
+	return ((static_cast<int>(eg_) * position      ) /256) +
+		   ((static_cast<int>(mg_) * (256-position)) /256);
 }
 
 

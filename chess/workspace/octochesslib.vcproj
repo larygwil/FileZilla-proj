@@ -178,6 +178,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\eval_values.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\fen.cpp"
 				>
 			</File>
@@ -191,10 +195,6 @@
 			</File>
 			<File
 				RelativePath="..\magic.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\mobility.cpp"
 				>
 			</File>
 			<File
@@ -316,6 +316,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\eval_values.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\fen.hpp"
 				>
 			</File>
@@ -329,10 +333,6 @@
 			</File>
 			<File
 				RelativePath="..\magic.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\mobility.hpp"
 				>
 			</File>
 			<File

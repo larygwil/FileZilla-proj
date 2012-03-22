@@ -1,6 +1,6 @@
 #include "assert.hpp"
 #include "moves.hpp"
-#include "eval.hpp"
+#include "eval_values.hpp"
 #include "util.hpp"
 #include "magic.hpp"
 #include "calc.hpp"
@@ -27,7 +27,7 @@ void do_add_move( move_info*& moves, pieces::type const& pi,
 	mi.m.target = target;
 	mi.m.captured_piece = captured;
 
-	mi.sort = eval_values.mg_material_values[ captured ] * 32 - eval_values.mg_material_values[ pi ];
+	mi.sort = eval_values::mg_material_values[ captured ] * 32 - eval_values::mg_material_values[ pi ];
 }
 
 // Adds the move if it does not result in self getting into check

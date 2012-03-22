@@ -101,7 +101,6 @@ void condition::wait( scoped_lock& l, uint64_t timeout )
 		signalled_ = false;
 		return;
 	}
-	timeout = timeout * 1000 / timer_precision();
 	SleepConditionVariableCS( &cond_, &l.m_.cs_, static_cast<DWORD>(timeout) );
 	signalled_ = false;
 }

@@ -2,6 +2,7 @@
 #include "calc.hpp"
 #include "config.hpp"
 #include "eval.hpp"
+#include "eval_values.hpp"
 #include "fen.hpp"
 #include "hash.hpp"
 #include "moves.hpp"
@@ -24,8 +25,8 @@
 
 // TODO: Fine-tweak these values.
 #if 1
-int const check_extension = 5;
-int const pawn_push_extension = 4;
+int const check_extension = 6;
+int const pawn_push_extension = 6;
 int const cutoff = depth_factor + MAX_QDEPTH + 1;
 
 unsigned int const lmr_searched = 3;
@@ -57,7 +58,7 @@ void sort_moves( move_info* begin, move_info* end, position const& p, color::typ
 	for( move_info* it = begin; it != end; ++it ) {
 		it->sort = evaluate_move( p, c, it->m );
 		if( it->m.captured_piece != pieces::none ) {
-			it->sort += eval_values.mg_material_values[ it->m.captured_piece ] * 1000000 - eval_values.mg_material_values[ it->m.piece ];
+			it->sort += eval_values::mg_material_values[ it->m.captured_piece ] * 1000000 - eval_values::mg_material_values[ it->m.piece ];
 		}
 	}
 	std::sort( begin, end, moveSort );
