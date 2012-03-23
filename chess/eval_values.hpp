@@ -19,8 +19,6 @@ namespace eval_values {
 
 	extern score pawn_shield;
 
-	extern short castled;
-
 	extern score absolute_pin[7];
 
 	extern score rooks_on_open_file;
