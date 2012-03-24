@@ -112,6 +112,7 @@ struct eval_results {
 	score unstoppable_pawns[2];
 	score imbalance;
 	score other[2];
+	score drawnishness[2];
 };
 
 
@@ -414,7 +415,7 @@ static void evaluate_king_attack( position const& p, color::type c, color::type 
 	attack += popcount( king_melee_attack_by_queen ) * eval_values::king_melee_attack_by_queen * initiative;
 	attack += popcount( king_melee_attack_by_rook ) * eval_values::king_melee_attack_by_rook * initiative;
 
-	int offset = (std::min)( short(150), attack );
+	int offset = (std::min)( short(199), attack );
 
 	results.king_attack[c] = eval_values::king_attack[offset];
 }
@@ -499,6 +500,19 @@ void evaluate_pawn_shield( position const& p, eval_results& results )
 }
 
 
+static void evaluate_drawishness( position const& p, color::type c, eval_results& results )
+{
+	if( p.bitboards[c].b[bb_type::pawns] ) {
+		return;
+	}
+
+	short material_difference = p.material[c].eg() - p.material[1-c].eg();
+	if( material_difference <= eval_values::insufficient_material_threshold ) {
+		results.drawnishness[c] = score( 0, eval_values::drawishness );
+	}
+}
+
+
 static void do_evaluate_mobility( position const& p, color::type to_move, eval_results& results )
 {
 	results.king_pos[0] = bitscan( p.bitboards[0].b[bb_type::king] );
@@ -552,6 +566,8 @@ static void do_evaluate_mobility( position const& p, color::type to_move, eval_r
 		}
 
 		evaluate_king_attack( p, static_cast<color::type>(c), to_move, results );
+
+		evaluate_drawishness( p, static_cast<color::type>(c), results );
 	}
 
 	evaluate_unstoppable_pawns( p, to_move, results );
@@ -572,17 +588,10 @@ score sum_up( position const& p, eval_results const& results ) {
 	ret += results.rooks_connected[color::white] - results.rooks_connected[color::black];
 	ret += results.rooks_on_open_file[color::white] - results.rooks_on_open_file[color::black];
 	ret += results.other[color::white] - results.other[color::black];
+	ret += results.drawnishness[color::white] - results.drawnishness[color::black];
 
 	return ret;
 }
-}
-
-score evaluate_mobility( position const& p, color::type c )
-{
-	eval_results results;
-	do_evaluate_mobility( p, c, results );
-
-	return sum_up( p, results );
 }
 
 namespace {
@@ -623,6 +632,7 @@ std::string explain_eval( position const& p, color::type c )
 	ss << explain( "Connected rooks", results.rooks_connected[0] - results.rooks_connected[1] );
 	ss << explain( "Rooks on open file", results.rooks_on_open_file[0] - results.rooks_on_open_file[1] );
 	ss << explain( "Other", results.other[0] - results.other[1] );
+	ss << explain( "Drawishness", results.drawnishness[0] - results.drawnishness[1] );
 
 	ss << "-------------------------------" << std::endl;
 	ss << explain( "Total", full );
@@ -637,7 +647,17 @@ std::string explain_eval( position const& p, color::type c )
 
 short evaluate_full( position const& p, color::type c )
 {
-	score full = evaluate_mobility( p, c );
+	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
+		if( p.material[color::white].eg() + p.material[color::black].eg() <= eval_values::insufficient_material_threshold ) {
+			// Not enough material
+			return result::draw;
+		}
+	}
+
+	eval_results results;
+	do_evaluate_mobility( p, c, results );
+
+	score full = sum_up( p, results );
 	
 	short eval = full.scale( p.material[0].mg() + p.material[1].mg() );
 	if( c ) {

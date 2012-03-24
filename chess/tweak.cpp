@@ -305,6 +305,7 @@ void init_genes()
 	genes.push_back( gene_t( &eval_values::mobility_queen_offset.eg(), 0, 14, "mobility_queen_offset.eg()") );
 	genes.push_back( gene_t( &eval_values::side_to_move.mg(), 0, 100, "side_to_move.mg()") );
 	genes.push_back( gene_t( &eval_values::side_to_move.eg(), 0, 100, "side_to_move.eg()") );
+	genes.push_back( gene_t( &eval_values::drawishness, -500, 0, "drawishness") );
 }
 
 struct individual

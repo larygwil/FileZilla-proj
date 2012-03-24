@@ -79,7 +79,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 	}
 
 	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
-		if( p.material[color::white].eg() + p.material[color::black].eg() < 400 ) {
+		if( p.material[color::white].eg() + p.material[color::black].eg() <= eval_values::insufficient_material_threshold ) {
 			return result::draw;
 		}
 	}
@@ -206,7 +206,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	}
 
 	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
-		if( p.material[color::white].eg() + p.material[color::black].eg() < 400 ) {
+		if( p.material[color::white].eg() + p.material[color::black].eg() <= eval_values::insufficient_material_threshold ) {
 			return result::draw;
 		}
 	}

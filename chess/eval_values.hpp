@@ -70,6 +70,8 @@ namespace eval_values {
 
 	extern score side_to_move;
 
+	extern short drawishness;
+
 	// Derived
 	extern score material_values[7];
 
@@ -83,7 +85,9 @@ namespace eval_values {
 	extern score mobility_rook[15];
 	extern score mobility_queen[7+7+7+6+1];
 
-	extern score king_attack[150];
+	extern score king_attack[200];
+
+	extern short insufficient_material_threshold;
 
 	void init();
 	void update_derived();
