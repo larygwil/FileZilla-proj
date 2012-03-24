@@ -235,10 +235,6 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	}
 
 
-	if( check.check ) {
-		depth += check_extension;
-	}
-
 	int plies_remaining = (depth - cutoff) / depth_factor;
 
 	if( !pv_node && !check.check && plies_remaining < 4 && full_eval == result::win ) {
@@ -317,17 +313,22 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 
 			ctx.seen.set( new_hash, ply );
 
+			check_map new_check( new_pos, static_cast<color::type>(1-c) );
+
 			bool extended = false;
 
 			uint64_t new_depth = depth - depth_factor;
-			if( it->m.piece == pieces::pawn ) {
+			if( new_check.check ) {
+				new_depth += check_extension;
+				extended = true;
+			}
+			else if( pv_node && it->m.piece == pieces::pawn ) {
 				if( it->m.target < 16 || it->m.target >= 48 ) {
 					new_depth += pawn_push_extension;
 					extended = true;
 				}
 			}
 
-			check_map new_check( new_pos, static_cast<color::type>(1-c) );
 
 			// Open question: What's the exact reason for always searching exactly the first move full width?
 			// Why not always use PVS, or at least in those cases where root alpha isn't result::loss?
@@ -335,7 +336,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 			if( processed_moves || !pv_node ) {
 
 				// Futility pruning
-				if( !pv_node && gen.get_phase() >= phases::noncapture && !extended && !check.check && !new_check.check && processed_moves > 2 ) {
+				if( !pv_node && gen.get_phase() >= phases::noncapture && !extended && !check.check && processed_moves > 2 ) {
 					int plies_remaining = (depth - cutoff) / depth_factor;
 					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short)) && full_eval + futility_pruning[plies_remaining] < beta ) {
 						ctx.pv_pool.release(cpv);
@@ -347,8 +348,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 				// Open question: Use this approach or instead do PVS's null-window also when re-searching a >alpha LMR result?
 				// Barring some bugs or some weird search instability issues, it should bring the same results and speed seems similar.
 				if( !pv_node && processed_moves >= lmr_searched && gen.get_phase() >= phases::noncapture &&
-					!check.check && !new_check.check &&
-					depth > lmr_min_depth && !extended)
+					!check.check && depth > lmr_min_depth && !extended)
 				{
 					value = -step(new_depth - lmr_reduction, ply + 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -alpha-1, -alpha, cpv, false );
 				}
