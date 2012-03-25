@@ -2,6 +2,7 @@
 #include "calc.hpp"
 #include "config.hpp"
 #include "eval.hpp"
+#include "eval_values.hpp"
 #include "hash.hpp"
 #include "magic.hpp"
 #include "moves.hpp"
@@ -26,7 +27,7 @@
 
 #include <ctype.h>
 
-int const MAX_BOOKSEARCH_DEPTH = 13;
+int const MAX_BOOKSEARCH_DEPTH = 15;
 
 unsigned int const MAX_BOOK_DEPTH = 10;
 
@@ -617,7 +618,7 @@ void update( book& b, int entries_per_pos = 5 )
 			std::vector<book_entry>& entries = w.entries;
 
 			for( std::size_t i = 0; i < entries.size(); ) {
-				if( entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH && entries[i].eval_version >= eval_version ) {
+				if( entries[i].folded_searchdepth > entries[i].search_depth || (entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH && entries[i].eval_version >= eval_version) ) {
 					entries.erase( entries.begin() + i );
 					++removed_moves;
 				}
@@ -991,6 +992,8 @@ int main( int argc, char const* argv[] )
 	console_init();
 
 	init_magic();
+	init_pst();
+	eval_values::init();
 	init_random( 1234 );
 	init_zobrist_tables();
 

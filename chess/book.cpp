@@ -10,7 +10,7 @@
 #include <iostream>
 #include <sstream>
 
-int const eval_version = 5;
+int const eval_version = 6;
 
 namespace {
 unsigned char const table[64] = {
@@ -482,7 +482,7 @@ std::list<book_entry_with_position> book::get_all_entries( int move_limit )
 	{
 		scoped_lock l(impl_->mtx);
 
-		std::string query = "SELECT pos FROM position ORDER BY LENGTH(pos)";
+		std::string query = "SELECT pos FROM position ORDER BY LENGTH(pos) DESC";
 
 		impl_->query( query, &work_cb, reinterpret_cast<void*>(&positions) );
 	}
