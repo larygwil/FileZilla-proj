@@ -82,7 +82,7 @@ octochess_uci::octochess_uci( gui_interface_ptr const& p )
 void octochess_uci::new_game() {
 	impl_->color_to_play_ = color::white;
 	init_board(impl_->pos_);
-	impl_->times_ = time_calculation();
+	impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) ); impl_->times_ = time_calculation();
 }
 
 void octochess_uci::set_position( std::string const& fen ) {

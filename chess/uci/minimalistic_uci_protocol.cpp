@@ -69,7 +69,7 @@ void minimalistic_uci_protocol::parse_command( std::string const& line ) {
 }
 
 void minimalistic_uci_protocol::handle_position( std::string const& params ) {
-	std::string::size_type pos = params.find("moves"); //there should be always this string
+	std::string::size_type pos = params.find("moves "); //there should be always this string
 
 	if( params.substr(0,3) == "fen" ) {
 		callbacks_->set_position( params.substr(4, pos) );
