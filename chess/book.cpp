@@ -271,31 +271,33 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 {
 	std::vector<book_entry> ret;
 
-	scoped_lock l(impl_->mtx);
+	{
+		scoped_lock l(impl_->mtx);
 
-	if( !impl_->db ) {
-		return ret;
-	}
+		if( !impl_->db ) {
+			return ret;
+		}
 
-	cb_data data;
-	data.p = p;
-	data.c = c;
-	data.entries = &ret;
+		cb_data data;
+		data.p = p;
+		data.c = c;
+		data.entries = &ret;
 
-	std::string hs = history_to_string( history );
+		std::string hs = history_to_string( history );
 
-	std::stringstream ss;
-	ss << "SELECT move, forecast, searchdepth, eval_version, folded_forecast, folded_depth FROM book WHERE position = (SELECT id FROM position WHERE pos ='" << hs << "') ORDER BY forecast DESC,searchdepth DESC";
+		std::stringstream ss;
+		ss << "SELECT move, forecast, searchdepth, eval_version, folded_forecast, folded_depth FROM book WHERE position = (SELECT id FROM position WHERE pos ='" << hs << "') ORDER BY forecast DESC,searchdepth DESC";
 
-	if( move_limit != -1 ) {
-		ss << " LIMIT " << move_limit;
-	}
+		if( move_limit != -1 ) {
+			ss << " LIMIT " << move_limit;
+		}
 
-	impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data) );
+		impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data) );
 
-	if( !ret.empty() && data.found_ != (data.pm - data.moves) ) {
-		if( move_limit == -1 ) {
-			ret.clear();
+		if( !ret.empty() && data.found_ != (data.pm - data.moves) ) {
+			if( move_limit == -1 ) {
+				ret.clear();
+			}
 		}
 	}
 
