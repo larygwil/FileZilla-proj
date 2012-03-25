@@ -293,30 +293,56 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 
 	impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data) );
 
-	if( ret.empty() && allow_transpositions ) {
-		uint64_t hash = get_zobrist_hash( p );
-
-		std::stringstream ss;
-		ss << "SELECT move, forecast, searchdepth, eval_version, folded_forecast, folded_depth FROM book WHERE position = (SELECT id FROM position WHERE hash=" << static_cast<sqlite3_int64>(hash) << " LIMIT 1) ORDER BY forecast DESC,searchdepth DESC";
-
-		if( move_limit != -1 ) {
-			ss << " LIMIT " << move_limit;
-		}
-
-		if( impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data), false ) ) {
-			if( !ret.empty() ) {
-				std::cerr << "Found transposition" << std::endl;
-			}
-		}
-		else {
+	if( !ret.empty() && data.found_ != (data.pm - data.moves) ) {
+		if( move_limit == -1 ) {
 			ret.clear();
 		}
 	}
 
+	if( ret.empty() && allow_transpositions ) {
+		ret = get_entries( p, c, move_limit );
+	}
+	else {
+		std::sort( ret.begin(), ret.end(), SortFolded() );
+	}
+
+	return ret;
+}
+
+
+std::vector<book_entry> book::get_entries( position const& p, color::type c, int move_limit )
+{
+	std::vector<book_entry> ret;
+
+	scoped_lock l(impl_->mtx);
+
+	if( !impl_->db ) {
+		return ret;
+	}
+
+	cb_data data;
+	data.p = p;
+	data.c = c;
+	data.entries = &ret;
+
+	uint64_t hash = get_zobrist_hash( p );
+	if( c ) {
+		hash = ~hash;
+	}
+
+	std::stringstream ss;
+	ss << "SELECT move, forecast, searchdepth, eval_version, folded_forecast, folded_depth FROM book WHERE position = (SELECT id FROM position WHERE hash=" << static_cast<sqlite3_int64>(hash) << " LIMIT 1) ORDER BY forecast DESC,searchdepth DESC";
+
+	if( move_limit != -1 ) {
+		ss << " LIMIT " << move_limit;
+	}
+
+	if( !impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data), false ) ) {
+		ret.clear();
+	}
+
 	if( !ret.empty() && data.found_ != (data.pm - data.moves) ) {
-		if( move_limit == -1 || allow_transpositions ) {
-			ret.clear();
-		}
+		ret.clear();
 	}
 
 	std::sort( ret.begin(), ret.end(), SortFolded() );
@@ -340,6 +366,9 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 		c = static_cast<color::type>(1-c);
 	}
 	uint64_t hash = get_zobrist_hash( p );
+	if( history.size() % 2 ) {
+		hash = ~hash;
+	}
 
 	std::stringstream ss;
 	ss << "BEGIN TRANSACTION;";
@@ -411,6 +440,9 @@ void book::mark_for_processing( std::vector<move> const& history )
 		apply_move( p, *it, c );
 		c = static_cast<color::type>(1-c);
 		uint64_t hash = get_zobrist_hash( p );
+		if( (it - history.begin()) % 2 ) {
+			hash = ~hash;
+		}
 
 		std::string hs = history_to_string( history.begin(), it + 1 );
 		ss << "INSERT OR IGNORE INTO position (pos, hash) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ");";
@@ -473,6 +505,35 @@ std::list<work> book::get_unprocessed_positions()
 }
 
 
+void book::redo_hashes()
+{
+	std::list<work> positions;
+
+	{
+		scoped_lock l(impl_->mtx);
+
+		std::string query = "SELECT pos FROM position ORDER BY LENGTH(pos) DESC";
+
+		impl_->query( query, &work_cb, reinterpret_cast<void*>(&positions) );
+	}
+
+	std::stringstream ss;
+
+	ss << "BEGIN TRANSACTION;";
+	for( std::list<work>::const_iterator it = positions.begin(); it != positions.end(); ++it ) {
+		std::string hs = history_to_string( it->move_history );
+		uint64_t hash = get_zobrist_hash( it->p );
+		if( it->move_history.size() % 2 ) {
+			hash = ~hash;
+		}
+		ss << "UPDATE position SET hash = " << hash << " WHERE pos='" << hs << "';";
+	}
+
+	ss << "COMMIT TRANSACTION;";
+	impl_->query( ss.str(), 0, 0 );
+}
+
+
 std::list<book_entry_with_position> book::get_all_entries( int move_limit )
 {
 	std::list<book_entry_with_position> ret;
@@ -488,7 +549,6 @@ std::list<book_entry_with_position> book::get_all_entries( int move_limit )
 	}
 
 	for( std::list<work>::const_iterator it = positions.begin(); it != positions.end(); ++it ) {
-
 		book_entry_with_position entry;
 		entry.w = *it;
 		entry.entries = get_entries( it->p, it->c, it->move_history, move_limit );

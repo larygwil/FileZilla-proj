@@ -87,6 +87,10 @@ public:
 	// move_limit limits the number of returned moves per position, sorted descendingly by forecast.
 	std::vector<book_entry> get_entries( position const& p, color::type c, std::vector<move> const& history, int move_limit = -1, bool allow_transpositions = false );
 
+	// As above but does not regard move history and always goes by hash.
+	// Beware: Suspectible to 3-fold repetition
+	std::vector<book_entry> get_entries( position const& p, color::type c, int move_limit = -1 );
+
 	// Entries do not have to be sorted
 	bool add_entries( std::vector<move> const& history, std::vector<book_entry> entries );
 
@@ -109,6 +113,8 @@ public:
 	// If set to a non-empty string, the resulting SQL inserts from calls to add_entries
 	// are logged into the file.
 	bool set_insert_logfile( std::string const& log_file );
+
+	void redo_hashes();
 private:
 	impl *impl_;
 };

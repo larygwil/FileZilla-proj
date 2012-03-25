@@ -4,16 +4,17 @@
 #include "time_calculation.hpp"
 
 #include "../chess.hpp"
-#include "../zobrist.hpp"
 #include "../seen_positions.hpp"
 #include "../book.hpp"
 #include "../calc.hpp"
 #include "../eval.hpp"
 #include "../fen.hpp"
 #include "../hash.hpp"
-#include "../logger.hpp"
-#include "../util.hpp"
 #include "../pawn_structure_hash_table.hpp"
+#include "../logger.hpp"
+#include "../random.hpp"
+#include "../util.hpp"
+#include "../zobrist.hpp"
 
 #include <sstream>
 
@@ -29,7 +30,9 @@ public:
 		, color_to_play_()
 		, last_mate_()
 		, half_moves_played_()
+		, started_from_root_()
 		, running_(true)
+		, book_( conf.book_dir )
 	{
 		spawn();
 	}
@@ -48,6 +51,8 @@ public:
 
 	void apply_move( move const& m );
 
+	bool do_book_move();
+
 public:
 	gui_interface_ptr gui_interface_;
 
@@ -61,11 +66,14 @@ public:
 
 	short last_mate_;
 	int half_moves_played_;
+	bool started_from_root_;
 
 	bool running_;
 
 	mutex mutex_;
 	condition calc_cond_;
+
+	book book_;
 };
 
 octochess_uci::octochess_uci( gui_interface_ptr const& p ) 
@@ -75,7 +83,9 @@ octochess_uci::octochess_uci( gui_interface_ptr const& p )
 
 	transposition_table.init( conf.memory );
 	pawn_hash_table.init( conf.pawn_hash_table_size );
-	conf.depth = 40;
+	if( conf.depth == -1 ) {
+		conf.depth = MAX_DEPTH;
+	}
 	new_game();
 }
 
@@ -83,18 +93,33 @@ void octochess_uci::new_game() {
 	impl_->color_to_play_ = color::white;
 	init_board(impl_->pos_);
 	impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) ); impl_->times_ = time_calculation();
+	impl_->half_moves_played_ = 0;
+	impl_->started_from_root_ = true;
+	impl_->last_mate_ = 0;
 }
 
 void octochess_uci::set_position( std::string const& fen ) {
 	init_board(impl_->pos_);
+	bool success = false;
 	if( fen.empty() ) {
 		impl_->color_to_play_ = color::white;
-	} else {
+		impl_->started_from_root_ = true;
+		success = true;
+	}
+	else {
 		if( parse_fen_noclock( fen, impl_->pos_, impl_->color_to_play_, 0 ) ) {	
-			impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) );
-		} else {
+			impl_->started_from_root_ = false;
+			success = true;
+		}
+		else {
 			std::cerr << "failed to set position" << std::endl;
 		}
+	}
+
+	if( success ) {
+		impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) );
+		impl_->half_moves_played_ = 0;
+		impl_->last_mate_ = 0;
 	}
 }
 
@@ -119,10 +144,15 @@ void octochess_uci::calculate( calculate_mode_type mode, position_time const& t 
 
 	if( mode == calculate_mode::infinite ) {
 		impl_->times_.set_infinite_time();
-	} else {
-		impl_->times_.update( t, impl_->color_to_play_ == color::white, impl_->half_moves_played_ );
+		impl_->calc_cond_.signal(lock);
 	}
-	impl_->calc_cond_.signal(lock);
+	else {
+		impl_->times_.update( t, impl_->color_to_play_ == color::white, impl_->half_moves_played_ );
+		bool got_book_move = impl_->do_book_move();
+		if( !got_book_move ) {
+			impl_->calc_cond_.signal(lock);
+		}
+	}
 }
 
 void octochess_uci::stop() {
@@ -201,7 +231,8 @@ void octochess_uci::impl::on_new_best_move( position const& p, color::type c, in
 }
 
 
-void octochess_uci::impl::apply_move( move const& m )	{
+void octochess_uci::impl::apply_move( move const& m )
+{
 	bool reset_seen = false;
 	if( m.piece == pieces::pawn || m.captured_piece ) {
 		reset_seen = true;
@@ -216,6 +247,33 @@ void octochess_uci::impl::apply_move( move const& m )	{
 		seen_positions_.reset_root( get_zobrist_hash( pos_ ) );
 	}	
 }
+
+
+bool octochess_uci::impl::do_book_move() {
+	bool ret = false;
+
+	if( conf.use_book && book_.is_open() && half_moves_played_ < 30 && started_from_root_ ) {
+		std::vector<book_entry> moves = book_.get_entries( pos_, color_to_play_ );
+		if( !moves.empty() ) {
+			ret = true;
+
+			short best = moves.front().folded_forecast;
+			int count_best = 1;
+			for( std::vector<book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
+				if( it->folded_forecast > -33 && it->folded_forecast + 25 >= best && count_best < 3 ) {
+					++count_best;
+				}
+			}
+
+			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
+			gui_interface_->tell_best_move( move_to_long_algebraic( best_move.m ) );
+			apply_move( best_move.m );
+		}
+	}
+
+	return ret;
+}
+
 
 }
 }
