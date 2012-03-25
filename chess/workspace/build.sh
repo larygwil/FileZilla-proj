@@ -21,3 +21,15 @@ make clean
 make -f Makefile-opt ARCH=core2 chess-use REVISION="-DREVISION=\\\"$REV\\\""
 cp chess-use octochess-r$REV/octochess-linux-generic-r$REV
 
+strip octochess-r$REV/*
+
+cp opening_book.db octochess-r$REV/
+sqlite3 octochess-r$REV/opening_book.db 'delete from position where position.id not in (select position from book);'
+sqlite3 octochess-r$REV/opening_book.db 'vacuum full'
+
+cp AUTHORS octochess-r$REV/authors.txt
+cp COPYING octochess-r$REV/copying.txt
+cp NEWS octochess-r$REV/news.txt
+cp README octochess-r$REV/readme.txt
+
+unix2dos octochess-r$REV/*.txt
