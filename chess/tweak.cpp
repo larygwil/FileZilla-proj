@@ -244,12 +244,12 @@ void init_genes()
 	genes.push_back( gene_t( &eval_values::king_melee_attack_by_rook, 0, 100, "king_melee_attack_by_rook") );
 	genes.push_back( gene_t( &eval_values::king_melee_attack_by_queen, 0, 100, "king_melee_attack_by_queen") );
 	genes.push_back( gene_t( &eval_values::king_attack_min[0], 0, 1000, "king_attack_min[0]" ) );
-	genes.push_back( gene_t( &eval_values::king_attack_max[0], 100, 1000, "king_attack_max[0]" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_max[0], 100, 1500, "king_attack_max[0]" ) );
 	genes.push_back( gene_t( &eval_values::king_attack_rise[0], 1, 30, "king_attack_rise[0]" ) );
 	genes.push_back( gene_t( &eval_values::king_attack_exponent[0], 100, 300, "king_attack_exponent[0]" ) );
 	genes.push_back( gene_t( &eval_values::king_attack_offset[0], 0, 100, "king_attack_offset[0]" ) );
 	genes.push_back( gene_t( &eval_values::king_attack_min[1], 0, 1000, "king_attack_min[1]" ) );
-	genes.push_back( gene_t( &eval_values::king_attack_max[1], 100, 1000, "king_attack_max[1]" ) );
+	genes.push_back( gene_t( &eval_values::king_attack_max[1], 100, 1500, "king_attack_max[1]" ) );
 	genes.push_back( gene_t( &eval_values::king_attack_rise[1], 1, 50, "king_attack_rise[1]" ) );
 	genes.push_back( gene_t( &eval_values::king_attack_exponent[1], 100, 300, "king_attack_exponent[1]" ) );
 	genes.push_back( gene_t( &eval_values::king_attack_offset[1], 0, 100, "king_attack_offset[1]" ) );
@@ -363,14 +363,17 @@ struct individual
 			pawn_hash_table.clear( ref.p.pawn_hash );
 			short score = evaluate_full( ref.p, ref.c );
 
+#if 1
 			double difference = std::abs( ref.avg_eval - static_cast<double>(score) );
-//			int difference = 0;
-//			if( score < ref.min_eval ) {
-//				difference = int(ref.avg_eval) - score;
-//			}
-//			else if( score > ref.max_eval ) {
-//				difference = int(score) - ref.avg_eval;
-//			}
+#else
+			int difference = 0;
+			if( score < ref.min_eval ) {
+				difference = int(ref.avg_eval) - score;
+			}
+			else if( score > ref.max_eval ) {
+				difference = int(score) - ref.avg_eval;
+			}
+#endif
 
 			if( verbose ) {
 				if( difference > 200  ) {

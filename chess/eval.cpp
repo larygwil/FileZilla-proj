@@ -65,9 +65,7 @@ short evaluate_move( position const& p, color::type c, move const& m )
 }
 
 
-
-
-uint64_t const center_squares = 0x00003c3c3c3c0000ull;
+uint64_t const central_squares[2] = { 0x000000003c3c3c00ull, 0x003c3c3c00000000ull };
 
 namespace {
 
@@ -84,8 +82,6 @@ struct eval_results {
 
 			count_king_attackers[c] = 0;
 			king_attacker_sum[c] = 0;
-
-			center_control[c] = 0;
 		}
 	}
 
@@ -106,7 +102,7 @@ struct eval_results {
 	score pin[2];
 	score rooks_on_open_file[2];
 	score tropism[2];
-	short center_control[2];
+	score center_control[2];
 	score rooks_connected[2];
 	score hanging[2];
 	score unstoppable_pawns[2];
@@ -144,8 +140,6 @@ inline static void evaluate_pawns_mobility( position const& p, color::type c, ev
 			++results.count_king_attackers[c];
 			results.king_attacker_sum[c] += eval_values::king_attack_by_piece[pieces::pawn];
 		}
-
-		results.center_control[c] += static_cast<short>(popcount( pc & center_squares ) );
 	}
 }
 
@@ -168,8 +162,6 @@ inline static void evaluate_knights_mobility( position const& p, color::type c, 
 
 		moves &= ~p.bitboards[c].b[bb_type::all_pieces];
 
-		results.center_control[c] += static_cast<short>(popcount( moves & center_squares ) );
-
 		results.mobility[c] += eval_values::mobility_knight[popcount(moves)];
 	}
 
@@ -190,8 +182,6 @@ inline static void evaluate_bishop_mobility( position const& p, color::type c, u
 	results.attacks[c][pieces::bishop] |= moves;
 
 	moves &= ~p.bitboards[c].b[bb_type::all_pieces];
-
-	results.center_control[c] += static_cast<short>(popcount( moves & center_squares ) );
 
 	results.mobility[c] += eval_values::mobility_bishop[popcount(moves)];
 }
@@ -243,8 +233,6 @@ inline static void evaluate_rook_mobility( position const& p, color::type c, uin
 		results.rooks_connected[c] = eval_values::connected_rooks;
 	}
 	moves &= ~p.bitboards[c].b[bb_type::all_pieces];
-
-	results.center_control[c] += static_cast<short>(popcount( moves & center_squares ) );
 
 	results.mobility[c] += eval_values::mobility_rook[popcount(moves)];
 }
@@ -308,8 +296,6 @@ inline static void evaluate_queen_mobility( position const& p, color::type c, ui
 	results.attacks[c][pieces::queen] |= moves;
 
 	moves &= ~p.bitboards[c].b[bb_type::all_pieces];
-
-	results.center_control[c] += static_cast<int>(popcount( moves & center_squares ) );
 
 	results.mobility[c] += eval_values::mobility_queen[popcount(moves)];
 }
@@ -513,7 +499,17 @@ static void evaluate_drawishness( position const& p, color::type c, eval_results
 }
 
 
-static void do_evaluate_mobility( position const& p, color::type to_move, eval_results& results )
+static void evaluate_center( position const& p, color::type c, eval_results& results )
+{
+	// Not taken by own pawns nor under control by enemy pawns
+	uint64_t potential_center_squares = central_squares[c] & ~(p.bitboards[c].b[bb_type::pawns] | p.bitboards[1-c].b[bb_type::pawn_control]);
+	uint64_t safe_center_squares = potential_center_squares & (results.attacks[c][0] | ~results.attacks[1-c][0]);
+
+	results.center_control[c] += eval_values::center_control * popcount(safe_center_squares);
+}
+
+
+static void do_evaluate( position const& p, color::type to_move, eval_results& results )
 {
 	results.king_pos[0] = bitscan( p.bitboards[0].b[bb_type::king] );
 	results.king_pos[1] = bitscan( p.bitboards[1].b[bb_type::king] );
@@ -568,6 +564,8 @@ static void do_evaluate_mobility( position const& p, color::type to_move, eval_r
 		evaluate_king_attack( p, static_cast<color::type>(c), to_move, results );
 
 		evaluate_drawishness( p, static_cast<color::type>(c), results );
+
+		evaluate_center( p, static_cast<color::type>(c), results );
 	}
 
 	evaluate_unstoppable_pawns( p, to_move, results );
@@ -582,7 +580,7 @@ score sum_up( position const& p, eval_results const& results ) {
 	ret += results.king_attack[color::white] - results.king_attack[color::black];
 	ret += results.tropism[color::white] - results.tropism[color::black];
 	ret += results.mobility[color::white] - results.mobility[color::black];
-	ret += eval_values::center_control * (results.center_control[color::white] - results.center_control[color::black]);
+	ret += results.center_control[color::white] - results.center_control[color::black];
 	ret += results.pin[color::white] - results.pin[color::black];
 	ret += results.hanging[color::white] - results.hanging[color::black];
 	ret += results.rooks_connected[color::white] - results.rooks_connected[color::black];
@@ -595,14 +593,28 @@ score sum_up( position const& p, eval_results const& results ) {
 }
 
 namespace {
-static std::string explain( const char* name, short data ) {
+static short scale( position const& p, score const& s )
+{
+
+	short mat = p.material[0].mg() + p.material[1].mg();
+	return s.scale( mat );
+}
+
+
+static std::string explain( position const& p, const char* name, score const& data ) {
 	std::stringstream ss;
-	ss << std::setw(19) << name << ": " << std::setw(5) << data << std::endl;
+	ss << std::setw(19) << name << " |             |             | " << std::setw(5) << data.mg() << " " << std::setw(5) << data.eg() << " " << std::setw(5) << scale( p, data ) << std::endl;
 	return ss.str();
 }
-static std::string explain( const char* name, score const& data ) {
+
+
+static std::string explain( position const& p, const char* name, score const* data ) {
 	std::stringstream ss;
-	ss << std::setw(19) << name << ": " << std::setw(5) << data.mg() << " " << std::setw(5) << data.eg() << std::endl;
+	ss << std::setw(19) << name << " | ";
+	ss << std::setw(5) << data[0].mg() << " " << std::setw(5) << data[0].eg() << " | ";
+	ss << std::setw(5) << data[1].mg() << " " << std::setw(5) << data[1].eg() << " | ";
+	score total = data[0] - data[1];
+	ss << std::setw(5) << total.mg() << " " << std::setw(5) << total.eg() << " " << std::setw(5) << scale( p, data[0]-data[1] ) << std::endl;
 	return ss.str();
 }
 }
@@ -613,33 +625,32 @@ std::string explain_eval( position const& p, color::type c )
 	std::stringstream ss;
 
 	eval_results results;
-	do_evaluate_mobility( p, c, results );
+	do_evaluate( p, c, results );
 
 	score full = sum_up( p, results );
 
-	ss << explain( "Material", p.material[0] - p.material[1] );
-	ss << explain( "Imbalance", results.imbalance );
-	ss << explain( "PST", p.base_eval - (p.material[0] - p.material[1]) );
-	ss << explain( "Pawn structure", results.pawn_structure[0] - results.pawn_structure[1] );
-	ss << explain( "Pawn shield", results.pawn_shield[0] - results.pawn_shield[1] );
-	ss << explain( "Unstoppable pawns", results.unstoppable_pawns[0] - results.unstoppable_pawns[1] );
-	ss << explain( "King attack", results.king_attack[0] - results.king_attack[1] );
-	ss << explain( "King tropism", results.tropism[0] - results.tropism[1] );
-	ss << explain( "Mobility",  results.mobility[0] - results.mobility[1] );
-	ss << explain( "Center control", eval_values::center_control * (results.center_control[0] - results.center_control[1]) );
-	ss << explain( "Absolute pins", results.pin[0] - results.pin[1] );
-	ss << explain( "Hanging pieces", results.hanging[0] - results.hanging[1] );
-	ss << explain( "Connected rooks", results.rooks_connected[0] - results.rooks_connected[1] );
-	ss << explain( "Rooks on open file", results.rooks_on_open_file[0] - results.rooks_on_open_file[1] );
-	ss << explain( "Other", results.other[0] - results.other[1] );
-	ss << explain( "Drawishness", results.drawnishness[0] - results.drawnishness[1] );
+	ss << "                    |    White    |    Black    |       Total" << std::endl;
+	ss << "         Term       |   MG   EG   |   MG   EG   |   MG   EG  Scaled" << std::endl;
+	ss << "===================================================================" << std::endl;
+	ss << explain( p, "Material", p.material );
+	ss << explain( p, "Imbalance", results.imbalance );
+	ss << explain( p, "PST", p.base_eval-p.material[0]+p.material[1] );
+	ss << explain( p, "Pawn structure", results.pawn_structure );
+	ss << explain( p, "Pawn shield", results.pawn_shield );
+	ss << explain( p, "Unstoppable pawns", results.unstoppable_pawns );
+	ss << explain( p, "King attack", results.king_attack );
+	ss << explain( p, "King tropism", results.tropism );
+	ss << explain( p, "Mobility",  results.mobility );
+	ss << explain( p, "Center control", results.center_control );
+	ss << explain( p, "Absolute pins", results.pin );
+	ss << explain( p, "Hanging pieces", results.hanging );
+	ss << explain( p, "Connected rooks", results.rooks_connected );
+	ss << explain( p, "Rooks on open file", results.rooks_on_open_file );
+	ss << explain( p, "Other", results.other );
+	ss << explain( p, "Drawishness", results.drawnishness );
 
-	ss << "-------------------------------" << std::endl;
-	ss << explain( "Total", full );
-
-	short eval = full.scale( p.material[0].mg() + p.material[1].mg() );
-
-	ss << explain( "Scaled", eval );
+	ss << "===================================================================" << std::endl;
+	ss << explain( p, "Total", full );
 
 	return ss.str();
 }
@@ -655,11 +666,11 @@ short evaluate_full( position const& p, color::type c )
 	}
 
 	eval_results results;
-	do_evaluate_mobility( p, c, results );
+	do_evaluate( p, c, results );
 
 	score full = sum_up( p, results );
 	
-	short eval = full.scale( p.material[0].mg() + p.material[1].mg() );
+	short eval = scale( p, full );
 	if( c ) {
 		eval = -eval;
 	}
