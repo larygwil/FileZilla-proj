@@ -505,7 +505,9 @@ void go( book& b, position const& p, color::type c, seen_positions const& seen, 
 			++calculated;
 			timestamp now;
 			int64_t seconds = (now - start).seconds();
-			std::cerr << std::endl << "Remaining work " << wl.count << " being processed with " << (calculated * 3600) / seconds << " moves/hour" << std::endl;
+			if( seconds ) {
+				std::cerr << std::endl << "Remaining work " << wl.count << " being processed with " << (calculated * 3600) / seconds << " moves/hour" << std::endl;
+			}
 		}
 
 		if( all_idle && stop ) {
@@ -588,7 +590,9 @@ void process( book& b )
 			++calculated;
 			timestamp now;
 			int64_t seconds = (now - start).seconds();
-			std::cerr << std::endl << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour" << std::endl;
+			if( seconds ) {
+				std::cerr << std::endl << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour" << std::endl;
+			}
 		}
 
 		if( all_idle && stop ) {
@@ -700,7 +704,9 @@ void update( book& b, int entries_per_pos = 5 )
 			++calculated;
 			timestamp now;
 			int64_t seconds = (now - start).seconds();
-			std::cerr << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour" << std::endl;
+			if( seconds ) {
+				std::cerr << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour" << std::endl;
+			}
 		}
 
 		if( all_idle && stop ) {
