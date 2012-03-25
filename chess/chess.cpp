@@ -134,8 +134,11 @@ int main( int argc, char const* argv[] )
 
 	logger::init( conf.logfile );
 
-	std::cerr << "  Octochess" << std::endl;
-	std::cerr << "  ---------" << std::endl;
+#ifdef REVISION
+	std::cerr << "Octochess revision " REVISION << std::endl;
+#else
+	std::cerr << "Octochess" << std::endl;
+#endif
 	std::cerr << std::endl;
 
 	init_magic();

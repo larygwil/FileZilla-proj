@@ -1,5 +1,5 @@
-CFLAGS = -O3 -g -pipe -march=corei7 -std=gnu++0x -Wall -Wextra -flto
-#CFLAGS = -O0 -g -pipe -std=gnu++0x -Wall
+CFLAGS = -O3 -g -pipe -march=corei7 -Wall -Wextra -flto -static
+#CFLAGS = -O0 -g -pipe -Wall -static
 CXXFLAGS = $(CFLAGS) -std=gnu++0x
 
 all: octochess bookgen
@@ -56,15 +56,15 @@ CHESS_FILES = $(OBJECT_FILES) \
 	g++ $(CXXFLAGS) -c -o $@ $<
 
 sqlite/sqlite3.o: sqlite/sqlite3.c sqlite/sqlite3.h
-	gcc $(CFLAGS) -pthread -c -o $@ $<
+	gcc $(CFLAGS) -DSQLITE_OMIT_LOAD_EXTENSION -pthread -c -o $@ $<
 
 
 octochess: $(CHESS_FILES)
-	g++ $(CXXFLAGS) -pthread -ldl -o $@ $^
+	g++ $(CXXFLAGS) -pthread -o $@ $^
 
 
 bookgen: $(OBJECT_FILES) bookgen.o
-	g++ $(CXXFLAGS) -pthread -ldl -o $@ $^
+	g++ $(CXXFLAGS) -pthread -o $@ $^
 
 clean:
 	rm -f octochess bookgen tables_gen

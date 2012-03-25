@@ -1,7 +1,18 @@
-CXXFLAGS = -O3 -g -pipe -march=corei7 -std=gnu++0x -Wall -flto -fwhole-program -pthread -ldl
+ARCH="corei7"
+REVISION=
+CXXFLAGS = -O3 -g -pipe -march="$(ARCH)" -std=gnu++0x -Wall -flto -fwhole-program -pthread -static $(REVISION)
+CFLAGS = -O3 -g -pipe -march="$(ARCH)" -Wall -flto -fwhole-program -pthread -static
 #CXXFLAGS = -O0 -g -pipe -std=gnu++0x
 
 all: chess-use bookgen-use
+
+sqlite/sqlite3.o: sqlite/sqlite3.c
+	gcc $(CFLAGS) -DSQLITE_OMIT_LOAD_EXTENSION -pthread -static -c -o $@ $<
+
+tables.cpp: tables_gen.cpp
+	g++ tables_gen.cpp -o tables_gen
+	./tables_gen > tables.cpp
+	rm tables_gen
 
 GENERIC_SOURCE_FILES = \
 	book.cpp \
@@ -48,7 +59,7 @@ CHESS_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
 BOOKGEN_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
 	bookgen.cpp
 
-chess-gen: *.cpp *.hpp
+chess-gen: *.cpp *.hpp sqlite/sqlite3.o tables.cpp
 	g++ $(CXXFLAGS) -fprofile-generate -o $@ $(CHESS_SOURCE_FILES)
 	./chess-gen --moves 1 --depth 11 --threads 1 auto
 	rm -f *.o uci/*.o
@@ -61,4 +72,4 @@ bookgen-use: chess-gen
 
 clean:
 	rm -f chess-gen
-	rm -f *.o uci/*.o
+	rm -f *.o uci/*.o sqlite/*.o
