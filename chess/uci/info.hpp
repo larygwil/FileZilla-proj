@@ -18,7 +18,10 @@ public:
 
 	// search depth in plies
 	void depth( uint );
-		
+
+	// selective (e.g. after check extensions) search depth in plies
+	void selective_depth( uint );
+
 	// the duration searched, this should be sent together with the principal variation.
 	void time_spent( duration const& );
 

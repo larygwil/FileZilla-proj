@@ -44,7 +44,7 @@ public:
 	 }
 
 	virtual void onRun();
-	void on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, pv_entry const* pv );
+	void on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
 
 	void apply_move( move const& m );
 
@@ -172,7 +172,7 @@ void octochess_uci::impl::onRun() {
 	}
 }
 
-void octochess_uci::impl::on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, pv_entry const* pv ) {
+void octochess_uci::impl::on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv ) {
 	info i;
 	i.depth( depth );
 	i.node_count( nodes );
@@ -190,8 +190,10 @@ void octochess_uci::impl::on_new_best_move( position const& p, color::type c, in
 		i.mate_in_n_moves( mate );
 	}
 	
-	//i.time_spent();
-	//i.nodes_per_second();
+	i.time_spent( elapsed );
+	if( !elapsed.empty() ) {
+		i.nodes_per_second( elapsed.get_items_per_second(nodes) );
+	}
 
 	i.principal_variation( pv_to_string(pv, p, c, true) );
 

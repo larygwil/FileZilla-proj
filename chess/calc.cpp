@@ -636,7 +636,7 @@ void insert_sorted( sorted_moves& moves, int forecast, move_info const& m, pv_en
 }
 
 
-void new_best_move_callback::on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, pv_entry const* pv )
+void new_best_move_callback::on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, duration const& /*elapsed*/, pv_entry const* pv )
 {
 	std::stringstream ss;
 	ss << "Best so far: " << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
@@ -746,10 +746,10 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, duration
 		}
 	}
 
-	short ev = evaluate_full( p, c );
-	new_best_cb.on_new_best_move( p, c, 0, ev, 0, old_sorted.front().pv );
-
 	timestamp start;
+
+	short ev = evaluate_full( p, c );
+	new_best_cb.on_new_best_move( p, c, 0, ev, 0, duration(), old_sorted.front().pv );
 
 	short alpha_at_prev_depth = result::loss;
 	int highest_depth = 0;
@@ -835,7 +835,7 @@ break2:
 							alpha = value;
 
 							highest_depth = max_depth;
-							new_best_cb.on_new_best_move( p, c, max_depth, value, stats.full_width_nodes + stats.quiescence_nodes, pv );
+							new_best_cb.on_new_best_move( p, c, max_depth, value, stats.full_width_nodes + stats.quiescence_nodes, timestamp() - start, pv );
 						}
 					}
 				}
@@ -919,10 +919,11 @@ break2:
 
 	m = old_sorted.begin()->m.m;
 
-	pv_entry const* pv = old_sorted.begin()->pv;
-	new_best_cb.on_new_best_move( p, c, highest_depth, old_sorted.begin()->forecast, stats.full_width_nodes + stats.quiescence_nodes, pv );
-
 	timestamp stop;
+
+	pv_entry const* pv = old_sorted.begin()->pv;
+	new_best_cb.on_new_best_move( p, c, highest_depth, old_sorted.begin()->forecast, stats.full_width_nodes + stats.quiescence_nodes, stop - start, pv );
+
 	stats.print( stop - start );
 	stats.accumulate( stop - start );
 	stats.reset( false );

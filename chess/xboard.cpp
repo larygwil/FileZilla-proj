@@ -207,7 +207,7 @@ public:
 
 	mutex mtx;
 
-	virtual void on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, pv_entry const* pv );
+	virtual void on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
 
 private:
 	calc_manager cmgr_;
@@ -355,14 +355,14 @@ move xboard_thread::stop()
 }
 
 
-void xboard_thread::on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, pv_entry const* pv )
+void xboard_thread::on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv )
 {
 	scoped_lock lock( mtx );
 	if( !abort ) {
 
-		int64_t elapsed = ( timestamp() - state.last_go_time ).milliseconds() / 10;
+		int64_t cs = elapsed.milliseconds() / 10;
 		std::stringstream ss;
-		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(6) << elapsed << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
+		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(6) << cs << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
 		if( state.post ) {
 			std::cout << ss.str();
 		}

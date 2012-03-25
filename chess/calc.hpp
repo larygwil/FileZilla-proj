@@ -12,7 +12,7 @@ int const depth_factor = 6;
 
 struct new_best_move_callback
 {
-	virtual void on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, pv_entry const* pv );
+	virtual void on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
 };
 extern new_best_move_callback default_new_best_move_callback;
 

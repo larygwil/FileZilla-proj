@@ -10,7 +10,11 @@ namespace uci {
 void info::depth( uint v ) {
 	set_value( "depth", v );
 }
-		
+
+void info::selective_depth( uint v ) {
+	set_value( "seldepth", v );
+}
+
 void info::time_spent( duration const& v ) {
 	set_value( "time", v.milliseconds() );
 }
