@@ -528,7 +528,7 @@ void book::redo_hashes()
 		if( it->move_history.size() % 2 ) {
 			hash = ~hash;
 		}
-		ss << "UPDATE position SET hash = " << hash << " WHERE pos='" << hs << "';";
+		ss << "UPDATE position SET hash = " << static_cast<sqlite_int64>(hash) << " WHERE pos='" << hs << "';";
 	}
 
 	ss << "COMMIT TRANSACTION;";

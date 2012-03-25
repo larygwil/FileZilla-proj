@@ -941,6 +941,9 @@ void run( book& b )
 		else if( cmd == "insert_log" ) {
 			b.set_insert_logfile( args );
 		}
+		else if( cmd == "redo_hashes" ) {
+			b.redo_hashes();
+		}
 		else {
 			move m;
 			if( parse_move( p, c, line, m ) ) {
