@@ -732,7 +732,7 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, duration
 			return false;
 		}
 	}
-	
+
 	// Go through them sorted by previous evaluation. This way, if on time pressure,
 	// we can abort processing at high depths early if needed.
 	sorted_moves old_sorted;
@@ -750,6 +750,12 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, duration
 
 	short ev = evaluate_full( p, c );
 	new_best_cb.on_new_best_move( p, c, 0, ev, 0, duration(), old_sorted.front().pv );
+
+	if( moves + 1 == pm && !ponder ) {
+		res = ev;
+		m = moves->m;
+		return true;
+	}
 
 	short alpha_at_prev_depth = result::loss;
 	int highest_depth = 0;
