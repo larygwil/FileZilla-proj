@@ -10,6 +10,8 @@
 ../config.hpp
 ../detect_check.cpp
 ../detect_check.hpp
+../endgame.cpp
+../endgame.hpp
 ../eval.cpp
 ../eval.hpp
 ../eval_values.cpp

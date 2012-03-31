@@ -14,6 +14,7 @@ OBJECT_FILES = \
 	calc.o \
 	config.o \
 	detect_check.o \
+	endgame.o \
 	eval.o \
 	eval_values.o \
 	fen.o \

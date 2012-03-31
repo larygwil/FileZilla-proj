@@ -13,9 +13,12 @@ namespace eval_values {
 
 	extern score doubled_pawn;
 	extern score passed_pawn;
+	extern score passed_pawn_advance_power;
 	extern score isolated_pawn;
 	extern score connected_pawn;
 	extern score candidate_passed_pawn;
+	extern score backward_pawn;
+	extern score passed_pawn_king_distance[2];
 
 	extern score pawn_shield;
 
@@ -72,6 +75,11 @@ namespace eval_values {
 
 	extern short drawishness;
 
+	extern score rooks_on_rank_7;
+
+	extern score knight_outposts[2];
+	extern score bishop_outposts[2];
+
 	// Derived
 	extern score material_values[7];
 
@@ -88,6 +96,8 @@ namespace eval_values {
 	extern score king_attack[200];
 
 	extern short insufficient_material_threshold;
+
+	extern score advanced_passed_pawn[6];
 
 	void init();
 	void update_derived();

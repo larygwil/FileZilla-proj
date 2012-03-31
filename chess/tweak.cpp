@@ -1,12 +1,14 @@
 #include "calc.hpp"
 #include "chess.hpp"
 #include "config.hpp"
+#include "endgame.hpp"
 #include "eval.hpp"
 #include "eval_values.hpp"
 #include "fen.hpp"
 #include "hash.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "random.hpp"
+#include "string.hpp"
 #include "tweak.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
@@ -146,7 +148,7 @@ void generate_test_positions()
 class gene_t
 {
 public:
-	gene_t( short* target, short min, short max, std::string const& name = "" )
+	gene_t( short* target, short min, short max, std::string const& name )
 		: target_(target)
 		, min_(min)
 		, max_(max)
@@ -180,24 +182,49 @@ struct reference_data {
 
 std::vector<gene_t> genes;
 
+#define MAKE_GENE( name, min, max ) { \
+	make_gene( eval_values:: name, min, max, #name ); \
+}
+
+#define MAKE_GENES( name, min, max, count, offset ) { \
+	make_genes( eval_values:: name, min, max, #name, count, offset ); \
+}
+
+void make_gene( score& s, short min, short max, std::string const& name )
+{
+	genes.push_back( gene_t( &s.mg(), min, max, name + ".mg()" ) );
+	genes.push_back( gene_t( &s.eg(), min, max, name + ".eg()" ) );
+}
+
+void make_genes( score* s, short min, short max, std::string const& name, int count, int offset = 0 )
+{
+	for( int i = offset; i < count + offset; ++i ) {
+		genes.push_back( gene_t( &s[i].mg(), min, max, name + "[" + to_string(i) + "].mg()" ) );
+		genes.push_back( gene_t( &s[i].eg(), min, max, name + "[" + to_string(i) + "].eg()" ) );
+	}
+}
+
 void init_genes()
 {
 	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::pawn], 70, 110, "mg_material_values[1]") );
-	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::knight], 270, 460, "mg_material_values[2]" ) );
-	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::bishop], 270, 460, "mg_material_values[3]" ) );
-	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::rook], 450, 680, "mg_material_values[4]" ) );
+	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::knight], 260, 460, "mg_material_values[2]" ) );
+	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::bishop], 260, 460, "mg_material_values[3]" ) );
+	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::rook], 430, 680, "mg_material_values[4]" ) );
 	genes.push_back( gene_t( &eval_values::mg_material_values[pieces::queen], 870, 1500, "mg_material_values[5]" ) );
 	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::pawn], 70, 110, "eg_material_values[1]") );
-	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::knight], 270, 460, "eg_material_values[2]" ) );
-	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::bishop], 270, 460, "eg_material_values[3]" ) );
-	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::rook], 450, 680, "eg_material_values[4]" ) );
+	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::knight], 260, 460, "eg_material_values[2]" ) );
+	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::bishop], 260, 460, "eg_material_values[3]" ) );
+	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::rook], 430, 680, "eg_material_values[4]" ) );
 	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::queen], 870, 1500, "eg_material_values[5]" ) );
-	genes.push_back( gene_t( &eval_values::double_bishop.mg(), 0, 100, "double_bishop.mg()" ) );
-	genes.push_back( gene_t( &eval_values::double_bishop.eg(), 0, 100, "double_bishop.eg()" ) );
+	MAKE_GENE( double_bishop, 0, 100 );
 	genes.push_back( gene_t( &eval_values::doubled_pawn.mg(), -50, 0, "doubled_pawn.mg()" ) );
 	genes.push_back( gene_t( &eval_values::doubled_pawn.eg(), -50, 0, "doubled_pawn.eg()" ) );
 	genes.push_back( gene_t( &eval_values::passed_pawn.mg(), 0, 100, "passed_pawn.mg()" ) );
 	genes.push_back( gene_t( &eval_values::passed_pawn.eg(), 0, 100, "passed_pawn.eg()" ) );
+	MAKE_GENE( backward_pawn, -50, 0 );
+	genes.push_back( gene_t( &eval_values::passed_pawn_advance_power.mg(), 100, 200, "passed_pawn_advance_power.mg()" ) );
+	genes.push_back( gene_t( &eval_values::passed_pawn_advance_power.eg(), 100, 200, "passed_pawn_advance_power.eg()" ) );
+	MAKE_GENES( passed_pawn_king_distance, 0, 10, 2, 0 );
 	genes.push_back( gene_t( &eval_values::isolated_pawn.mg(), -50, 0, "isolated_pawn.mg()" ) );
 	genes.push_back( gene_t( &eval_values::isolated_pawn.eg(), -50, 0, "isolated_pawn.eg()" ) );
 	genes.push_back( gene_t( &eval_values::connected_pawn.mg(), 0, 50, "connected_pawn.mg()" ) );
@@ -306,6 +333,10 @@ void init_genes()
 	genes.push_back( gene_t( &eval_values::side_to_move.mg(), 0, 100, "side_to_move.mg()") );
 	genes.push_back( gene_t( &eval_values::side_to_move.eg(), 0, 100, "side_to_move.eg()") );
 	genes.push_back( gene_t( &eval_values::drawishness, -500, 0, "drawishness") );
+	genes.push_back( gene_t( &eval_values::rooks_on_rank_7.mg(), 0, 100, "rooks_on_rank_7.mg()") );
+	genes.push_back( gene_t( &eval_values::rooks_on_rank_7.eg(), 0, 100, "rooks_on_rank_7.eg()") );
+	MAKE_GENES( knight_outposts, 0, 100, 2, 0 );
+	MAKE_GENES( bishop_outposts, 0, 100, 2, 0 );
 }
 
 struct individual
@@ -313,6 +344,7 @@ struct individual
 	individual()
 		: fitness_()
 		, max_diff_()
+		, max_diff_pos_()
 	{
 		for( unsigned int i = 0; i < genes.size(); ++i ) {
 			values_.push_back( *genes[i].target_ );
@@ -351,7 +383,7 @@ struct individual
 		eval_values::update_derived();
 	}
 
-	void calc_fitness( std::vector<reference_data>& data, bool verbose = false ) {
+	void calc_fitness( std::vector<reference_data>& data ) {
 		apply();
 
 		fitness_ = 0;
@@ -363,27 +395,31 @@ struct individual
 			pawn_hash_table.clear( ref.p.pawn_hash );
 			short score = evaluate_full( ref.p, ref.c );
 
-#if 1
+#if 0
 			double difference = std::abs( ref.avg_eval - static_cast<double>(score) );
 #else
 			int difference = 0;
 			if( score < ref.min_eval ) {
-				difference = int(ref.avg_eval) - score;
+				difference = int(ref.min_eval) - score;
 			}
 			else if( score > ref.max_eval ) {
-				difference = int(score) - ref.avg_eval;
+				difference = int(score) - ref.max_eval;
 			}
 #endif
 
-			if( verbose ) {
-				if( difference > 200  ) {
-//					std::cerr << "Ref: min=" << ref.min_eval << " max=" << ref.max_eval << " avg=" << ref.avg_eval << " Actual: " << score << " Fen: " << ref.fen << std::endl;
-				}
+			if( score < 0 && ref.min_eval > 0 ) {
+				difference *= 2;
+			}
+			else if( score > 0 && ref.max_eval < 0 ) {
+				difference *= 2;
 			}
 
 			fitness_ += difference;
 
-			max_diff_ = (std::max)(max_diff_, static_cast<short>(difference));
+			if( static_cast<short>(difference) > max_diff_ ) {
+				max_diff_ = static_cast<short>(difference);
+				max_diff_pos_ = i;
+			}
 		}
 		fitness_ /= data.size();
 	}
@@ -408,6 +444,7 @@ struct individual
 
 	double fitness_;
 	short max_diff_;
+	int max_diff_pos_;
 };
 
 
@@ -573,9 +610,10 @@ void save_new_best( individual& best, std::vector<reference_data>& data )
 	for( std::size_t i = 0; i < genes.size(); ++i ) {
 		std::cerr << "\t" << std::left << std::setw(30) << genes[i].name_ << std::right << " = " << std::setw(5) << best.values_[i] << ";" << std::endl;
 	}
-	std::cout << "New best: " << best.fitness_ << " " << best.max_diff_ << std::endl;
+	std::string fen = position_to_fen_noclock( data[best.max_diff_pos_].p, data[best.max_diff_pos_].c );
+	std::cout << "New best: " << best.fitness_ << " " << best.max_diff_ << "  " << fen << std::endl;
 
-	best.calc_fitness( data, true );
+	best.calc_fitness( data );
 }
 
 
@@ -619,6 +657,11 @@ std::vector<reference_data> load_data()
 		}
 		if( !parse_fen_noclock( fen, entry.p, entry.c ) ) {
 			abort();
+		}
+
+		short endgame = 0;
+		if( evaluate_endgame( entry.p, endgame ) ) {
+			continue;
 		}
 
 		entry.avg_eval = score;

@@ -227,6 +227,40 @@ int main()
 	}
 
 	{
+		std::cout << "extern short const king_distance[64][64] = {" << std::endl;
+
+		for( int target = 0; target < 64; ++target ) {
+			std::cout << "\t{" << std::endl;
+			for( unsigned int source = 0; source < 64; ++source ) {
+				std::cout << "\t\t";
+
+				short v = 0;
+
+				int source_col = source % 8;
+				int source_row = source / 8;
+				int target_col = target % 8;
+				int target_row = target / 8;
+
+				v = (std::max)( std::abs(source_col - target_col), std::abs(source_row - target_row) );
+
+				std::cout << std::dec << v;
+
+				if( source != 63 ) {
+					std::cout << ",";
+				}
+				std::cout << std::endl;
+			}
+			if( target == 63 ) {
+				std::cout << "\t}" << std::endl;
+			}
+			else {
+				std::cout << "\t}," << std::endl;
+			}
+		}
+		std::cout << "};" << std::endl;
+	}
+
+	{
 		std::cout << "extern uint64_t const ray_n[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {
@@ -770,43 +804,51 @@ int main()
 
 
 	{
-		std::cout << "extern uint64_t const connected_pawns[64] = {" << std::endl;
+		std::cout << "extern uint64_t const connected_pawns[2][64] = {" << std::endl;
 
-		for( unsigned int source = 0; source < 64; ++source ) {
-			std::cout << "\t0x";
+		for( int c = 0; c < 2; ++c ) {
+			std::cout << "\t{" << std::endl;
+			for( unsigned int source = 0; source < 64; ++source ) {
+				std::cout << "\t\t0x";
 
-			uint64_t v = 0;
+				uint64_t v = 0;
 
-			int source_col = source % 8;
-			int source_row = source / 8;
+				int source_col = source % 8;
+				int source_row = source / 8;
 
-			for( int cy = -1; cy <= 1; ++cy ) {
-				int y = source_row + cy;
-				if( y < 0 || y > 7 ) {
-					continue;
-				}
-
-				{
-					int x = source_col + 1;
-					if( x >= 0 && x < 8 ) {
-						v |= 1ull << (x + y * 8);
+				int y = source_row;
+				for( int i = 0; i < 2; ++i ) {
+					if( y != 0 && y != 7 ) {
+						{
+							int x = source_col + 1;
+							if( x >= 0 && x < 8 ) {
+								v |= 1ull << (x + y * 8);
+							}
+						}
+						{
+							int x = source_col - 1;
+							if( x >= 0 && x < 8 ) {
+								v |= 1ull << (x + y * 8);
+							}
+						}
+						y += c ? 1 : -1;
 					}
 				}
-				{
-					int x = source_col - 1;
-					if( x >= 0 && x < 8 ) {
-						v |= 1ull << (x + y * 8);
-					}
+
+				std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+				std::cout << "ull";
+				if( source != 63 ) {
+					std::cout << ",";
 				}
+				std::cout << std::endl;
 			}
-
-			std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
-
-			std::cout << "ull";
-			if( source != 63 ) {
-				std::cout << ",";
+			if( c ) {
+				std::cout << "\t}" << std::endl;
 			}
-			std::cout << std::endl;
+			else {
+				std::cout << "\t}," << std::endl;
+			}
 		}
 		std::cout << "};" << std::endl << std::endl;
 	}
@@ -870,7 +912,7 @@ int main()
 
 				if( source_row > 0 && source_row < 7 ) {
 
-					int cy = c ? 1 : -1;
+					int cy = c ? -1 : 1;
 
 					for( int y = source_row + cy; y > 0 && y < 7; y += cy ) {
 						v |= 1ull << (source_col + y * 8);
@@ -894,6 +936,50 @@ int main()
 		}
 		std::cout << "};" << std::endl << std::endl;
 	}
+
+
+	{
+		std::cout << "extern uint64_t const forward_pawn_attack[2][64] = {" << std::endl;
+
+		for( int c = 0; c < 2; ++c ) {
+			std::cout << "\t{" << std::endl;
+			for( unsigned int source = 0; source < 64; ++source ) {
+				std::cout << "\t\t0x";
+
+				uint64_t v = 0;
+
+				int source_col = source % 8;
+				int source_row = source / 8;
+
+				int cy = c ? -1 : 1;
+
+				for( int y = source_row + cy; y > 0 && y < 7; y += cy ) {
+					for( int cx = -1; cx <= 1; cx += 2 ) {
+						int x = source_col + cx;
+						if( x >= 0 && x < 8 ) {
+							v |= 1ull << (x + y * 8);
+						}
+					}
+				}
+
+				std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+				std::cout << "ull";
+				if( source != 63 ) {
+					std::cout << ",";
+				}
+				std::cout << std::endl;
+			}
+			if( c ) {
+				std::cout << "\t}" << std::endl;
+			}
+			else {
+				std::cout << "\t}," << std::endl;
+			}
+		}
+		std::cout << "};" << std::endl << std::endl;
+	}
+
 
 
 	return 0;

@@ -15,6 +15,7 @@ extern uint64_t const ray_sw[64];
 extern uint64_t const ray_nw[64];
 
 extern short const proximity[64][64];
+extern short const king_distance[64][64];
 
 extern uint64_t const pawn_control[2][64];
 
@@ -28,9 +29,10 @@ extern uint64_t const king_attack_zone[2][64];
 
 extern uint64_t const between_squares[64][64];
 
-extern uint64_t const connected_pawns[64];
+extern uint64_t const connected_pawns[2][64];
 extern uint64_t const isolated_pawns[64];
 extern uint64_t const passed_pawns[2][64];
 extern uint64_t const doubled_pawns[2][64];
+extern uint64_t const forward_pawn_attack[2][64];
 
 #endif
