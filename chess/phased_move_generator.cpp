@@ -71,7 +71,10 @@ move_info const* qsearch_move_generator::next()
 		phase = phases::captures;
 	case phases::captures:
 		while( it != ctx.move_ptr ) {
-
+			if( it->m == hash_move ) {
+				++it;
+				continue;
+			}
 			if( !check_.check ) {
 				if( !pv_node_ && it->m.piece > it->m.captured_piece ) {
 					int see_score = see( p_, c_, it->m );
@@ -152,8 +155,13 @@ move_info const* move_generator::next() {
 		std::sort( moves, ctx.move_ptr, moveSort );
 		phase = phases::captures;
 	case phases::captures:
-		if( it != ctx.move_ptr ) {
-			return it++;
+		while( it != ctx.move_ptr ) {
+			if( it->m != hash_move ) {
+				return it++;
+			}
+			else {
+				++it;
+			}
 		}
 		phase = phases::killer1;
 	case phases::killer1:
