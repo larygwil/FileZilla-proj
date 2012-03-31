@@ -45,6 +45,7 @@ public:
 	bool operator!=( score const& rhs ) const;
 
 	score operator*( short m ) const;
+	score operator*( score const& m ) const;
 
 private:
 	short mg_;

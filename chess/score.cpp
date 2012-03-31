@@ -123,3 +123,14 @@ score score::operator*( short m ) const
 
 	return score( mg_ * m, eg_ * m );
 }
+
+
+score score::operator*( score const& m ) const
+{
+	ASSERT( static_cast<int>(mg_) * m.mg_ < 32768 );
+	ASSERT( static_cast<int>(mg_) * m.mg_ >= -32768 );
+	ASSERT( static_cast<int>(eg_) * m.eg_< 32768 );
+	ASSERT( static_cast<int>(eg_) * m.eg_ >= -32768 );
+
+	return score( mg_ * m.mg_, eg_ * m.eg_ );
+}
