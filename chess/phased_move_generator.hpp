@@ -3,6 +3,8 @@
 
 #include "calc.hpp"
 
+#define DELAY_BAD_CAPTURES 0
+
 namespace phases {
 enum type {
 	hash_move,
@@ -12,6 +14,9 @@ enum type {
 	killer2,
 	noncaptures_gen,
 	noncapture,
+#if DELAY_BAD_CAPTURES
+	bad_captures,
+#endif
 	done
 };
 }
@@ -70,6 +75,7 @@ public:
 
 private:
 	killer_moves const& killers_;
+	move_info* bad_captures_end_;
 };
 
 
