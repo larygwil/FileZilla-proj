@@ -27,13 +27,13 @@
 
 namespace {
 
-static bool tweak_calc( position& p, color::type c, move& m, int& res, duration const& move_time_limit, int clock, seen_positions& seen
+static calc_result tweak_calc( position& p, color::type c, duration const& move_time_limit, int clock, seen_positions& seen
 		  , short last_mate
 		  , new_best_move_callback& new_best_cb = default_new_best_move_callback )
 {
 	if( clock > 10 ) {
 		calc_manager cmgr;
-		return cmgr.calc( p, c, m, res, move_time_limit, clock, seen, last_mate, new_best_cb );
+		return cmgr.calc( p, c, move_time_limit, clock, seen, last_mate, new_best_cb );
 	}
 
 	check_map check( p, c );
@@ -42,31 +42,32 @@ static bool tweak_calc( position& p, color::type c, move& m, int& res, duration 
 	move_info* pm = moves;
 	calculate_moves( p, c, pm, check );
 
+	calc_result result;
 	if( moves == pm ) {
 		if( check.check ) {
 			if( c == color::white ) {
 				std::cerr << "BLACK WINS" << std::endl;
-				res = result::loss;
+				result.forecast = result::loss;
 			}
 			else {
 				std::cerr << std::endl << "WHITE WINS" << std::endl;
-				res = result::win;
+				result.forecast = result::win;
 			}
-			return false;
+			return result;
 		}
 		else {
 			if( c == color::black ) {
 				std::cout << std::endl;
 			}
 			std::cerr << "DRAW" << std::endl;
-			res = result::draw;
-			return false;
+			result.forecast = result::draw;
+			return result;
 		}
 	}
 
-	m = (moves + ((rand() + get_random_unsigned_long_long()) % (pm - moves)))->m;
+	result.best_move = (moves + ((rand() + get_random_unsigned_long_long()) % (pm - moves)))->m;
 
-	return true;
+	return result;
 }
 
 static void generate_test_positions_impl()
@@ -81,29 +82,28 @@ static void generate_test_positions_impl()
 
 	unsigned int i = 1;
 	color::type c = color::white;
-	move m;
-	int res = 0;
 
 	seen_positions seen( get_zobrist_hash( p ) );
 
 	short last_mate = 0;
 
-	while( tweak_calc( p, c, m, res, duration(), i, seen, last_mate ) ) {
-		if( res > result::win_threshold ) {
-			last_mate = res;
+	calc_result result;
+	while( !(result = tweak_calc( p, c, duration(), i, seen, last_mate ) ).best_move.empty() ) {
+		if( result.forecast > result::win_threshold ) {
+			last_mate = result.forecast;
 		}
 
-		if( !validate_move( p, m, c ) ) {
+		if( !validate_move( p, result.best_move, c ) ) {
 			std::cerr << std::endl << "NOT A VALID MOVE" << std::endl;
 			exit(1);
 		}
 
 		bool reset_seen = false;
-		if( m.piece == pieces::pawn || m.captured_piece ) {
+		if( result.best_move.piece == pieces::pawn || result.best_move.captured_piece ) {
 			reset_seen = true;
 		}
 
-		apply_move( p, m, c );
+		apply_move( p, result.best_move, c );
 
 		c = static_cast<color::type>(1-c);
 

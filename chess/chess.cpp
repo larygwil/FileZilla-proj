@@ -62,23 +62,22 @@ void auto_play()
 
 	unsigned int i = 1;
 	color::type c = color::white;
-	move m;
-	int res = 0;
 
 	seen_positions seen( get_zobrist_hash( p ) );
 
 	short last_mate = 0;
 
 	calc_manager cmgr;
-	while( cmgr.calc( p, c, m, res, TIME_LIMIT, i, seen, last_mate ) ) {
+	calc_result result;
+	while( !(result = cmgr.calc( p, c, TIME_LIMIT, i, seen, last_mate ) ).best_move.empty() ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
 		}
 
-		if( res > result::win_threshold ) {
-			last_mate = res;
+		if( result.forecast > result::win_threshold ) {
+			last_mate = result.forecast;
 		}
-		std::cout << " " << move_to_string( m ) << std::endl;
+		std::cout << " " << move_to_string( result.best_move ) << std::endl;
 
 		if( c == color::black ) {
 			++i;
@@ -88,17 +87,17 @@ void auto_play()
 			}
 		}
 
-		if( !validate_move( p, m, c ) ) {
+		if( !validate_move( p, result.best_move, c ) ) {
 			std::cerr << std::endl << "NOT A VALID MOVE" << std::endl;
 			exit(1);
 		}
 
 		bool reset_seen = false;
-		if( m.piece == pieces::pawn || m.captured_piece ) {
+		if( result.best_move.piece == pieces::pawn || result.best_move.captured_piece ) {
 			reset_seen = true;
 		}
 
-		apply_move( p, m, c );
+		apply_move( p, result.best_move, c );
 		score base_eval = p.base_eval;
 		std::cerr << "Base evaluation (for white): " << base_eval << " centipawns" << std::endl;
 

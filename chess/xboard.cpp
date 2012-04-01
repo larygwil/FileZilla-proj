@@ -265,9 +265,7 @@ void xboard_thread::onRun()
 			time_limit = duration::milliseconds(10);
 		}
 
-		move m;
-		int res;
-		bool success = cmgr_.calc( state.p, state.c, m, res, time_limit, state.clock, state.seen, state.last_mate, *this );
+		calc_result result = cmgr_.calc( state.p, state.c, time_limit, state.clock, state.seen, state.last_mate, *this );
 
 		scoped_lock l( mtx );
 
@@ -275,36 +273,35 @@ void xboard_thread::onRun()
 			return;
 		}
 
-		if( success ) {
+		if( !result.best_move.empty() ) {
 
-			std::cout << "move " << move_to_string( m ) << std::endl;
+			std::cout << "move " << move_to_string( result.best_move ) << std::endl;
 
-			state.apply( m );
+			state.apply( result.best_move );
 
 			{
 				score base_eval = state.c ? -state.p.base_eval : state.p.base_eval;
-				std::cerr << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << res << std::endl;
+				std::cerr << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << result.forecast << std::endl;
 			}
 
-			if( res > result::win_threshold ) {
-				state.last_mate = res;
+			if( result.forecast > result::win_threshold ) {
+				state.last_mate = result.forecast;
 			}
 			else {
 				ponder_ = conf.ponder;
 			}
 		}
 		else {
-			if( res == result::win ) {
+			if( result.forecast == result::win ) {
 				std::cout << "1-0 (White wins)" << std::endl;
 			}
-			else if( res == result::loss ) {
+			else if( result.forecast == result::loss ) {
 				std::cout << "0-1 (Black wins)" << std::endl;
 			}
 			else {
 				std::cout << "1/2-1/2 (Draw)" << std::endl;
 			}
 		}
-		timestamp stop;
 		duration elapsed = timestamp() - state.last_go_time;
 
 		std::cerr << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
@@ -314,19 +311,19 @@ void xboard_thread::onRun()
 		else {
 			state.bonus_time = duration();
 
-			duration actual_overhead = elapsed - time_limit;
-			if( actual_overhead > state.internal_overhead ) {
-				std::cerr << "Updating internal overhead from " << state.internal_overhead.milliseconds() << " ms to " << actual_overhead.milliseconds() << " ms " << std::endl;
-				state.internal_overhead = actual_overhead;
+			if( time_limit + result.used_extra_time > elapsed ) {
+				duration actual_overhead = elapsed - time_limit - result.used_extra_time;
+				if( actual_overhead > state.internal_overhead ) {
+					std::cerr << "Updating internal overhead from " << state.internal_overhead.milliseconds() << " ms to " << actual_overhead.milliseconds() << " ms " << std::endl;
+					state.internal_overhead = actual_overhead;
+				}
 			}
 		}
 		state.time_remaining -= elapsed;
 	}
 
 	if( ponder_ ) {
-		move m;
-		int res;
-		cmgr_.calc( state.p, state.c, m, res, duration::infinity(), state.clock, state.seen, state.last_mate, *this );
+		cmgr_.calc( state.p, state.c, duration::infinity(), state.clock, state.seen, state.last_mate, *this );
 	}
 }
 

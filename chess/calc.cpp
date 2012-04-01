@@ -23,8 +23,6 @@
 #include <map>
 #include <vector>
 
-// TODO: Fine-tweak these values.
-#if 1
 int const check_extension = 6;
 int const pawn_push_extension = 6;
 int const cutoff = depth_factor + MAX_QDEPTH + 1;
@@ -32,15 +30,6 @@ int const cutoff = depth_factor + MAX_QDEPTH + 1;
 unsigned int const lmr_searched = 3;
 int const lmr_reduction = depth_factor * 2;
 int const lmr_min_depth = depth_factor * 3;
-#else
-int const check_extension = 0;
-int const pawn_push_extension = 0;
-int const cutoff = depth_factor;
-
-unsigned int const lmr_searched = 999;
-int const lmr_reduction = 0;
-int const lmr_min_depth = 0;
-#endif
 
 short const razor_pruning[] = { 220, 250, 290 };
 short const futility_pruning[] = { 110, 130, 170, 210 };
@@ -188,7 +177,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 }
 
 
-short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null )
+short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null, short full_eval )
 {
 #if 0
 	if( get_zobrist_hash(p) != hash ) {
@@ -217,7 +206,6 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	++stats.full_width_nodes;
 #endif
 
-	short full_eval = result::win;
 	move tt_move;
 
 	{
@@ -237,7 +225,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 
 	int plies_remaining = (depth - cutoff) / depth_factor;
 
-	if( !pv_node && !check.check && plies_remaining < 4 && full_eval == result::win ) {
+	if( !pv_node && !check.check /*&& plies_remaining < 4*/ && full_eval == result::win ) {
 		full_eval = evaluate_full( p, c );
 		transposition_table.store( hash, c, 0, ply, 0, 0, 0, tt_move, ctx.clock, full_eval );
 	}
@@ -253,7 +241,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	}
 
 #if NULL_MOVE_REDUCTION > 0
-	if( !pv_node && !last_was_null && !check.check && depth > (cutoff + depth_factor) && p.material[0].mg() > 1500 && p.material[1].mg() > 1500 ) {
+	if( full_eval >= beta && !pv_node && !last_was_null && !check.check && depth > (cutoff + depth_factor) && p.material[0].mg() > 1500 && p.material[1].mg() > 1500 ) {
 		null_move_block seen_block( ctx.seen, ply );
 
 		pv_entry* cpv = ctx.pv_pool.get();
@@ -264,14 +252,8 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 		ctx.pv_pool.release( cpv );
 
 		if( value >= beta ) {
-
 			if( value >= result::win_threshold ) {
 				value = beta;
-			}
-
-			if( !do_abort ) {
-				tt_move.piece = pieces::none;
-				transposition_table.store( hash, c, depth, ply, value, alpha, beta, tt_move, ctx.clock, full_eval );
 			}
 			return value;
 		}
@@ -280,7 +262,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 
 	if( tt_move.empty() && depth > ( depth_factor * 4 + cutoff) ) {
 
-		step( depth - 2 * depth_factor, ply, ctx, p, hash, c, check, alpha, beta, pv, true );
+		step( depth - 2 * depth_factor, ply, ctx, p, hash, c, check, alpha, beta, pv, true, full_eval );
 
 		short eval;
 		transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move, full_eval );
@@ -689,10 +671,12 @@ calc_manager::~calc_manager()
 }
 
 
-bool calc_manager::calc( position& p, color::type c, move& m, int& res, duration const& move_time_limit, int clock, seen_positions& seen
+calc_result calc_manager::calc( position& p, color::type c, duration const& move_time_limit, int clock, seen_positions& seen
 		  , short last_mate
 		  , new_best_move_callback& new_best_cb )
 {
+	calc_result result;
+
 	bool ponder = false;
 	if( move_time_limit != duration::infinity() ) {
 		std::cerr << "Current move time limit is " << move_time_limit.milliseconds() << " ms" << std::endl;
@@ -715,21 +699,21 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, duration
 		if( check.check ) {
 			if( c == color::white ) {
 				std::cerr << "BLACK WINS" << std::endl;
-				res = result::loss;
+				result.forecast = result::loss;
 			}
 			else {
 				std::cerr << std::endl << "WHITE WINS" << std::endl;
-				res = result::win;
+				result.forecast = result::win;
 			}
-			return false;
+			return result;
 		}
 		else {
 			if( c == color::black ) {
 				std::cout << std::endl;
 			}
 			std::cerr << "DRAW" << std::endl;
-			res = result::draw;
-			return false;
+			result.forecast = result::draw;
+			return result;
 		}
 	}
 
@@ -738,11 +722,18 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, duration
 	sorted_moves old_sorted;
 
 	{
+		move tt_move;
+		short tmp = 0;
+		transposition_table.lookup( get_zobrist_hash(p), c, 0, 0, 0, 0, tmp, tt_move, tmp );
 		for( move_info* it = moves; it != pm; ++it ) {
 			pv_entry* pv = impl_->pv_pool_.get();
 			impl_->pv_pool_.append( pv, it->m, impl_->pv_pool_.get() );
-			// Initial order is random to get some variation into play
-			insert_sorted( old_sorted, static_cast<int>(get_random_unsigned_long_long()), *it, pv );
+			// Initial order is random to get some variation into play with exception being the hash move.
+			int fc = static_cast<int>(get_random_unsigned_long_long() % 1000000);
+			if( it->m == tt_move ) {
+				fc = 1000000000;
+			}
+			insert_sorted( old_sorted, fc, *it, pv );
 		}
 	}
 
@@ -751,10 +742,10 @@ bool calc_manager::calc( position& p, color::type c, move& m, int& res, duration
 	short ev = evaluate_full( p, c );
 	new_best_cb.on_new_best_move( p, c, 0, ev, 0, duration(), old_sorted.front().pv );
 
+	result.best_move = moves->m;
 	if( moves + 1 == pm && !ponder ) {
-		res = ev;
-		m = moves->m;
-		return true;
+		result.forecast = ev;
+		return result;
 	}
 
 	short alpha_at_prev_depth = result::loss;
@@ -806,12 +797,12 @@ break2:
 
 			if( !ponder ) {
 				timestamp now;
-				if( move_time_limit > now - start ) {
-					impl_->cond_.wait( l, (start + move_time_limit - now).milliseconds() );
+				if( (move_time_limit + result.used_extra_time) > now - start ) {
+					impl_->cond_.wait( l, (start + move_time_limit + result.used_extra_time - now).milliseconds() );
 				}
 
 				now = timestamp();
-				if( !do_abort && (now - start) > move_time_limit  ) {
+				if( !do_abort && (now - start) > (move_time_limit + result.used_extra_time)  ) {
 					std::cerr << "Triggering search abort due to time limit at depth " << max_depth << std::endl;
 					do_abort = true;
 				}
@@ -829,16 +820,25 @@ break2:
 					if( !do_abort ) {
 						++evaluated;
 
+						move_info mi = impl_->threads_[t]->get_move();
 						pv_entry* pv = impl_->threads_[t]->get_pv();
 						extend_pv_from_tt( pv, p, c, max_depth, conf.quiescence_depth );
 
-						insert_sorted( sorted, value, impl_->threads_[t]->get_move(), pv );
-						if( impl_->threads_[t]->get_move().m != pv->get_best_move() ) {
+						insert_sorted( sorted, value, mi, pv );
+						if( mi.m != pv->get_best_move() ) {
 							std::cerr << "FAIL: Wrong PV move" << std::endl;
 						}
 
 						if( value > alpha ) {
 							alpha = value;
+							if( mi.m != result.best_move ) {
+								if( move_time_limit.seconds() >= 1 && max_depth > 4 ) {
+									duration extra = move_time_limit / 3;
+									result.used_extra_time += extra;
+									std::cerr << "PV changed, adding " << extra.milliseconds() << " ms extra search time." << std::endl;
+								}
+								result.best_move = mi.m;
+							}
 
 							highest_depth = max_depth;
 							new_best_cb.on_new_best_move( p, c, max_depth, value, stats.full_width_nodes + stats.quiescence_nodes, timestamp() - start, pv );
@@ -874,7 +874,7 @@ break2:
 			}
 			else {
 				duration elapsed = timestamp() - start;
-				if( !ponder && elapsed * 2 > move_time_limit ) {
+				if( !ponder && elapsed > ((move_time_limit + result.used_extra_time) * 3) / 5 ) {
 					std::cerr << "Not increasing depth due to time limit. Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
 					do_abort = true;
 				}
@@ -900,10 +900,10 @@ break2:
 			}
 			sorted.swap( old_sorted );
 			alpha_at_prev_depth = alpha;
-			res = alpha;
+			result.forecast = alpha;
 		}
 		else {
-			res = alpha_at_prev_depth;
+			result.forecast = alpha_at_prev_depth;
 		}
 		if( do_abort ) {
 			break;
@@ -923,8 +923,6 @@ break2:
 		p.release( it->pv );
 	}*/
 
-	m = old_sorted.begin()->m.m;
-
 	timestamp stop;
 
 	pv_entry const* pv = old_sorted.begin()->pv;
@@ -940,5 +938,5 @@ break2:
 		(*it)->wait_idle( l );
 	}
 
-	return true;
+	return result;
 }

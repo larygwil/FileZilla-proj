@@ -170,26 +170,24 @@ void octochess_uci::impl::onRun() {
 		calc_cond_.wait(lock);
 		if( running_ ) {
 			lock.unlock();
-			move m;
-			int res;
 
 			timestamp start_time;
 
-			bool ret = calc_manager_.calc( pos_, color_to_play_, m, res, times_.time_for_this_move(), half_moves_played_, seen_positions_, last_mate_, *this );
-			if( ret ) {
-				gui_interface_->tell_best_move( move_to_long_algebraic( m ) );
+			calc_result result = calc_manager_.calc( pos_, color_to_play_, times_.time_for_this_move(), half_moves_played_, seen_positions_, last_mate_, *this );
+			if( !result.best_move.empty() ) {
+				gui_interface_->tell_best_move( move_to_long_algebraic( result.best_move ) );
 
 				lock.lock();
 
-				apply_move( m );
+				apply_move( result.best_move );
 
 				{
 					score base_eval = color_to_play_ ? -pos_.base_eval : pos_.base_eval;
-					std::cerr << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << res << std::endl;
+					std::cerr << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << result.forecast << std::endl;
 				}
 
-				if( res > result::win_threshold ) {
-					last_mate_ = res;
+				if( result.forecast > result::win_threshold ) {
+					last_mate_ = result.forecast;
 				}
 
 				timestamp stop;

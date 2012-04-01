@@ -16,6 +16,21 @@ struct new_best_move_callback
 };
 extern new_best_move_callback default_new_best_move_callback;
 
+class calc_result
+{
+public:
+	calc_result()
+		: forecast()
+	{
+	}
+
+	short forecast;
+	move best_move;
+
+	// Extra time spent, e.g. due to changed PV
+	duration used_extra_time;
+};
+
 class calc_manager
 {
 public:
@@ -23,7 +38,7 @@ public:
 	virtual ~calc_manager();
 
 	// May modify seen_positions at indexes > root_position
-	bool calc( position& p, color::type c, move& m, int& res,
+	calc_result calc( position& p, color::type c,
 		   duration const& move_time_limit, int clock,
 		   seen_positions& seen, short last_mate,
 		   new_best_move_callback& new_best_cb = default_new_best_move_callback );
@@ -74,6 +89,6 @@ public:
 };
 
 // Depth is number of plies to search multiplied by depth_factor
-short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null );
+short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null, short full_eval = result::win );
 
 #endif
