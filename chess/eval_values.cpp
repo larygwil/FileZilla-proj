@@ -158,7 +158,7 @@ void init()
 	rooks_on_open_file.eg()        =    18;
 	rooks_on_half_open_file.mg()   =     8;
 	rooks_on_half_open_file.eg()   =    16;
-	connected_rooks.mg()           =     5;
+	connected_rooks.mg()           =     2;
 	connected_rooks.eg()           =     0;
 	tropism[1].mg()                =     0;
 	tropism[1].eg()                =     0;

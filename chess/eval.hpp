@@ -5,7 +5,6 @@
 #include "score.hpp"
 
 short evaluate_full( position const& p, color::type c );
-short evaluate_full( position const& p, color::type c );
 
 std::string explain_eval( position const& p, color::type c );
 
