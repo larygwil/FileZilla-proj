@@ -34,6 +34,7 @@ enum type {
 	outposts,
 	double_bishop,
 	side_to_move,
+	trapped_rook,
 
 	max
 };
@@ -381,6 +382,10 @@ inline static void evaluate_rooks( position const& p, color::type c, eval_result
 	if( (p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens]) & trapping_piece[c] && p.bitboards[1-c].b[bb_type::king] & trapped_king[1-c] ) {
 		add_score<detail, eval_detail::rooks_on_7h_rank>( results, c, eval_values::rooks_on_rank_7 );
 	}
+
+	// In middle-game, a rook trapped behind own pawns on the same side of a king that cannot castle is quite bad.
+	// Getting that rook into play likely requires several tempi and/or might destroy structur of own position.
+	// TODO
 }
 
 
@@ -448,11 +453,13 @@ void evaluate_passed_pawns( position const& p, color::type c, eval_results& resu
 		while( passed ) {
 			uint64_t pawn = bitscan_unset( passed );
 
+			uint64_t file = pawn % 8;
+
 			short advance = i ? (6 - pawn / 8) : (pawn / 8 - 1);
 
 			add_score<detail, eval_detail::passed_pawns>( results, static_cast<color::type>(i), (eval_values::passed_pawn_king_distance[0] * king_distance[pawn + (i ? -8 : 8)][results.king_pos[1-i]] - eval_values::passed_pawn_king_distance[1] * king_distance[pawn + (i ? -8 : 8)][results.king_pos[i]]) * advance_bonus[advance] );
 
-			add_score<detail, eval_detail::passed_pawns>( results, static_cast<color::type>(i), eval_values::advanced_passed_pawn[advance] );
+			add_score<detail, eval_detail::passed_pawns>( results, static_cast<color::type>(i), eval_values::advanced_passed_pawn[file][advance] );
 
 			uint64_t forward_squares = doubled_pawns[i][pawn];
 
@@ -523,20 +530,22 @@ static void evaluate_king_attack( position const& p, color::type c, color::type 
 
 void evaluate_pawn( uint64_t own_pawns, uint64_t foreign_pawns, color::type c, uint64_t pawn, eval_results& results, score* s )
 {
+	uint64_t file = pawn % 8;
+
 	// Unfortunately this is getting too complex for me to make branchless
 	bool doubled = doubled_pawns[c][pawn] & own_pawns;
 	if( doubled ) {
-		s[c] += eval_values::doubled_pawn;
+		s[c] += eval_values::doubled_pawn[file];
 	}
 
 	bool connected = connected_pawns[c][pawn] & own_pawns;
 	if( connected ) {
-		s[c] += eval_values::connected_pawn;
+		s[c] += eval_values::connected_pawn[file];
 	}
 
 	bool isolated = !(isolated_pawns[pawn] & own_pawns);
 	if( isolated ) {
-		s[c] += eval_values::isolated_pawn;
+		s[c] += eval_values::isolated_pawn[file];
 	}
 
 	bool passed = !(passed_pawns[c][pawn] & foreign_pawns);
@@ -553,7 +562,7 @@ void evaluate_pawn( uint64_t own_pawns, uint64_t foreign_pawns, color::type c, u
 	}
 
 	if( backwards ) {
-		s[c] += eval_values::backward_pawn;
+		s[c] += eval_values::backward_pawn[file];
 	}
 
 	bool candidate = false;
@@ -568,7 +577,7 @@ void evaluate_pawn( uint64_t own_pawns, uint64_t foreign_pawns, color::type c, u
 	}
 
 	if( candidate ) {
-		s[c] += eval_values::candidate_passed_pawn;
+		s[c] += eval_values::candidate_passed_pawn[file];
 	}
 
 #if 0
@@ -751,11 +760,15 @@ static std::string explain( position const& p, const char* name, score const* da
 
 static std::string explain( position const& p, const char* name, eval_detail::type t ) {
 	std::stringstream ss;
-	ss << std::setw(19) << name << " | ";
-	ss << std::setw(5) << detailed_results[t][0].mg() << " " << std::setw(5) << detailed_results[t][0].eg() << " | ";
-	ss << std::setw(5) << detailed_results[t][1].mg() << " " << std::setw(5) << detailed_results[t][1].eg() << " | ";
-	score total = detailed_results[t][0] - detailed_results[t][1];
-	ss << std::setw(5) << total.mg() << " " << std::setw(5) << total.eg() << " " << std::setw(5) << scale( p, detailed_results[t][0]-detailed_results[t][1] ) << std::endl;
+
+	score s[2] = detailed_results[t];
+	if( s[0] != score() || s[1] != score() ) {
+		ss << std::setw(19) << name << " | ";
+		ss << std::setw(5) << s[0].mg() << " " << std::setw(5) << s[0].eg() << " | ";
+		ss << std::setw(5) << s[1].mg() << " " << std::setw(5) << s[1].eg() << " | ";
+		score total = s[0] - s[1];
+		ss << std::setw(5) << total.mg() << " " << std::setw(5) << total.eg() << " " << std::setw(5) << scale( p, total ) << std::endl;
+	}
 	return ss.str();
 }
 
@@ -800,6 +813,7 @@ std::string explain_eval( position const& p, color::type c )
 		ss << explain( p, "Connected rooks", eval_detail::connected_rooks );
 		ss << explain( p, "Rooks on open file", eval_detail::rooks_on_open_file );
 		ss << explain( p, "Rooks on 7th rank", eval_detail::rooks_on_7h_rank );
+		ss << explain( p, "Trapped rook", eval_detail::trapped_rook );
 		ss << explain( p, "Outposts", eval_detail::outposts );
 		ss << explain( p, "Double bishop", eval_detail::double_bishop );
 		ss << explain( p, "Side to move", eval_detail::side_to_move );

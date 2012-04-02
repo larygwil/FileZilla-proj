@@ -217,22 +217,15 @@ void init_genes()
 	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::rook], 430, 680, "eg_material_values[4]" ) );
 	genes.push_back( gene_t( &eval_values::eg_material_values[pieces::queen], 870, 1500, "eg_material_values[5]" ) );
 	MAKE_GENE( double_bishop, 0, 100 );
-	genes.push_back( gene_t( &eval_values::doubled_pawn.mg(), -50, 0, "doubled_pawn.mg()" ) );
-	genes.push_back( gene_t( &eval_values::doubled_pawn.eg(), -50, 0, "doubled_pawn.eg()" ) );
-	genes.push_back( gene_t( &eval_values::passed_pawn.mg(), 0, 100, "passed_pawn.mg()" ) );
-	genes.push_back( gene_t( &eval_values::passed_pawn.eg(), 0, 100, "passed_pawn.eg()" ) );
-	MAKE_GENE( backward_pawn, -50, 0 );
-	genes.push_back( gene_t( &eval_values::passed_pawn_advance_power.mg(), 100, 200, "passed_pawn_advance_power.mg()" ) );
-	genes.push_back( gene_t( &eval_values::passed_pawn_advance_power.eg(), 100, 200, "passed_pawn_advance_power.eg()" ) );
+	MAKE_GENES( doubled_pawn, -50, 0, 4, 0 );
+	MAKE_GENES( passed_pawn, 0, 100, 4, 0);
+	MAKE_GENES( backward_pawn, -50, 0, 4, 0 );
+	MAKE_GENE( passed_pawn_advance_power, 100, 210 );
 	MAKE_GENES( passed_pawn_king_distance, 0, 10, 2, 0 );
-	genes.push_back( gene_t( &eval_values::isolated_pawn.mg(), -50, 0, "isolated_pawn.mg()" ) );
-	genes.push_back( gene_t( &eval_values::isolated_pawn.eg(), -50, 0, "isolated_pawn.eg()" ) );
-	genes.push_back( gene_t( &eval_values::connected_pawn.mg(), 0, 50, "connected_pawn.mg()" ) );
-	genes.push_back( gene_t( &eval_values::connected_pawn.eg(), 0, 50, "connected_pawn.eg()" ) );
-	genes.push_back( gene_t( &eval_values::candidate_passed_pawn.mg(), 0, 50, "candidate_passed_pawn.mg()" ) );
-	genes.push_back( gene_t( &eval_values::candidate_passed_pawn.eg(), 0, 50, "candidate_passed_pawn.eg()" ) );
-	genes.push_back( gene_t( &eval_values::pawn_shield.mg(), 0, 100, "pawn_shield.mg()" ) );
-	genes.push_back( gene_t( &eval_values::pawn_shield.eg(), 0, 100, "pawn_shield.eg()" ) );
+	MAKE_GENES( isolated_pawn, -50, 0, 4, 0);
+	MAKE_GENES( connected_pawn, 0, 50, 4, 0);
+	MAKE_GENES( candidate_passed_pawn, 0, 50, 4, 0);
+	MAKE_GENE( pawn_shield, 0, 100 );
 	genes.push_back( gene_t( &eval_values::absolute_pin[1].mg(), 0, 100, "absolute_pin[1].mg()" ) );
 	genes.push_back( gene_t( &eval_values::absolute_pin[1].eg(), 0, 100, "absolute_pin[1].eg()" ) );
 	genes.push_back( gene_t( &eval_values::absolute_pin[2].mg(), 0, 100, "absolute_pin[2].mg()" ) );
@@ -703,7 +696,7 @@ void tweak_evaluation()
 	population pop;
 	std::set<individual> seen;
 
-#if 0
+#if 1
 	pop.push_back( new individual() );
 	pop[0]->calc_fitness( data );
 	seen.insert( *pop[0] );
