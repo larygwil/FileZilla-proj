@@ -667,7 +667,7 @@ void apply_move( position& p, move const& m, color::type c )
 		p.material[c] += eval_values::material_values[ promotion_piece ];
 
 		delta -= eval_values::material_values[pieces::pawn];
-		delta += eval_values::material_values[promotion_piece] + pst[c][m.piece][m.target];
+		delta += eval_values::material_values[promotion_piece] + pst[c][promotion_piece][m.target];
 	}
 	else {
 		p.bitboards[c].b[m.piece] ^= target_square;
@@ -1064,7 +1064,8 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 	return true;
 }
 
-bool is_valid_move( position const& p, color::type c, move const& m, check_map const& check ) {
+bool is_valid_move( position const& p, color::type c, move const& m, check_map const& check )
+{
 	bool ret = do_is_valid_move( p, c, m, check );
 
 #if 0
