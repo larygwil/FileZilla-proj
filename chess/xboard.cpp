@@ -694,10 +694,10 @@ skip_getline:
 				thread.start( true );
 			}
 		}
-		else if( cmd == "~score") {
+		else if( cmd == "~score" ) {
 			std::cout << explain_eval( state.p, state.c ) << std::endl;
 		}
-		else if( cmd == "~hash") {
+		else if( cmd == "~hash" ) {
 			std::cout << get_zobrist_hash( state.p ) << std::endl;
 		}
 		else if( cmd == "~see" ) {
