@@ -100,6 +100,8 @@ short insufficient_material_threshold;
 
 score advanced_passed_pawn[8][6];
 
+score trapped_rook[2];
+
 void init()
 {
 	// Untweaked values
@@ -125,8 +127,8 @@ void init()
 	double_bishop.mg()             =    41;
 	double_bishop.eg()             =    38;
 	doubled_pawn[0].mg()           =    -9;
-	doubled_pawn[0].eg()           =   -11;
-	doubled_pawn[1].mg()           =    -1;
+	doubled_pawn[0].eg()           =   -10;
+	doubled_pawn[1].mg()           =     0;
 	doubled_pawn[1].eg()           =   -17;
 	doubled_pawn[2].mg()           =    -3;
 	doubled_pawn[2].eg()           =   -15;
@@ -174,8 +176,8 @@ void init()
 	candidate_passed_pawn[0].eg()  =    12;
 	candidate_passed_pawn[1].mg()  =     3;
 	candidate_passed_pawn[1].eg()  =    10;
-	candidate_passed_pawn[2].mg()  =     9;
-	candidate_passed_pawn[2].eg()  =    13;
+	candidate_passed_pawn[2].mg()  =     8;
+	candidate_passed_pawn[2].eg()  =    12;
 	candidate_passed_pawn[3].mg()  =    15;
 	candidate_passed_pawn[3].eg()  =    12;
 	pawn_shield.mg()               =    23;
@@ -183,13 +185,13 @@ void init()
 	absolute_pin[1].mg()           =     0;
 	absolute_pin[1].eg()           =    13;
 	absolute_pin[2].mg()           =     1;
-	absolute_pin[2].eg()           =    41;
+	absolute_pin[2].eg()           =    42;
 	absolute_pin[3].mg()           =     0;
 	absolute_pin[3].eg()           =     8;
 	absolute_pin[4].mg()           =     0;
 	absolute_pin[4].eg()           =     0;
-	absolute_pin[5].mg()           =    14;
-	absolute_pin[5].eg()           =     1;
+	absolute_pin[5].mg()           =    15;
+	absolute_pin[5].eg()           =     0;
 	rooks_on_open_file.mg()        =    25;
 	rooks_on_open_file.eg()        =    17;
 	rooks_on_half_open_file.mg()   =    11;
@@ -206,26 +208,26 @@ void init()
 	tropism[4].eg()                =     0;
 	tropism[5].mg()                =     1;
 	tropism[5].eg()                =     7;
-	king_attack_by_piece[1]        =     7;
-	king_attack_by_piece[2]        =    17;
+	king_attack_by_piece[1]        =     6;
+	king_attack_by_piece[2]        =    16;
 	king_attack_by_piece[3]        =    11;
 	king_attack_by_piece[4]        =    18;
-	king_attack_by_piece[5]        =    45;
+	king_attack_by_piece[5]        =    46;
 	king_check_by_piece[2]         =     0;
 	king_check_by_piece[3]         =     7;
-	king_check_by_piece[4]         =     5;
-	king_check_by_piece[5]         =     5;
-	king_melee_attack_by_rook      =    10;
+	king_check_by_piece[4]         =     8;
+	king_check_by_piece[5]         =     4;
+	king_melee_attack_by_rook      =     9;
 	king_melee_attack_by_queen     =    15;
-	king_attack_min[0]             =     3;
-	king_attack_max[0]             =  1342;
+	king_attack_min[0]             =     5;
+	king_attack_max[0]             =   416;
 	king_attack_rise[0]            =     2;
-	king_attack_exponent[0]        =   112;
-	king_attack_offset[0]          =    59;
-	king_attack_min[1]             =    15;
-	king_attack_max[1]             =   410;
+	king_attack_exponent[0]        =   113;
+	king_attack_offset[0]          =    60;
+	king_attack_min[1]             =    14;
+	king_attack_max[1]             =   577;
 	king_attack_rise[1]            =     1;
-	king_attack_exponent[1]        =   104;
+	king_attack_exponent[1]        =   101;
 	king_attack_offset[1]          =    98;
 	center_control.mg()            =     3;
 	center_control.eg()            =     0;
@@ -240,25 +242,25 @@ void init()
 	hanging_piece[2].mg()          =    11;
 	hanging_piece[2].eg()          =     1;
 	hanging_piece[3].mg()          =     0;
-	hanging_piece[3].eg()          =    10;
-	hanging_piece[4].mg()          =     7;
+	hanging_piece[3].eg()          =    11;
+	hanging_piece[4].mg()          =     6;
 	hanging_piece[4].eg()          =     8;
-	hanging_piece[5].mg()          =    12;
-	hanging_piece[5].eg()          =     8;
+	hanging_piece[5].mg()          =    11;
+	hanging_piece[5].eg()          =    14;
 	mobility_knight_min.mg()       =   -36;
 	mobility_knight_max.mg()       =     0;
 	mobility_knight_rise.mg()      =     5;
 	mobility_knight_offset.mg()    =     0;
 	mobility_bishop_min.mg()       =   -85;
-	mobility_bishop_max.mg()       =    38;
+	mobility_bishop_max.mg()       =    80;
 	mobility_bishop_rise.mg()      =     6;
 	mobility_bishop_offset.mg()    =     0;
 	mobility_rook_min.mg()         =  -100;
-	mobility_rook_max.mg()         =    55;
+	mobility_rook_max.mg()         =    47;
 	mobility_rook_rise.mg()        =     4;
 	mobility_rook_offset.mg()      =     7;
 	mobility_queen_min.mg()        =  -100;
-	mobility_queen_max.mg()        =     5;
+	mobility_queen_max.mg()        =     8;
 	mobility_queen_rise.mg()       =     2;
 	mobility_queen_offset.mg()     =     3;
 	mobility_knight_min.eg()       =   -18;
@@ -266,21 +268,21 @@ void init()
 	mobility_knight_rise.eg()      =     4;
 	mobility_knight_offset.eg()    =     0;
 	mobility_bishop_min.eg()       =   -72;
-	mobility_bishop_max.eg()       =    68;
+	mobility_bishop_max.eg()       =    65;
 	mobility_bishop_rise.eg()      =     4;
 	mobility_bishop_offset.eg()    =     1;
 	mobility_rook_min.eg()         =    -5;
 	mobility_rook_max.eg()         =    49;
 	mobility_rook_rise.eg()        =     8;
 	mobility_rook_offset.eg()      =     2;
-	mobility_queen_min.eg()        =   -13;
+	mobility_queen_min.eg()        =   -29;
 	mobility_queen_max.eg()        =    26;
 	mobility_queen_rise.eg()       =    47;
 	mobility_queen_offset.eg()     =     0;
 	side_to_move.mg()              =     4;
 	side_to_move.eg()              =     1;
-	drawishness                    =   -91;
-	rooks_on_rank_7.mg()           =     3;
+	drawishness                    =   -92;
+	rooks_on_rank_7.mg()           =     2;
 	rooks_on_rank_7.eg()           =    52;
 	knight_outposts[0].mg()        =     6;
 	knight_outposts[0].eg()        =     2;
@@ -289,7 +291,9 @@ void init()
 	bishop_outposts[0].mg()        =     0;
 	bishop_outposts[0].eg()        =     2;
 	bishop_outposts[1].mg()        =    17;
-	bishop_outposts[1].eg()        =     9;
+	bishop_outposts[1].eg()        =    10;
+	trapped_rook[0].mg()           =     0;
+	trapped_rook[1].mg()           =   -57;
 
 	update_derived();
 }

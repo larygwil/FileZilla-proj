@@ -2,6 +2,7 @@
 #include "eval_values.hpp"
 #include "endgame.hpp"
 #include "assert.hpp"
+#include "fen.hpp"
 #include "magic.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "util.hpp"
@@ -138,7 +139,7 @@ short evaluate_move( position const& p, color::type c, move const& m )
 		position p2 = p;
 		apply_move( p2, m, c );
 		ASSERT( p2.verify() );
-		ASSERT( p.base_eval + delta == p2.base_eval );
+		ASSERT( p.base_eval + (c ? -delta : delta) == p2.base_eval );
 	}
 #endif
 
@@ -305,6 +306,44 @@ inline static void evaluate_bishops( position const& p, color::type c, eval_resu
 
 
 template<bool detail>
+inline static void evaluate_rook_trapped( position const& p, color::type c, uint64_t rook, eval_results& results )
+{
+	// In middle-game, a rook trapped behind own pawns on the same side of a king that cannot castle is quite bad.
+	// Getting that rook into play likely requires several tempi and/or might destroy structur of own position.
+	uint64_t rook_file = rook % 8;
+
+	uint64_t rook_rank = rook / 8;
+
+	uint64_t king_file = results.king_pos[c] % 8;
+	uint64_t king_rank = results.king_pos[c] / 8;
+
+	if( king_rank == (c ? 7 : 0) && rook_rank == king_rank ) {
+		// Kingside
+		if( king_file >= 4 && rook_file > king_file ) {
+			// Check for open file to the right of the king
+			for( int f = static_cast<int>(king_file) + 1; f < 8; ++f ) {
+				if( !((0x0101010101010101ull << f) & p.bitboards[c].b[bb_type::pawns]) ) {
+					return;
+				}
+			}
+			add_score<detail, eval_detail::trapped_rook>( results, c, eval_values::trapped_rook[(p.castle[c] & castles::both) ? 0 : 1] );
+		}
+		// Queenside
+		else if( king_file < 4 && rook_file < king_file ) {
+			// Check for open file to the left of the king
+			for( int f = static_cast<int>(king_file) - 1; f >= 0; --f ) {
+				if( !((0x0101010101010101ull << f) & p.bitboards[c].b[bb_type::pawns]) ) {
+					return;
+				}
+			}
+			// If we're queenside we can't castle anymore.
+			add_score<detail, eval_detail::trapped_rook>( results, c, eval_values::trapped_rook[1] );
+		}
+	}
+}
+
+
+template<bool detail>
 inline static void evaluate_rook_mobility( position const& p, color::type c, uint64_t rook, eval_results& results )
 {
 	uint64_t const all_blockers = (p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces]) & ~p.bitboards[c].b[bb_type::rooks];
@@ -323,8 +362,14 @@ inline static void evaluate_rook_mobility( position const& p, color::type c, uin
 		add_score<detail, eval_detail::connected_rooks>( results, c, eval_values::connected_rooks );
 	}
 
+
 	moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawn_control]);
-	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility_rook[popcount(moves)] );
+	uint64_t const move_count = popcount(moves);
+	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility_rook[move_count] );
+
+	if( move_count < 4 ) {
+		evaluate_rook_trapped<detail>( p, c, rook, results );
+	}
 }
 
 
@@ -382,10 +427,6 @@ inline static void evaluate_rooks( position const& p, color::type c, eval_result
 	if( (p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens]) & trapping_piece[c] && p.bitboards[1-c].b[bb_type::king] & trapped_king[1-c] ) {
 		add_score<detail, eval_detail::rooks_on_7h_rank>( results, c, eval_values::rooks_on_rank_7 );
 	}
-
-	// In middle-game, a rook trapped behind own pawns on the same side of a king that cannot castle is quite bad.
-	// Getting that rook into play likely requires several tempi and/or might destroy structur of own position.
-	// TODO
 }
 
 

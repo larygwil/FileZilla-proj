@@ -330,6 +330,8 @@ void init_genes()
 	genes.push_back( gene_t( &eval_values::rooks_on_rank_7.eg(), 0, 100, "rooks_on_rank_7.eg()") );
 	MAKE_GENES( knight_outposts, 0, 100, 2, 0 );
 	MAKE_GENES( bishop_outposts, 0, 100, 2, 0 );
+	genes.push_back( gene_t( &eval_values::trapped_rook[0].mg(), -100, 0, "trapped_rook[0].mg()") );
+	genes.push_back( gene_t( &eval_values::trapped_rook[1].mg(), -100, 0, "trapped_rook[1].mg()") );
 }
 
 struct individual
@@ -617,6 +619,9 @@ std::vector<reference_data> load_data()
 	std::ifstream in_fen("test/testpositions.txt");
 	std::ifstream in_scores("test/data.txt");
 
+	int endgames = 0;
+	int unknown_endgames = 0;
+
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {
 		std::string score_line;
@@ -654,6 +659,12 @@ std::vector<reference_data> load_data()
 
 		short endgame = 0;
 		if( evaluate_endgame( entry.p, endgame ) ) {
+			++endgames;
+			continue;
+		}
+
+		if( popcount( entry.p.bitboards[0].b[bb_type::all_pieces] | entry.p.bitboards[1].b[bb_type::all_pieces]) <= 6 ) {
+			++unknown_endgames;
 			continue;
 		}
 
@@ -663,7 +674,7 @@ std::vector<reference_data> load_data()
 		ret.push_back(entry);
 	}
 
-	std::cout << "Loaded " << ret.size() << " test positions." << std::endl;
+	std::cout << "Loaded " << ret.size() << " test positions. Removed " << endgames << " known and " << unknown_endgames << " unknown endgames." << std::endl;
 	return ret;
 }
 
