@@ -69,7 +69,7 @@ void auto_play()
 
 	calc_manager cmgr;
 	calc_result result;
-	while( !(result = cmgr.calc( p, c, TIME_LIMIT, i, seen, last_mate ) ).best_move.empty() ) {
+	while( !(result = cmgr.calc( p, c, TIME_LIMIT, TIME_LIMIT, i, seen, last_mate ) ).best_move.empty() ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
 		}

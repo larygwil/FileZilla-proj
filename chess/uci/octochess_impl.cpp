@@ -173,7 +173,7 @@ void octochess_uci::impl::onRun() {
 
 			timestamp start_time;
 
-			calc_result result = calc_manager_.calc( pos_, color_to_play_, times_.time_for_this_move(), half_moves_played_, seen_positions_, last_mate_, *this );
+			calc_result result = calc_manager_.calc( pos_, color_to_play_, times_.time_for_this_move(), times_.total_remaining(), half_moves_played_, seen_positions_, last_mate_, *this );
 			if( !result.best_move.empty() ) {
 				gui_interface_->tell_best_move( move_to_long_algebraic( result.best_move ) );
 

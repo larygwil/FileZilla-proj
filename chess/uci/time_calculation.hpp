@@ -37,6 +37,7 @@ public:
 	void after_move_update( duration const& elapsed_time );
 
 	duration time_for_this_move() const { return time_limit_; }
+	duration total_remaining() const { return time_remaining_; }
 private:
 	duration time_limit_;
 	duration time_remaining_;

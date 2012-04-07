@@ -43,8 +43,8 @@ struct xboard_state
 		, post(true)
 		, last_mate()
 		, started_from_root()
-		, internal_overhead( duration::milliseconds(100) )
-		, communication_overhead( duration::milliseconds(50) )
+		, internal_overhead( duration::milliseconds(50) )
+		, communication_overhead( duration::milliseconds(10) )
 		, last_go_color()
 		, moves_between_updates()
 		, level_cmd_count()
@@ -68,6 +68,7 @@ struct xboard_state
 
 		time_remaining = conf.time_limit;
 		bonus_time = duration();
+		fixed_move_time = duration();
 
 		mode_ = mode::normal;
 		self = color::black;
@@ -162,6 +163,7 @@ struct xboard_state
 	bool hash_initialized;
 	uint64_t time_control;
 	duration time_increment;
+	duration fixed_move_time;
 
 	std::list<position> history;
 	std::vector<move> move_history_;
@@ -235,37 +237,57 @@ xboard_thread::~xboard_thread()
 void xboard_thread::onRun()
 {
 	if( !ponder_ ) {
-		if( state.bonus_time > state.time_remaining ) {
-			state.bonus_time = duration();
-		}
-
-		uint64_t remaining_moves;
-		if( !state.time_control ) {
-			remaining_moves = (std::max)( 20, (80 - state.clock) / 2 );
+		duration time_limit;
+		duration deadline;
+		if( !state.fixed_move_time.empty() ) {
+			time_limit = state.fixed_move_time;
+			deadline = state.fixed_move_time;
 		}
 		else {
-			remaining_moves = (state.time_control * 2) - (state.clock % (state.time_control * 2));
+			if( state.bonus_time > state.time_remaining ) {
+				state.bonus_time = duration();
+			}
+
+			uint64_t remaining_moves;
+			if( !state.time_control ) {
+				remaining_moves = (std::max)( 20, (80 - state.clock) / 2 );
+			}
+			else {
+				remaining_moves = (state.time_control * 2) - (state.clock % (state.time_control * 2));
+			}
+			time_limit = (state.time_remaining - state.bonus_time) / remaining_moves + state.bonus_time;
+
+			if( !state.time_increment.empty() && state.time_remaining > (time_limit + state.time_increment) ) {
+				time_limit += state.time_increment;
+			}
+
+			deadline = state.time_remaining;
 		}
-		duration time_limit = (state.time_remaining - state.bonus_time) / remaining_moves + state.bonus_time;
+
 		duration overhead = state.internal_overhead + state.communication_overhead;
-
-		if( !state.time_increment.empty() && state.time_remaining > (time_limit + state.time_increment) ) {
-			time_limit += state.time_increment;
-		}
-
 		if( time_limit > overhead ) {
 			time_limit -= overhead;
 		}
 		else {
 			time_limit = duration();
 		}
+		if( deadline > overhead ) {
+			deadline -= overhead;
+		}
+		else {
+			deadline = duration();
+		}
 
 		// Any less time makes no sense.
 		if( time_limit < duration::milliseconds(10) ) {
 			time_limit = duration::milliseconds(10);
 		}
+		if( deadline < duration::milliseconds(10) ) {
+			deadline = duration::milliseconds(10);
+		}
 
-		calc_result result = cmgr_.calc( state.p, state.c, time_limit, state.clock, state.seen, state.last_mate, *this );
+
+		calc_result result = cmgr_.calc( state.p, state.c, time_limit, deadline, state.clock, state.seen, state.last_mate, *this );
 
 		scoped_lock l( mtx );
 
@@ -323,7 +345,7 @@ void xboard_thread::onRun()
 	}
 
 	if( ponder_ ) {
-		cmgr_.calc( state.p, state.c, duration::infinity(), state.clock, state.seen, state.last_mate, *this );
+		cmgr_.calc( state.p, state.c, duration::infinity(), duration::infinity(), state.clock, state.seen, state.last_mate, *this );
 	}
 }
 
@@ -638,6 +660,7 @@ skip_getline:
 			state.time_control = control;
 			state.time_remaining = duration::minutes(minutes) + duration::seconds(seconds);
 			state.time_increment = duration::seconds(increment);
+			state.fixed_move_time = duration();
 		}
 		else if( cmd == "go" ) {
 			state.mode_ = mode::normal;
@@ -711,6 +734,20 @@ skip_getline:
 					std::cerr << "Not a capture move" << std::endl;
 				}
 			}
+		}
+		else if( cmd == "st" ) {
+			std::stringstream ss;
+			ss.flags(std::stringstream::skipws);
+			ss.str(args);
+
+			unsigned int t;
+			ss >> t;
+
+			if( !ss ) {
+				std::cout << "Error (bad command): Not a valid st command" << std::endl;
+				continue;
+			}
+			state.fixed_move_time = duration::seconds(static_cast<int64_t>(t));
 		}
 		else {
 			move m;

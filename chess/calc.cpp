@@ -671,7 +671,7 @@ calc_manager::~calc_manager()
 }
 
 
-calc_result calc_manager::calc( position& p, color::type c, duration const& move_time_limit, int clock, seen_positions& seen
+calc_result calc_manager::calc( position& p, color::type c, duration const& move_time_limit, duration const& deadline, int clock, seen_positions& seen
 		  , short last_mate
 		  , new_best_move_callback& new_best_cb )
 {
@@ -694,6 +694,8 @@ calc_result calc_manager::calc( position& p, color::type c, duration const& move
 
 	calculate_moves( p, c, pm, check );
 	sort_moves( moves, pm, p, c );
+
+	duration time_limit = move_time_limit;
 
 	if( moves == pm ) {
 		if( check.check ) {
@@ -797,12 +799,12 @@ break2:
 
 			if( !ponder ) {
 				timestamp now;
-				if( (move_time_limit + result.used_extra_time) > now - start ) {
-					impl_->cond_.wait( l, (start + move_time_limit + result.used_extra_time - now).milliseconds() );
+				if( time_limit > now - start ) {
+					impl_->cond_.wait( l, (start + time_limit - now).milliseconds() );
 				}
 
 				now = timestamp();
-				if( !do_abort && (now - start) > (move_time_limit + result.used_extra_time)  ) {
+				if( !do_abort && (now - start) > time_limit ) {
 					std::cerr << "Triggering search abort due to time limit at depth " << max_depth << std::endl;
 					do_abort = true;
 				}
@@ -832,9 +834,13 @@ break2:
 						if( value > alpha ) {
 							alpha = value;
 							if( mi.m != result.best_move ) {
-								if( move_time_limit.seconds() >= 1 && max_depth > 4 ) {
+								if( !ponder && move_time_limit.seconds() >= 1 && max_depth > 4 ) {
 									duration extra = move_time_limit / 3;
+									if( time_limit + extra > deadline ) {
+										extra = deadline - time_limit;
+									}
 									result.used_extra_time += extra;
+									time_limit += extra;
 									std::cerr << "PV changed, adding " << extra.milliseconds() << " ms extra search time." << std::endl;
 								}
 								result.best_move = mi.m;
@@ -874,7 +880,7 @@ break2:
 			}
 			else {
 				duration elapsed = timestamp() - start;
-				if( !ponder && elapsed > ((move_time_limit + result.used_extra_time) * 3) / 5 ) {
+				if( !ponder && elapsed > (time_limit * 3) / 5 ) {
 					std::cerr << "Not increasing depth due to time limit. Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
 					do_abort = true;
 				}
