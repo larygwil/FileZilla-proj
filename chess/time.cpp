@@ -16,28 +16,46 @@ int64_t gcd( int64_t a, int64_t b )
 	}
 
 	while( b != 0 ) {
-		if( a > b ) {
-			a -= b;
-		}
-		else {
-			b -= a;
-		}
+		int64_t t = b;
+		b = a % b;
+		a = t;
 	}
 
 	return a;
 }
+
+// The partial gcd only consideres factors of 2 and 5.
+int64_t partial_gcd( int64_t a, int64_t b )
+{
+	int64_t gcd = 1;
+
+	int t = 2;
+	while( !(a % t) && !(b % t) ) {
+		gcd *= 2;
+		t *= 2;
+	}
+
+	t = 5;
+	while( !(a % t) && !(b % t) ) {
+		gcd *= 5;
+		t *= 5;
+	}
+
+	return gcd;
+}
+
 
 int64_t muldiv( int64_t v, int64_t mul, int64_t div )
 {
 	// Divide mul and div by its greatest common divisor.
 	// This doesn't change the result per-se, but avoids 
 	// integer overflows if either value is large.
-	int64_t g = gcd( mul, div );
+	int64_t g = partial_gcd( mul, div );
 	mul /= g;
 	div /= g;
 
 	// Do the same with v and div
-	g = gcd( v, div );
+	g = partial_gcd( v, div );
 	v /= g;
 	div /= g;
 
