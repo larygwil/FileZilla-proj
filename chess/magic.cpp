@@ -1,3 +1,4 @@
+#include "assert.hpp"
 #include "magic.hpp"
 #include "magic_values.hpp"
 #include "sliding_piece_attacks.hpp"
@@ -51,6 +52,7 @@ void init_magic()
 				key >>= (64 - rook_magic_shift[pi]);
 
 				uint64_t const attack = rook_attacks( pi, occ );
+				ASSERT( !rook_magic_values[offset + key] || rook_magic_values[offset + key] == attack );
 				rook_magic_values[offset + key] = attack;
 			}
 			
@@ -77,6 +79,7 @@ void init_magic()
 				key >>= (64 - bishop_magic_shift[pi]);
 
 				uint64_t const attack = bishop_attacks( pi, occ );
+				ASSERT( !bishop_magic_values[offset + key] || bishop_magic_values[offset + key] == attack );
 				bishop_magic_values[offset + key] = attack;
 			}
 			
