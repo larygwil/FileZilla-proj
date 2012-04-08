@@ -127,7 +127,7 @@
 				OmitFramePointers="true"
 				StringPooling="true"
 				BasicRuntimeChecks="0"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
 				ProgramDataBaseFileName="$(IntDir)\octochess.pdb"

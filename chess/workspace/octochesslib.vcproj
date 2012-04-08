@@ -113,7 +113,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				ProgramDataBaseFileName="$(IntDir)\octochesslib.pdb"
@@ -171,6 +171,10 @@
 			</File>
 			<File
 				RelativePath="..\detect_check.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\endgame.cpp"
 				>
 			</File>
 			<File
@@ -309,6 +313,10 @@
 			</File>
 			<File
 				RelativePath="..\detect_check.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\endgame.hpp"
 				>
 			</File>
 			<File
