@@ -809,7 +809,7 @@ static std::string explain( position const& p, const char* name, score const* da
 static std::string explain( position const& p, const char* name, eval_detail::type t ) {
 	std::stringstream ss;
 
-	score s[2] = detailed_results[t];
+	score const* s = detailed_results[t];
 	if( s[0] != score() || s[1] != score() ) {
 		ss << std::setw(19) << name << " | ";
 		ss << std::setw(5) << s[0].mg() << " " << std::setw(5) << s[0].eg() << " | ";

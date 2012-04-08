@@ -2,18 +2,18 @@
 
 #include <iostream>
 
-enum piece_masks {
-	white_pawn =   0x0,
-	white_knight = 0x10,
-	white_bishop = 0x100,
-	white_rook =   0x1000,
-	white_queen =  0x10000,
-	black_pawn =   0x100000,
-	black_knight = 0x1000000,
-	black_bishop = 0x10000000,
-	black_rook =   0x100000000,
-	black_queen =  0x1000000000,
-	max         =  0x10000000000
+enum piece_masks : uint64_t {
+	white_pawn =   0x0ull,
+	white_knight = 0x10ull,
+	white_bishop = 0x100ull,
+	white_rook =   0x1000ull,
+	white_queen =  0x10000ull,
+	black_pawn =   0x100000ull,
+	black_knight = 0x1000000ull,
+	black_bishop = 0x10000000ull,
+	black_rook =   0x100000000ull,
+	black_queen =  0x1000000000ull,
+	max         =  0x10000000000ull
 };
 
 
