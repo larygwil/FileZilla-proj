@@ -27,6 +27,7 @@ enum type {
 	mobility,
 	center_control,
 	absolute_pins,
+	attacked_pieces,
 	hanging_pieces,
 	connected_rooks,
 	rooks_on_open_file,
@@ -707,6 +708,19 @@ static void evaluate_center( position const& p, color::type c, eval_results& res
 }
 
 template<bool detail>
+static void evaluate_attacked_pieces( position const& p, color::type c, eval_results& results )
+{
+	// Bonus for enemy pieces we attack that are not defended
+	// Undefended are those attacked by self, not attacked by enemy
+	uint64_t undefended = results.attacks[c][pieces::none] & ~results.attacks[1-c][pieces::none];
+	uint64_t defended = results.attacks[c][pieces::none] & results.attacks[1-c][pieces::none];
+	for( unsigned int piece = 1; piece < 6; ++piece ) {
+		add_score<detail, eval_detail::hanging_pieces>( results, static_cast<color::type>(c), eval_values::hanging_piece[piece] * popcount( p.bitboards[1-c].b[piece] & undefended ) );
+		add_score<detail, eval_detail::attacked_pieces>( results, static_cast<color::type>(c), eval_values::attacked_piece[piece] * popcount( p.bitboards[1-c].b[piece] & defended ) );
+	}
+}
+
+template<bool detail>
 static void do_evaluate( position const& p, color::type to_move, eval_results& results )
 {
 	results.king_pos[0] = bitscan( p.bitboards[0].b[bb_type::king] );
@@ -751,17 +765,10 @@ static void do_evaluate( position const& p, color::type to_move, eval_results& r
 	}
 
 	for( unsigned int c = 0; c < 2; ++c ) {
-		// Bonus for enemy pieces we attack that are not defended
-		// Undefended are those attacked by self, not attacked by enemy
-		uint64_t undefended = results.attacks[c][pieces::none] & ~results.attacks[1-c][pieces::none];
-		for( unsigned int piece = 1; piece < 6; ++piece ) {
-			add_score<detail, eval_detail::hanging_pieces>( results, static_cast<color::type>(c), eval_values::hanging_piece[piece] * popcount( p.bitboards[1-c].b[piece] & undefended ) );
-		}
 
+		evaluate_attacked_pieces<detail>( p, static_cast<color::type>(c), results );
 		evaluate_king_attack<detail>( p, static_cast<color::type>(c), to_move, results );
-
 		evaluate_drawishness<detail>( p, static_cast<color::type>(c), results );
-
 		evaluate_center<detail>( p, static_cast<color::type>(c), results );
 	}
 
@@ -850,6 +857,7 @@ std::string explain_eval( position const& p, color::type c )
 		ss << explain( p, "Mobility",  eval_detail::mobility );
 		ss << explain( p, "Center control", eval_detail::center_control );
 		ss << explain( p, "Absolute pins", eval_detail::absolute_pins );
+		ss << explain( p, "Attacked pieces", eval_detail::attacked_pieces );
 		ss << explain( p, "Hanging pieces", eval_detail::hanging_pieces );
 		ss << explain( p, "Connected rooks", eval_detail::connected_rooks );
 		ss << explain( p, "Rooks on open file", eval_detail::rooks_on_open_file );

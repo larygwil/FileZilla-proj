@@ -47,7 +47,7 @@ void sort_moves( move_info* begin, move_info* end, position const& p, color::typ
 	for( move_info* it = begin; it != end; ++it ) {
 		it->sort = evaluate_move( p, c, it->m );
 		if( it->m.captured_piece != pieces::none ) {
-			it->sort += eval_values::mg_material_values[ it->m.captured_piece ] * 1000000 - eval_values::mg_material_values[ it->m.piece ];
+			it->sort += eval_values::material_values[ it->m.captured_piece ].mg() * 1000000 - eval_values::material_values[ it->m.piece ].mg();
 		}
 	}
 	std::sort( begin, end, moveSort );
@@ -78,7 +78,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 #endif
 
 	if( !depth ) {
-		return beta;
+		return result::draw; //beta;
 	}
 
 	bool pv_node = alpha + 1 != beta;

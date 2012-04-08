@@ -49,7 +49,7 @@ int see( position const& p, color::type c, move const& m )
 			(pawn_control[color::white][target] & p.bitboards[color::black].b[bb_type::pawns]);
 	// Don't have to remove source piece here, done implicitly in the loop.
 
-	score[0] = eval_values::mg_material_values[ m.captured_piece ];
+	score[0] = eval_values::material_values[ m.captured_piece ].mg();
 
 	// Get new attacker
 	if( !(attackers & p.bitboards[1-c].b[bb_type::all_pieces]) ) {
@@ -60,7 +60,7 @@ int see( position const& p, color::type c, move const& m )
 
 	// Can "do", as we always have at least one.
 	do {
-		score[depth] = eval_values::mg_material_values[ attacker_piece ] - score[depth - 1];
+		score[depth] = eval_values::material_values[ attacker_piece ].mg() - score[depth - 1];
 
 		if( score[depth] < 0 && score[depth - 1] < 0 ) {
 			break; // Bad capture

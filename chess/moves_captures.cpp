@@ -27,7 +27,7 @@ void do_add_move( move_info*& moves, pieces::type const& pi,
 	mi.m.target = target;
 	mi.m.captured_piece = captured;
 
-	mi.sort = eval_values::mg_material_values[ captured ] * 32 - eval_values::mg_material_values[ pi ];
+	mi.sort = eval_values::material_values[ captured ].mg() * 32 - eval_values::material_values[ pi ].mg();
 }
 
 // Adds the move if it does not result in self getting into check

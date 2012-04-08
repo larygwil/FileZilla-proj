@@ -6,8 +6,7 @@
 #define LAZY_EVAL 980
 
 namespace eval_values {
-	extern short mg_material_values[7];
-	extern short eg_material_values[7];
+	extern score material_values[7];
 
 	extern score double_bishop;
 
@@ -52,6 +51,7 @@ namespace eval_values {
 	extern score rule_of_the_square;
 	extern score passed_pawn_unhindered;
 
+	extern score attacked_piece[6];
 	extern score hanging_piece[6];
 
 	extern score mobility_knight_min;
