@@ -3,7 +3,7 @@
 
 #include "calc.hpp"
 
-#define DELAY_BAD_CAPTURES 0
+#define DELAY_BAD_CAPTURES 1
 
 namespace phases {
 enum type {
@@ -45,6 +45,7 @@ protected:
 	position const& p_;
 	color::type const& c_;
 	check_map const& check_;
+	move_info* bad_captures_end_;
 };
 
 
@@ -75,7 +76,6 @@ public:
 
 private:
 	killer_moves const& killers_;
-	move_info* bad_captures_end_;
 };
 
 
