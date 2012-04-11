@@ -10,6 +10,18 @@
 
 statistics stats;
 
+statistics::statistics()
+	: quiescence_nodes()
+	, total_full_width_nodes()
+	, total_quiescence_nodes()
+	, total_elapsed()
+{
+	for( int i = 0; i < MAX_DEPTH; ++i ) {
+		full_width_nodes[i] = 0;
+	}
+}
+
+
 void statistics::print( duration const& elapsed )
 {
 	std::stringstream ss;
@@ -20,17 +32,27 @@ void statistics::print( duration const& elapsed )
 		// Who cares
 	}
 
+	uint64_t full = 0;
+	uint64_t max_depth = 0;
+	for( int i = 0; i < MAX_DEPTH; ++i ) {
+		if( full_width_nodes[i] ) {
+			max_depth = i;
+		}
+		full += full_width_nodes[i];
+	}
+
 	ss << std::endl;
 	ss << "Node stats:" << std::endl;
-	ss << "  Total:            " << std::setw(11) << std::setfill(' ') << full_width_nodes + quiescence_nodes << std::endl;
-	ss << "  Full-width:       " << std::setw(11) << std::setfill(' ') << full_width_nodes << std::endl;
+	ss << "  Total:            " << std::setw(11) << std::setfill(' ') << full + quiescence_nodes << std::endl;
+	ss << "  Full-width:       " << std::setw(11) << std::setfill(' ') << full << std::endl;
+	ss << "  Max depth:        " << std::setw(11) << std::setfill(' ') << max_depth << std::endl;
 	ss << "  Quiescence:       " << std::setw(11) << std::setfill(' ') << quiescence_nodes << std::endl;
 
-	if( full_width_nodes || quiescence_nodes ) {
+	if( full || quiescence_nodes ) {
 		if( !elapsed.empty() ) {
-			ss << "  Nodes per second: " << std::setw(11) << std::setfill(' ') << elapsed.get_items_per_second(full_width_nodes + quiescence_nodes) << std::endl;
+			ss << "  Nodes per second: " << std::setw(11) << std::setfill(' ') << elapsed.get_items_per_second(full + quiescence_nodes) << std::endl;
 		}
-		ss << "  Time per node:    " << std::setw(8) << elapsed.nanoseconds() / (full_width_nodes + quiescence_nodes) << " ns" << std::endl;
+		ss << "  Time per node:    " << std::setw(8) << elapsed.nanoseconds() / (full + quiescence_nodes) << " ns" << std::endl;
 	}
 
 	ss << std::endl;
@@ -104,7 +126,9 @@ void statistics::print_total()
 
 void statistics::accumulate( duration const& elapsed )
 {
-	total_full_width_nodes += full_width_nodes;
+	for( int i = 0; i < MAX_DEPTH; ++i ) {
+		total_full_width_nodes += full_width_nodes[i];
+	}
 	total_quiescence_nodes += quiescence_nodes;
 	total_elapsed += elapsed;
 }
@@ -112,7 +136,9 @@ void statistics::accumulate( duration const& elapsed )
 
 void statistics::reset( bool total )
 {
-	full_width_nodes = 0;
+	for( int i = 0; i < MAX_DEPTH; ++i ) {
+		full_width_nodes[i] = 0;
+	}
 	quiescence_nodes = 0;
 	if( total ) {
 		total_full_width_nodes = 0;
@@ -120,5 +146,22 @@ void statistics::reset( bool total )
 		total_elapsed = duration();
 	}
 }
+
+void statistics::node( int ply )
+{
+	++full_width_nodes[ply];
+}
+
+
+uint64_t statistics::nodes()
+{
+	uint64_t full = 0;
+	for( int i = 0; i < MAX_DEPTH; ++i ) {
+		full += full_width_nodes[i];
+	}
+
+	return full;
+}
+
 
 #endif

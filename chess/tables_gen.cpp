@@ -481,62 +481,6 @@ int main()
 	}
 
 	{
-		std::cout << "extern uint64_t const king_pawn_shield[2][64] = {" << std::endl;
-
-		for( int c = 0; c < 2; ++c ) {
-			std::cout << "\t{" << std::endl;
-			for( unsigned int source = 0; source < 64; ++source ) {
-				std::cout << "\t\t0x";
-
-				uint64_t v = 0;
-
-				int source_col = source % 8;
-				int source_row = source / 8;
-
-				if( ((!c && source_row < 2) || (c && source_row >= 6 )) &&
-					(source_col < 3 || source_col > 4) ) {
-
-					int cy = c ? -1 : 1;
-					int y = c ? 6 : 1;
-
-					{
-						int x = source_col + 1;
-						if( x >= 0 && x < 8 && y >= 0 && y < 8 ) {
-							v |= 1ull << (x + y * 8);
-							v |= 1ull << (x + (y + cy) * 8);
-						}
-					}
-					v |= 1ull << (source_col + y * 8);
-					v |= 1ull << (source_col + (y + cy) * 8);
-					{
-						int x = source_col - 1;
-						if( x >= 0 && x < 8 && y >= 0 && y < 8 ) {
-							v |= 1ull << (x + y * 8);
-							v |= 1ull << (x + (y + cy) * 8);
-						}
-					}
-
-				}
-
-				std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
-
-				std::cout << "ull";
-				if( source != 63 ) {
-					std::cout << ",";
-				}
-				std::cout << std::endl;
-			}
-			if( c ) {
-				std::cout << "\t}" << std::endl;
-			}
-			else {
-				std::cout << "\t}," << std::endl;
-			}
-		}
-		std::cout << "};" << std::endl << std::endl;
-	}
-
-	{
 		std::cout << "extern uint64_t const isolated_pawns[64] = {" << std::endl;
 
 		for( unsigned int source = 0; source < 64; ++source ) {

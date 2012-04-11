@@ -10,16 +10,16 @@ namespace eval_values {
 
 	extern score double_bishop;
 
-	extern score doubled_pawn[8];
+	extern score doubled_pawn[2][8];
 	extern score passed_pawn[8];
 	extern score passed_pawn_advance_power;
-	extern score isolated_pawn[8];
-	extern score connected_pawn[8];
+	extern score isolated_pawn[2][8];
+	extern score connected_pawn[2][8];
 	extern score candidate_passed_pawn[8];
-	extern score backward_pawn[8];
+	extern score backward_pawn[2][8];
 	extern score passed_pawn_king_distance[2];
 
-	extern score pawn_shield;
+	extern score pawn_shield[3];
 
 	extern score absolute_pin[7];
 

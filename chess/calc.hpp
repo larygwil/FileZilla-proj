@@ -91,6 +91,6 @@ public:
 };
 
 // Depth is number of plies to search multiplied by depth_factor
-short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null, short full_eval = result::win );
+short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null, short full_eval = result::win, unsigned char last_ply_was_capture = 64 );
 
 #endif

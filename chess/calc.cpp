@@ -11,6 +11,7 @@
 #include "random.hpp"
 #include "see.hpp"
 #include "statistics.hpp"
+#include "tables.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
 
@@ -25,6 +26,7 @@
 
 int const check_extension = 6;
 int const pawn_push_extension = 6;
+int const recapture_extension = 6;
 int const cutoff = depth_factor + MAX_QDEPTH + 1;
 
 unsigned int const lmr_searched = 3;
@@ -177,7 +179,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 }
 
 
-short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null, short full_eval )
+short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, color::type c, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null, short full_eval, unsigned char last_ply_was_capture )
 {
 #if 0
 	if( get_zobrist_hash(p) != hash ) {
@@ -203,7 +205,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	bool pv_node = alpha + 1 != beta;
 
 #ifdef USE_STATISTICS
-	++stats.full_width_nodes;
+	stats.node( ply );
 #endif
 
 	move tt_move;
@@ -300,17 +302,36 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 			bool extended = false;
 
 			uint64_t new_depth = depth - depth_factor;
+
+			// Check extension
 			if( new_check.check ) {
 				new_depth += check_extension;
 				extended = true;
 			}
-			else if( pv_node && it->m.piece == pieces::pawn ) {
+
+			// Pawn push extension
+			if( !extended && pv_node && it->m.piece == pieces::pawn ) {
+				// Pawn promoting or moving to 7th rank
 				if( it->m.target < 16 || it->m.target >= 48 ) {
+					new_depth += pawn_push_extension;
+					extended = true;
+				}
+				// Pushing a passed pawn
+				else if( !(passed_pawns[c][it->m.target] & p.bitboards[1-c].b[bb_type::pawns] ) ) {
 					new_depth += pawn_push_extension;
 					extended = true;
 				}
 			}
 
+			// Recapture extension
+			if( !extended && pv_node && it->m.captured_piece != pieces::none && it->m.target == last_ply_was_capture ) {
+				new_depth += recapture_extension;
+				extended = true;
+			}
+			unsigned char new_capture = 64;
+			if( last_ply_was_capture == 64 && it->m.captured_piece != pieces::none ) {
+				new_capture = it->m.target;
+			}
 
 			// Open question: What's the exact reason for always searching exactly the first move full width?
 			// Why not always use PVS, or at least in those cases where root alpha isn't result::loss?
@@ -318,7 +339,9 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 			if( processed_moves || !pv_node ) {
 
 				// Futility pruning
-				if( !pv_node && gen.get_phase() >= phases::noncapture && !extended && !check.check && processed_moves > 2 ) {
+				if( !extended && !pv_node && gen.get_phase() == phases::noncapture && !check.check &&
+					it->m != tt_move )
+				{
 					int plies_remaining = (depth - cutoff) / depth_factor;
 					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short)) && full_eval + futility_pruning[plies_remaining] < beta ) {
 						ctx.pv_pool.release(cpv);
@@ -329,8 +352,8 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 
 				// Open question: Use this approach or instead do PVS's null-window also when re-searching a >alpha LMR result?
 				// Barring some bugs or some weird search instability issues, it should bring the same results and speed seems similar.
-				if( !pv_node && processed_moves >= lmr_searched && gen.get_phase() >= phases::noncapture &&
-					!check.check && depth > lmr_min_depth && !extended)
+				if( !extended && !pv_node && processed_moves >= lmr_searched && gen.get_phase() >= phases::noncapture &&
+					!check.check && depth > lmr_min_depth )
 				{
 					value = -step(new_depth - lmr_reduction, ply + 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -alpha-1, -alpha, cpv, false );
 				}
@@ -339,11 +362,11 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 				}
 
 				if( value > alpha ) {
-					value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -beta, -alpha, cpv, false );
+					value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -beta, -alpha, cpv, false, result::win, new_capture );
 				}
 			}
 			else {
-				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -beta, -alpha, cpv, false );
+				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -beta, -alpha, cpv, false, result::win, new_capture );
 			}
 
 			if( it->m.captured_piece == pieces::none ) {
@@ -847,7 +870,7 @@ break2:
 							}
 
 							highest_depth = max_depth;
-							new_best_cb.on_new_best_move( p, c, max_depth, value, stats.full_width_nodes + stats.quiescence_nodes, timestamp() - start, pv );
+							new_best_cb.on_new_best_move( p, c, max_depth, value, stats.nodes() + stats.quiescence_nodes, timestamp() - start, pv );
 						}
 					}
 				}
@@ -932,7 +955,7 @@ break2:
 	timestamp stop;
 
 	pv_entry const* pv = old_sorted.begin()->pv;
-	new_best_cb.on_new_best_move( p, c, highest_depth, old_sorted.begin()->forecast, stats.full_width_nodes + stats.quiescence_nodes, stop - start, pv );
+	new_best_cb.on_new_best_move( p, c, highest_depth, old_sorted.begin()->forecast, stats.nodes() + stats.quiescence_nodes, stop - start, pv );
 
 	stats.print( stop - start );
 	stats.accumulate( stop - start );

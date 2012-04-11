@@ -4,19 +4,17 @@
 #define USE_STATISTICS 1
 
 #include "chess.hpp"
+#include "config.hpp"
 #include "time.hpp"
 
 #ifdef USE_STATISTICS
 class statistics {
 public:
-	statistics()
-		: full_width_nodes()
-		, quiescence_nodes()
-		, total_full_width_nodes()
-		, total_quiescence_nodes()
-		, total_elapsed()
-	{
-	}
+	statistics();
+
+	void node( int ply );
+
+	uint64_t nodes();
 
 	void print( duration const& elapsed );
 	void reset( bool total );
@@ -24,13 +22,15 @@ public:
 
 	void print_total();
 
-	uint64_t full_width_nodes;
 	uint64_t quiescence_nodes;
 
 	uint64_t total_full_width_nodes;
 	uint64_t total_quiescence_nodes;
 
 	duration total_elapsed;
+
+private:
+	uint64_t full_width_nodes[MAX_DEPTH];
 };
 
 extern statistics stats;

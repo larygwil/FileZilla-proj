@@ -285,15 +285,19 @@ void init_genes()
 	MAKE_GENE( material_values[pieces::rook], 430, 680 );
 	MAKE_GENE( material_values[pieces::queen], 870, 1500 );
 	MAKE_GENE( double_bishop, 0, 100 );
-	MAKE_GENES( doubled_pawn, -50, 0, 4, 0 );
+	MAKE_GENES( doubled_pawn[0], -50, 0, 4, 0 );
+	MAKE_GENES( doubled_pawn[1], -50, 0, 4, 0 );
 	MAKE_GENES( passed_pawn, 0, 100, 4, 0);
-	MAKE_GENES( backward_pawn, -50, 0, 4, 0 );
+	MAKE_GENES( backward_pawn[0], -50, 0, 4, 0 );
+	MAKE_GENES( backward_pawn[1], -50, 0, 4, 0 );
 	MAKE_GENE( passed_pawn_advance_power, 100, 210 );
 	MAKE_GENES( passed_pawn_king_distance, 0, 10, 2, 0 );
-	MAKE_GENES( isolated_pawn, -50, 0, 4, 0);
-	MAKE_GENES( connected_pawn, 0, 50, 4, 0);
+	MAKE_GENES( isolated_pawn[0], -50, 0, 4, 0);
+	MAKE_GENES( isolated_pawn[1], -50, 0, 4, 0);
+	MAKE_GENES( connected_pawn[0], 0, 50, 4, 0);
+	MAKE_GENES( connected_pawn[1], 0, 50, 4, 0);
 	MAKE_GENES( candidate_passed_pawn, 0, 50, 4, 0);
-	MAKE_GENE( pawn_shield, 0, 100 );
+	MAKE_GENES( pawn_shield, 0, 100, 3, 0 );
 	MAKE_GENES( absolute_pin, 0, 100, 5, 1 );
 	MAKE_GENE( rooks_on_open_file, 0, 100 );
 	MAKE_GENE( rooks_on_half_open_file, 0, 100 );
@@ -714,7 +718,7 @@ void tweak_evaluation()
 	population pop;
 	std::set<individual> seen;
 
-#if 1
+#if 0
 	pop.push_back( new individual() );
 	pop[0]->calc_fitness( data );
 	seen.insert( *pop[0] );

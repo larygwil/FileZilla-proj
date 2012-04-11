@@ -574,20 +574,22 @@ void evaluate_pawn( uint64_t own_pawns, uint64_t foreign_pawns, color::type c, u
 {
 	uint64_t file = pawn % 8;
 
+	int opposed = (foreign_pawns & doubled_pawns[c][pawn]) ? 1 : 0;
+
 	// Unfortunately this is getting too complex for me to make branchless
 	bool doubled = doubled_pawns[c][pawn] & own_pawns;
 	if( doubled ) {
-		s[c] += eval_values::doubled_pawn[file];
+		s[c] += eval_values::doubled_pawn[opposed][file];
 	}
 
 	bool connected = connected_pawns[c][pawn] & own_pawns;
 	if( connected ) {
-		s[c] += eval_values::connected_pawn[file];
+		s[c] += eval_values::connected_pawn[opposed][file];
 	}
 
 	bool isolated = !(isolated_pawns[pawn] & own_pawns);
 	if( isolated ) {
-		s[c] += eval_values::isolated_pawn[file];
+		s[c] += eval_values::isolated_pawn[opposed][file];
 	}
 
 	bool passed = !(passed_pawns[c][pawn] & foreign_pawns);
@@ -604,7 +606,7 @@ void evaluate_pawn( uint64_t own_pawns, uint64_t foreign_pawns, color::type c, u
 	}
 
 	if( backwards ) {
-		s[c] += eval_values::backward_pawn[file];
+		s[c] += eval_values::backward_pawn[opposed][file];
 	}
 
 	bool candidate = false;
@@ -664,21 +666,34 @@ void evaluate_pawns( position const& p, eval_results& results )
 
 
 /* Pawn shield for king
- * 1 2 3
- * 4 5 6
- *   K
- * Pawns on 1, 3, 4, 6 are awarded shield_const points, pawns on 2 and 5 are awarded twice as many points.
- * Double pawns do not count.
  *
- * Special case: a and h file. There b and g also count twice.
+ * x x x
+ * y y y
+ * z z z
+ *   K
+ * Count number of pawns ahead of king on squares x, y and z, each with own score factor.
+ * Idea is that pawns closer to king score more than pawns away from king.
+ * A king and his pawns is a somewhat mutual relationship, as a king also protects the pawns
+ * in front.
  */
 template<bool detail>
 void evaluate_pawn_shield( position const& p, eval_results& results )
 {
-	for( unsigned int c = 0; c < 2; ++c ) {
-		uint64_t shield = king_pawn_shield[c][results.king_pos[c]] & p.bitboards[c].b[bb_type::pawns];
-
-		add_score<detail, eval_detail::pawn_shield>( results, static_cast<color::type>(c), eval_values::pawn_shield * static_cast<short>(popcount(shield)) );
+	if( results.king_pos[color::white] < 40 ) {
+		uint64_t pawns = passed_pawns[color::white][results.king_pos[color::white]] & p.bitboards[color::white].b[bb_type::pawns];
+		uint64_t k = 0xffull << (results.king_pos[color::white] & 0x38);
+		for( int i = 0; i < 3; ++i ) {
+			k <<= 8;
+			add_score<detail, eval_detail::pawn_shield>( results, color::white, eval_values::pawn_shield[i] * static_cast<short>(popcount(pawns & k) ) );
+		}
+	}
+	if( results.king_pos[color::black] >= 24 ) {
+		uint64_t pawns = passed_pawns[color::black][results.king_pos[color::black]] & p.bitboards[color::black].b[bb_type::pawns];
+		uint64_t k = 0xffull << (results.king_pos[color::black] & 0x38);
+		for( int i = 0; i < 3; ++i ) {
+			k >>= 8;
+			add_score<detail, eval_detail::pawn_shield>( results, color::black, eval_values::pawn_shield[i] * static_cast<short>(popcount(pawns & k) ) );
+		}
 	}
 }
 
