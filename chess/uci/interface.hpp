@@ -43,6 +43,11 @@ public:
 	virtual std::string name() const = 0;
 	virtual std::string author() const = 0;
 
+	// options
+	virtual uint64_t get_hash_size() const = 0; // In MiB
+	virtual uint64_t get_min_hash_size() const = 0; // In MiB
+	virtual void set_hash_size( uint64_t mb ) = 0;
+
 	virtual ~engine_interface() {}
 };
 typedef std::shared_ptr<engine_interface> engine_interface_ptr;

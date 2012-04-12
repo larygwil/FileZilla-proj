@@ -25,7 +25,9 @@ private:
 	void parse_command( std::string const& line );
 	void handle_position( std::string const& params );
 	void handle_go( std::string const& params );
+	void handle_option( std::string const& args );
 	void identify( std::string const& name, std::string const& author );
+	void send_options();
 private:
 	engine_interface* callbacks_;
 	bool connected_;

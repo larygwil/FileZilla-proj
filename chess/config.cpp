@@ -20,8 +20,8 @@ config::config()
 {
 	if( sizeof(void*) < 8 ) {
 		// Limit default to 1GB on 32bit compile
-		if( memory > 0x100000ull ) {
-			memory = 0x100000ull;
+		if( memory > 1024 ) {
+			memory = 1024;
 		}
 	}
 }

@@ -135,6 +135,7 @@ public:
 
 	// max_size is in megabytes
 	bool init( unsigned int max_size );
+	bool init_if_needed( unsigned int max_size );
 
 	// Returns true on hit, caller should return eval.
 	// If it returns false and best_move.other==1, there is a best move.
@@ -154,6 +155,8 @@ private:
 	hash_key size_;
 	hash_key bucket_count_;
 	entry* data_;
+
+	unsigned int init_size_;
 };
 
 extern hash transposition_table;

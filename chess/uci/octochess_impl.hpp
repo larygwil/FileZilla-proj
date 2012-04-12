@@ -24,6 +24,11 @@ public:
 	virtual std::string name() const { return "Octochess"; }
 	virtual std::string author() const { return "Tim Kosse"; }
 
+	// options
+	virtual uint64_t get_hash_size() const; // In MiB
+	virtual uint64_t get_min_hash_size() const; // In MiB
+	virtual void set_hash_size( uint64_t mb );
+
 private:
 	class impl;
 	std::shared_ptr<impl> impl_;

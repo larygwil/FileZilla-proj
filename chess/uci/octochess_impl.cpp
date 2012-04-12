@@ -81,7 +81,6 @@ octochess_uci::octochess_uci( gui_interface_ptr const& p )
 {
 	p->set_engine_interface(*this);
 
-	transposition_table.init( conf.memory );
 	pawn_hash_table.init( conf.pawn_hash_table_size );
 	if( conf.depth == -1 ) {
 		conf.depth = MAX_DEPTH;
@@ -140,6 +139,8 @@ void octochess_uci::make_moves( std::string const& moves ) {
 }
 
 void octochess_uci::calculate( calculate_mode_type mode, position_time const& t ) {
+	transposition_table.init_if_needed( conf.memory );
+
 	scoped_lock lock(impl_->mutex_);
 
 	if( mode == calculate_mode::infinite ) {
@@ -272,6 +273,26 @@ bool octochess_uci::impl::do_book_move() {
 	return ret;
 }
 
+
+uint64_t octochess_uci::get_hash_size() const
+{
+	return conf.memory;
+}
+
+
+uint64_t octochess_uci::get_min_hash_size() const
+{
+	return 4ull;
+}
+
+
+void octochess_uci::set_hash_size( uint64_t mb )
+{
+	if( mb < 4 ) {
+		mb = 4;
+	}
+	conf.memory = mb;
+}
 
 }
 }

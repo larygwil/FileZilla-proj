@@ -4,6 +4,7 @@
 #include "time_calculation.hpp"
 
 #include "../logger.hpp"
+#include "../string.hpp"
 
 #include <cassert>
 #include <iostream>
@@ -44,25 +45,62 @@ void minimalistic_uci_protocol::init()
 {
 	assert( callbacks_ && "callbacks not set" );
 	identify( callbacks_->name(), callbacks_->author() );
-	//send options in future version
+	send_options();
 	std::cout << "uciok" << std::endl;
 	connected_ = true;
 }
 
+void minimalistic_uci_protocol::send_options()
+{
+	std::cout << "option name Hash type spin default " << callbacks_->get_hash_size() << " min " << callbacks_->get_min_hash_size() << " max 1048576" << std::endl;
+}
+
+
+void minimalistic_uci_protocol::handle_option( std::string const& args )
+{
+	std::stringstream ss;
+	ss.flags(std::stringstream::skipws);
+	ss.str( args );
+
+	std::string tokName, name, tokValue;
+	uint64_t value;
+
+	ss >> tokName >> name >> tokValue >> value;
+
+	if( !ss || tokName != "name" || tokValue != "value" ) {
+		std::cerr << "malformed setoption: " << args << std::endl;
+	}
+
+	if( name == "Hash" ) {
+		callbacks_->set_hash_size( value );
+	}
+	else {
+		std::cerr << "Unknown option: " << args << std::endl;
+	}
+}
+
+
 void minimalistic_uci_protocol::parse_command( std::string const& line ) {
-	if( line == "isready" ) {
+	std::string args;
+	std::string cmd = split( line, args );
+
+	if( cmd == "isready" ) {
 		std::cout << "readyok" << std::endl;
-	} else if( line == "quit" ) {
+	} else if( cmd == "quit" ) {
 		callbacks_->quit();
 		connected_ = false;
-	} else if( line == "stop" ) {
+	} else if( cmd == "stop" ) {
 		callbacks_->stop();
-	} else if( line == "ucinewgame" ) {
+	} else if( cmd == "ucinewgame" ) {
 		callbacks_->new_game();
-	} else if( line.substr(0, 9) == "position " ) {
-		handle_position( line.substr(9) );
-	} else if( line.substr(0, 3) == "go " ) {
-		handle_go( line.substr(3) );
+	} else if( cmd == "position" ) {
+		handle_position( args );
+	} else if( cmd == "go" ) {
+		handle_go( args );
+	} else if( cmd == "go" ) {
+		handle_go( args );
+	} else if( cmd == "setoption" ) {
+		handle_option( args );
 	} else {
 		std::cerr << "unknown command when connected: " << line << std::endl;
 	}
