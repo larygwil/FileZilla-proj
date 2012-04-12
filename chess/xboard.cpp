@@ -36,7 +36,6 @@ struct xboard_state
 		, bonus_time()
 		, mode_(mode::force)
 		, self(color::black)
-		, hash_initialized()
 		, time_control()
 		, time_increment()
 		, history()
@@ -160,7 +159,6 @@ struct xboard_state
 	duration bonus_time;
 	mode::type mode_;
 	color::type self;
-	bool hash_initialized;
 	uint64_t time_control;
 	duration time_increment;
 	duration fixed_move_time;
@@ -400,10 +398,8 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 	state.last_go_color = state.c;
 	++state.moves_between_updates;
 
-	if( !state.hash_initialized ) {
-		transposition_table.init( conf.memory );
-		state.hash_initialized = true;
-	}
+	transposition_table.init_if_needed( conf.memory );
+
 	// Do a step
 	if( conf.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
 		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.c, state.move_history_, -1, true );
@@ -525,6 +521,7 @@ skip_getline:
 			std::cout << "feature setboard=1" << std::endl;
 			std::cout << "feature sigint=0" << std::endl;
 			std::cout << "feature variants=\"normal\"" << std::endl;
+			std::cout << "feature memory=1" << std::endl;
 
 			//std::cout << "feature option=\"Apply -save\"" << std::endl;
 			//std::cout << "feature option=\"Defaults -reset\"" << std::endl;
@@ -670,10 +667,7 @@ skip_getline:
 		}
 		else if( cmd == "analyze" ) {
 			state.mode_ = mode::analyze;
-			if( !state.hash_initialized ) {
-				transposition_table.init( conf.memory );
-				state.hash_initialized = true;
-			}
+			transposition_table.init_if_needed( conf.memory );
 			thread.start( true );
 		}
 		else if( cmd == "exit" ) {
@@ -748,6 +742,24 @@ skip_getline:
 				continue;
 			}
 			state.fixed_move_time = duration::seconds(static_cast<int64_t>(t));
+		}
+		else if( cmd == "memory" ) {
+			std::stringstream ss;
+			ss.flags(std::stringstream::skipws);
+			ss.str(args);
+
+			unsigned int mem;
+			ss >> mem;
+
+			if( !ss ) {
+				std::cout << "Error (bad command): Not a valid st command" << std::endl;
+				continue;
+			}
+
+			if( mem < 4 ) {
+				mem = 4;
+			}
+			conf.memory = 4;
 		}
 		else {
 			move m;
