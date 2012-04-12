@@ -877,7 +877,7 @@ break2:
 						if( value > alpha ) {
 							alpha = value;
 							if( mi.m != result.best_move ) {
-								if( !ponder && move_time_limit.seconds() >= 1 && max_depth > 4 ) {
+								if( !ponder && move_time_limit.seconds() >= 1 && max_depth > 4 && (timestamp() - start) >= (move_time_limit / 10) ) {
 									duration extra = move_time_limit / 3;
 									if( time_limit + extra > deadline ) {
 										extra = deadline - time_limit;
