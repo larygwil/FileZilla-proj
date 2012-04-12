@@ -720,13 +720,8 @@ skip_getline:
 		else if( cmd == "~see" ) {
 			move m;
 			if( parse_move( state.p, state.c, args, m, true ) ) {
-				if( m.captured_piece != pieces::none ) {
-					int see_score = see( state.p, state.c, m );
-					std::cout << "See score: " << see_score << std::endl;
-				}
-				else {
-					std::cerr << "Not a capture move" << std::endl;
-				}
+				int see_score = see( state.p, state.c, m );
+				std::cout << "See score: " << see_score << std::endl;
 			}
 		}
 		else if( cmd == "st" ) {
