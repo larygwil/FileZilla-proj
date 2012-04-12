@@ -139,12 +139,7 @@ move_info const* qsearch_move_generator::next()
 	case phases::bad_captures:
 		while( it != bad_captures_end_ ) {
 			get_best( it, bad_captures_end_ );
-			if( it->m != hash_move ) {
-				return it++;
-			}
-			else {
-				++it;
-			}
+			return it++;
 		}
 #endif
 		phase = phases::done;
@@ -253,12 +248,7 @@ move_info const* move_generator::next() {
 	case phases::bad_captures:
 		while( it != bad_captures_end_ ) {
 			get_best( it, bad_captures_end_ );
-			if( it->m != hash_move ) {
-				return it++;
-			}
-			else {
-				++it;
-			}
+			return it++;
 		}
 #endif
 		phase = phases::done;
