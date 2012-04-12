@@ -34,7 +34,11 @@ int const lmr_reduction = depth_factor * 2;
 int const lmr_min_depth = depth_factor * 3;
 
 short const razor_pruning[] = { 220, 250, 290 };
+
+#define USE_FUTILITY 1
 short const futility_pruning[] = { 110, 130, 170, 210 };
+
+#define USE_NULLMOVE_VERIFICATION 0
 
 
 volatile bool do_abort = false;
@@ -250,14 +254,28 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 
 		check_map new_check( p, static_cast<color::type>(1-c) );
 
-		short value = -step( depth - (NULL_MOVE_REDUCTION + 1) * depth_factor, ply + 1, ctx, p, hash, static_cast<color::type>(1-c), new_check, -beta, -beta + 1, cpv, true );
+		short new_depth = depth - (NULL_MOVE_REDUCTION + 1) * depth_factor;
+
+		short value = -step( new_depth, ply + 1, ctx, p, hash, static_cast<color::type>(1-c), new_check, -beta, -beta + 1, cpv, true );
 		ctx.pv_pool.release( cpv );
 
 		if( value >= beta ) {
 			if( value >= result::win_threshold ) {
 				value = beta;
 			}
+
+#if USE_NULLMOVE_VERIFICATION
+			if( new_depth >= cutoff ) {
+				// Verification search.
+				// Helps against zugzwang and some other strange issues
+				short research_value = step( new_depth, ply, ctx, p, hash, c, check, alpha, beta, pv, true, full_eval, last_ply_was_capture );
+				if( research_value >= beta ) {
+					return value;
+				}
+			}
+#else
 			return value;
+#endif
 		}
 	}
 #endif
@@ -338,6 +356,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 			// Why not use full width unless alpha > old_alpha?
 			if( processed_moves || !pv_node ) {
 
+#if USE_FUTILITY
 				// Futility pruning
 				if( !extended && !pv_node && gen.get_phase() == phases::noncapture && !check.check &&
 					it->m != tt_move )
@@ -349,6 +368,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 						continue;
 					}
 				}
+#endif
 
 				// Open question: Use this approach or instead do PVS's null-window also when re-searching a >alpha LMR result?
 				// Barring some bugs or some weird search instability issues, it should bring the same results and speed seems similar.
