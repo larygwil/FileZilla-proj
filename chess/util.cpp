@@ -471,6 +471,17 @@ void init_board( position& p )
 
 void position::update_derived()
 {
+	for( int i = 0; i < 2; ++i ) {
+		bitboards[i].b[bb_type::all_pieces] = bitboards[i].b[bb_type::pawns] | bitboards[i].b[bb_type::knights] | bitboards[i].b[bb_type::bishops] | bitboards[i].b[bb_type::rooks] | bitboards[i].b[bb_type::queens] | bitboards[i].b[bb_type::king];
+
+		bitboards[i].b[bb_type::pawn_control] = 0;
+		uint64_t pawns = bitboards[i].b[bb_type::pawns];
+		while( pawns ) {
+			uint64_t pawn = bitscan_unset( pawns );
+			bitboards[i].b[bb_type::pawn_control] |= pawn_control[i][pawn];
+		}
+	}
+
 	init_material();
 	init_eval();
 	init_pawn_hash();
@@ -537,17 +548,6 @@ void init_bitboards( position& p )
 	p.bitboards[color::black].b[bb_type::rooks]   = (1ull + (1ull << 7)) << (7*8);
 	p.bitboards[color::black].b[bb_type::queens]  = (1ull << 3) << (7*8);
 	p.bitboards[color::black].b[bb_type::king]    = (1ull << 4) << (7*8);
-
-	for( int c = 0; c < 2; ++c ) {
-		p.bitboards[c].b[bb_type::all_pieces] = p.bitboards[c].b[bb_type::pawns] | p.bitboards[c].b[bb_type::knights] | p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens] | p.bitboards[c].b[bb_type::king];
-
-		p.bitboards[c].b[bb_type::pawn_control] = 0;
-		uint64_t pawns = p.bitboards[c].b[bb_type::pawns];
-		while( pawns ) {
-			uint64_t pawn = bitscan_unset( pawns );
-			p.bitboards[c].b[bb_type::pawn_control] |= pawn_control[c][pawn];
-		}
-	}
 }
 
 void apply_move( position& p, move const& m, color::type c )
@@ -1109,6 +1109,16 @@ bool position::verify() const {
 	if( material[0] != p2.material[0] || material[1] != p2.material[1] ) {
 		std::cerr << "Material mismatch!" << std::endl;
 		return false;
+	}
+	for( int c = 0; c < 1; ++c ) {
+		if( bitboards[c].b[bb_type::all_pieces] != p2.bitboards[c].b[bb_type::all_pieces] ) {
+			std::cerr << "Bitboard error: Wron all pieces" << std::endl;
+			return false;
+		}
+		if( bitboards[c].b[bb_type::pawn_control] != p2.bitboards[c].b[bb_type::pawn_control] ) {
+			std::cerr << "Bitboard error: Wrong pawn control!" << std::endl;
+			return false;
+		}
 	}
 
 	return true;

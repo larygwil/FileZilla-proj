@@ -332,17 +332,6 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c, std
 		return false;
 	}
 
-	for( int i = 0; i < 2; ++i ) {
-		p.bitboards[i].b[bb_type::all_pieces] = p.bitboards[i].b[bb_type::pawns] | p.bitboards[i].b[bb_type::knights] | p.bitboards[i].b[bb_type::bishops] | p.bitboards[i].b[bb_type::rooks] | p.bitboards[i].b[bb_type::queens] | p.bitboards[i].b[bb_type::king];
-
-		p.bitboards[i].b[bb_type::pawn_control] = 0;
-		uint64_t pawns = p.bitboards[i].b[bb_type::pawns];
-		while( pawns ) {
-			uint64_t pawn = bitscan_unset( pawns );
-			p.bitboards[i].b[bb_type::pawn_control] |= pawn_control[i][pawn];
-		}
-	}
-
 	p.update_derived();
 
 	check_map check( p, static_cast<color::type>(1-c) );

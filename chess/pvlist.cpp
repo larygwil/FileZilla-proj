@@ -1,3 +1,4 @@
+#include "assert.hpp"
 #include "config.hpp"
 #include "hash.hpp"
 #include "pvlist.hpp"
@@ -122,6 +123,7 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 	int depth = 0;
 	pv_entry* prev = 0;
 	while( pv && !pv->get_best_move().empty() ) {
+		ASSERT( is_valid_move( p, c, pv->get_best_move(), check_map(p, c) ) );
 		++depth;
 		apply_move( p, pv->get_best_move(), c );
 
