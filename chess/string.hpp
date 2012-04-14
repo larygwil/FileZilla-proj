@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <limits>
 
 std::string split( std::string const& str, std::string& args, std::string::value_type c = ' ' );
 
@@ -16,5 +17,30 @@ inline std::string to_string( T const& t )
 	return ss.str();
 }
 
+
+template< typename T = uint64_t>
+bool to_int( std::string const& s, T& t, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max() )
+{
+	bool ret = false;
+
+	std::stringstream ss;
+	ss.flags(std::stringstream::skipws);
+	ss.str(s);
+
+	ss >> t;
+
+	ret = ss;
+
+	if( ss ) {
+		if( t < min ) {
+			t = min;
+		}
+		else if( t > max ) {
+			t = max;
+		}
+	}
+
+	return ret;
+}
 
 #endif

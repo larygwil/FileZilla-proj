@@ -99,7 +99,7 @@ private:
 };
 
 
-int get_cpu_count();
+unsigned int get_cpu_count();
 
 // In MiB
 int get_system_memory();

@@ -47,6 +47,9 @@ public:
 	virtual uint64_t get_hash_size() const = 0; // In MiB
 	virtual uint64_t get_min_hash_size() const = 0; // In MiB
 	virtual void set_hash_size( uint64_t mb ) = 0;
+	virtual unsigned int get_threads() const = 0;
+	virtual unsigned int get_max_threads() const = 0;
+	virtual void set_threads( unsigned int threads ) = 0;
 
 	virtual ~engine_interface() {}
 };

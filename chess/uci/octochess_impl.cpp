@@ -294,6 +294,31 @@ void octochess_uci::set_hash_size( uint64_t mb )
 	conf.memory = mb;
 }
 
+
+unsigned int octochess_uci::get_threads() const
+{
+	return conf.thread_count;
+}
+
+
+unsigned int octochess_uci::get_max_threads() const
+{
+	return get_cpu_count();
+}
+
+
+void octochess_uci::set_threads( unsigned int threads )
+{
+	if( !threads ) {
+		threads = 1;
+	}
+	if( threads > get_cpu_count() ) {
+		threads = get_cpu_count();
+	}
+	conf.thread_count = threads;
+}
+
+
 }
 }
 

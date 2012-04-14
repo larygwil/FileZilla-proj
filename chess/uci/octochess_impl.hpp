@@ -28,6 +28,9 @@ public:
 	virtual uint64_t get_hash_size() const; // In MiB
 	virtual uint64_t get_min_hash_size() const; // In MiB
 	virtual void set_hash_size( uint64_t mb );
+	virtual unsigned int get_threads() const;
+	virtual unsigned int get_max_threads() const;
+	virtual void set_threads( unsigned int threads );
 
 private:
 	class impl;

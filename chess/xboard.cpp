@@ -522,6 +522,7 @@ skip_getline:
 			std::cout << "feature sigint=0" << std::endl;
 			std::cout << "feature variants=\"normal\"" << std::endl;
 			std::cout << "feature memory=1" << std::endl;
+			std::cout << "feature smp=1" << std::endl;
 
 			//std::cout << "feature option=\"Apply -save\"" << std::endl;
 			//std::cout << "feature option=\"Defaults -reset\"" << std::endl;
@@ -725,36 +726,31 @@ skip_getline:
 			}
 		}
 		else if( cmd == "st" ) {
-			std::stringstream ss;
-			ss.flags(std::stringstream::skipws);
-			ss.str(args);
-
-			unsigned int t;
-			ss >> t;
-
-			if( !ss ) {
-				std::cout << "Error (bad command): Not a valid st command" << std::endl;
-				continue;
+			int64_t t;
+			if( to_int<int64_t>( args, t, 1 ) ) {
+				state.fixed_move_time = duration::seconds(t);
 			}
-			state.fixed_move_time = duration::seconds(static_cast<int64_t>(t));
+			else {
+				std::cout << "Error (bad command): Not a valid st command" << std::endl;
+			}
 		}
 		else if( cmd == "memory" ) {
-			std::stringstream ss;
-			ss.flags(std::stringstream::skipws);
-			ss.str(args);
-
 			unsigned int mem;
-			ss >> mem;
-
-			if( !ss ) {
+			if( to_int<unsigned int>( args, mem, 4 ) ) {
+				conf.memory = mem;
+			}
+			else {
 				std::cout << "Error (bad command): Not a valid st command" << std::endl;
-				continue;
 			}
-
-			if( mem < 4 ) {
-				mem = 4;
+		}
+		else if( cmd == "cores" ) {
+			unsigned int cores;
+			if( to_int<unsigned int>( args, cores, 1, get_cpu_count() ) ) {
+				conf.thread_count = cores;
 			}
-			conf.memory = 4;
+			else {
+				std::cout << "Error (bad command): Not a valid st command" << std::endl;
+			}
 		}
 		else {
 			move m;

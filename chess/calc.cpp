@@ -674,9 +674,7 @@ class calc_manager::impl
 {
 public:
 	impl() {
-		for( int t = 0; t < conf.thread_count; ++t ) {
-			threads_.push_back( new processing_thread( mtx_, cond_ ) );
-		}
+		update_threads();
 	}
 
 	~impl() {
@@ -690,6 +688,23 @@ public:
 
 		for( std::vector<processing_thread*>::iterator it = threads_.begin(); it != threads_.end(); ++it ) {
 			delete *it;
+		}
+	}
+
+	void update_threads() {
+		while( threads_.size() < conf.thread_count ) {
+			threads_.push_back( new processing_thread( mtx_, cond_ ) );
+		}
+		while( threads_.size() > conf.thread_count ) {
+			std::vector<processing_thread*>::iterator it = --threads_.end();
+
+			{
+				scoped_lock l( mtx_ );
+				(*it)->quit( l );
+			}
+
+			delete *it;
+			threads_.erase( it );
 		}
 	}
 
@@ -718,6 +733,8 @@ calc_result calc_manager::calc( position& p, color::type c, duration const& move
 		  , short last_mate
 		  , new_best_move_callback& new_best_cb )
 {
+	impl_->update_threads();
+
 	calc_result result;
 
 	bool ponder = false;

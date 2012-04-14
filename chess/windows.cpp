@@ -161,7 +161,7 @@ void thread::spawn()
 	t_ = CreateThread( NULL, 0, &run, this, 0, 0 );
 }
 
-int get_cpu_count()
+unsigned int get_cpu_count()
 {
 	PSYSTEM_LOGICAL_PROCESSOR_INFORMATION buffer = 0;
 	DWORD len = 0;

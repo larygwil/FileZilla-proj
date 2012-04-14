@@ -53,6 +53,7 @@ void minimalistic_uci_protocol::init()
 void minimalistic_uci_protocol::send_options()
 {
 	std::cout << "option name Hash type spin default " << callbacks_->get_hash_size() << " min " << callbacks_->get_min_hash_size() << " max 1048576" << std::endl;
+	std::cout << "option name Threads type spin default " << callbacks_->get_threads() << " min 1 max " << callbacks_->get_max_threads() << std::endl;
 }
 
 
@@ -73,6 +74,9 @@ void minimalistic_uci_protocol::handle_option( std::string const& args )
 
 	if( name == "Hash" ) {
 		callbacks_->set_hash_size( value );
+	}
+	if( name == "Threads" ) {
+		callbacks_->set_threads( value );
 	}
 	else {
 		std::cerr << "Unknown option: " << args << std::endl;

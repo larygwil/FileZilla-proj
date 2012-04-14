@@ -17,7 +17,7 @@ struct config
 	// Returns the command to execute
 	std::string init( int argc,  char const* argv[] );
 
-	int thread_count;
+	unsigned int thread_count;
 	unsigned int memory;
 	unsigned int max_moves; // only for auto play
 	signed short depth;

@@ -104,7 +104,7 @@ inline uint64_t bitscan_reverse( uint64_t mask )
 	return static_cast<uint64_t >(i);
 }
 
-int get_cpu_count();
+unsigned int get_cpu_count();
 
 // In MiB
 int get_system_memory();
