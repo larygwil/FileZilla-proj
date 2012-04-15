@@ -1,7 +1,13 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
-#if _MSC_VER
+#ifndef WINDOWS
+  #if _WIN32 || _WIN64 || WIN32 || WIN64 || _MSC_VER
+    #define WINDOWS 1
+  #endif
+#endif
+
+#if WINDOWS
   #include "windows.hpp"
 #else
   #include "unix.hpp"

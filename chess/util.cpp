@@ -739,7 +739,7 @@ static std::string board_square_to_string( position const& p, int pi )
 	}
 
 	if( c == color::white ) {
-#if _MSC_VER
+#if WINDOWS
 		std::string const white;
 		std::string const restore;
 #else
