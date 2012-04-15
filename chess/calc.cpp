@@ -342,12 +342,12 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 			}
 
 			// Recapture extension
-			if( !extended && pv_node && it->m.captured_piece != pieces::none && it->m.target == last_ply_was_capture ) {
+			if( !extended && pv_node && it->m.captured_piece != pieces::none && it->m.target == last_ply_was_capture && see(p, c, it->m) >= 0 ) {
 				new_depth += recapture_extension;
 				extended = true;
 			}
 			unsigned char new_capture = 64;
-			if( last_ply_was_capture == 64 && it->m.captured_piece != pieces::none ) {
+			if( it->m.captured_piece != pieces::none ) {
 				new_capture = it->m.target;
 			}
 
