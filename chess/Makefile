@@ -60,7 +60,7 @@ CHESS_FILES = $(OBJECT_FILES) \
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 sqlite/sqlite3.o: sqlite/sqlite3.c sqlite/sqlite3.h
-	$(cc) $(CFLAGS) -DSQLITE_OMIT_LOAD_EXTENSION -pthread -c -o $@ $<
+	$(CC) $(CFLAGS) -DSQLITE_OMIT_LOAD_EXTENSION -pthread -c -o $@ $<
 
 
 octochess: $(CHESS_FILES)
