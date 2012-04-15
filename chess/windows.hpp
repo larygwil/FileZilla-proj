@@ -105,18 +105,45 @@ private:
 
 inline uint64_t bitscan( uint64_t mask )
 {
+#if __MINGW64__
+	// We cannot use the __builtin_ffsll, as it is way more expensive:
+	// It always adds 1 to the result, which we then have to subtract again.
+	// Not even -O3 can save us there
+	uint64_t index;
+	asm \
+	( \
+	"bsfq %[mask], %[index]" \
+	:[index] "=r" (index) \
+	:[mask] "mr" (mask) \
+	);
+
+	return index;
+#else
 	unsigned long i;
 	_BitScanForward64( &i, mask );
 
 	return static_cast<uint64_t >(i);
+#endif
 }
 
 inline uint64_t bitscan_reverse( uint64_t mask )
 {
+#if __MINGW64__
+	uint64_t index;
+	asm \
+	( \
+	"bsrq %[mask], %[index]" \
+	:[index] "=r" (index) \
+	:[mask] "mr" (mask) \
+	);
+
+	return index;
+#else
 	unsigned long i;
 	_BitScanReverse64( &i, mask );
 
 	return static_cast<uint64_t >(i);
+#endif
 }
 
 unsigned int get_cpu_count();
@@ -126,7 +153,11 @@ int get_system_memory();
 
 #if HAS_NATIVE_POPCOUNT
 
+#if __MINGW64__
+#define popcount __builtin_popcountll
+#else
 #define popcount __popcnt64
+#endif
 
 #else
 
