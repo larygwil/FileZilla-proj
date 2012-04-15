@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+namespace tr1 {
+}
 namespace std {
 using namespace tr1;
 }
@@ -106,7 +108,7 @@ void condition::wait( scoped_lock& l, uint64_t timeout )
 }
 
 
-void condition::signal( scoped_lock& l )
+void condition::signal( scoped_lock& )
 {
 	signalled_ = true;
 	WakeConditionVariable( &cond_ );
@@ -247,7 +249,8 @@ void aligned_free( void* p )
 
 uint64_t get_page_size()
 {
-	SYSTEM_INFO info = {0};
+	SYSTEM_INFO info;
+	memset( &info, 0, sizeof(SYSTEM_INFO) );
 	GetSystemInfo( &info );
 	return info.dwPageSize;
 }
