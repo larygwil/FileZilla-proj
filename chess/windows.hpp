@@ -3,6 +3,15 @@
 
 #define HAS_NATIVE_POPCOUNT 1
 
+#if _WIN32_WINNT < 0x0600
+  #undef _WIN32_WINNT
+  #define _WIN32_WINNT 0x0600
+#endif
+#if WINVER < 0x0600
+  #undef WINVER
+  #define WINVER 0x0600
+#endif
+
 #include <windows.h>
 #ifdef min
   #undef min
