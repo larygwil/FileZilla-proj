@@ -501,7 +501,7 @@ static void check_bitscan( uint64_t v, uint64_t expected_count, uint64_t expecte
 
 static void check_bitscan()
 {
-	check_bitscan( 0x5555555555555555ull, 32, 1024 );
+	check_bitscan( 0x5555555555555555ull, 32, 992 );
 }
 }
 
