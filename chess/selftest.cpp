@@ -461,10 +461,55 @@ static bool do_selftest()
 
 	return true;
 }
+
+static void check_popcount( uint64_t v, uint64_t expected )
+{
+	uint64_t c = popcount(v);
+	if( c != expected ) {
+		std::cerr << "Popcount failed on " << v << ", got " << c << ", expected " << expected << std::endl;
+		abort();
+	}
+}
+
+static void check_popcount()
+{
+	for( unsigned int i = 0; i < 64; ++i ) {
+		uint64_t v = 1ull << i;
+		check_popcount( v, 1 );
+
+		check_popcount( v - 1, i );
+	}
+}
+
+static void check_bitscan( uint64_t v, uint64_t expected_count, uint64_t expected_sum )
+{
+	uint64_t c = 0;
+	uint64_t sum = 0;
+	uint64_t v2 = v;
+	while( v2 ) {
+		++c;
+		uint64_t i = bitscan_unset( v2 );
+		sum += i;
+	}
+
+	if( c != expected_count || sum != expected_sum ) {
+		std::cerr << "Bitscan failed on " << v << ", got " << c << ", " << sum << ", expected " << expected_count << ", " << expected_sum << std::endl;
+		abort();
+	}
+
+}
+
+static void check_bitscan()
+{
+	check_bitscan( 0x5555555555555555ull, 32, 1024 );
+}
 }
 
 bool selftest()
 {
+	check_popcount();
+	check_bitscan();
+
 	pawn_hash_table.init( conf.pawn_hash_table_size );
 
 	if( do_selftest() ) {
