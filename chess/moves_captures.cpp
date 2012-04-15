@@ -277,18 +277,18 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 {
 	uint64_t pawn_captures = pawn_control[c][pawn] & p.bitboards[1-c].b[bb_type::all_pieces];
 	while( pawn_captures ) {
-		uint64_t target = bitscan_unset( pawn_captures );
+		uint64_t pawn_move = bitscan_unset( pawn_captures );
 
-		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), target );
+		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), pawn_move );
 
-		if( target / 8 == ( c ? 0 : 7 ) )  {
-			add_if_legal( moves, check, pieces::pawn, pawn, target, move_flags::promotion_queen, captured );
-			add_if_legal( moves, check, pieces::pawn, pawn, target, move_flags::promotion_rook, captured );
-			add_if_legal( moves, check, pieces::pawn, pawn, target, move_flags::promotion_bishop, captured );
-			add_if_legal( moves, check, pieces::pawn, pawn, target, move_flags::promotion_knight, captured );
+		if( pawn_move >= 56 || pawn_move < 8 ) {
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_queen, captured );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_rook, captured );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_bishop, captured );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_knight, captured );
 		}
 		else {
-			add_if_legal( moves, check, pieces::pawn, pawn, target, move_flags::none, captured );
+			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::none, captured );
 		}
 	}
 }

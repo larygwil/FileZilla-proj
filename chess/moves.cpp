@@ -18,6 +18,10 @@ extern uint64_t const pawn_enpassant[2] = {
 	0x00000000ff000000ull
 };
 
+extern uint64_t const pawn_double_move[2] = {
+	0x0000000000ff0000ull,
+	0x0000ff0000000000ull
+};
 
 namespace {
 
@@ -299,59 +303,76 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 }
 
 
-void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check_map const& check,
-					  uint64_t pawn )
+void calc_moves_pawn_captures( position const& p, color::type c, move_info*& moves, check_map const& check, uint64_t pawn_captures, int shift )
 {
-	uint64_t pawn_captures = pawn_control[c][pawn] & p.bitboards[1-c].b[bb_type::all_pieces];
 	while( pawn_captures ) {
 		uint64_t pawn_move = bitscan_unset( pawn_captures );
 
 		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), pawn_move );
 
-		if( pawn_move / 8 == ( c ? 0 : 7 ) )  {
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_queen, captured );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_rook, captured );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_bishop, captured );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_knight, captured );
+		if( pawn_move >= 56 || pawn_move < 8 ) {
+			add_if_legal( moves, check, pieces::pawn, pawn_move - shift, pawn_move, move_flags::promotion_queen, captured );
+			add_if_legal( moves, check, pieces::pawn, pawn_move - shift, pawn_move, move_flags::promotion_rook, captured );
+			add_if_legal( moves, check, pieces::pawn, pawn_move - shift, pawn_move, move_flags::promotion_bishop, captured );
+			add_if_legal( moves, check, pieces::pawn, pawn_move - shift, pawn_move, move_flags::promotion_knight, captured );
 		}
 		else {
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::none, captured );
-		}
-	}
-
-	unsigned char old_col = static_cast<unsigned char>(pawn % 8);
-	unsigned char old_row = static_cast<unsigned char>(pawn / 8);
-
-	unsigned char new_row = (c == color::white) ? (old_row + 1) : (old_row - 1);
-	if( !p.is_occupied_square( old_col + new_row * 8 ) ) {
-		unsigned char pawn_move = old_col + new_row * 8;
-		if( new_row == 0 || new_row == 7 ) {
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_queen, pieces::none );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_rook, pieces::none );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_bishop, pieces::none );
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::promotion_knight, pieces::none );
-		}
-		else {
-			add_if_legal( moves, check, pieces::pawn, pawn, pawn_move, move_flags::none, pieces::none );
-		}
-
-		if( old_row == ( (c == color::white) ? 1 : 6) ) {
-			// Moving two rows from starting row
-			new_row = (c == color::white) ? (old_row + 2) : (old_row - 2);
-
-			if( !p.is_occupied_square( old_col + new_row * 8 ) ) {
-				add_if_legal( moves, check, pieces::pawn, pawn, old_col + new_row * 8, move_flags::pawn_double_move, pieces::none );
-			}
+			add_if_legal( moves, check, pieces::pawn, pawn_move - shift, pawn_move, move_flags::none, captured );
 		}
 	}
 }
 
+
+template<int c>
+void calc_moves_pawn_pushes( position const& p, move_info*& moves, check_map const& check )
+{
+	uint64_t free = ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
+
+	uint64_t pawn_pushes;
+	uint64_t double_pushes;
+	if( c == color::white ) {
+		pawn_pushes = (p.bitboards[c].b[bb_type::pawns] << 8) & free;
+		double_pushes= ((pawn_pushes & pawn_double_move[c]) << 8) & free;
+	}
+	else {
+		pawn_pushes = (p.bitboards[c].b[bb_type::pawns] >> 8) & free;
+		double_pushes= ((pawn_pushes & pawn_double_move[c]) >> 8) & free;
+	}
+	while( double_pushes ) {
+		uint64_t pawn_move = bitscan_unset( double_pushes );
+		add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -16 : 16), pawn_move, move_flags::pawn_double_move, pieces::none );
+	}
+
+	while( pawn_pushes ) {
+		uint64_t pawn_move = bitscan_unset( pawn_pushes );
+
+		if( pawn_move >= 56 || pawn_move < 8 ) {
+			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_queen, pieces::none );
+			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_rook, pieces::none );
+			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_bishop, pieces::none );
+			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_knight, pieces::none );
+		}
+		else {
+			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::none, pieces::none );
+		}
+	}
+}
+
+
 void calc_moves_pawns( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	uint64_t pawns = p.bitboards[c].b[bb_type::pawns];
-	while( pawns ) {
-		uint64_t pawn = bitscan_unset( pawns );
-		calc_moves_pawn( p, c, moves, check, pawn );
+
+	if( c == color::white ) {
+		calc_moves_pawn_pushes<color::white>( p, moves, check );
+		uint64_t pawns = p.bitboards[c].b[bb_type::pawns];
+		calc_moves_pawn_captures( p, c, moves, check, ((pawns & 0xfefefefefefefefeull) << 7) & p.bitboards[1-c].b[bb_type::all_pieces], 7 );
+		calc_moves_pawn_captures( p, c, moves, check, ((pawns & 0x7f7f7f7f7f7f7f7full) << 9) & p.bitboards[1-c].b[bb_type::all_pieces], 9 );
+	}
+	else {
+		calc_moves_pawn_pushes<color::black>( p, moves, check );
+		uint64_t pawns = p.bitboards[c].b[bb_type::pawns];
+		calc_moves_pawn_captures( p, c, moves, check, ((pawns & 0xfefefefefefefefeull) >> 9) & p.bitboards[1-c].b[bb_type::all_pieces], -9 );
+		calc_moves_pawn_captures( p, c, moves, check, ((pawns & 0x7f7f7f7f7f7f7f7full) >> 7) & p.bitboards[1-c].b[bb_type::all_pieces], -7 );
 	}
 
 	if( p.can_en_passant ) {
