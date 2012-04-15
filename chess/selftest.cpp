@@ -81,7 +81,7 @@ bool perft( std::size_t max_depth )
 	*/
 
 	perft_ctx ctx;
-	for( unsigned int i = 0; i < (std::min)(max_depth, sizeof(perft_results)/sizeof(uint64_t)); ++i ) {
+	for( unsigned int i = 0; i < std::min(max_depth, sizeof(perft_results)/sizeof(uint64_t)); ++i ) {
 		ctx.move_ptr = ctx.moves;
 
 		std::cerr << "Calculating number of possible moves in " << (i + 1) << " plies:" << std::endl;
@@ -255,7 +255,7 @@ static bool test_lazy_eval( std::string const& fen, short& max_difference )
 		return false;
 	}
 
-	max_difference = (std::max)( max_difference, diff );
+	max_difference = std::max( max_difference, diff );
 
 	return true;
 }

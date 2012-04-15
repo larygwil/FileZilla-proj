@@ -248,7 +248,7 @@ void xboard_thread::onRun()
 
 			uint64_t remaining_moves;
 			if( !state.time_control ) {
-				remaining_moves = (std::max)( 20, (80 - state.clock) / 2 );
+				remaining_moves = std::max( 20, (80 - state.clock) / 2 );
 			}
 			else {
 				remaining_moves = (state.time_control * 2) - (state.clock % (state.time_control * 2));

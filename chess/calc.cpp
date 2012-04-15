@@ -582,8 +582,8 @@ short processing_thread::processWork()
 	short value;
 	if( alpha_ == result::loss && alpha_at_prev_depth_ != result::loss ) {
 		// Windows headers unfortunately create some defines called max and min :(
-		short alpha = (std::max)( alpha_, static_cast<short>(alpha_at_prev_depth_ - ASPIRATION) );
-		short beta = (std::min)( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
+		short alpha = std::max( alpha_, static_cast<short>(alpha_at_prev_depth_ - ASPIRATION) );
+		short beta = std::min( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
 		if( alpha < beta ) {
 			value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, static_cast<color::type>(1-c_), check, -beta, -alpha, pv_->next(), false );

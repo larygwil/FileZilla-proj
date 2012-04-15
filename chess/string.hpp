@@ -18,7 +18,7 @@ inline std::string to_string( T const& t )
 }
 
 
-template< typename T = uint64_t>
+template<typename T>
 bool to_int( std::string const& s, T& t, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max() )
 {
 	bool ret = false;

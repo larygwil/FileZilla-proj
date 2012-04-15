@@ -4,6 +4,12 @@
 #define HAS_NATIVE_POPCOUNT 1
 
 #include <windows.h>
+#ifdef min
+  #undef min
+#endif
+#ifdef max
+  #undef max
+#endif
 #include <intrin.h>
 
 typedef unsigned long long uint64_t;

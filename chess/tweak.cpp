@@ -582,7 +582,7 @@ void select( population& pop, std::set<individual>& seen )
 
 	population out;
 	out.reserve( max_size );
-	for( std::size_t i = 0; i < (std::min)(n, pop.size()); ++i ) {
+	for( std::size_t i = 0; i < std::min(n, pop.size()); ++i ) {
 		out.push_back( pop[i] );
 	}
 
@@ -651,8 +651,8 @@ std::vector<reference_data> load_data()
 			short v = static_cast<short>(tmp * 100);
 			score += v;
 			++count;
-			entry.min_eval = (std::min)(entry.min_eval, v);
-			entry.max_eval = (std::max)(entry.max_eval, v);
+			entry.min_eval = std::min(entry.min_eval, v);
+			entry.max_eval = std::max(entry.max_eval, v);
 		}
 
 		if( !count ) {

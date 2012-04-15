@@ -10,7 +10,7 @@ int dist( int x1, int y1, int x2, int y2 )
 	int cx = std::abs(x1 - x2);
 	int cy = std::abs(y1 - y2);
 
-	return (std::max)(cx, cy);
+	return std::max(cx, cy);
 }
 
 int main()
@@ -207,7 +207,7 @@ int main()
 				int target_col = target % 8;
 				int target_row = target / 8;
 
-				v = 7 - (std::max)( std::abs(source_col - target_col), std::abs(source_row - target_row) );
+				v = 7 - std::max( std::abs(source_col - target_col), std::abs(source_row - target_row) );
 
 				std::cout << std::dec << v;
 
@@ -241,7 +241,7 @@ int main()
 				int target_col = target % 8;
 				int target_row = target / 8;
 
-				v = (std::max)( std::abs(source_col - target_col), std::abs(source_row - target_row) );
+				v = std::max( std::abs(source_col - target_col), std::abs(source_row - target_row) );
 
 				std::cout << std::dec << v;
 

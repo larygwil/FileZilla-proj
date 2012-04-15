@@ -18,7 +18,7 @@ void time_calculation::set_infinite_time() {
 }
 
 void time_calculation::update(position_time const& t, bool is_white, int half_moves) {
-	uint64_t remaining_moves = (std::max)( 20, (80 - half_moves) / 2 );
+	uint64_t remaining_moves = std::max( 20, (80 - half_moves) / 2 );
 
 	duration inc;
 	if( is_white ) {

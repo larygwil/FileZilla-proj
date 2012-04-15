@@ -86,7 +86,7 @@ int see( position const& p, color::type c, move const& m )
 
 	// Propagate scores back
 	while( --depth ) {
-		score[depth - 1] = -(std::max)(score[depth], -score[depth - 1]);
+		score[depth - 1] = -std::max(score[depth], -score[depth - 1]);
 	}
 
 	return score[0];

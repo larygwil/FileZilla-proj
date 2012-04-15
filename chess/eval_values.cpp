@@ -255,13 +255,13 @@ void update_derived()
 
 	for( short i = 0; i <= 8; ++i ) {
 		if( i > mobility_knight_offset.mg() ) {
-			mobility_knight[i].mg() = (std::min)(short(mobility_knight_min.mg() + mobility_knight_rise.mg() * (i - mobility_knight_offset.mg())), mobility_knight_max.mg());
+			mobility_knight[i].mg() = std::min(short(mobility_knight_min.mg() + mobility_knight_rise.mg() * (i - mobility_knight_offset.mg())), mobility_knight_max.mg());
 		}
 		else {
 			mobility_knight[i].mg() = mobility_knight_min.mg();
 		}
 		if( i > mobility_knight_offset.eg() ) {
-			mobility_knight[i].eg() = (std::min)(short(mobility_knight_min.eg() + mobility_knight_rise.eg() * (i - mobility_knight_offset.eg())), mobility_knight_max.eg());
+			mobility_knight[i].eg() = std::min(short(mobility_knight_min.eg() + mobility_knight_rise.eg() * (i - mobility_knight_offset.eg())), mobility_knight_max.eg());
 		}
 		else {
 			mobility_knight[i].eg() = mobility_knight_min.eg();
@@ -270,13 +270,13 @@ void update_derived()
 
 	for( short i = 0; i <= 13; ++i ) {
 		if( i > mobility_bishop_offset.mg() ) {
-			mobility_bishop[i].mg() = (std::min)(short(mobility_bishop_min.mg() + mobility_bishop_rise.mg() * (i - mobility_bishop_offset.mg())), mobility_bishop_max.mg());
+			mobility_bishop[i].mg() = std::min(short(mobility_bishop_min.mg() + mobility_bishop_rise.mg() * (i - mobility_bishop_offset.mg())), mobility_bishop_max.mg());
 		}
 		else {
 			mobility_bishop[i].mg() = mobility_bishop_min.mg();
 		}
 		if( i > mobility_bishop_offset.eg() ) {
-			mobility_bishop[i].eg() = (std::min)(short(mobility_bishop_min.eg() + mobility_bishop_rise.eg() * (i - mobility_bishop_offset.eg())), mobility_bishop_max.eg());
+			mobility_bishop[i].eg() = std::min(short(mobility_bishop_min.eg() + mobility_bishop_rise.eg() * (i - mobility_bishop_offset.eg())), mobility_bishop_max.eg());
 		}
 		else {
 			mobility_bishop[i].eg() = mobility_bishop_min.eg();
@@ -285,13 +285,13 @@ void update_derived()
 
 	for( short i = 0; i <= 14; ++i ) {
 		if( i > mobility_rook_offset.mg() ) {
-			mobility_rook[i].mg() = (std::min)(short(mobility_rook_min.mg() + mobility_rook_rise.mg() * (i - mobility_rook_offset.mg())), mobility_rook_max.mg());
+			mobility_rook[i].mg() = std::min(short(mobility_rook_min.mg() + mobility_rook_rise.mg() * (i - mobility_rook_offset.mg())), mobility_rook_max.mg());
 		}
 		else {
 			mobility_rook[i].mg() = mobility_rook_min.mg();
 		}
 		if( i > mobility_rook_offset.eg() ) {
-			mobility_rook[i].eg() = (std::min)(short(mobility_rook_min.eg() + mobility_rook_rise.eg() * (i - mobility_rook_offset.eg())), mobility_rook_max.eg());
+			mobility_rook[i].eg() = std::min(short(mobility_rook_min.eg() + mobility_rook_rise.eg() * (i - mobility_rook_offset.eg())), mobility_rook_max.eg());
 		}
 		else {
 			mobility_rook[i].eg() = mobility_rook_min.eg();
@@ -300,13 +300,13 @@ void update_derived()
 
 	for( short i = 0; i <= 27; ++i ) {
 		if( i > mobility_queen_offset.mg() ) {
-			mobility_queen[i].mg() = (std::min)(short(mobility_queen_min.mg() + mobility_queen_rise.mg() * (i - mobility_queen_offset.mg())), mobility_queen_max.mg());
+			mobility_queen[i].mg() = std::min(short(mobility_queen_min.mg() + mobility_queen_rise.mg() * (i - mobility_queen_offset.mg())), mobility_queen_max.mg());
 		}
 		else {
 			mobility_queen[i].mg() = mobility_queen_min.mg();
 		}
 		if( i > mobility_queen_offset.eg() ) {
-			mobility_queen[i].eg() = (std::min)(short(mobility_queen_min.eg() + mobility_queen_rise.eg() * (i - mobility_queen_offset.eg())), mobility_queen_max.eg());
+			mobility_queen[i].eg() = std::min(short(mobility_queen_min.eg() + mobility_queen_rise.eg() * (i - mobility_queen_offset.eg())), mobility_queen_max.eg());
 		}
 		else {
 			mobility_queen[i].eg() = mobility_queen_min.eg();
@@ -319,7 +319,7 @@ void update_derived()
 			if( i > king_attack_offset[c] ) {
 				double factor = i - king_attack_offset[c];
 				factor = std::pow( factor, double(king_attack_exponent[c]) / 100.0 );
-				v[c] = (std::min)(short(king_attack_min[c] + king_attack_rise[c] * factor), short(king_attack_min[c] + king_attack_max[c]));
+				v[c] = std::min(short(king_attack_min[c] + king_attack_rise[c] * factor), short(king_attack_min[c] + king_attack_max[c]));
 			}
 			else {
 				v[c] = 0;
@@ -328,7 +328,7 @@ void update_derived()
 		king_attack[i] = score( v[0], v[1] );
 	}
 
-	insufficient_material_threshold = (std::max)(
+	insufficient_material_threshold = std::max(
 			material_values[pieces::knight].eg(),
 			material_values[pieces::bishop].eg()
 		);

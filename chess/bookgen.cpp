@@ -730,7 +730,7 @@ std::string side_by_side( std::string const& left, std::string const& right, std
 		std::istringstream ileft( left );
 		std::string line;
 		while( std::getline(ileft, line) ) {
-			max_width = (std::max)(max_width, line.size() );
+			max_width = std::max(max_width, line.size() );
 		}
 	}
 
@@ -828,7 +828,7 @@ void run( book& b )
 		print_pos( history, p, c, entries );
 	}
 
-	unsigned int max_depth = (std::min)(4u, MAX_BOOK_DEPTH);
+	unsigned int max_depth = std::min(4u, MAX_BOOK_DEPTH);
 	unsigned int max_width = 2;
 
 
