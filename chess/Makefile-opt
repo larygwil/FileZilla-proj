@@ -4,13 +4,16 @@ CXXFLAGS = -O3 -g -pipe -march="$(ARCH)" -std=gnu++0x -Wall -flto -fwhole-progra
 CFLAGS = -O3 -g -pipe -march="$(ARCH)" -Wall -flto -fwhole-program -pthread -static
 #CXXFLAGS = -O0 -g -pipe -std=gnu++0x
 
+CXX = g++
+CC = gcc
+
 all: chess-use bookgen-use
 
 sqlite/sqlite3.o: sqlite/sqlite3.c
-	gcc $(CFLAGS) -DSQLITE_OMIT_LOAD_EXTENSION -pthread -static -c -o $@ $<
+	$(CC) $(CFLAGS) -DSQLITE_OMIT_LOAD_EXTENSION -pthread -static -c -o $@ $<
 
 tables.cpp: tables_gen.cpp
-	g++ tables_gen.cpp -o tables_gen
+	$(CXX) tables_gen.cpp -o tables_gen
 	./tables_gen > tables.cpp
 	rm tables_gen
 
@@ -31,6 +34,7 @@ GENERIC_SOURCE_FILES = \
 	moves_noncaptures.cpp \
 	pawn_structure_hash_table.cpp \
 	pgn.cpp \
+	platform.cpp \
 	phased_move_generator.cpp \
 	pvlist.cpp \
 	random.cpp \
@@ -43,7 +47,6 @@ GENERIC_SOURCE_FILES = \
 	string.cpp \
 	tables.cpp \
 	time.cpp \
-	unix.cpp \
 	zobrist.cpp \
 	sqlite/sqlite3.o
 
@@ -61,15 +64,15 @@ BOOKGEN_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
 	bookgen.cpp
 
 chess-gen: *.cpp *.hpp sqlite/sqlite3.o tables.cpp
-	g++ $(CXXFLAGS) -fprofile-generate -o $@ $(CHESS_SOURCE_FILES)
+	$(CXX) $(CXXFLAGS) -fprofile-generate -o $@ $(CHESS_SOURCE_FILES)
 	./chess-gen --moves 1 --depth 11 --threads 1 auto
 	rm -f *.o uci/*.o
 
 chess-use: chess-gen
-	g++ $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ $(CHESS_SOURCE_FILES)
+	$(CXX) $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ $(CHESS_SOURCE_FILES)
 
 bookgen-use: chess-gen
-	g++ $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ $(BOOKGEN_SOURCE_FILES)
+	$(CXX) $(CXXFLAGS) -fprofile-use -fprofile-correction -o $@ $(BOOKGEN_SOURCE_FILES)
 
 clean:
 	rm -f chess-gen

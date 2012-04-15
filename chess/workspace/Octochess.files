@@ -33,6 +33,7 @@
 ../pgn.hpp
 ../phased_move_generator.cpp
 ../phased_move_generator.hpp
+../platform.cpp
 ../platform.hpp
 ../pvlist.cpp
 ../pvlist.hpp

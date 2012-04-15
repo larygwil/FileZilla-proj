@@ -2,10 +2,13 @@ CFLAGS = -O3 -g -pipe -march=corei7 -Wall -Wextra -flto -static
 #CFLAGS = -O0 -g -pipe -Wall -static
 CXXFLAGS = $(CFLAGS) -std=gnu++0x
 
+CC = gcc
+CXX = g++
+
 all: octochess bookgen
 
 tables.cpp: tables_gen.cpp
-	g++ tables_gen.cpp -o tables_gen
+	$(CXX) tables_gen.cpp -o tables_gen
 	./tables_gen > tables.cpp
 	rm tables_gen
 
@@ -25,8 +28,9 @@ OBJECT_FILES = \
 	moves_captures.o \
 	moves_noncaptures.o \
 	pawn_structure_hash_table.o \
-	phased_move_generator.o \
 	pgn.o \
+	phased_move_generator.o \
+	platform.o \
 	pvlist.o \
 	random.o \
 	score.o \
@@ -39,7 +43,6 @@ OBJECT_FILES = \
 	tables.o \
 	time.o \
 	tweak.o \
-	unix.o \
 	util.o \
 	zobrist.o
 
@@ -54,18 +57,18 @@ CHESS_FILES = $(OBJECT_FILES) \
 
 
 %.o: %.cpp *.hpp
-	g++ $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 sqlite/sqlite3.o: sqlite/sqlite3.c sqlite/sqlite3.h
-	gcc $(CFLAGS) -DSQLITE_OMIT_LOAD_EXTENSION -pthread -c -o $@ $<
+	$(cc) $(CFLAGS) -DSQLITE_OMIT_LOAD_EXTENSION -pthread -c -o $@ $<
 
 
 octochess: $(CHESS_FILES)
-	g++ $(CXXFLAGS) -pthread -o $@ $^
+	$(CXX) $(CXXFLAGS) -pthread -o $@ $^
 
 
 bookgen: $(OBJECT_FILES) bookgen.o
-	g++ $(CXXFLAGS) -pthread -o $@ $^
+	$(CXX) $(CXXFLAGS) -pthread -o $@ $^
 
 clean:
 	rm -f octochess bookgen tables_gen
