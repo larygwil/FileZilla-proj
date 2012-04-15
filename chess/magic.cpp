@@ -36,7 +36,7 @@ void init_magic()
 		uint64_t offset = 0;
 		for( unsigned int pi = 0; pi < 64; ++pi ) {
 			rook_magic_offsets[pi] = offset;
-			offset += 1ull << rook_magic_shift[pi];
+			offset += 1ull << (64 - rook_magic_shift[pi]);
 		}
 
 		rook_magic_values = new uint64_t[offset];
@@ -45,25 +45,25 @@ void init_magic()
 		offset = 0;
 		for( unsigned int pi = 0; pi < 64; ++pi ) {
 			
-			for( unsigned int i = 0; i < (1ull << rook_magic_shift[pi]); ++i ) {
+			for( unsigned int i = 0; i < (1ull << (64 - rook_magic_shift[pi])); ++i ) {
 				uint64_t occ = expand( i, rook_magic_mask[pi] );
 
 				uint64_t key = occ * rook_magic_multiplier[pi];
-				key >>= (64 - rook_magic_shift[pi]);
+				key >>= rook_magic_shift[pi];
 
 				uint64_t const attack = rook_attacks( pi, occ );
 				ASSERT( !rook_magic_values[offset + key] || rook_magic_values[offset + key] == attack );
 				rook_magic_values[offset + key] = attack;
 			}
 			
-			offset += 1ull << rook_magic_shift[pi];
+			offset += 1ull << (64 - rook_magic_shift[pi]);
 		}
 	}
 	{
 		uint64_t offset = 0;
 		for( unsigned int pi = 0; pi < 64; ++pi ) {
 			bishop_magic_offsets[pi] = offset;
-			offset += 1ull << bishop_magic_shift[pi];
+			offset += 1ull << (64 - bishop_magic_shift[pi]);
 		}
 
 		bishop_magic_values = new uint64_t[offset];
@@ -72,18 +72,18 @@ void init_magic()
 		offset = 0;
 		for( unsigned int pi = 0; pi < 64; ++pi ) {
 			
-			for( unsigned int i = 0; i < (1ull << bishop_magic_shift[pi]); ++i ) {
+			for( unsigned int i = 0; i < (1ull << (64 - bishop_magic_shift[pi])); ++i ) {
 				uint64_t occ = expand( i, bishop_magic_mask[pi] );
 
 				uint64_t key = occ * bishop_magic_multiplier[pi];
-				key >>= (64 - bishop_magic_shift[pi]);
+				key >>= bishop_magic_shift[pi];
 
 				uint64_t const attack = bishop_attacks( pi, occ );
 				ASSERT( !bishop_magic_values[offset + key] || bishop_magic_values[offset + key] == attack );
 				bishop_magic_values[offset + key] = attack;
 			}
 			
-			offset += 1ull << bishop_magic_shift[pi];
+			offset += 1ull << (64 - bishop_magic_shift[pi]);
 		}
 	}
 }
@@ -92,7 +92,7 @@ uint64_t rook_magic( uint64_t pi, uint64_t occ )
 {
 	uint64_t relevant_occ = occ & rook_magic_mask[pi];
 	uint64_t key = relevant_occ * rook_magic_multiplier[pi];
-	key >>= (64 - rook_magic_shift[pi]);
+	key >>= rook_magic_shift[pi];
 
 	uint64_t offset = rook_magic_offsets[pi];
 
@@ -103,7 +103,7 @@ uint64_t bishop_magic( uint64_t pi, uint64_t occ )
 {
 	uint64_t relevant_occ = occ & bishop_magic_mask[pi];
 	uint64_t key = relevant_occ * bishop_magic_multiplier[pi];
-	key >>= (64 - bishop_magic_shift[pi]);
+	key >>= bishop_magic_shift[pi];
 
 	uint64_t offset = bishop_magic_offsets[pi];
 
