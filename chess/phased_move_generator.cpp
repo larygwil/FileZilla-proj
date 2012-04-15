@@ -1,9 +1,11 @@
 #include "phased_move_generator.hpp"
 #include "eval.hpp"
+#include "fen.hpp"
 #include "see.hpp"
 #include "util.hpp"
 
 #include <algorithm>
+#include <iostream>
 
 namespace {
 void sort_moves_noncaptures( move_info* begin, move_info* end, position const& p, color::type c )
@@ -11,7 +13,6 @@ void sort_moves_noncaptures( move_info* begin, move_info* end, position const& p
 	for( move_info* it = begin; it != end; ++it ) {
 		it->sort = evaluate_move( p, c, it->m );
 	}
-	//std::sort( begin, end, moveSort );
 }
 }
 

@@ -59,7 +59,6 @@ public:
 	// move_info's m, evaluation and pawns are filled out, sort is undefined.
 	virtual move_info const* next();
 
-
 private:
 	bool pv_node_;
 };
