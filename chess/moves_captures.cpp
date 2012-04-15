@@ -205,77 +205,71 @@ void calc_moves_knights( position const& p, color::type c, move_info*& moves, ch
 void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& moves, check_map const& check,
 								 uint64_t pawn )
 {
-	uint64_t enpassantable = 1ull << p.can_en_passant;
-	uint64_t enpassants = pawn_control[c][pawn] & enpassantable & pawn_enpassant[c];
-	if( enpassants ) {
-		uint64_t enpassant = bitscan( enpassants );
+	unsigned char new_col = p.can_en_passant % 8;
 
-		unsigned char new_col = enpassant % 8;
+	unsigned char old_col = static_cast<unsigned char>(pawn % 8);
+	unsigned char old_row = static_cast<unsigned char>(pawn / 8);
 
-		unsigned char old_col = static_cast<unsigned char>(pawn % 8);
-		unsigned char old_row = static_cast<unsigned char>(pawn / 8);
+	// Special case: Cannot use normal check from add_if_legal as target square is not piece square and if captured pawn gives check, bad things happen.
+	unsigned char const& cv_old = check.board[pawn];
+	unsigned char const& cv_new = check.board[p.can_en_passant];
+	if( check.check ) {
+		if( cv_old ) {
+			// Can't come to rescue, this piece is already blocking yet another check.
+			return;
+		}
+		if( cv_new != check.check && check.check != (0x80 + new_col + old_row * 8) ) {
+			// Target position does capture checking piece nor blocks check
+			return;
+		}
+	}
+	else {
+		if( cv_old && cv_old != cv_new ) {
+			return;
+		}
+	}
 
-		// Special case: Cannot use normal check from add_if_legal as target square is not piece square and if captured pawn gives check, bad things happen.
-		unsigned char const& cv_old = check.board[pawn];
-		unsigned char const& cv_new = check.board[enpassant];
-		if( check.check ) {
-			if( cv_old ) {
-				// Can't come to rescue, this piece is already blocking yet another check.
-				return;
-			}
-			if( cv_new != check.check && check.check != (0x80 + new_col + old_row * 8) ) {
-				// Target position does capture checking piece nor blocks check
-				return;
-			}
+	// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
+	uint64_t kings = p.bitboards[c].b[bb_type::king];
+	uint64_t king = bitscan( kings );
+	unsigned char king_col = static_cast<unsigned char>(king % 8);
+	unsigned char king_row = static_cast<unsigned char>(king / 8);
+
+	if( king_row == old_row ) {
+		signed char cx = static_cast<signed char>(old_col) - king_col;
+		if( cx > 0 ) {
+			cx = 1;
 		}
 		else {
-			if( cv_old && cv_old != cv_new ) {
+			cx = -1;
+		}
+		for( signed char col = old_col + cx; col < 8 && col >= 0; col += cx ) {
+			if( col == new_col ) {
+				continue;
+			}
+
+			if( p.bitboards[c].b[bb_type::all_pieces] & (1ull << (col + old_row * 8 ) ) ) {
+				// Own piece
+				continue;
+			}
+
+			pieces::type t = get_piece_on_square( p, static_cast<color::type>(1-c), col + old_row * 8 );
+
+			if( t == pieces::none ) {
+				continue;
+			}
+
+			if( t == pieces::queen || t == pieces::rook ) {
+				// Not a legal move unfortunately
 				return;
 			}
+
+			// Harmless piece
+			break;
 		}
-
-		// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
-		uint64_t kings = p.bitboards[c].b[bb_type::king];
-		uint64_t king = bitscan( kings );
-		unsigned char king_col = static_cast<unsigned char>(king % 8);
-		unsigned char king_row = static_cast<unsigned char>(king / 8);
-
-		if( king_row == old_row ) {
-			signed char cx = static_cast<signed char>(old_col) - king_col;
-			if( cx > 0 ) {
-				cx = 1;
-			}
-			else {
-				cx = -1;
-			}
-			for( signed char col = old_col + cx; col < 8 && col >= 0; col += cx ) {
-				if( col == new_col ) {
-					continue;
-				}
-
-				if( p.bitboards[c].b[bb_type::all_pieces] & (1ull << (col + old_row * 8 ) ) ) {
-					// Own piece
-					continue;
-				}
-
-				pieces::type t = get_piece_on_square( p, static_cast<color::type>(1-c), col + old_row * 8 );
-
-				if( t == pieces::none ) {
-					continue;
-				}
-				
-				if( t == pieces::queen || t == pieces::rook ) {
-					// Not a legal move unfortunately
-					return;
-				}
-
-				// Harmless piece
-				break;
-			}
-		}
-
-		do_add_move( moves, pieces::pawn, pawn, enpassant, move_flags::enpassant, pieces::pawn );
 	}
+
+	do_add_move( moves, pieces::pawn, pawn, p.can_en_passant, move_flags::enpassant, pieces::pawn );
 }
 
 void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check_map const& check,
@@ -297,8 +291,6 @@ void calc_moves_pawn( position const& p, color::type c, move_info*& moves, check
 			add_if_legal( moves, check, pieces::pawn, pawn, target, move_flags::none, captured );
 		}
 	}
-
-	calc_moves_pawn_en_passant( p, c, moves, check, pawn );
 }
 
 void calc_moves_pawns( position const& p, color::type c, move_info*& moves, check_map const& check )
@@ -307,6 +299,14 @@ void calc_moves_pawns( position const& p, color::type c, move_info*& moves, chec
 	while( pawns ) {
 		uint64_t pawn = bitscan_unset( pawns );
 		calc_moves_pawn( p, c, moves, check, pawn );
+	}
+
+	if( p.can_en_passant ) {
+		uint64_t enpassants = pawn_control[1-c][p.can_en_passant] & p.bitboards[c].b[bb_type::pawns] & pawn_enpassant[c];
+		while( enpassants ) {
+			uint64_t pawn = bitscan_unset( enpassants );
+			calc_moves_pawn_en_passant( p, c, moves, check, pawn );
+		}
 	}
 }
 }
