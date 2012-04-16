@@ -29,7 +29,7 @@ config::config()
 
 void config::init_book_dir( std::string self )
 {
-#if _MSC_VER
+#if WINDOWS
 	std::replace( self.begin(), self.end(), '\\', '/' );
 #endif
 	if( self.rfind('/') != std::string::npos ) {
