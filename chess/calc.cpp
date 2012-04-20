@@ -38,7 +38,7 @@ short const razor_pruning[] = { 220, 250, 290 };
 #define USE_FUTILITY 1
 short const futility_pruning[] = { 110, 130, 170, 210 };
 
-#define USE_NULLMOVE_VERIFICATION 0
+#define USE_NULLMOVE_VERIFICATION 1
 
 
 volatile bool do_abort = false;
@@ -84,23 +84,21 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 #endif
 
 	if( !depth ) {
-		return result::draw; //beta;
+		return result::draw;
 	}
 
 	bool pv_node = alpha + 1 != beta;
 
+	int tt_depth = 1;
+
 	short eval;
 	move tt_move;
-	score_type::type t = transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move, full_eval );
+	score_type::type t = transposition_table.lookup( hash, c, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
 
 	if ( !pv_node && t != score_type::none ) {
 		return eval;
 	}
 
-
-	if( !check.check && tt_move.captured_piece != pieces::none ) {
-		tt_move.piece = pieces::none;
-	}
 
 #if 0
 	full_eval = evaluate_full( p, c, current_evaluation );
@@ -118,28 +116,29 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 	if( !check.check ) {
 		if( full_eval == result::win ) {
 			full_eval = evaluate_full( p, c );
-			transposition_table.store( hash, c, 0, ply, 0, 0, 0, tt_move, ctx.clock, full_eval );
 		}
 		if( full_eval > alpha ) {
 			if( full_eval >= beta ) {
+				transposition_table.store( hash, c, tt_depth, ply, full_eval, alpha, beta, tt_move, ctx.clock, full_eval );
 				return full_eval;
 			}
 			alpha = full_eval;
 		}
 	}
 
-	bool got_moves = false;
-
 	qsearch_move_generator gen( ctx, p, c, check, pv_node );
-	gen.hash_move = tt_move;
+
+	if( check.check || tt_move.captured_piece != pieces::none ) {
+		gen.hash_move = tt_move;
+	}
 
 	move best_move;
+	short best_value = check.check ? static_cast<short>(result::loss) : full_eval;
 
 	short old_alpha = alpha;
 
 	move_info const* it;
 	while( (it = gen.next()) ) {
-		got_moves = true;
 
 		short value;
 		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
@@ -150,36 +149,29 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 		value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -beta, -alpha );
 
-		if( value > alpha ) {
-			best_move = it->m;
-			alpha = value;
+		if( value > best_value ) {
+			best_value = value;
 
-			if( alpha >= beta ) {
+			if( value >= beta ) {
+				best_move = it->m;
 				break;
 			}
-		}
-	}
-
-	if( !got_moves ) {
-		if( check.check ) {
-			return result::loss + ply;
-		}
-		else {
-			move_info* moves = ctx.move_ptr;
-			calculate_moves_noncaptures( p, c, ctx.move_ptr, check );
-			if( ctx.move_ptr != moves ) {
-				ctx.move_ptr = moves;
-				return full_eval;
-			}
-			else {
-				return result::draw;
+			else if( value > alpha ) {
+				best_move = it->m;
+				alpha = value;
 			}
 		}
 	}
 
-	transposition_table.store( hash, c, depth, ply, alpha, old_alpha, beta, best_move, ctx.clock, full_eval );
+	if( best_value == result::loss && check.check ) {
+		return result::loss + ply;
+	}
 
-	return alpha;
+	if( best_move.empty() ) {
+		best_move = tt_move;
+	}
+	transposition_table.store( hash, c, tt_depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
+	return best_value;
 }
 
 
