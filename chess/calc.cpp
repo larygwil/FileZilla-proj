@@ -40,6 +40,7 @@ short const futility_pruning[] = { 110, 130, 170, 210 };
 
 #define USE_NULLMOVE_VERIFICATION 1
 
+int const delta_pruning = 50;
 
 volatile bool do_abort = false;
 
@@ -139,6 +140,18 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 	move_info const* it;
 	while( (it = gen.next()) ) {
+
+		// Delta pruning
+		if( !pv_node && !check.check && (it->m.piece != pieces::pawn || (it->m.target >= 16 && it->m.target < 48 ) ) ) {
+			ASSERT( it->m.captured_piece != pieces::none );
+			short new_value = full_eval + eval_values::material_values[it->m.captured_piece].mg() + delta_pruning;
+			if( new_value <= alpha ) {
+				if( new_value > best_value ) {
+					best_value = new_value;
+				}
+				continue;
+			}
+		}
 
 		short value;
 		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
