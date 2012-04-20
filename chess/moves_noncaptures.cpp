@@ -55,6 +55,38 @@ void add_if_legal( move_info*& moves, check_map const& check,
 	do_add_move( moves, pi, source, target, flags );
 }
 
+void add_if_legal_pawn( move_info*& moves, check_map const& check,
+				  unsigned char const& source, unsigned char const& target )
+{
+	unsigned char const& cv_old = check.board[source];
+	unsigned char const& cv_new = check.board[target];
+	if( check.check ) {
+		if( cv_old ) {
+			// Can't come to rescue, this piece is already blocking yet another check.
+			return;
+		}
+		if( cv_new != check.check ) {
+			// Target position does capture checking piece nor blocks check
+			return;
+		}
+	}
+	else {
+		if( cv_old && cv_old != cv_new ) {
+			return;
+		}
+	}
+
+	if( target >= 56 || target < 8 ) {
+		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_queen );
+		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_rook );
+		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_bishop );
+		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_knight );
+	}
+	else {
+		do_add_move( moves, pieces::pawn, source, target, move_flags::none );
+	}
+}
+
 void add_if_legal_king( position const& p, color::type c,
 						move_info*& moves, unsigned char const& source, unsigned char const& target,
 						int flags )
@@ -230,15 +262,7 @@ void calc_moves_pawn_pushes( position const& p, move_info*& moves, check_map con
 	while( pawn_pushes ) {
 		uint64_t pawn_move = bitscan_unset( pawn_pushes );
 
-		if( pawn_move >= 56 || pawn_move < 8 ) {
-			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_queen );
-			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_rook );
-			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_bishop );
-			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_knight );
-		}
-		else {
-			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::none );
-		}
+		add_if_legal_pawn( moves, check, pawn_move - (c ? -8 : 8), pawn_move );
 	}
 }
 

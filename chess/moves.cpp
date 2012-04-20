@@ -65,6 +65,40 @@ void add_if_legal( move_info*& moves, check_map const& check,
 	do_add_move( moves, pi, source, target, flags, captured );
 }
 
+// Adds the move if it does not result in self getting into check
+void add_if_legal_pawn( move_info*& moves, check_map const& check,
+				  unsigned char const& source, unsigned char const& target,
+				  pieces::type captured )
+{
+	unsigned char const& cv_old = check.board[source];
+	unsigned char const& cv_new = check.board[target];
+	if( check.check ) {
+		if( cv_old ) {
+			// Can't come to rescue, this piece is already blocking yet another check.
+			return;
+		}
+		if( cv_new != check.check ) {
+			// Target position does capture checking piece nor blocks check
+			return;
+		}
+	}
+	else {
+		if( cv_old && cv_old != cv_new ) {
+			return;
+		}
+	}
+
+	if( target >= 56 || target < 8 ) {
+		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_queen, captured );
+		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_rook, captured );
+		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_bishop, captured );
+		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_knight, captured );
+	}
+	else {
+		do_add_move( moves, pieces::pawn, source, target, move_flags::none, captured );
+	}
+}
+
 void add_if_legal_king( position const& p, color::type c,
 						move_info*& moves, unsigned char const& source, unsigned char const& target,
 						int flags, pieces::type captured )
@@ -310,15 +344,7 @@ void calc_moves_pawn_captures( position const& p, color::type c, move_info*& mov
 
 		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), pawn_move );
 
-		if( pawn_move >= 56 || pawn_move < 8 ) {
-			add_if_legal( moves, check, pieces::pawn, pawn_move - shift, pawn_move, move_flags::promotion_queen, captured );
-			add_if_legal( moves, check, pieces::pawn, pawn_move - shift, pawn_move, move_flags::promotion_rook, captured );
-			add_if_legal( moves, check, pieces::pawn, pawn_move - shift, pawn_move, move_flags::promotion_bishop, captured );
-			add_if_legal( moves, check, pieces::pawn, pawn_move - shift, pawn_move, move_flags::promotion_knight, captured );
-		}
-		else {
-			add_if_legal( moves, check, pieces::pawn, pawn_move - shift, pawn_move, move_flags::none, captured );
-		}
+		add_if_legal_pawn( moves, check, pawn_move - shift, pawn_move, captured );
 	}
 }
 
@@ -346,15 +372,7 @@ void calc_moves_pawn_pushes( position const& p, move_info*& moves, check_map con
 	while( pawn_pushes ) {
 		uint64_t pawn_move = bitscan_unset( pawn_pushes );
 
-		if( pawn_move >= 56 || pawn_move < 8 ) {
-			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_queen, pieces::none );
-			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_rook, pieces::none );
-			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_bishop, pieces::none );
-			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::promotion_knight, pieces::none );
-		}
-		else {
-			add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -8 : 8), pawn_move, move_flags::none, pieces::none );
-		}
+		add_if_legal_pawn( moves, check, pawn_move - (c ? -8 : 8), pawn_move, pieces::none );
 	}
 }
 
