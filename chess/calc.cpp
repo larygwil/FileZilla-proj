@@ -252,7 +252,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	}
 
 #if NULL_MOVE_REDUCTION > 0
-	if( full_eval >= beta && !pv_node && !last_was_null && !check.check && depth > (cutoff + depth_factor) && p.material[0].mg() > 1500 && p.material[1].mg() > 1500 ) {
+	if( !pv_node && !check.check && full_eval >= beta && !last_was_null && !check.check && depth > (cutoff + depth_factor) && p.material[0].mg() > 1500 && p.material[1].mg() > 1500 ) {
 		null_move_block seen_block( ctx.seen, ply );
 
 		pv_entry* cpv = ctx.pv_pool.get();
@@ -287,13 +287,16 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 
 	if( tt_move.empty() && depth > ( depth_factor * 4 + cutoff) ) {
 
-		step( depth - 2 * depth_factor, ply, ctx, p, hash, c, check, alpha, beta, pv, true, full_eval );
+		step( depth - 2 * depth_factor, ply, ctx, p, hash, c, check, alpha, beta, pv, true, full_eval, last_ply_was_capture );
 
 		short eval;
 		transposition_table.lookup( hash, c, depth, ply, alpha, beta, eval, tt_move, full_eval );
 	}
 
 	short old_alpha = alpha;
+	short best_value = result::loss;
+	move best_move;
+
 
 	pv_entry* best_pv = 0;
 
@@ -398,23 +401,24 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 				++searched_noncaptures;
 			}
 		}
-		if( value > alpha ) {
-			alpha = value;
-			tt_move = it->m;
+		if( value > best_value ) {
+			best_value = value;
 
-			if( alpha >= beta ) {
-				ctx.pv_pool.release(cpv);
+			if( best_pv ) {
+				ctx.pv_pool.release(best_pv);
+			}
+			best_pv = cpv;
 
+			if( value >= beta ) {
+				best_move = it->m;
 				if( !it->m.captured_piece ) {
 					ctx.killers[c][ply].add_killer( it->m );
 				}
 				break;
 			}
-			else {
-				if( best_pv ) {
-					ctx.pv_pool.release(best_pv);
-				}
-				best_pv = cpv;
+			else if( value > alpha ) {
+				best_move = it->m;
+				alpha = value;
 			}
 		}
 		else {
@@ -431,18 +435,20 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 		}
 	}
 
-	if( alpha < beta && alpha > old_alpha ) {
-		ctx.pv_pool.append( pv, tt_move, best_pv );
+	if( best_value == result::loss ) {
+		best_value = alpha;
 	}
-	else if( best_pv ) {
-		ctx.pv_pool.release( best_pv );
-	}
+
+	ctx.pv_pool.append( pv, best_move, best_pv );
 
 	if( !do_abort ) {
-		transposition_table.store( hash, c, depth, ply, alpha, old_alpha, beta, tt_move, ctx.clock, full_eval );
+		if( best_move.empty() ) {
+			best_move = tt_move;
+		}
+		transposition_table.store( hash, c, depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
 	}
 
-	return alpha;
+	return best_value;
 }
 
 namespace {
