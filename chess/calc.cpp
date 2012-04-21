@@ -252,7 +252,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	}
 
 #if NULL_MOVE_REDUCTION > 0
-	if( !pv_node && !check.check && full_eval >= beta && !last_was_null && !check.check && depth > (cutoff + depth_factor) && p.material[0].mg() > 1500 && p.material[1].mg() > 1500 ) {
+	if( !pv_node && !check.check && full_eval >= beta && !last_was_null && depth > (cutoff + depth_factor) && p.material[0].mg() > 1500 && p.material[1].mg() > 1500 ) {
 		null_move_block seen_block( ctx.seen, ply );
 
 		pv_entry* cpv = ctx.pv_pool.get();
@@ -335,17 +335,25 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 				extended = true;
 			}
 
+			bool dangerous_pawn_move = false;
+
 			// Pawn push extension
-			if( !extended && pv_node && it->m.piece == pieces::pawn ) {
+			if( it->m.piece == pieces::pawn ) {
 				// Pawn promoting or moving to 7th rank
 				if( it->m.target < 16 || it->m.target >= 48 ) {
-					new_depth += pawn_push_extension;
-					extended = true;
+					dangerous_pawn_move = true;
+					if( !extended && pv_node ) {
+						new_depth += pawn_push_extension;
+						extended = true;
+					}
 				}
 				// Pushing a passed pawn
 				else if( !(passed_pawns[c][it->m.target] & p.bitboards[1-c].b[bb_type::pawns] ) ) {
-					new_depth += pawn_push_extension;
-					extended = true;
+					dangerous_pawn_move = true;
+					if( !extended && pv_node ) {
+						new_depth += pawn_push_extension;
+						extended = true;
+					}
 				}
 			}
 
@@ -367,13 +375,19 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 #if USE_FUTILITY
 				// Futility pruning
 				if( !extended && !pv_node && gen.get_phase() == phases::noncapture && !check.check &&
-					it->m != tt_move )
+					it->m != tt_move && !dangerous_pawn_move )
 				{
 					int plies_remaining = (depth - cutoff) / depth_factor;
-					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short)) && full_eval + futility_pruning[plies_remaining] < beta ) {
-						ctx.pv_pool.release(cpv);
-						++searched_noncaptures;
-						continue;
+					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short))) {
+						value = full_eval + futility_pruning[plies_remaining];
+						if( value <= alpha ) {
+							if( value > best_value ) {
+								best_value = value;
+							}
+							ctx.pv_pool.release(cpv);
+							++searched_noncaptures;
+							continue;
+						}
 					}
 				}
 #endif
