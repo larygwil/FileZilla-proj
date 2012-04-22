@@ -372,7 +372,7 @@ move xboard_thread::stop()
 }
 
 
-void xboard_thread::on_new_best_move( position const& p, color::type c, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv )
+void xboard_thread::on_new_best_move( position const& p, color::type c, int depth, int /*selective_depth*/, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv )
 {
 	scoped_lock lock( mtx );
 	if( !abort ) {
