@@ -3,7 +3,7 @@
 #include <iostream>
 
 enum piece_masks : uint64_t {
-	white_pawn =   0x0ull,
+	white_pawn =   0x1ull,
 	white_knight = 0x10ull,
 	white_bishop = 0x100ull,
 	white_rook =   0x1000ull,
@@ -75,6 +75,15 @@ bool evaluate_endgame( position const& p, short& result )
 	case black_queen + 2 * white_bishop:
 	case white_queen + black_knight + black_queen:
 		result = p.base_eval.eg() - p.material[0].eg() + p.material[1].eg() - 100;
+		return true;
+
+	// Usually drawn endgames pawn vs. minor piece
+	// If not drawn, search will hopefully save us.
+	case white_bishop + black_pawn:
+	case black_bishop + white_pawn:
+	case white_knight + black_pawn:
+	case black_knight + white_pawn:
+		result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
 		return true;
 	default:
 		break;
