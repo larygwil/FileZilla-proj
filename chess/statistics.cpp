@@ -170,7 +170,7 @@ int statistics::highest_depth() const
 	int i;
 	for( i = 1; i < MAX_DEPTH && full_width_nodes[i]; ++i ) {
 	}
-	highest = i - i;
+	highest = i - 1;
 
 	return highest;
 }
