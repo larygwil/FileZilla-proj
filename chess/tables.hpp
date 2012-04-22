@@ -34,4 +34,6 @@ extern uint64_t const passed_pawns[2][64];
 extern uint64_t const doubled_pawns[2][64];
 extern uint64_t const forward_pawn_attack[2][64];
 
+extern uint64_t const trapped_bishop[2][64];
+
 #endif

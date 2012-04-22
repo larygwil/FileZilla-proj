@@ -10,16 +10,17 @@ namespace eval_values {
 
 	extern score double_bishop;
 
-	extern score doubled_pawn[2][8];
-	extern score passed_pawn[8];
 	extern score passed_pawn_advance_power;
-	extern score isolated_pawn[2][8];
-	extern score connected_pawn[2][8];
-	extern score candidate_passed_pawn[8];
-	extern score backward_pawn[2][8];
 	extern score passed_pawn_king_distance[2];
+	extern score doubled_pawn_base[2][4];
+	extern score passed_pawn_base[4];
+	extern score isolated_pawn_base[2][4];
+	extern score connected_pawn_base[2][4];
+	extern score candidate_passed_pawn_base[4];
+	extern score backward_pawn_base[2][4];
 
 	extern score pawn_shield[3];
+	extern score pawn_shield_attack[3];
 
 	extern score absolute_pin[7];
 
@@ -41,6 +42,8 @@ namespace eval_values {
 	extern short king_attack_exponent[2];
 	extern short king_attack_offset[2];
 
+	extern short king_attack_pawn_shield;
+
 	extern score center_control;
 
 	extern short phase_transition_begin;
@@ -51,6 +54,7 @@ namespace eval_values {
 	extern score rule_of_the_square;
 	extern score passed_pawn_unhindered;
 
+	extern score defended_by_pawn[6];
 	extern score attacked_piece[6];
 	extern score hanging_piece[6];
 
@@ -81,14 +85,20 @@ namespace eval_values {
 	extern score bishop_outposts[2];
 
 	extern score trapped_rook[2];
+	extern score trapped_bishop;
 
 	// Derived
-	extern score material_values[7];
-
 	extern score initial_material;
 
 	extern int phase_transition_material_begin;
 	extern int phase_transition_material_end;
+
+	extern score doubled_pawn[2][8];
+	extern score passed_pawn[8];
+	extern score isolated_pawn[2][8];
+	extern score connected_pawn[2][8];
+	extern score candidate_passed_pawn[8];
+	extern score backward_pawn[2][8];
 
 	extern score mobility_knight[9];
 	extern score mobility_bishop[14];
@@ -103,6 +113,8 @@ namespace eval_values {
 
 	void init();
 	void update_derived();
+	bool sane();
+	bool normalize();
 };
 
 extern score pst[2][7][64];

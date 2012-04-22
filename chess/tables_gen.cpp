@@ -924,7 +924,45 @@ int main()
 		std::cout << "};" << std::endl << std::endl;
 	}
 
+	{
+		std::cout << "extern uint64_t const trapped_bishop[2][64] = {" << std::endl;
 
+		for( int c = 0; c < 2; ++c ) {
+			std::cout << "\t{" << std::endl;
+			for( unsigned int square = 0; square < 64; ++square ) {
+				std::cout << "\t\t0x";
+
+				uint64_t v = 0;
+
+				int col = square % 8;
+				int row = square / 8;
+
+				if( (c && (square == 8 || square == 16 || square == 1 || square == 15 || square == 23 || square == 6 )) ||
+					(!c && (square == 55 || square == 47  || square == 62 || square == 48 || square == 40 || square == 57 )) ) {
+
+					int cx = (col > 4) ? -1 : 1;
+					int cy = c ? 1 : -1;
+
+					v |= 1ull << (col + cx + (row + cy) * 8);
+				}
+
+				std::cout << std::hex << std::setw(16) << std::setfill('0') << v;
+
+				std::cout << "ull";
+				if( square != 63 ) {
+					std::cout << ",";
+				}
+				std::cout << std::endl;
+			}
+			if( c ) {
+				std::cout << "\t}" << std::endl;
+			}
+			else {
+				std::cout << "\t}," << std::endl;
+			}
+		}
+		std::cout << "};" << std::endl << std::endl;
+	}
 
 	return 0;
 }

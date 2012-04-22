@@ -285,19 +285,39 @@ void init_genes()
 	MAKE_GENE( material_values[pieces::rook], 430, 680 );
 	MAKE_GENE( material_values[pieces::queen], 870, 1500 );
 	MAKE_GENE( double_bishop, 0, 100 );
-	MAKE_GENES( doubled_pawn[0], -50, 0, 4, 0 );
-	MAKE_GENES( doubled_pawn[1], -50, 0, 4, 0 );
-	MAKE_GENES( passed_pawn, 0, 100, 4, 0);
-	MAKE_GENES( backward_pawn[0], -50, 0, 4, 0 );
-	MAKE_GENES( backward_pawn[1], -50, 0, 4, 0 );
+
 	MAKE_GENE( passed_pawn_advance_power, 100, 210 );
 	MAKE_GENES( passed_pawn_king_distance, 0, 10, 2, 0 );
-	MAKE_GENES( isolated_pawn[0], -50, 0, 4, 0);
-	MAKE_GENES( isolated_pawn[1], -50, 0, 4, 0);
-	MAKE_GENES( connected_pawn[0], 0, 50, 4, 0);
-	MAKE_GENES( connected_pawn[1], 0, 50, 4, 0);
-	MAKE_GENES( candidate_passed_pawn, 0, 50, 4, 0);
+
+	MAKE_GENE( passed_pawn_base[0], 0, 100 );
+	MAKE_GENES( passed_pawn_base, 0, 20, 3, 1 );
+
+	MAKE_GENE( doubled_pawn_base[0][0], 0, 50 );
+	MAKE_GENES( doubled_pawn_base[0], 0, 20, 3, 1 );
+	MAKE_GENE( doubled_pawn_base[1][0], 0, 50 );
+	MAKE_GENES( doubled_pawn_base[1], 0, 20, 3, 1 );
+
+
+	MAKE_GENE( backward_pawn_base[0][0], 0, 50 );
+	MAKE_GENES( backward_pawn_base[0], 0, 20, 3, 1 );
+	MAKE_GENE( backward_pawn_base[1][0], 0, 50 );
+	MAKE_GENES( backward_pawn_base[1], 0, 20, 3, 1 );
+
+	MAKE_GENE( isolated_pawn_base[0][0], 0, 50 );
+	MAKE_GENES( isolated_pawn_base[0], 0, 20, 3, 1 );
+	MAKE_GENE( isolated_pawn_base[1][0], 0, 50 );
+	MAKE_GENES( isolated_pawn_base[1], 0, 20, 3, 1 );
+
+	MAKE_GENE( connected_pawn_base[0][0], 0, 50 );
+	MAKE_GENES( connected_pawn_base[0], 0, 20, 3, 1 );
+	MAKE_GENE( connected_pawn_base[1][0], 0, 50 );
+	MAKE_GENES( connected_pawn_base[1], 0, 20, 3, 1 );
+
+	MAKE_GENE( candidate_passed_pawn_base[0], 0, 50 );
+	MAKE_GENES( candidate_passed_pawn_base, 0, 20, 3, 1 );
+
 	MAKE_GENES( pawn_shield, 0, 100, 3, 0 );
+	MAKE_GENES( pawn_shield_attack, 0, 100, 3, 0 );
 	MAKE_GENES( absolute_pin, 0, 100, 5, 1 );
 	MAKE_GENE( rooks_on_open_file, 0, 100 );
 	MAKE_GENE( rooks_on_half_open_file, 0, 100 );
@@ -312,10 +332,12 @@ void init_genes()
 	MAKE_GENES( king_attack_rise, 1, 30, 2, 0 );
 	MAKE_GENES( king_attack_exponent, 100, 300, 2, 0 );
 	MAKE_GENES( king_attack_offset, 0, 100, 2, 0 );
+	MAKE_GENE( king_attack_pawn_shield, 1, 100 );
 	MAKE_GENE( center_control, 0, 500 );
 	MAKE_GENE( material_imbalance, 0, 500 );
 	MAKE_GENE( rule_of_the_square, 0, 100 );
 	MAKE_GENE( passed_pawn_unhindered, 0, 100 );
+	MAKE_GENES( defended_by_pawn, 0, 100, 5, 1 );
 	MAKE_GENES( attacked_piece, 0, 100, 5, 1 );
 	MAKE_GENES( hanging_piece, 0, 100, 5, 1 );
 	MAKE_GENE( mobility_knight_min, -100, 0 );
@@ -341,6 +363,7 @@ void init_genes()
 	MAKE_GENES( bishop_outposts, 0, 100, 2, 0 );
 	MAKE_GENE( trapped_rook[0].mg(), -100, 0 );
 	MAKE_GENE( trapped_rook[1].mg(), -100, 0 );
+	MAKE_GENE( trapped_bishop, -100, 0 );
 }
 
 struct individual
@@ -379,12 +402,21 @@ struct individual
 		}
 	}
 
-	void apply()
+	bool apply()
 	{
 		for( unsigned int i = 0; i < values_.size(); ++i ) {
 			*genes[i].target_ = values_[i];
 		}
 		eval_values::update_derived();
+		if( !eval_values::sane() ) {
+			return false;
+		}
+		if( eval_values::normalize() ) {
+			for( unsigned int i = 0; i < genes.size(); ++i ) {
+				values_[i] = *genes[i].target_;
+			}
+		}
+		return true;
 	}
 
 	void calc_fitness( std::vector<reference_data>& data ) {
@@ -455,12 +487,27 @@ struct individual
 typedef std::vector<individual*> population;
 
 
+bool insert( population& pop, std::set<individual>& seen, individual* i )
+{
+	bool ret = false;
+	if( i->apply() && seen.insert( *i ).second ) {
+		pop.push_back( i );
+		ret = true;
+	}
+	else {
+		delete i;
+	}
+
+	return ret;
+}
+
+
 void mutate( population& pop, std::set<individual>& seen, std::vector<reference_data>& data )
 {
 	// Randomly mutates elements and adds the resulting mutants to the container
 	std::size_t orig_count = pop.size();
 
-	for( int x = 0; x < 4; ++x ) {
+	for( int x = 0; x < 2; ++x ) {
 		std::size_t loop_count = pop.size();
 		for( std::size_t i = 0; i < loop_count; ++i ) {
 			individual const& ref = *pop[i];
@@ -471,12 +518,7 @@ void mutate( population& pop, std::set<individual>& seen, std::vector<reference_
 				if( ref.values_[fi] > gene.min_ ) {
 					individual* mut = new individual( ref );
 					--mut->values_[fi];
-					if( seen.insert( *mut ).second ) {
-						pop.push_back( mut );
-					}
-					else {
-						delete mut;
-					}
+					insert( pop, seen, mut );
 				}
 			}
 			{
@@ -486,12 +528,7 @@ void mutate( population& pop, std::set<individual>& seen, std::vector<reference_
 				if( ref.values_[fi] < gene.max_ ) {
 					individual* mut = new individual( ref );
 					++mut->values_[fi];
-					if( seen.insert( *mut ).second ) {
-						pop.push_back( mut );
-					}
-					else {
-						delete mut;
-					}
+					insert( pop, seen, mut );
 				}
 			}
 			{
@@ -503,12 +540,7 @@ void mutate( population& pop, std::set<individual>& seen, std::vector<reference_
 				if( v != ref.values_[fi] ) {
 					individual* mut = new individual( ref );
 					mut->values_[fi] = v;
-					if( seen.insert( *mut ).second ) {
-						pop.push_back( mut );
-					}
-					else {
-						delete mut;
-					}
+					insert( pop, seen, mut );
 				}
 			}
 		}
@@ -525,7 +557,7 @@ void combine( population& pop, std::set<individual>& seen, std::vector<reference
 	// Sex :)
 	// Hopefully by coupling up, we end up with a child that's better than each of its parents.
 	std::size_t orig_count = pop.size();
-	if( orig_count < 1 ) {
+	if( orig_count < 2 ) {
 		return;
 	}
 
@@ -540,16 +572,16 @@ void combine( population& pop, std::set<individual>& seen, std::vector<reference
 
 		individual* child( new individual(i1) );
 		for( std::size_t i = 0; i < genes.size(); ++i ) {
-			if( rand() % 2 ) {
+			int i = rand() % 3;
+			if( !i ) {
+				child->values_[i] = (i1.values_[i] + i2.values_[i]) / 2;
+			}
+			else if( i == 1 ) {
 				child->values_[i] = i2.values_[i];
 			}
 		}
-		if( seen.insert( *child ).second ) {
+		if( insert( pop, seen, child ) ) {
 			child->calc_fitness( data );
-			pop.push_back( child );
-		}
-		else {
-			delete child;
 		}
 	}
 }
@@ -674,7 +706,7 @@ std::vector<reference_data> load_data()
 			continue;
 		}
 
-		if( popcount( entry.p.bitboards[0].b[bb_type::all_pieces] | entry.p.bitboards[1].b[bb_type::all_pieces]) <= 6 ) {
+		if( popcount( entry.p.bitboards[0].b[bb_type::all_pieces] | entry.p.bitboards[1].b[bb_type::all_pieces]) <= 7 ) {
 			++unknown_endgames;
 			continue;
 		}
@@ -695,12 +727,7 @@ void add_random( population & pop, std::set<individual>& seen, std::vector<refer
 		individual* p = new individual;
 		p->randomize();
 		p->calc_fitness( data );
-		if( seen.insert( *p ).second ) {
-			pop.push_back( p );
-		}
-		else {
-			delete p;
-		}
+		insert( pop, seen, p );
 	}
 }
 
@@ -749,5 +776,3 @@ void tweak_evaluation()
 		}
 	}
 }
-
-

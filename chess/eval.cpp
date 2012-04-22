@@ -27,6 +27,7 @@ enum type {
 	mobility,
 	center_control,
 	absolute_pins,
+	defended_by_pawn,
 	attacked_pieces,
 	hanging_pieces,
 	connected_rooks,
@@ -37,6 +38,7 @@ enum type {
 	double_bishop,
 	side_to_move,
 	trapped_rook,
+	trapped_bishop,
 
 	max
 };
@@ -57,12 +59,14 @@ struct eval_results {
 
 			count_king_attackers[c] = 0;
 			king_attacker_sum[c] = 0;
+			pawn_shield[c] = 0;
 		}
 	}
 
 	uint64_t king_pos[2];
 
 	uint64_t attacks[2][7];
+	short pawn_shield[2];
 
 	short count_king_attackers[2];
 	short king_attacker_sum[2];
@@ -273,7 +277,6 @@ inline static void evaluate_bishop_pin( position const& p, color::type c, uint64
 }
 
 
-
 template<bool detail>
 inline static void evaluate_bishop_outpost( position const& p, color::type c, uint64_t bishop, eval_results& results )
 {
@@ -285,6 +288,16 @@ inline static void evaluate_bishop_outpost( position const& p, color::type c, ui
 		else {
 			add_score<detail, eval_detail::outposts>( results, c, eval_values::bishop_outposts[0] );
 		}
+	}
+}
+
+
+template<bool detail>
+inline static void evaluate_trapped_bishop( position const& p, color::type c, uint64_t bishop, eval_results& results )
+{
+	uint64_t mask = trapped_bishop[c][bishop];
+	if( (mask & p.bitboards[1-c].b[bb_type::pawns]) == mask ) {
+		add_score<detail, eval_detail::trapped_bishop>( results, c, eval_values::trapped_bishop );
 	}
 }
 
@@ -302,6 +315,7 @@ inline static void evaluate_bishops( position const& p, color::type c, eval_resu
 		evaluate_bishop_mobility<detail>( p, c, bishop, results );
 		evaluate_bishop_pin<detail>( p, c, bishop, results );
 		evaluate_bishop_outpost<detail>( p, c, bishop, results );
+		evaluate_trapped_bishop<detail>( p, c, bishop, results );
 	}
 }
 
@@ -564,9 +578,17 @@ static void evaluate_king_attack( position const& p, color::type c, color::type 
 	attack += popcount( king_melee_attack_by_queen ) * eval_values::king_melee_attack_by_queen * initiative;
 	attack += popcount( king_melee_attack_by_rook ) * eval_values::king_melee_attack_by_rook * initiative;
 
-	int offset = std::min( short(199), attack );
+	// Take pawn shield into account
+	attack -= (results.pawn_shield[c] * 10) / eval_values::king_attack_pawn_shield;
 
-	add_score<detail, eval_detail::king_attack>( results, c, eval_values::king_attack[offset] );
+	if( attack < 0 ) {
+		attack = 0;
+	}
+	else if( attack > 199 ) {
+		attack = 199;
+	}
+
+	add_score<detail, eval_detail::king_attack>( results, c, eval_values::king_attack[attack] );
 }
 
 
@@ -681,19 +703,29 @@ void evaluate_pawn_shield( position const& p, eval_results& results )
 {
 	if( results.king_pos[color::white] < 40 ) {
 		uint64_t pawns = passed_pawns[color::white][results.king_pos[color::white]] & p.bitboards[color::white].b[bb_type::pawns];
+		uint64_t enemy_pawns = passed_pawns[color::white][results.king_pos[color::white]] & p.bitboards[color::black].b[bb_type::pawns];
 		uint64_t k = 0xffull << (results.king_pos[color::white] & 0x38);
+		score s;
 		for( int i = 0; i < 3; ++i ) {
 			k <<= 8;
-			add_score<detail, eval_detail::pawn_shield>( results, color::white, eval_values::pawn_shield[i] * static_cast<short>(popcount(pawns & k) ) );
+			s += eval_values::pawn_shield[i] * static_cast<short>(popcount(pawns & k) );
+			s -= eval_values::pawn_shield_attack[i] * static_cast<short>(popcount(enemy_pawns & k) );
 		}
+		add_score<detail, eval_detail::pawn_shield>( results, color::white, s );
+		results.pawn_shield[color::white] = s.mg();
 	}
 	if( results.king_pos[color::black] >= 24 ) {
 		uint64_t pawns = passed_pawns[color::black][results.king_pos[color::black]] & p.bitboards[color::black].b[bb_type::pawns];
+		uint64_t enemy_pawns = passed_pawns[color::black][results.king_pos[color::black]] & p.bitboards[color::white].b[bb_type::pawns];
 		uint64_t k = 0xffull << (results.king_pos[color::black] & 0x38);
+		score s;
 		for( int i = 0; i < 3; ++i ) {
 			k >>= 8;
-			add_score<detail, eval_detail::pawn_shield>( results, color::black, eval_values::pawn_shield[i] * static_cast<short>(popcount(pawns & k) ) );
+			s += eval_values::pawn_shield[i] * static_cast<short>(popcount(pawns & k) );
+			s -= eval_values::pawn_shield_attack[i] * static_cast<short>(popcount(enemy_pawns & k) );
 		}
+		add_score<detail, eval_detail::pawn_shield>( results, color::black, s );
+		results.pawn_shield[color::black] = s.mg();
 	}
 }
 
@@ -723,7 +755,7 @@ static void evaluate_center( position const& p, color::type c, eval_results& res
 }
 
 template<bool detail>
-static void evaluate_attacked_pieces( position const& p, color::type c, eval_results& results )
+static void evaluate_piece_defense( position const& p, color::type c, eval_results& results )
 {
 	// Bonus for enemy pieces we attack that are not defended
 	// Undefended are those attacked by self, not attacked by enemy
@@ -732,6 +764,7 @@ static void evaluate_attacked_pieces( position const& p, color::type c, eval_res
 	for( unsigned int piece = 1; piece < 6; ++piece ) {
 		add_score<detail, eval_detail::hanging_pieces>( results, static_cast<color::type>(c), eval_values::hanging_piece[piece] * popcount( p.bitboards[1-c].b[piece] & undefended ) );
 		add_score<detail, eval_detail::attacked_pieces>( results, static_cast<color::type>(c), eval_values::attacked_piece[piece] * popcount( p.bitboards[1-c].b[piece] & defended ) );
+		add_score<detail, eval_detail::defended_by_pawn>( results, static_cast<color::type>(c), eval_values::defended_by_pawn[piece] * popcount( p.bitboards[c].b[piece] & p.bitboards[c].b[bb_type::pawn_control] ) );
 	}
 }
 
@@ -781,7 +814,7 @@ static void do_evaluate( position const& p, color::type to_move, eval_results& r
 
 	for( unsigned int c = 0; c < 2; ++c ) {
 
-		evaluate_attacked_pieces<detail>( p, static_cast<color::type>(c), results );
+		evaluate_piece_defense<detail>( p, static_cast<color::type>(c), results );
 		evaluate_king_attack<detail>( p, static_cast<color::type>(c), to_move, results );
 		evaluate_drawishness<detail>( p, static_cast<color::type>(c), results );
 		evaluate_center<detail>( p, static_cast<color::type>(c), results );
@@ -872,12 +905,14 @@ std::string explain_eval( position const& p, color::type c )
 		ss << explain( p, "Mobility",  eval_detail::mobility );
 		ss << explain( p, "Center control", eval_detail::center_control );
 		ss << explain( p, "Absolute pins", eval_detail::absolute_pins );
+		ss << explain( p, "Defended by pawn", eval_detail::defended_by_pawn );
 		ss << explain( p, "Attacked pieces", eval_detail::attacked_pieces );
 		ss << explain( p, "Hanging pieces", eval_detail::hanging_pieces );
 		ss << explain( p, "Connected rooks", eval_detail::connected_rooks );
 		ss << explain( p, "Rooks on open file", eval_detail::rooks_on_open_file );
 		ss << explain( p, "Rooks on 7th rank", eval_detail::rooks_on_7h_rank );
 		ss << explain( p, "Trapped rook", eval_detail::trapped_rook );
+		ss << explain( p, "Trapped bishop", eval_detail::trapped_bishop );
 		ss << explain( p, "Outposts", eval_detail::outposts );
 		ss << explain( p, "Double bishop", eval_detail::double_bishop );
 		ss << explain( p, "Side to move", eval_detail::side_to_move );
