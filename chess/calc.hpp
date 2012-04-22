@@ -10,11 +10,17 @@
 
 int const depth_factor = 6;
 
-struct new_best_move_callback
+struct new_best_move_callback_base
 {
-	virtual void on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
+	virtual void on_new_best_move( position const& p, color::type c, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv ) = 0;
 };
-extern new_best_move_callback default_new_best_move_callback;
+
+struct def_new_best_move_callback : public new_best_move_callback_base
+{
+	virtual void on_new_best_move( position const& p, color::type c, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
+};
+
+extern def_new_best_move_callback default_new_best_move_callback;
 
 class calc_result
 {
@@ -43,7 +49,7 @@ public:
 	calc_result calc( position& p, color::type c,
 		   duration const& move_time_limit, duration const& deadline, int clock,
 		   seen_positions& seen, short last_mate,
-		   new_best_move_callback& new_best_cb = default_new_best_move_callback );
+		   new_best_move_callback_base& new_best_cb = default_new_best_move_callback );
 
 private:
 	class impl;

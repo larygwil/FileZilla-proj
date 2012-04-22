@@ -30,7 +30,7 @@ namespace {
 
 static calc_result tweak_calc( position& p, color::type c, duration const& move_time_limit, int clock, seen_positions& seen
 		  , short last_mate
-		  , new_best_move_callback& new_best_cb = default_new_best_move_callback )
+		  , new_best_move_callback_base& new_best_cb = default_new_best_move_callback )
 {
 	if( clock > 10 ) {
 		calc_manager cmgr;

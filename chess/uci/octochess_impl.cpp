@@ -23,7 +23,7 @@ volatile extern bool do_abort; //magic to kill the calculation
 namespace octochess {
 namespace uci {
 
-class octochess_uci::impl : public new_best_move_callback, public thread {
+class octochess_uci::impl : public new_best_move_callback_base, public thread {
 public:
 	impl( gui_interface_ptr const& p )
 		: gui_interface_(p)
@@ -47,7 +47,7 @@ public:
 	 }
 
 	virtual void onRun();
-	void on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
+	void on_new_best_move( position const& p, color::type c, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
 
 	void apply_move( move const& m );
 
@@ -201,9 +201,10 @@ void octochess_uci::impl::onRun() {
 	}
 }
 
-void octochess_uci::impl::on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv ) {
+void octochess_uci::impl::on_new_best_move( position const& p, color::type c, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv ) {
 	info i;
 	i.depth( depth );
+	i.selective_depth( selective_depth );
 	i.node_count( nodes );
 
 	int mate = 0;

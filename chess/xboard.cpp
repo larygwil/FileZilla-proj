@@ -193,7 +193,7 @@ struct xboard_state
 
 volatile extern bool do_abort;
 
-class xboard_thread : public thread, public new_best_move_callback
+class xboard_thread : public thread, public new_best_move_callback_base
 {
 public:
 	xboard_thread( xboard_state& s );
@@ -207,7 +207,7 @@ public:
 
 	mutex mtx;
 
-	virtual void on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
+	virtual void on_new_best_move( position const& p, color::type c, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
 
 private:
 	calc_manager cmgr_;
@@ -372,7 +372,7 @@ move xboard_thread::stop()
 }
 
 
-void xboard_thread::on_new_best_move( position const& p, color::type c, int depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv )
+void xboard_thread::on_new_best_move( position const& p, color::type c, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv )
 {
 	scoped_lock lock( mtx );
 	if( !abort ) {
