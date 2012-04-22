@@ -457,9 +457,8 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 		best_value = alpha;
 	}
 
-	ctx.pv_pool.append( pv, best_move, best_pv );
-
 	if( !do_abort ) {
+		ctx.pv_pool.append( pv, best_move, best_pv );
 		if( best_move.empty() ) {
 			best_move = tt_move;
 		}
