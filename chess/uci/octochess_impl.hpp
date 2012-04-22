@@ -6,6 +6,8 @@
 
 #include "../config.hpp"
 
+#include <vector>
+
 namespace octochess {
 namespace uci {
 
@@ -32,6 +34,8 @@ public:
 	virtual unsigned int get_max_threads() const;
 	virtual void set_threads( unsigned int threads );
 
+private:
+	virtual void make_moves( std::vector<std::string> const& list_of_moves );
 private:
 	class impl;
 	std::shared_ptr<impl> impl_;

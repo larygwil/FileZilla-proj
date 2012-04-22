@@ -13,6 +13,7 @@
 #include "../pawn_structure_hash_table.hpp"
 #include "../logger.hpp"
 #include "../random.hpp"
+#include "../string.hpp"
 #include "../util.hpp"
 #include "../zobrist.hpp"
 
@@ -123,16 +124,18 @@ void octochess_uci::set_position( std::string const& fen ) {
 }
 
 void octochess_uci::make_moves( std::string const& moves ) {
-	bool done = false;
-	std::istringstream in( moves );
+	make_moves( tokenize( moves ) );
+}
 
-	std::string str;
-	while( !done && in >> str ) {
+void octochess_uci::make_moves( std::vector<std::string> const& moves )
+{
+	bool done = false;
+	for( std::vector<std::string>::const_iterator it = moves.begin(); !done && it != moves.end(); ++it ) {
 		move m;
-		if( parse_move( impl_->pos_, impl_->color_to_play_, str, m, false ) ) {
+		if( parse_move( impl_->pos_, impl_->color_to_play_, *it, m, false ) ) {
 			impl_->apply_move( m );
 		} else {
-			std::cerr << "invalid syntax with moves: " << moves << std::endl;
+			std::cerr << "invalid syntax with moves: " << *it << std::endl;
 			done = true;
 		}
 	}
