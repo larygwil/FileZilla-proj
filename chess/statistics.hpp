@@ -15,6 +15,7 @@ public:
 	void node( int ply );
 
 	uint64_t nodes();
+	int highest_depth() const;
 
 	void print( duration const& elapsed );
 	void reset( bool total );
