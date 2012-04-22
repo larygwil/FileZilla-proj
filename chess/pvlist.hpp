@@ -39,6 +39,8 @@ public:
 	void set_pv_move( pv_entry* pv, move const& m );
 	void clear_pv_move( pv_entry* pv );
 
+	pv_entry* clone( pv_entry const* pv );
+
 private:
 	pv_entry* first_free_;
 	pv_entry* last_free_;

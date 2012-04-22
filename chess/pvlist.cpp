@@ -175,3 +175,23 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 		pv = pv->next();
 	}
 }
+
+
+pv_entry* pv_entry_pool::clone( pv_entry const* pv )
+{
+	pv_entry* ret = 0;
+
+	if( pv ) {
+		ret = get();
+		pv_entry* cur = ret;
+		cur->best_move_ = pv->get_best_move();
+		while( pv->next() ) {
+			cur->next_ = get();
+			cur = cur->next_;
+			pv = pv->next_;
+			cur->best_move_ = pv->get_best_move();
+		}
+	}
+
+	return ret;
+}
