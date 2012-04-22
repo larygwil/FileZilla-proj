@@ -120,7 +120,9 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		}
 		if( full_eval > alpha ) {
 			if( full_eval >= beta ) {
-				transposition_table.store( hash, c, tt_depth, ply, full_eval, alpha, beta, tt_move, ctx.clock, full_eval );
+				if( !do_abort ) {
+					transposition_table.store( hash, c, tt_depth, ply, full_eval, alpha, beta, tt_move, ctx.clock, full_eval );
+				}
 				return full_eval;
 			}
 			alpha = full_eval;
@@ -183,7 +185,9 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 	if( best_move.empty() ) {
 		best_move = tt_move;
 	}
-	transposition_table.store( hash, c, tt_depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
+	if( !do_abort ) {
+		transposition_table.store( hash, c, tt_depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
+	}
 	return best_value;
 }
 
