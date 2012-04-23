@@ -840,7 +840,7 @@ calc_result calc_manager::calc( position& p, color::type c, duration const& move
 
 	short alpha_at_prev_depth = result::loss;
 	int highest_depth = 0;
-	for( int max_depth = 2 + (conf.depth % 2); max_depth <= conf.depth; ++max_depth )
+	for( int max_depth = 2 + (conf.depth % 2); max_depth <= conf.depth && !do_abort; ++max_depth )
 	{
 		short alpha = result::loss;
 		short beta = result::win;
@@ -884,6 +884,9 @@ calc_result calc_manager::calc( position& p, color::type c, duration const& move
 				}
 			}
 break2:
+			if( do_abort ) {
+				goto label_abort;
+			}
 
 			if( !ponder ) {
 				timestamp now;
@@ -999,9 +1002,6 @@ break2:
 		else {
 			result.forecast = alpha_at_prev_depth;
 		}
-		if( do_abort ) {
-			break;
-		}
 	}
 
 /*	std::cerr << "Candidates: " << std::endl;
@@ -1017,19 +1017,22 @@ break2:
 		p.release( it->pv );
 	}*/
 
-	timestamp stop;
-
-	pv_entry const* pv = old_sorted.begin()->pv;
-	new_best_cb.on_new_best_move( p, c, highest_depth, stats.highest_depth(), old_sorted.begin()->forecast, stats.nodes() + stats.quiescence_nodes, stop - start, pv );
-
-	stats.print( stop - start );
-	stats.accumulate( stop - start );
-	stats.reset( false );
-
+label_abort:
 	scoped_lock l( impl_->mtx_ );
 
 	for( std::vector<processing_thread*>::iterator it = impl_->threads_.begin(); it != impl_->threads_.end(); ++it ) {
 		(*it)->wait_idle( l );
+	}
+
+	{
+		timestamp stop;
+
+		pv_entry const* pv = old_sorted.begin()->pv;
+		new_best_cb.on_new_best_move( p, c, highest_depth, stats.highest_depth(), old_sorted.begin()->forecast, stats.nodes() + stats.quiescence_nodes, stop - start, pv );
+
+		stats.print( stop - start );
+		stats.accumulate( stop - start );
+		stats.reset( false );
 	}
 
 	return result;
