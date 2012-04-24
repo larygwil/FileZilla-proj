@@ -76,7 +76,8 @@ void init_zobrist_tables()
 }
 
 
-uint64_t get_zobrist_hash( position const& p ) {
+uint64_t get_zobrist_hash( position const& p )
+{
 	uint64_t ret = 0;
 
 	for( unsigned int c = 0; c < 2; ++c ) {
@@ -112,6 +113,17 @@ uint64_t get_zobrist_hash( position const& p ) {
 
 	return ret;
 }
+
+
+uint64_t get_zobrist_hash( position const& p, color::type c )
+{
+	uint64_t ret = get_zobrist_hash( p );
+	if( c ) {
+		ret = ~ret;
+	}
+	return ret;
+}
+
 
 namespace {
 static uint64_t get_piece_hash( pieces::type pi, color::type c, int pos )
