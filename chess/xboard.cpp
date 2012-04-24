@@ -1,3 +1,4 @@
+#include "assert.hpp"
 #include "chess.hpp"
 #include "xboard.hpp"
 #include "book.hpp"
@@ -7,6 +8,7 @@
 #include "hash.hpp"
 #include "logger.hpp"
 #include "pawn_structure_hash_table.hpp"
+#include "pv_move_picker.hpp"
 #include "random.hpp"
 #include "see.hpp"
 #include "string.hpp"
@@ -25,6 +27,7 @@ enum type {
 	analyze
 };
 }
+
 
 struct xboard_state
 {
@@ -188,6 +191,8 @@ struct xboard_state
 	// communication overhead.
 	duration level_cmd_differences;
 	uint64_t level_cmd_count;
+
+	pv_move_picker pv_move_picker_;
 };
 
 
@@ -388,6 +393,8 @@ void xboard_thread::on_new_best_move( position const& p, color::type c, int dept
 		}
 
 		best_move = pv->get_best_move();
+
+		state.pv_move_picker_.update_pv( p, c, pv );
 	}
 }
 
@@ -438,6 +445,23 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 	if( state.clock < 22 && state.started_from_root ) {
 		state.book_.mark_for_processing( state.move_history_ );
+	}
+
+	move pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p, state.c );
+	if( !pv_move.empty() ) {
+		std::cout << "move " << move_to_string( pv_move ) << std::endl;
+
+		state.history.push_back( state.p );
+
+		apply_move( state.p, pv_move, state.c );
+		++state.clock;
+		state.c = static_cast<color::type>( 1 - state.c );
+		state.move_history_.push_back( pv_move );
+
+		timestamp stop;
+		state.time_remaining -= stop - state.last_go_time;
+		std::cerr << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
+		return;
 	}
 
 	thread.start();

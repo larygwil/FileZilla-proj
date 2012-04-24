@@ -32,6 +32,7 @@ OBJECT_FILES = \
 	phased_move_generator.o \
 	platform.o \
 	pvlist.o \
+	pv_move_picker.o \
 	random.o \
 	score.o \
 	see.o \

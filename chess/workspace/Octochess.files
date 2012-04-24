@@ -37,6 +37,8 @@
 ../platform.hpp
 ../pvlist.cpp
 ../pvlist.hpp
+../pv_move_picker.cpp
+../pv_move_picker.hpp
 ../random.hpp
 ../score.cpp
 ../score.hpp

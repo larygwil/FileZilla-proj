@@ -11,6 +11,7 @@
 #include "../fen.hpp"
 #include "../hash.hpp"
 #include "../pawn_structure_hash_table.hpp"
+#include "../pv_move_picker.hpp"
 #include "../logger.hpp"
 #include "../random.hpp"
 #include "../string.hpp"
@@ -53,6 +54,7 @@ public:
 	void apply_move( move const& m );
 
 	bool do_book_move();
+	bool pick_pv_move();
 
 public:
 	gui_interface_ptr gui_interface_;
@@ -75,6 +77,8 @@ public:
 	condition calc_cond_;
 
 	book book_;
+
+	pv_move_picker pv_move_picker_;
 };
 
 octochess_uci::octochess_uci( gui_interface_ptr const& p ) 
@@ -152,9 +156,10 @@ void octochess_uci::calculate( calculate_mode_type mode, position_time const& t 
 	}
 	else {
 		impl_->times_.update( t, impl_->color_to_play_ == color::white, impl_->half_moves_played_ );
-		bool got_book_move = impl_->do_book_move();
-		if( !got_book_move ) {
-			impl_->calc_cond_.signal(lock);
+		if( !impl_->do_book_move() ) {
+			if( !impl_->pick_pv_move() ) {
+				impl_->calc_cond_.signal(lock);
+			}
 		}
 	}
 }
@@ -272,6 +277,20 @@ bool octochess_uci::impl::do_book_move() {
 			gui_interface_->tell_best_move( move_to_long_algebraic( best_move.m ) );
 			apply_move( best_move.m );
 		}
+	}
+
+	return ret;
+}
+
+
+bool octochess_uci::impl::pick_pv_move()
+{
+	bool ret = false;
+	move m = pv_move_picker_.can_use_move_from_pv( pos_, color_to_play_ );
+	if( !m.empty() ) {
+		ret = true;
+		gui_interface_->tell_best_move( move_to_long_algebraic( m ) );
+		apply_move( m );
 	}
 
 	return ret;
