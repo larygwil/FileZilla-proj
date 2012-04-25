@@ -7,7 +7,7 @@
 #include "score.hpp"
 
 namespace pieces {
-enum type {
+enum type : unsigned char {
 	none = 0,
 	pawn,
 	knight,
@@ -115,31 +115,33 @@ enum type {
 }
 
 
-struct move
+PACKED(struct move,
 {
 	move()
-		: flags()
-		, piece()
-		, source()
-		, target()
-		, captured_piece()
+		: u()
 	{}
 
 	bool empty() const { return piece == pieces::none; }
 
-	unsigned char flags;
-	pieces::type piece;
-	unsigned char source;
-	unsigned char target;
-	pieces::type captured_piece;
+	union {
+		uint64_t u;
+		PACKED(struct,
+		{
+			unsigned char flags;
+			pieces::type piece;
+			unsigned char source;
+			unsigned char target;
+			pieces::type captured_piece;
+		});
+	};
 
 	bool operator!=( move const& rhs ) const {
-		return flags != rhs.flags || piece != rhs.piece || source != rhs.source || target != rhs.target || captured_piece != rhs.captured_piece;
+		return u != rhs.u;
 	}
 	bool operator==( move const& rhs ) const {
-		return flags == rhs.flags && piece == rhs.piece && source == rhs.source && target == rhs.target && captured_piece == rhs.captured_piece;
+		return u == rhs.u;
 	}
-};
+});
 
 namespace result {
 enum type {

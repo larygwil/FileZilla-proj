@@ -6,10 +6,11 @@
 
 class killer_moves;
 
-struct move_info {
+PACKED(struct move_info,
+{
 	move m;
 	int sort;
-};
+});
 
 struct MoveSort {
 	inline bool operator()( move_info const& lhs, move_info const& rhs ) const {
