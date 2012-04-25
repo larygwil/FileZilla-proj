@@ -225,9 +225,11 @@
 				RelativePath="..\phased_move_generator.cpp"
 				>
 			</File>
+			<File
 				RelativePath="..\pvlist.cpp"
 				>
 			</File>
+			<File
 				RelativePath="..\pv_move_picker.cpp"
 				>
 			</File>
