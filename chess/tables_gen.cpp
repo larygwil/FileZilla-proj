@@ -813,7 +813,7 @@ int main()
 
 				int cy = c ? -1 : 1;
 
-				for( int y = source_row + cy; y > 0 && y < 7; y += cy ) {
+				for( int y = source_row + cy; y >= 0 && y <= 7; y += cy ) {
 					for( int cx = -1; cx <= 1; ++cx ) {
 						int x = source_col + cx;
 						if( x >= 0 && x < 8 ) {
@@ -854,11 +854,11 @@ int main()
 				int source_col = source % 8;
 				int source_row = source / 8;
 
-				if( source_row > 0 && source_row < 7 ) {
+				if( source_row >= 0 && source_row <= 7 ) {
 
 					int cy = c ? -1 : 1;
 
-					for( int y = source_row + cy; y > 0 && y < 7; y += cy ) {
+					for( int y = source_row + cy; y >= 0 && y < 8; y += cy ) {
 						v |= 1ull << (source_col + y * 8);
 					}
 				}

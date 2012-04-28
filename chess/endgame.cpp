@@ -1,4 +1,5 @@
 #include "endgame.hpp"
+#include "tables.hpp"
 
 #include <iostream>
 
@@ -85,6 +86,56 @@ bool evaluate_endgame( position const& p, short& result )
 	case black_knight + white_pawn:
 		result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
 		return true;
+
+	// Drawn if pawn on a or h file, enemy king in front
+	case white_pawn:
+		if( p.bitboards[color::white].b[bb_type::pawns] & 0x8181818181818181ull ) {
+			uint64_t pawn = bitscan(p.bitboards[color::white].b[bb_type::pawns]);
+			if( passed_pawns[color::white][pawn] & p.bitboards[color::black].b[bb_type::king] ) {
+				result = result::draw;
+				return true;
+			}
+		}
+		break;
+	case black_pawn:
+		if( p.bitboards[color::black].b[bb_type::pawns] & 0x8181818181818181ull ) {
+			uint64_t pawn = bitscan(p.bitboards[color::black].b[bb_type::pawns]);
+			if( passed_pawns[color::black][pawn] & p.bitboards[color::white].b[bb_type::king] ) {
+				result = result::draw;
+				return true;
+			}
+		}
+		break;
+
+	// Drawn if bishop doesn't control the promotion square and enemy king is on promotion square or next to it
+	case white_bishop + white_pawn:
+		if( p.bitboards[color::white].b[bb_type::pawns] & 0x8181818181818181ull ) {
+			uint64_t pawn = bitscan(p.bitboards[color::white].b[bb_type::pawns]);
+			uint64_t enemy_king_mask = (pawn % 8) ? 0xc0c0000000000000ull : 0x0303000000000000ull;
+			if( enemy_king_mask & p.bitboards[color::black].b[bb_type::king] ) {
+				bool promotion_square_is_light = (pawn % 8) == 0;
+				bool light_squared_bishop = p.bitboards[color::white].b[bb_type::bishops] & 0x55aa55aa55aa55aaull;
+				if( promotion_square_is_light != light_squared_bishop ) {
+					result = result::draw;
+					return true;
+				}
+			}
+		}
+		break;
+	case black_bishop + black_pawn:
+		if( p.bitboards[color::black].b[bb_type::pawns] & 0x8181818181818181ull ) {
+			uint64_t pawn = bitscan(p.bitboards[color::black].b[bb_type::pawns]);
+			uint64_t enemy_king_mask = (pawn % 8) ? 0xc0c0ull : 0x0303ull;
+			if( enemy_king_mask & p.bitboards[color::white].b[bb_type::king] ) {
+				bool promotion_square_is_light = (pawn % 8) == 7;
+				bool light_squared_bishop = p.bitboards[color::black].b[bb_type::bishops] & 0x55aa55aa55aa55aaull;
+				if( promotion_square_is_light != light_squared_bishop ) {
+					result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
+					return true;
+				}
+			}
+		}
+		break;
 	default:
 		break;
 	}
