@@ -38,7 +38,9 @@ short const razor_pruning[] = { 220, 250, 290 };
 #define USE_FUTILITY 1
 short const futility_pruning[] = { 110, 130, 170, 210 };
 
-#define USE_NULLMOVE_VERIFICATION 1
+#define NULL_MOVE_REDUCTION 3
+
+int const NULLMOVE_VERIFICATION_DEPTH = cutoff + depth_factor * 5;
 
 int const delta_pruning = 50;
 
@@ -90,7 +92,9 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 	bool pv_node = alpha + 1 != beta;
 
-	int tt_depth = 1;
+	bool do_checks = depth >= MAX_QDEPTH;
+
+	int tt_depth = do_checks ? 2 : 1;
 
 	short eval;
 	move tt_move;
@@ -129,7 +133,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		}
 	}
 
-	qsearch_move_generator gen( ctx, p, c, check, pv_node );
+	qsearch_move_generator gen( ctx, p, c, check, pv_node, do_checks );
 
 	if( check.check || tt_move.captured_piece != pieces::none ) {
 		gen.hash_move = tt_move;
@@ -143,9 +147,16 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 	move_info const* it;
 	while( (it = gen.next()) ) {
 
+		position new_pos = p;
+		apply_move( new_pos, it->m, c );
+		check_map new_check( new_pos, static_cast<color::type>(1-c) );
+
+		if( it->m.captured_piece == pieces::none && !check.check && !new_check.check ) {
+			continue;
+		}
+
 		// Delta pruning
-		if( !pv_node && !check.check && (it->m.piece != pieces::pawn || (it->m.target >= 16 && it->m.target < 48 ) ) ) {
-			ASSERT( it->m.captured_piece != pieces::none );
+		if( !pv_node && !check.check && !new_check.check && (it->m.piece != pieces::pawn || (it->m.target >= 16 && it->m.target < 48 ) ) ) {
 			short new_value = full_eval + eval_values::material_values[it->m.captured_piece].mg() + delta_pruning;
 			if( new_value <= alpha ) {
 				if( new_value > best_value ) {
@@ -157,10 +168,6 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 		short value;
 		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
-
-		position new_pos = p;
-		apply_move( new_pos, it->m, c );
-		check_map new_check( new_pos, static_cast<color::type>(1-c) );
 
 		value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -beta, -alpha );
 
@@ -273,18 +280,17 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 				value = beta;
 			}
 
-#if USE_NULLMOVE_VERIFICATION
-			if( new_depth >= cutoff ) {
+			if( depth > NULLMOVE_VERIFICATION_DEPTH ) {
 				// Verification search.
 				// Helps against zugzwang and some other strange issues
 				short research_value = step( new_depth, ply, ctx, p, hash, c, check, alpha, beta, pv, true, full_eval, last_ply_was_capture );
 				if( research_value >= beta ) {
-					return value;
+					return research_value;;
 				}
 			}
-#else
-			return value;
-#endif
+			else {
+				return value;
+			}
 		}
 	}
 #endif

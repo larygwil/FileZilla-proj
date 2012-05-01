@@ -53,7 +53,7 @@ protected:
 class qsearch_move_generator : public phased_move_generator_base
 {
 public:
-	qsearch_move_generator( context& cntx, position const& p, color::type const& c, check_map const& check, bool pv_node );
+	qsearch_move_generator( context& cntx, position const& p, color::type const& c, check_map const& check, bool pv_node, bool include_noncaptures );
 
 	// Returns the next legal move.
 	// move_info's m, evaluation and pawns are filled out, sort is undefined.
@@ -61,6 +61,7 @@ public:
 
 private:
 	bool pv_node_;
+	bool include_noncaptures_;
 };
 
 

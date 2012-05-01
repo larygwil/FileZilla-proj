@@ -8,7 +8,7 @@
 #include <iostream>
 
 namespace {
-void sort_moves_noncaptures( move_info* begin, move_info* end, position const& p, color::type c )
+void evaluate_noncaptures( move_info* begin, move_info* end, position const& p, color::type c )
 {
 	for( move_info* it = begin; it != end; ++it ) {
 		it->sort = evaluate_move( p, c, it->m );
@@ -29,15 +29,17 @@ phased_move_generator_base::phased_move_generator_base( context& cntx, position 
 {
 }
 
+
 phased_move_generator_base::~phased_move_generator_base()
 {
 	ctx.move_ptr = moves;
 }
 
 
-qsearch_move_generator::qsearch_move_generator( context& cntx, position const& p, color::type const& c, check_map const& check, bool pv_node )
+qsearch_move_generator::qsearch_move_generator( context& cntx, position const& p, color::type const& c, check_map const& check, bool pv_node, bool include_noncaptures )
 	: phased_move_generator_base( cntx, p, c, check )
 	, pv_node_( pv_node )
+	, include_noncaptures_( include_noncaptures )
 {
 }
 
@@ -110,7 +112,7 @@ move_info const* qsearch_move_generator::next()
 
 			return it++;
 		}
-		if( check_.check ) {
+		if( check_.check || include_noncaptures_ ) {
 			phase = phases::noncaptures_gen;
 		}
 		else {
@@ -121,17 +123,25 @@ move_info const* qsearch_move_generator::next()
 		ctx.move_ptr = bad_captures_end_;
 		it = bad_captures_end_;
 		calculate_moves_noncaptures( p_, c_, ctx.move_ptr, check_ );
-		sort_moves_noncaptures( bad_captures_end_, ctx.move_ptr, p_, c_ );
+		evaluate_noncaptures( bad_captures_end_, ctx.move_ptr, p_, c_ );
 		phase = phases::noncapture;
 	case phases::noncapture:
 		while( it != ctx.move_ptr ) {
 			get_best( it, ctx.move_ptr );
-			if( it->m != hash_move ) {
-				return it++;
-			}
-			else {
+			if( it->m == hash_move ) {
 				++it;
+				continue;
 			}
+
+			if( !check_.check && !pv_node_ ) {
+				int see_score = see( p_, c_, it->m );
+				if( see_score < 0 ) {
+					++it;
+					continue;
+				}
+			}
+
+			return it++;
 		}
 #if DELAY_BAD_CAPTURES
 		phase = phases::bad_captures;
@@ -226,7 +236,7 @@ move_info const* move_generator::next() {
 		ctx.move_ptr = bad_captures_end_;
 		it = bad_captures_end_;
 		calculate_moves_noncaptures( p_, c_, ctx.move_ptr, check_ );
-		sort_moves_noncaptures( bad_captures_end_, ctx.move_ptr, p_, c_ );
+		evaluate_noncaptures( bad_captures_end_, ctx.move_ptr, p_, c_ );
 		phase = phases::noncapture;
 	case phases::noncapture:
 		while( it != ctx.move_ptr ) {
