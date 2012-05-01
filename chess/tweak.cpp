@@ -572,11 +572,11 @@ void combine( population& pop, std::set<individual>& seen, std::vector<reference
 
 		individual* child( new individual(i1) );
 		for( std::size_t i = 0; i < genes.size(); ++i ) {
-			int i = rand() % 3;
-			if( !i ) {
+			int r = rand() % 3;
+			if( !r ) {
 				child->values_[i] = (i1.values_[i] + i2.values_[i]) / 2;
 			}
-			else if( i == 1 ) {
+			else if( r == 1 ) {
 				child->values_[i] = i2.values_[i];
 			}
 		}
