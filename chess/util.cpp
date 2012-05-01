@@ -318,7 +318,7 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 				std::cerr << " target_rank=" << second_row;
 			}
 			if( promotion != pieces::none ) {
-				std::cerr << " promotion=" << promotion << std::endl;
+				std::cerr << " promotion=" << static_cast<int>(promotion) << std::endl;
 			}
 			std::cerr << " capture=" << capture << std::endl;
 		}
@@ -480,6 +480,8 @@ void position::update_derived()
 			uint64_t pawn = bitscan_unset( pawns );
 			bitboards[i].b[bb_type::pawn_control] |= pawn_control[i][pawn];
 		}
+
+		//king_pos[i] = bitscan( bitboards[i].b[bb_type::king] );
 	}
 
 	init_material();
