@@ -120,17 +120,11 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves,
 
 void calc_moves_king( position const& p, color::type c, move_info*& moves, check_map const& check )
 {
-	uint64_t kings = p.bitboards[c].b[bb_type::king];
-	uint64_t king = bitscan( kings );
-
-	uint64_t other_kings = p.bitboards[1-c].b[bb_type::king];
-	uint64_t other_king = bitscan( other_kings );
-
-	uint64_t king_moves = possible_king_moves[king] & ~(p.bitboards[c].b[bb_type::all_pieces] | possible_king_moves[other_king]);
+	uint64_t king_moves = possible_king_moves[p.king_pos[c]] & ~(p.bitboards[c].b[bb_type::all_pieces] | possible_king_moves[p.king_pos[1-c]]);
 	while( king_moves ) {
 		uint64_t king_move = bitscan_unset( king_moves );
 		calc_moves_king( p, c, moves,
-						 king, king_move );
+						 p.king_pos[c], king_move );
 	}
 
 	if( check.check ) {
@@ -140,7 +134,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 	unsigned char row = c ? 56 : 0;
 	// Queenside castling
 	if( p.castle[c] & 0x2 ) {
-		if( p.get_occupancy( 0xeull << row ) == 0 && !(possible_king_moves[2 + row] & other_kings ) ) {
+		if( p.get_occupancy( 0xeull << row ) == 0 && !(possible_king_moves[2 + row] & p.bitboards[1-c].b[bb_type::king]) ) {
 			if( !detect_check( p, c, 3 + row, 3 + row ) ) {
 				add_if_legal_king( p, c, moves, 4 + row, 2 + row, move_flags::castle, pieces::none );
 			}
@@ -148,7 +142,7 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves, check
 	}
 	// Kingside castling
 	if( p.castle[c] & 0x1 ) {
-		if( p.get_occupancy( 0x60ull << row ) == 0 && !(possible_king_moves[6 + row] & other_kings ) ) {
+		if( p.get_occupancy( 0x60ull << row ) == 0 && !(possible_king_moves[6 + row] & p.bitboards[1-c].b[bb_type::king]) ) {
 			if( !detect_check( p, c, 5 + row, 5 + row ) ) {
 				add_if_legal_king( p, c, moves, 4 + row, 6 + row, move_flags::castle, pieces::none );
 			}

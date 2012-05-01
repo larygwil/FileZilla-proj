@@ -112,17 +112,11 @@ void calc_moves_king( position const& p, color::type c, move_info*& moves,
 
 void calc_moves_king( position const& p, color::type c, move_info*& moves )
 {
-	uint64_t kings = p.bitboards[c].b[bb_type::king];
-	uint64_t king = bitscan( kings );
-
-	uint64_t other_kings = p.bitboards[1-c].b[bb_type::king];
-	uint64_t other_king = bitscan( other_kings );
-
-	uint64_t king_moves = possible_king_moves[king] & ~(p.bitboards[c].b[bb_type::all_pieces] | possible_king_moves[other_king]) & p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t king_moves = possible_king_moves[p.king_pos[c]] & ~(p.bitboards[c].b[bb_type::all_pieces] | possible_king_moves[p.king_pos[1-c]]) & p.bitboards[1-c].b[bb_type::all_pieces];
 	while( king_moves ) {
 		uint64_t i = bitscan_unset( king_moves );
 		calc_moves_king( p, c, moves,
-						 king, i );
+						 p.king_pos[c], i );
 	}
 }
 

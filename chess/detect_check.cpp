@@ -29,10 +29,7 @@ bool detect_check( position const& p, color::type c, unsigned char king, unsigne
 
 bool detect_check( position const& p, color::type c )
 {
-	uint64_t kings = p.bitboards[c].b[bb_type::king];
-	uint64_t king = bitscan( kings );
-
-	return detect_check( p, c, king, king );
+	return detect_check( p, c, p.king_pos[c], p.king_pos[c] );
 }
 
 
@@ -84,8 +81,7 @@ check_map::check_map( position const& p, color::type c )
 {
 	memset( board, 0, sizeof(board) );
 
-	uint64_t kings = p.bitboards[c].b[bb_type::king];
-	uint64_t king = bitscan( kings );
+	uint64_t king = p.king_pos[c];
 
 	uint64_t blockers = p.bitboards[1-c].b[bb_type::all_pieces];
 	uint64_t unblocked_king_n = attack( king, blockers, ray_n );

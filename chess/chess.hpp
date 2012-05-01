@@ -87,6 +87,8 @@ public:
 
 	bitboard bitboards[2];
 
+	int king_pos[2];
+
 	bool is_occupied_square( uint64_t square ) const;
 	uint64_t get_occupancy( uint64_t mask ) const;
 

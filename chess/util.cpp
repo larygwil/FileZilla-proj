@@ -481,7 +481,7 @@ void position::update_derived()
 			bitboards[i].b[bb_type::pawn_control] |= pawn_control[i][pawn];
 		}
 
-		//king_pos[i] = bitscan( bitboards[i].b[bb_type::king] );
+		king_pos[i] = static_cast<int>(bitscan( bitboards[i].b[bb_type::king] ));
 	}
 
 	init_material();
@@ -560,6 +560,7 @@ void apply_move( position& p, move const& m, color::type c )
 	score delta = -pst[c][m.piece][m.source];
 
 	if( m.flags & move_flags::castle ) {
+		p.king_pos[c] = m.target;
 		delta += pst[c][pieces::king][m.target];
 
 		unsigned char row = c ? 56 : 0;
@@ -650,6 +651,7 @@ void apply_move( position& p, move const& m, color::type c )
 	}
 	else if( m.piece == pieces::king ) {
 		p.castle[c] &= 0x4;
+		p.king_pos[c] = m.target;
 	}
 
 	if( m.flags & move_flags::pawn_double_move ) {
@@ -967,10 +969,8 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 			}
 
 			// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
-			uint64_t kings = p.bitboards[c].b[bb_type::king];
-			uint64_t king = bitscan( kings );
-			unsigned char king_col = static_cast<unsigned char>(king % 8);
-			unsigned char king_row = static_cast<unsigned char>(king / 8);
+			unsigned char king_col = static_cast<unsigned char>(p.king_pos[c] % 8);
+			unsigned char king_row = static_cast<unsigned char>(p.king_pos[c] / 8);
 
 			if( king_row == old_row ) {
 				signed char cx = static_cast<signed char>(old_col) - king_col;
