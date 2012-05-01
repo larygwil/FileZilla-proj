@@ -24,10 +24,14 @@
 typedef unsigned long long uint64_t;
 typedef   signed long long  int64_t;
 
+#if __MINGW64__
+#define PACKED(c, s) c s __attribute__((__packed__))
+#else
 #define PACKED(c, s) \
 	__pragma( pack( push, 1 ) )\
 	c s \
 	__pragma( pack(pop) )
+#endif
 
 #define NONPACKED(s) s
 
