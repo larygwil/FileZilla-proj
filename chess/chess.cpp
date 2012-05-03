@@ -160,7 +160,7 @@ int main( int argc, char const* argv[] )
 	}
 	else if( command == "perft" ) {
 		pawn_hash_table.init( conf.pawn_hash_table_size );
-		perft();
+		perft<false>();
 	}
 	else if( command == "test" ) {
 		selftest();
