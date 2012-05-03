@@ -4,7 +4,6 @@
 #include "util.hpp"
 #include "magic.hpp"
 #include "calc.hpp"
-#include "sliding_piece_attacks.hpp"
 #include "tables.hpp"
 
 #include <algorithm>

@@ -1,6 +1,8 @@
 #ifndef __SLIDING_PIECE_ATTACKS_H__
 #define __SLIDING_PIECE_ATTACKS_H__
 
+// This file is mainly used for boot-strapping the magic multiplication move generation.
+
 #include "platform.hpp"
 #include "tables.hpp"
 

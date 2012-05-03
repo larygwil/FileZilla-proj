@@ -1,6 +1,5 @@
 #include "chess.hpp"
 #include "detect_check.hpp"
-#include "sliding_piece_attacks.hpp"
 #include "magic.hpp"
 #include "tables.hpp"
 
@@ -47,33 +46,30 @@ void calc_check_map_knight( check_map& map, unsigned char king, unsigned char kn
 }
 
 
-namespace {
-static void process_ray( position const& p, color::type c, check_map& map, uint64_t ray, uint64_t potential_check_givers, unsigned char king )
+static void process_piece( position const& p, color::type c, check_map& map, uint64_t piece )
 {
-	potential_check_givers &= ray;
+	uint64_t between = between_squares[piece][p.king_pos[c]];
 
-	if( potential_check_givers ) {
-		uint64_t block_count = popcount( ray & p.bitboards[c].b[bb_type::all_pieces] );
-		if( block_count < 2 ) {
-			uint64_t cpi = bitscan( potential_check_givers );
-			cpi |= 0x80;
+	uint64_t block_count = popcount( between & p.bitboards[c].b[bb_type::all_pieces] );
+	if( block_count < 2 ) {
+		uint64_t cpi = piece | 0x80;
 
-			while( ray ) {
-				uint64_t pi = bitscan_unset( ray );
-				map.board[pi] = cpi;
+		map.board[piece] = cpi;
+
+		while( between ) {
+			uint64_t sq = bitscan_unset( between );
+			map.board[sq] = cpi;
+		}
+
+		if( !block_count ) {
+			if( !map.board[p.king_pos[c]] ) {
+				map.board[p.king_pos[c]] = cpi;
 			}
-
-			if( !block_count ) {
-				if( !map.board[king] ) {
-					map.board[king] = cpi;
-				}
-				else {
-					map.board[king] = 0x80 | 0x40;
-				}
+			else {
+				map.board[p.king_pos[c]] = 0x80 | 0x40;
 			}
 		}
 	}
-}
 }
 
 
@@ -81,36 +77,23 @@ check_map::check_map( position const& p, color::type c )
 {
 	memset( board, 0, sizeof(board) );
 
-	uint64_t king = p.king_pos[c];
-
-	uint64_t blockers = p.bitboards[1-c].b[bb_type::all_pieces];
-	uint64_t unblocked_king_n = attack( king, blockers, ray_n );
-	uint64_t unblocked_king_e = attack( king, blockers, ray_e );
-	uint64_t unblocked_king_s = attackr( king, blockers, ray_s );
-	uint64_t unblocked_king_w = attackr( king, blockers, ray_w );
-	uint64_t unblocked_king_ne = attack( king, blockers, ray_ne );
-	uint64_t unblocked_king_se = attackr( king, blockers, ray_se );
-	uint64_t unblocked_king_sw = attackr( king, blockers, ray_sw );
-	uint64_t unblocked_king_nw = attack( king, blockers, ray_nw );
-
-	uint64_t rooks_and_queens = p.bitboards[1-c].b[bb_type::rooks] | p.bitboards[1-c].b[bb_type::queens];
-	process_ray( p, c, *this, unblocked_king_n, rooks_and_queens, king );
-	process_ray( p, c, *this, unblocked_king_e, rooks_and_queens, king );
-	process_ray( p, c, *this, unblocked_king_s, rooks_and_queens, king );
-	process_ray( p, c, *this, unblocked_king_w, rooks_and_queens, king );
-
-	uint64_t bishops_and_queens = p.bitboards[1-c].b[bb_type::bishops] | p.bitboards[1-c].b[bb_type::queens];
-	bishops_and_queens |= pawn_control[c][king] & p.bitboards[1-c].b[bb_type::pawns];
-	process_ray( p, c, *this, unblocked_king_ne, bishops_and_queens, king );
-	process_ray( p, c, *this, unblocked_king_se, bishops_and_queens, king );
-	process_ray( p, c, *this, unblocked_king_sw, bishops_and_queens, king );
-	process_ray( p, c, *this, unblocked_king_nw, bishops_and_queens, king );
-
-	uint64_t knights = possible_knight_moves[king] & p.bitboards[1-c].b[bb_type::knights];
-	while( knights ) {
-		uint64_t knight = bitscan_unset( knights );
-		calc_check_map_knight( *this, king, knight );
+	uint64_t potential_rook_checks = rook_magic( p.king_pos[c], p.bitboards[1-c].b[bb_type::all_pieces] ) & (p.bitboards[1-c].b[bb_type::rooks] | p.bitboards[1-c].b[bb_type::queens]);
+	while( potential_rook_checks ) {
+		uint64_t rook = bitscan_unset( potential_rook_checks );
+		process_piece( p, c, *this, rook );
+	}
+	uint64_t potential_bishop_checks = bishop_magic( p.king_pos[c], p.bitboards[1-c].b[bb_type::all_pieces] ) & (p.bitboards[1-c].b[bb_type::bishops] | p.bitboards[1-c].b[bb_type::queens]);
+	potential_bishop_checks |= pawn_control[c][p.king_pos[c]] & p.bitboards[1-c].b[bb_type::pawns];
+	while( potential_bishop_checks ) {
+		uint64_t bishop = bitscan_unset( potential_bishop_checks );
+		process_piece( p, c, *this, bishop );
 	}
 
-	check = board[king];
+	uint64_t knights = possible_knight_moves[p.king_pos[c]] & p.bitboards[1-c].b[bb_type::knights];
+	while( knights ) {
+		uint64_t knight = bitscan_unset( knights );
+		calc_check_map_knight( *this, p.king_pos[c], knight );
+	}
+
+	check = board[p.king_pos[c]];
 }
