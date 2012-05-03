@@ -460,7 +460,9 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	}
 
 	if( best_value == result::loss ) {
-		best_value = alpha;
+
+		int plies_remaining = (depth - cutoff) / depth_factor;
+		best_value = full_eval + futility_pruning[plies_remaining];
 	}
 
 	if( !do_abort ) {
