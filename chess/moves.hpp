@@ -29,8 +29,12 @@ void calculate_moves( position const& p, color::type c, move_info*& moves, check
 // Returned evaluation is MVV/LVA
 void calculate_moves_captures( position const& p, color::type c, move_info*& moves, check_map const& check );
 
-// Calculates all legal non-captures
-// Returned evaluation is fast_eval
+// Calculates legal non-captures
+// If only_pseudo_checks is not set,
+// all legal noncaptures are returned.
+// Otherwise, only legal noncaptures are returned that
+// are likely (but not guaranteeded) to give check.
+template<bool only_pseudo_checks>
 void calculate_moves_noncaptures( position const& p, color::type c, move_info*& moves, check_map const& check );
 
 #endif

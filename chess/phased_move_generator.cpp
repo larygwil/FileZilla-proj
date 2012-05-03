@@ -122,7 +122,12 @@ move_info const* qsearch_move_generator::next()
 	case phases::noncaptures_gen:
 		ctx.move_ptr = bad_captures_end_;
 		it = bad_captures_end_;
-		calculate_moves_noncaptures( p_, c_, ctx.move_ptr, check_ );
+		if( check_.check ) {
+			calculate_moves_noncaptures<false>( p_, c_, ctx.move_ptr, check_ );
+		}
+		else {
+			calculate_moves_noncaptures<true>( p_, c_, ctx.move_ptr, check_ );
+		}
 		evaluate_noncaptures( bad_captures_end_, ctx.move_ptr, p_, c_ );
 		phase = phases::noncapture;
 	case phases::noncapture:
@@ -235,7 +240,7 @@ move_info const* move_generator::next() {
 	case phases::noncaptures_gen:
 		ctx.move_ptr = bad_captures_end_;
 		it = bad_captures_end_;
-		calculate_moves_noncaptures( p_, c_, ctx.move_ptr, check_ );
+		calculate_moves_noncaptures<false>( p_, c_, ctx.move_ptr, check_ );
 		evaluate_noncaptures( bad_captures_end_, ctx.move_ptr, p_, c_ );
 		phase = phases::noncapture;
 	case phases::noncapture:
