@@ -27,7 +27,7 @@
 
 #include <ctype.h>
 
-int const MAX_BOOKSEARCH_DEPTH = 15;
+int const MAX_BOOKSEARCH_DEPTH = 17;
 
 unsigned int const MAX_BOOK_DEPTH = 10;
 

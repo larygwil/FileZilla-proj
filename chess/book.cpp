@@ -10,7 +10,7 @@
 #include <iostream>
 #include <sstream>
 
-int const eval_version = 6;
+int const eval_version = 7;
 
 namespace {
 unsigned char const table[64] = {
@@ -353,6 +353,55 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, int
 }
 
 
+namespace {
+extern "C" int fold_forecast( void* p, int, char** data, char** /*names*/ )
+{
+	std::pair<int, int> *ret = reinterpret_cast<std::pair<int, int>*>(p);
+	ret->first = atoi(data[0]);
+	ret->second = atoi(data[1]);
+
+	return 0;
+}
+
+extern "C" int fold_position( void* p, int, char** data, char** /*names*/ )
+{
+	book::impl* impl_ = reinterpret_cast<book::impl*>(p);
+	std::string id = data[0];
+	std::string pos = data[1];
+	if( pos.length() % 2 ) {
+		return 1;
+	}
+
+	if( !pos.length() ) {
+		return 0;
+	}
+
+	std::pair<int, int> best;
+	std::string query = "SELECT folded_forecast, folded_depth FROM book WHERE position = " + id + " ORDER BY folded_forecast DESC, folded_depth ASC LIMIT 1;";
+	if( !impl_->query( query, &fold_forecast, &best ) ) {
+		return 1;
+	}
+
+	if( !best.second ) {
+		// This position is not yet in book.
+		return 0;
+	}
+
+	std::string parent = pos.substr( 0, pos.length() - 2 );
+	std::string move = pos.substr( pos.length() - 2 );
+
+	std::stringstream ss;
+	ss << "UPDATE book SET folded_forecast = " << -best.first << ", folded_depth = " << best.second + 1 << " WHERE position = (SELECT id FROM position WHERE pos = '" << parent << "') AND move = '" << move << "';";
+
+	if( !impl_->query( ss.str(), 0, 0 ) ) {
+		return 1;
+	}
+
+	return 0;
+}
+}
+
+
 bool book::add_entries( std::vector<move> const& history, std::vector<book_entry> entries )
 {
 	std::sort( entries.begin(), entries.end() );
@@ -377,21 +426,42 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 	ss << "INSERT OR IGNORE INTO position (pos, hash) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ");";
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 		std::string m = move_to_book_string( it->m );
-		ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth, eval_version) VALUES ((SELECT id FROM position WHERE pos='" << hs << "'), '"
+		ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth, folded_forecast, folded_depth, eval_version) VALUES ((SELECT id FROM position WHERE pos='" << hs << "'), '"
 		   << m << "', "
+		   << it->forecast << ", "
+		   << it->search_depth << ", "
 		   << it->forecast << ", "
 		   << it->search_depth << ", "
 		   << eval_version
 		   << ");";
 	}
-	ss << "COMMIT TRANSACTION;";
 
 	scoped_lock l(impl_->mtx);
 
 	impl_->logfile << ss.str();
 	impl_->logfile.flush();
 
-	return impl_->query( ss.str(), 0, 0 );
+	if( !impl_->query( ss.str(), 0, 0 ) ) {
+		return false;
+	}
+
+	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
+		std::stringstream ss;
+		ss << "SELECT id, pos FROM position WHERE pos='" << hs + move_to_book_string( it->m ) << "';";
+		if( !impl_->query( ss.str(), &fold_position, impl_ ) ) {
+			return false;
+		}
+	}
+
+	while( hs.size() >= 2 ) {
+		std::stringstream ss;
+		ss << "SELECT id, pos FROM position WHERE pos='" << hs << "';";
+		if( !impl_->query( ss.str(), &fold_position, impl_ ) ) {
+			return false;
+		}
+		hs = hs.substr( 0, hs.size() - 2 );
+	}
+	return impl_->query( "COMMIT TRANSACTION;", 0, 0 );
 }
 
 
@@ -566,70 +636,35 @@ std::list<book_entry_with_position> book::get_all_entries( int move_limit )
 
 bool book::update_entry( std::vector<move> const& history, book_entry const& entry )
 {
-	std::string h = history_to_string( history );
+	std::string hs = history_to_string( history );
 
 	scoped_lock l(impl_->mtx);
 
 	std::stringstream ss;
 	ss << "BEGIN TRANSACTION;";
 	std::string m = move_to_book_string( entry.m );
-	ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth, eval_version) VALUES ((SELECT id FROM position WHERE pos='" << h << "'), '"
+	ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth, eval_version) VALUES ((SELECT id FROM position WHERE pos='" << hs << "'), '"
 	   << m << "', "
 	   << entry.forecast << ", "
 	   << entry.search_depth << ", "
 	   << eval_version
 	   << ");";
-	ss << "COMMIT TRANSACTION;";
-
-	return impl_->query( ss.str(), 0, 0 );
-}
-
-namespace {
-extern "C" int fold_forecast( void* p, int, char** data, char** /*names*/ )
-{
-	std::pair<int, int> *ret = reinterpret_cast<std::pair<int, int>*>(p);
-	ret->first = atoi(data[0]);
-	ret->second = atoi(data[1]);
-
-	return 0;
-}
-
-extern "C" int fold_position( void* p, int, char** data, char** /*names*/ )
-{
-	book::impl* impl_ = reinterpret_cast<book::impl*>(p);
-	std::string id = data[0];
-	std::string pos = data[1];
-	if( pos.length() % 2 ) {
-		return 1;
-	}
-
-	if( !pos.length() ) {
-		return 0;
-	}
-
-	std::pair<int, int> best;
-	std::string query = "SELECT folded_forecast, folded_depth FROM book WHERE position = " + id + " ORDER BY folded_forecast DESC, folded_depth ASC LIMIT 1;";
-	if( !impl_->query( query, &fold_forecast, &best ) ) {
-		return 1;
-	}
-
-	if( !best.second ) {
-		// This position is not yet in book.
-		return 0;
-	}
-
-	std::string parent = pos.substr( 0, pos.length() - 2 );
-	std::string move = pos.substr( pos.length() - 2 );
-
-	std::stringstream ss;
-	ss << "UPDATE book SET folded_forecast = " << -best.first << ", folded_depth = " << best.second + 1 << " WHERE position = (SELECT id FROM position WHERE pos = '" << parent << "') AND move = '" << move << "';";
 
 	if( !impl_->query( ss.str(), 0, 0 ) ) {
-		return 1;
+		return false;
 	}
 
-	return 0;
-}
+	hs += m;
+
+	while( hs.size() >= 2 ) {
+		std::stringstream ss;
+		ss << "SELECT id, pos FROM position WHERE pos='" << hs << "';";
+		if( !impl_->query( ss.str(), &fold_position, impl_ ) ) {
+			return false;
+		}
+		hs = hs.substr( 0, hs.size() - 2 );
+	}
+	return impl_->query( "COMMIT TRANSACTION;", 0, 0 );
 }
 
 void book::fold()
