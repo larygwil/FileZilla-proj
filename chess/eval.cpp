@@ -620,7 +620,23 @@ void evaluate_pawn( uint64_t own_pawns, uint64_t foreign_pawns, color::type c, u
 	if( !passed && !connected && !isolated && !(forward_pawn_attack[1-c][pawn] & own_pawns ) ) {
 		uint64_t opposition = forward_pawn_attack[c][pawn] & foreign_pawns;
 		if( opposition ) {
-			backwards = true;
+			// Check for supporting pawns. A supporting pawn needs to be closer than enemy pawn.
+			uint64_t support = forward_pawn_attack[c][pawn] & own_pawns;
+
+			// Since we're not isolated, there's pawn on neighboring file.
+			// No pawn is behind and we're not connecting. So pawn needs to be in front.
+			ASSERT( support );
+
+			if( c == color::white ) {
+				if( static_cast<int>(bitscan( opposition )) - static_cast<int>(bitscan( support )) < 14 ) {
+					backwards = true;
+				}
+			}
+			else {
+				if( static_cast<int>(bitscan_reverse( support )) - static_cast<int>(bitscan_reverse( opposition )) < 14 ) {
+					backwards = true;
+				}
+			}
 		}
 	}
 
@@ -766,6 +782,22 @@ static void evaluate_piece_defense( position const& p, color::type c, eval_resul
 }
 
 template<bool detail>
+static void evaluate_imbalance( position const& p, eval_results& results )
+{
+	short pieces[2];
+	pieces[0] = static_cast<short>( popcount( p.bitboards[0].b[bb_type::all_pieces] ^ p.bitboards[0].b[bb_type::pawns] ) );
+	pieces[1] = static_cast<short>( popcount( p.bitboards[1].b[bb_type::all_pieces] ^ p.bitboards[1].b[bb_type::pawns] ) );
+	short pieces_diff = pieces[0] - pieces[1];
+	add_score<detail, eval_detail::imbalance>( results, color::white, eval_values::material_imbalance[0] * pieces_diff );
+
+	short major_pieces[2];
+	major_pieces[0] = static_cast<short>( popcount( p.bitboards[0].b[bb_type::rooks] ^ p.bitboards[0].b[bb_type::queens] ) );
+	major_pieces[1] = static_cast<short>( popcount( p.bitboards[1].b[bb_type::rooks] ^ p.bitboards[1].b[bb_type::queens] ) );
+	short major_diff = major_pieces[0] - major_pieces[1];
+	add_score<detail, eval_detail::imbalance>( results, color::white, eval_values::material_imbalance[1] * major_diff );
+}
+
+template<bool detail>
 static void do_evaluate( position const& p, color::type to_move, eval_results& results )
 {
 	evaluate_pawns<detail>( p, results );
@@ -776,12 +808,7 @@ static void do_evaluate( position const& p, color::type to_move, eval_results& r
 		}
 	}
 
-	// Todo: Make truly phased.
-	short mat[2];
-	mat[0] = static_cast<short>( popcount( p.bitboards[0].b[bb_type::all_pieces] ^ p.bitboards[0].b[bb_type::pawns] ) );
-	mat[1] = static_cast<short>( popcount( p.bitboards[1].b[bb_type::all_pieces] ^ p.bitboards[1].b[bb_type::pawns] ) );
-	short diff = mat[0] - mat[1];
-	add_score<detail, eval_detail::imbalance>( results, color::white, eval_values::material_imbalance * diff );
+	//evaluate_imbalance<detail>( p, results );
 
 	evaluate_pawn_shield<detail>( p, results );
 
@@ -810,7 +837,7 @@ static void do_evaluate( position const& p, color::type to_move, eval_results& r
 
 		evaluate_piece_defense<detail>( p, static_cast<color::type>(c), results );
 		evaluate_king_attack<detail>( p, static_cast<color::type>(c), to_move, results );
-		evaluate_drawishness<detail>( p, static_cast<color::type>(c), results );
+		//evaluate_drawishness<detail>( p, static_cast<color::type>(c), results );
 		evaluate_center<detail>( p, static_cast<color::type>(c), results );
 	}
 
@@ -889,7 +916,9 @@ std::string explain_eval( position const& p, color::type c )
 		ss << "         Term       |   MG   EG   |   MG   EG   |   MG   EG  Scaled" << std::endl;
 		ss << "===================================================================" << std::endl;
 		ss << explain( p, "Material", p.material );
-		ss << explain( p, "Imbalance", detailed_results[eval_detail::imbalance][0] );
+		if( detailed_results[eval_detail::imbalance][0] != score() ) {
+			ss << explain( p, "Imbalance", detailed_results[eval_detail::imbalance][0] );
+		}
 		ss << explain( p, "PST", p.base_eval-p.material[0]+p.material[1] );
 		ss << explain( p, "Pawn structure", eval_detail::pawn_structure );
 		ss << explain( p, "Pawn shield", eval_detail::pawn_shield );

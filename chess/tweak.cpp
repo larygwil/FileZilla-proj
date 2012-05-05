@@ -26,6 +26,8 @@
 #include <time.h>
 #include <memory>
 
+int const THRESHOLD = 300;
+
 namespace {
 
 static calc_result tweak_calc( position& p, color::type c, duration const& move_time_limit, int clock, seen_positions& seen
@@ -279,10 +281,10 @@ void make_genes( short* s, short min, short max, std::string const& name, int co
 
 void init_genes()
 {
-	MAKE_GENE( material_values[pieces::pawn], 70, 110 );
+	MAKE_GENE( material_values[pieces::pawn], 45, 110 );
 	MAKE_GENE( material_values[pieces::knight], 260, 460 );
 	MAKE_GENE( material_values[pieces::bishop], 260, 460 );
-	MAKE_GENE( material_values[pieces::rook], 430, 680 );
+	MAKE_GENE( material_values[pieces::rook], 400, 680 );
 	MAKE_GENE( material_values[pieces::queen], 870, 1500 );
 	MAKE_GENE( double_bishop, 0, 100 );
 
@@ -334,7 +336,7 @@ void init_genes()
 	MAKE_GENES( king_attack_offset, 0, 100, 2, 0 );
 	MAKE_GENE( king_attack_pawn_shield, 1, 100 );
 	MAKE_GENE( center_control, 0, 500 );
-	MAKE_GENE( material_imbalance, 0, 500 );
+	//MAKE_GENES( material_imbalance, -500, 500, 2, 0 );
 	MAKE_GENE( rule_of_the_square, 0, 100 );
 	MAKE_GENE( passed_pawn_unhindered, 0, 100 );
 	MAKE_GENES( defended_by_pawn, 0, 100, 5, 1 );
@@ -357,7 +359,7 @@ void init_genes()
 	MAKE_GENE( mobility_queen_rise, 1, 50 );
 	MAKE_GENE( mobility_queen_offset, 0, 14 );
 	MAKE_GENE( side_to_move, 0, 100 );
-	MAKE_GENE( drawishness, -500, 0 );
+	//MAKE_GENE( drawishness, -500, 0 );
 	MAKE_GENE( rooks_on_rank_7, 0, 100 );
 	MAKE_GENES( knight_outposts, 0, 100, 2, 0 );
 	MAKE_GENES( bishop_outposts, 0, 100, 2, 0 );
@@ -435,11 +437,23 @@ struct individual
 			double difference = std::abs( ref.avg_eval - static_cast<double>(score) );
 #else
 			int difference = 0;
-			if( score < ref.min_eval ) {
-				difference = int(ref.min_eval) - score;
+			if( ref.min_eval > THRESHOLD ) {
+				if( score < THRESHOLD ) {
+					difference = THRESHOLD - score;
+				}
 			}
-			else if( score > ref.max_eval ) {
-				difference = int(score) - ref.max_eval;
+			else if( ref.max_eval < -THRESHOLD ) {
+				if( score > -THRESHOLD ) {
+					difference = score + THRESHOLD;
+				}
+			}
+			else {
+				if( score < ref.min_eval ) {
+					difference = int(ref.min_eval) - score;
+				}
+				else if( score > ref.max_eval ) {
+					difference = int(score) - ref.max_eval;
+				}
 			}
 #endif
 
@@ -664,6 +678,7 @@ std::vector<reference_data> load_data()
 
 	int endgames = 0;
 	int unknown_endgames = 0;
+	int marginal = 0;
 
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {
@@ -706,9 +721,13 @@ std::vector<reference_data> load_data()
 			continue;
 		}
 
-		if( popcount( entry.p.bitboards[0].b[bb_type::all_pieces] | entry.p.bitboards[1].b[bb_type::all_pieces]) <= 7 ) {
+		if( popcount( entry.p.bitboards[0].b[bb_type::all_pieces] | entry.p.bitboards[1].b[bb_type::all_pieces] ) <= 7 ) {
 			++unknown_endgames;
 			continue;
+		}
+
+		if( entry.min_eval > THRESHOLD || entry.max_eval < -THRESHOLD) {
+			++marginal;
 		}
 
 		entry.avg_eval = score;
@@ -717,7 +736,7 @@ std::vector<reference_data> load_data()
 		ret.push_back(entry);
 	}
 
-	std::cout << "Loaded " << ret.size() << " test positions. Removed " << endgames << " known and " << unknown_endgames << " unknown endgames." << std::endl;
+	std::cout << "Loaded " << ret.size() << " test positions of which " << marginal << " are marginal. Removed " << endgames << " known and " << unknown_endgames << " unknown endgames." << std::endl;
 	return ret;
 }
 
@@ -745,7 +764,7 @@ void tweak_evaluation()
 	population pop;
 	std::set<individual> seen;
 
-#if 0
+#if 1
 	pop.push_back( new individual() );
 	pop[0]->calc_fitness( data );
 	seen.insert( *pop[0] );

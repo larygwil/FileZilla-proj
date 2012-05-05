@@ -30,8 +30,8 @@ int const recapture_extension = 6;
 int const cutoff = depth_factor + MAX_QDEPTH + 1;
 
 unsigned int const lmr_searched = 3;
-int const lmr_reduction = depth_factor * 2;
-int const lmr_min_depth = depth_factor * 3;
+int const lmr_reduction = depth_factor * 3;
+int const lmr_min_depth = cutoff + depth_factor * 2;
 
 short const razor_pruning[] = { 220, 250, 290 };
 
@@ -253,7 +253,8 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 	}
 
 	if( !pv_node && !check.check && plies_remaining < static_cast<int>(sizeof(razor_pruning)/sizeof(short)) && full_eval + razor_pruning[plies_remaining] < beta &&
-		   tt_move.empty() && beta < result::win_threshold && beta > result::loss_threshold )
+		   tt_move.empty() && beta < result::win_threshold && beta > result::loss_threshold &&
+		   !(p.bitboards[c].b[bb_type::pawns] & (c ? 0x000000000000ff00ull : 0x00ff000000000000ull)) )
 	{
 		short new_beta = beta - razor_pruning[plies_remaining];
 		short value = quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, c, check, new_beta - 1, new_beta, full_eval );

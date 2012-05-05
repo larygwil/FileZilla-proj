@@ -49,7 +49,7 @@ namespace eval_values {
 	extern short phase_transition_begin;
 	extern short phase_transition_duration;
 
-	extern score material_imbalance;
+	extern score material_imbalance[2];
 
 	extern score rule_of_the_square;
 	extern score passed_pawn_unhindered;
