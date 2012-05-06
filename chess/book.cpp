@@ -354,8 +354,29 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, int
 
 
 namespace {
-extern "C" int fold_forecast( void* p, int, char** data, char** /*names*/ )
+extern "C" int fold_forecast( void* p, int c, char** data, char** /*names*/ )
 {
+	if( !p ) {
+		std::cerr << "No user pointer passed to callback function" << std::endl;
+		return 1;
+	}
+	if( c != 2 ) {
+		std::cerr << "Wrong column count" << std::endl;
+		return 1;
+	}
+	if( !data ) {
+		std::cerr << "No data despite nonzero column count" << std::endl;
+		return 1;
+	}
+	if( !data[0] ) {
+		std::cerr << "First column is NULL" << std::endl;
+		return 1;
+	}
+	if( !data[0] ) {
+		std::cerr << "Second column is NULL" << std::endl;
+		return 1;
+	}
+
 	std::pair<int, int> *ret = reinterpret_cast<std::pair<int, int>*>(p);
 	ret->first = atoi(data[0]);
 	ret->second = atoi(data[1]);
@@ -643,8 +664,10 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 	std::stringstream ss;
 	ss << "BEGIN TRANSACTION;";
 	std::string m = move_to_book_string( entry.m );
-	ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth, eval_version) VALUES ((SELECT id FROM position WHERE pos='" << hs << "'), '"
+	ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth, folded_forecast, folded_depth, eval_version) VALUES ((SELECT id FROM position WHERE pos='" << hs << "'), '"
 	   << m << "', "
+	   << entry.forecast << ", "
+	   << entry.search_depth << ", "
 	   << entry.forecast << ", "
 	   << entry.search_depth << ", "
 	   << eval_version
