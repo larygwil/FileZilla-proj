@@ -3,6 +3,7 @@
 #include "config.hpp"
 #include "eval.hpp"
 #include "eval_values.hpp"
+#include "fen.hpp"
 #include "hash.hpp"
 #include "magic.hpp"
 #include "moves.hpp"
@@ -192,10 +193,7 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 
 			int new_depth;
 			if( entry.eval_version < eval_version) {
-				if( entry.search_depth <= MAX_BOOKSEARCH_DEPTH - 2 ) {
-					new_depth = MAX_BOOKSEARCH_DEPTH - 2;
-				}
-				else if( entry.search_depth <= MAX_BOOKSEARCH_DEPTH ) {
+				if( entry.search_depth <= MAX_BOOKSEARCH_DEPTH ) {
 					new_depth = MAX_BOOKSEARCH_DEPTH;
 				}
 				else {
@@ -229,7 +227,7 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 				ctx.pv_pool.release(pv);
 			}
 
-			std::cerr << entry.forecast << " d" << entry.search_depth << " v" << entry.eval_version << " -> " << value << " d" << new_depth << std::endl;
+			std::cerr << entry.forecast << " d" << entry.search_depth << " v" << entry.eval_version << " -> " << value << " d" << new_depth << " " << move_history.size() << " " << position_to_fen_noclock( p, c ) << " " << move_to_string(entry.m) << std::endl;
 
 			entry.forecast = value;
 			entry.search_depth = new_depth;
