@@ -8,7 +8,7 @@ CXX = g++
 all: octochess bookgen
 
 tables.cpp: tables_gen.cpp
-	$(CXX) tables_gen.cpp -o tables_gen
+	$(CXX) -static tables_gen.cpp -o tables_gen
 	./tables_gen > tables.cpp
 	rm tables_gen
 
