@@ -798,13 +798,57 @@ void learnpgn( book& b, std::string const& file )
 	pgn_reader reader;
 	reader.open( file );
 
-        game g;
+	game g;
 	while( reader.next( g ) ) {
 		std::cerr << ".";
 		while( g.moves_.size() > 20 ) {
 			g.moves_.pop_back();
 		}
 		b.mark_for_processing( std::vector<move>(g.moves_.begin(), g.moves_.end()) );
+	}
+}
+
+
+bool do_deepen_tree( book& b, position p, color::type c, seen_positions seen, std::vector<move> move_history )
+{
+	std::vector<book_entry> entries = b.get_entries( p, c, move_history );
+	if( entries.empty() ) {
+		std::stringstream ss;
+		ss << "Calculating " << position_to_fen_noclock( p, c ) << std::endl;
+		for( unsigned int i = 0; i < move_history.size(); ++i ) {
+			if( i ) {
+				ss << " ";
+			}
+			if( !(i%2) ) {
+				ss << i / 2 + 1<< ". ";
+			}
+			ss << move_to_string( move_history[i], false );
+		}
+		ss << std::endl;
+		std::cerr << ss.str();
+
+		calculate_position( b, p, c, seen, move_history );
+		std::cerr << std::endl;
+
+		return true;
+	}
+
+	if( move_history.size() == 20 ) {
+		return false;
+	}
+
+	book_entry e = entries.front();
+	apply_move( p, e.m, c );
+	move_history.push_back( e.m );
+	seen.push_root( get_zobrist_hash( p ) );
+
+	return do_deepen_tree( b, p, static_cast<color::type>(1-c), seen, move_history );
+}
+
+
+void deepen_tree( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history )
+{
+	while( do_deepen_tree( b, p, c, seen, move_history ) ) {
 	}
 }
 
@@ -941,6 +985,9 @@ void run( book& b )
 		}
 		else if( cmd == "redo_hashes" ) {
 			b.redo_hashes();
+		}
+		else if( cmd == "treedeepen" ) {
+			deepen_tree( b, p, c, seen, move_history );
 		}
 		else {
 			move m;
