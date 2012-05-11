@@ -19,28 +19,19 @@ struct book_entry
 	short forecast;
 	short search_depth;
 	short eval_version;
-	bool result_in_book;
-	short folded_forecast;
-	short folded_searchdepth;
 
 	bool operator<( book_entry const& rhs ) const {
-		return forecast > rhs.forecast;
-	}
-};
-
-struct SortFolded
-{
-	bool operator()( book_entry const& lhs, book_entry const& rhs ) const {
-		if( lhs.folded_forecast > rhs.folded_forecast ) {
+		if( forecast > rhs.forecast ) {
 			return true;
 		}
-		else if( lhs.folded_forecast == rhs.folded_forecast ) {
-			return lhs.forecast > rhs.forecast;
+		else if( forecast < rhs.forecast ) {
+			return false;
 		}
-		return false;
+		return search_depth < rhs.search_depth;
 	}
-};
 
+	bool is_folded() const { return eval_version == 0; }
+};
 
 struct work {
 	std::vector<move> move_history;
@@ -84,12 +75,11 @@ public:
 	bool is_open() const;
 
 	// Returned entries are sorted by folded forecast, highest first.
-	// move_limit limits the number of returned moves per position, sorted descendingly by forecast.
-	std::vector<book_entry> get_entries( position const& p, color::type c, std::vector<move> const& history, int move_limit = -1, bool allow_transpositions = false );
+	std::vector<book_entry> get_entries( position const& p, color::type c, std::vector<move> const& history, bool allow_transpositions = false );
 
 	// As above but does not regard move history and always goes by hash.
 	// Beware: Suspectible to 3-fold repetition
-	std::vector<book_entry> get_entries( position const& p, color::type c, int move_limit = -1 );
+	std::vector<book_entry> get_entries( position const& p, color::type c );
 
 	// Entries do not have to be sorted
 	bool add_entries( std::vector<move> const& history, std::vector<book_entry> entries );
@@ -104,7 +94,7 @@ public:
 
 	// move_limit limits the number of returned moves per position, sorted descendingly by forecast.
 	// max_evaluation_version ensures that only entries with an eval_version lower or equal than the given version are returned.
-	std::list<book_entry_with_position> get_all_entries( int move_limit = -1 );
+	std::list<book_entry_with_position> get_all_entries();
 
 	bool update_entry( std::vector<move> const& history, book_entry const& entry );
 
@@ -115,6 +105,10 @@ public:
 	bool set_insert_logfile( std::string const& log_file );
 
 	void redo_hashes();
+
+	std::string history_to_string( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end );
+	std::string history_to_string( std::vector<move> const& history );
+
 private:
 	impl *impl_;
 };

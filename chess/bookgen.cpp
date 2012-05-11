@@ -606,7 +606,7 @@ void process( book& b )
 
 void update( book& b, int entries_per_pos = 5 )
 {
-	std::list<book_entry_with_position> wl = b.get_all_entries( entries_per_pos );
+	std::list<book_entry_with_position> wl = b.get_all_entries();
 	if( wl.empty() ) {
 		return;
 	}
@@ -619,8 +619,10 @@ void update( book& b, int entries_per_pos = 5 )
 			book_entry_with_position& w = *it;
 			std::vector<book_entry>& entries = w.entries;
 
+			std::size_t num = 0;
 			for( std::size_t i = 0; i < entries.size(); ) {
-				if( entries[i].folded_searchdepth > entries[i].search_depth || (entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH && entries[i].eval_version >= eval_version) ) {
+				++num;
+				if( entries[i].is_folded() || (entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH && entries[i].eval_version >= eval_version) || (entries_per_pos != -1 && num >= static_cast<std::size_t>(entries_per_pos)) ) {
 					entries.erase( entries.begin() + i );
 					++removed_moves;
 				}
@@ -848,8 +850,35 @@ bool do_deepen_tree( book& b, position p, color::type c, seen_positions seen, st
 
 void deepen_tree( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history )
 {
-	while( do_deepen_tree( b, p, c, seen, move_history ) ) {
+	bool run = true;
+	while( run ) {
+		run = false;
+		while( do_deepen_tree( b, p, c, seen, move_history ) ) {
+			run = true;
+		}
 	}
+}
+
+
+void print_stats( book& b )
+{
+	book_stats stats = b.stats();
+
+	std::stringstream ss;
+
+	ss << "Plies Processed Queued" << std::endl;
+	ss << "----------------------" << std::endl;
+	for( std::map<uint64_t, stat_entry>::const_iterator it = stats.data.begin(); it != stats.data.end(); ++it ) {
+		ss << std::setw( 5 ) << it->first;
+		ss << std::setw( 10 ) << it->second.processed;
+		ss << std::setw( 7 ) << it->second.queued << std::endl;
+	}
+	ss << "----------------------" << std::endl;
+	ss << std::setw( 5 ) << "Total";
+	ss << std::setw( 10 ) << stats.total_processed;
+	ss << std::setw( 7 ) << stats.total_queued << std::endl;
+
+	std::cout << ss.str();
 }
 
 
@@ -895,24 +924,7 @@ void run( book& b )
 			process( b );
 		}
 		else if( cmd == "size" || cmd == "stats" ) {
-
-			book_stats stats = b.stats();
-
-			std::stringstream ss;
-
-			ss << "Plies Processed Queued" << std::endl;
-			ss << "----------------------" << std::endl;
-			for( std::map<uint64_t, stat_entry>::const_iterator it = stats.data.begin(); it != stats.data.end(); ++it ) {
-				ss << std::setw( 5 ) << it->first;
-				ss << std::setw( 10 ) << it->second.processed;
-				ss << std::setw( 7 ) << it->second.queued << std::endl;
-			}
-			ss << "----------------------" << std::endl;
-			ss << std::setw( 5 ) << "Total";
-			ss << std::setw( 10 ) << stats.total_processed;
-			ss << std::setw( 7 ) << stats.total_queued << std::endl;
-
-			std::cout << ss.str();
+			print_stats( b );
 		}
 		else if( cmd == "book_depth" ) {
 			int v = atoi( args.c_str() );
@@ -989,6 +1001,9 @@ void run( book& b )
 		else if( cmd == "treedeepen" ) {
 			deepen_tree( b, p, c, seen, move_history );
 		}
+		else if( cmd == "historystring" ) {
+			std::cerr << b.history_to_string( move_history ) << std::endl;
+		}
 		else {
 			move m;
 			if( parse_move( p, c, line, m ) ) {
@@ -1019,7 +1034,7 @@ void run( book& b )
 				}
 
 				if( entries.empty() ) {
-					std::cout << "Aborting, must be final state..." << std::endl;
+					std::cout << "Aborting, cannot add final states to book." << std::endl;
 					exit(1);
 				}
 
@@ -1066,7 +1081,6 @@ int main( int argc, char const* argv[] )
 	if( !b.size() ) {
 		init_book( b );
 	}
-
 	std::cout << "Ready" << std::endl;
 
 	run( b );

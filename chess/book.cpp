@@ -33,7 +33,48 @@ std::string move_to_book_string( move const& m )
 }
 
 
-std::string history_to_string( std::vector<move> const& history )
+/*
+ * This can only be used to uniquely sort book moves for a given position.
+ * Sorting the complete move structure independend of position is not possible
+ * With this class. E.g. it doesn't distinguish between capture and non-capture.
+ */
+class BookMoveSort
+{
+public:
+	BookMoveSort() {}
+
+	bool operator()( move const& lhs, move const& rhs ) const {
+		if( lhs.source < rhs.source ) {
+			return true;
+		}
+		else if( lhs.source > rhs.source ) {
+			return false;
+		}
+		if( lhs.target < rhs.target ) {
+			return true;
+		}
+		else if( lhs.target > rhs.target ) {
+			return false;
+		}
+
+		return (lhs.flags & move_flags::promotion_mask) < (rhs.flags & move_flags::promotion_mask);
+	}
+
+
+	bool operator()( move_info const& lhs, move_info const& rhs ) const {
+		return operator()( lhs.m, rhs.m );
+	}
+
+
+	bool operator()( book_entry const& lhs, book_entry const& rhs ) const {
+		return operator()( lhs.m, rhs.m );
+	}
+};
+
+BookMoveSort const book_move_sort;
+}
+
+std::string book::history_to_string( std::vector<move> const& history )
 {
 	std::string ret;
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
@@ -43,7 +84,8 @@ std::string history_to_string( std::vector<move> const& history )
 	return ret;
 }
 
-std::string history_to_string( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end )
+
+std::string book::history_to_string( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end )
 {
 	std::string ret;
 	for( std::vector<move>::const_iterator it = begin; it != end; ++it ) {
@@ -52,16 +94,12 @@ std::string history_to_string( std::vector<move>::const_iterator const& begin, s
 
 	return ret;
 }
-}
 
 
 book_entry::book_entry()
 	: forecast()
 	, search_depth()
 	, eval_version()
-	, result_in_book()
-	, folded_forecast()
-	, folded_searchdepth()
 {
 }
 
@@ -74,6 +112,12 @@ public:
 	}
 
 	bool query( std::string const& query, int (*callback)(void*,int,char**,char**), void* data, bool report_errors = true );
+
+	// Mainly for inserting a single blob
+	bool query_bind( std::string const& query, unsigned char const* data, uint64_t len, bool report_errors = true );
+
+	// Mainly for parsing rows containing a blob
+	bool query_row( std::string const& query, int (*callback)(void*,sqlite3_stmt*), void* data, bool report_errors = true );
 
 	mutex mtx;
 	sqlite3* db;
@@ -105,6 +149,112 @@ bool book::impl::query( std::string const& query, int (*callback)(void*,int,char
 	sqlite3_free( err_msg );
 
 	return ret;
+}
+
+
+bool book::impl::query_bind( std::string const& query, unsigned char const* data, uint64_t len, bool report_errors )
+{
+	sqlite3_stmt *statement = 0;
+	int res = sqlite3_prepare_v2( db, query.c_str(), -1, &statement, 0 );
+	if( res != SQLITE_OK ) {
+		if( report_errors ) {
+			std::cerr << "Database failure" << std::endl;
+			std::cerr << "Error code: " << res << std::endl;
+			char const* err_msg = sqlite3_errmsg( db );
+			if( err_msg ) {
+				std::cerr << "Error string: " << err_msg << std::endl;
+			}
+			std::cerr << "Failed query: " << query << std::endl;
+			abort();
+		}
+		return false;
+	}
+
+	res = sqlite3_bind_blob( statement, 1, data, len, SQLITE_TRANSIENT );
+	if( res != SQLITE_OK ) {
+		if( report_errors ) {
+			std::cerr << "Database failure" << std::endl;
+			std::cerr << "Error code: " << res << std::endl;
+			char const* err_msg = sqlite3_errmsg( db );
+			if( err_msg ) {
+				std::cerr << "Error string: " << err_msg << std::endl;
+			}
+			std::cerr << "Failed query: " << query << std::endl;
+			abort();
+		}
+		return false;
+	}
+
+	do {
+		res = sqlite3_step( statement );
+	} while( res == SQLITE_BUSY || res == SQLITE_ROW );
+
+	if( res != SQLITE_DONE ) {
+		if( report_errors ) {
+			std::cerr << "Database failure" << std::endl;
+			std::cerr << "Error code: " << res << std::endl;
+			char const* err_msg = sqlite3_errmsg( db );
+			if( err_msg ) {
+				std::cerr << "Error string: " << err_msg << std::endl;
+			}
+			std::cerr << "Failed query: " << query << std::endl;
+			abort();
+		}
+		return false;
+	}
+
+	sqlite3_finalize( statement );
+
+	return true;
+}
+
+
+bool book::impl::query_row( std::string const& query, int (*callback)(void*,sqlite3_stmt*), void* data, bool report_errors )
+{
+	sqlite3_stmt *statement = 0;
+	int res = sqlite3_prepare_v2( db, query.c_str(), -1, &statement, 0 );
+	if( res != SQLITE_OK ) {
+		if( report_errors ) {
+			std::cerr << "Database failure" << std::endl;
+			std::cerr << "Error code: " << res << std::endl;
+			char const* err_msg = sqlite3_errmsg( db );
+			if( err_msg ) {
+				std::cerr << "Error string: " << err_msg << std::endl;
+			}
+			std::cerr << "Failed query: " << query << std::endl;
+			abort();
+		}
+		return false;
+	}
+
+	do {
+		res = sqlite3_step( statement );
+		if( res == SQLITE_ROW ) {
+			if( callback( data, statement ) ) {
+				std::cerr << "Callback requested query abort." << std::endl;
+				std::cerr << "Failed query: " << query << std::endl;
+				return false;
+			}
+		}
+	} while( res == SQLITE_BUSY || res == SQLITE_ROW );
+
+	if( res != SQLITE_DONE ) {
+		if( report_errors ) {
+			std::cerr << "Database failure" << std::endl;
+			std::cerr << "Error code: " << res << std::endl;
+			char const* err_msg = sqlite3_errmsg( db );
+			if( err_msg ) {
+				std::cerr << "Error string: " << err_msg << std::endl;
+			}
+			std::cerr << "Failed query: " << query << std::endl;
+			abort();
+		}
+		return false;
+	}
+
+	sqlite3_finalize( statement );
+
+	return true;
 }
 
 
@@ -142,7 +292,7 @@ struct cb_data {
 	cb_data()
 		: c()
 		, pm()
-		, found_()
+		, valid_()
 	{
 	}
 
@@ -153,7 +303,7 @@ struct cb_data {
 	move_info moves[200];
 	move_info* pm;
 
-	int found_;
+	bool valid_;
 };
 
 unsigned char conv_to_index( unsigned char s )
@@ -207,67 +357,169 @@ bool conv_to_move( char const* data, move& m, move_info const* begin, move_info 
 	return false;
 }
 
-extern "C" int get_cb( void* p, int, char** data, char** /*names*/ ) {
+
+class data_holder {
+public:
+	data_holder()
+		: d()
+		, bytes()
+	{
+	}
+
+	data_holder( data_holder const& rhs )
+		: d()
+		, bytes(rhs.bytes)
+	{
+		if( rhs.d ) {
+			d = new unsigned char[ rhs.bytes ];
+			memcpy( d, rhs.d, rhs.bytes );
+		}
+	}
+
+	data_holder( unsigned char const* p, uint64_t b )
+		: d()
+		, bytes( b )
+	{
+		if( p ) {
+			d = new unsigned char[b];
+			memcpy( d, p, b );
+		}
+	}
+
+	virtual ~data_holder()
+	{
+		delete [] d;
+	}
+
+	data_holder& operator=(data_holder const& rhs)
+	{
+		if( this == &rhs ) {
+			return *this;
+		}
+
+		delete [] d;
+		if( rhs.d ) {
+			d = new unsigned char[ rhs.bytes ];
+			memcpy( d, rhs.d, rhs.bytes );
+		}
+		else {
+			d = 0;
+		}
+		bytes = rhs.bytes;
+
+		return *this;
+	}
+
+	unsigned char* d;
+	uint64_t bytes;
+};
+
+
+bool decode_entries( unsigned char const* data, uint64_t bytes, std::vector<book_entry>& entries )
+{
+	if( bytes % 4 ) {
+		return false;
+	}
+
+	uint64_t size = bytes / 4;
+
+	for( unsigned int i = 0; i < size; ++i ) {
+		book_entry e;
+		unsigned short forecast = *(data++);
+		forecast += static_cast<unsigned short>(*(data++)) * 256;
+		e.forecast = static_cast<short>(forecast);
+
+		e.search_depth = *(data++);
+		e.eval_version = *(data++);
+
+		entries.push_back(e);
+	}
+
+	return true;
+}
+
+
+bool encode_entries( std::vector<book_entry>& entries, data_holder& data, bool set_current_eval_version = false )
+{
+	uint64_t bytes = entries.size() * 4;
+	data = data_holder( new unsigned char[bytes], bytes );
+
+	unsigned char* p = data.d;
+	for( std::size_t i = 0; i < entries.size(); ++i ) {
+		*(p++) = static_cast<unsigned short>(entries[i].forecast) % 256;
+		*(p++) = static_cast<unsigned short>(entries[i].forecast) / 256;
+		*(p++) = entries[i].search_depth;
+		if( set_current_eval_version ) {
+			*(p++) = eval_version;
+		}
+		else {
+			*(p++) = entries[i].eval_version;
+		}
+	}
+
+	return true;
+}
+
+extern "C" int get_cb( void* p, sqlite3_stmt* statement )
+{
 	cb_data* d = reinterpret_cast<cb_data*>(p);
+	if( d->valid_ ) {
+		return 0;
+	}
+
+	if( !statement ) {
+		std::cerr << "No prepared statement passed" << std::endl;
+		return 1;
+	}
+	if( sqlite3_column_count( statement ) != 1 ) {
+		std::cerr << "Wrong column count" << std::endl;
+		return 1;
+	}
+	if( sqlite3_column_type( statement, 0 ) == SQLITE_NULL ) {
+		return 0;
+	}
+
+	uint64_t bytes = sqlite3_column_bytes( statement, 0 );
+	if( bytes % 4 ) {
+		return 1;
+	}
+	uint64_t size = bytes / 4;
+
+	unsigned char const* data = reinterpret_cast<unsigned char const*>(sqlite3_column_blob( statement, 0 ) );
+	if( !data ) {
+		return 1;
+	}
 
 	if( !d->pm ) {
 		check_map check( d->p, d->c );
 		d->pm = d->moves;
 		calculate_moves( d->p, d->c, d->pm, check );
+
+		std::sort( d->moves, d->pm, book_move_sort );
 	}
 
-	if( ++d->found_ > (d->pm - d->moves) ) {
-		return 1;
-	}
-
-	move m;
-	if( !conv_to_move( data[0], m, d->moves, d->pm ) ) {
+	if( size != (d->pm - d->moves) ) {
 		return 1;
 	}
 
-	int forecast = atoi(data[1]);
-	if( forecast > 32767 || forecast < -32768 ) {
-		return 1;
-	}
-	int searchdepth = atoi(data[2]);
-	if( searchdepth < 1 || searchdepth > 40 ) {
-		return 1;
-	}
-	int evalversion = atoi(data[3]);
-	if( evalversion < 0 ) {
-		return 1;
-	}
-	int folded_forecast = forecast;
-	int folded_searchdepth = searchdepth;
-	if( data[4] && data[5] ) {
-		folded_forecast = atoi(data[4]);
-		if( folded_forecast > 32767 || folded_forecast < -32768 ) {
-			return 1;
-		}
-		folded_searchdepth = atoi(data[5]);
-		if( folded_searchdepth < 1 || folded_searchdepth > 40 ) {
-			return 1;
-		}
-	}
-	else if( data[4] || data[5] ) {
+	if( !decode_entries( data, bytes, *d->entries ) ) {
 		return 1;
 	}
 
-	book_entry entry;
-	entry.forecast = static_cast<short>(forecast);
-	entry.search_depth = static_cast<short>(searchdepth);
-	entry.eval_version = static_cast<short>(evalversion);
-	entry.folded_forecast = static_cast<short>(folded_forecast);
-	entry.folded_searchdepth = static_cast<short>(folded_searchdepth);
-	entry.m = m;
-	d->entries->push_back( entry );
+	for( unsigned int i = 0; i < size; ++i ) {
+		(*d->entries)[i].m = d->moves[i].m;
+	}
+
+	std::sort( d->entries->begin(), d->entries->end() );
+
+	d->valid_ = true;
 
 	return 0;
 }
 }
 
 
-std::vector<book_entry> book::get_entries( position const& p, color::type c, std::vector<move> const& history, int move_limit, bool allow_transpositions )
+std::vector<book_entry> book::get_entries( position const& p, color::type c, std::vector<move> const& history, bool allow_transpositions )
 {
 	std::vector<book_entry> ret;
 
@@ -286,33 +538,20 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 		std::string hs = history_to_string( history );
 
 		std::stringstream ss;
-		ss << "SELECT move, forecast, searchdepth, eval_version, folded_forecast, folded_depth FROM book WHERE position = (SELECT id FROM position WHERE pos ='" << hs << "') ORDER BY forecast DESC,searchdepth DESC";
+		ss << "SELECT data FROM position WHERE pos = '" << hs << "'";
 
-		if( move_limit != -1 ) {
-			ss << " LIMIT " << move_limit;
-		}
-
-		impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data) );
-
-		if( !ret.empty() && data.found_ != (data.pm - data.moves) ) {
-			if( move_limit == -1 ) {
-				ret.clear();
-			}
-		}
+		impl_->query_row( ss.str(), &get_cb, reinterpret_cast<void*>(&data) );
 	}
 
 	if( ret.empty() && allow_transpositions ) {
-		ret = get_entries( p, c, move_limit );
-	}
-	else {
-		std::sort( ret.begin(), ret.end(), SortFolded() );
+		ret = get_entries( p, c );
 	}
 
 	return ret;
 }
 
 
-std::vector<book_entry> book::get_entries( position const& p, color::type c, int move_limit )
+std::vector<book_entry> book::get_entries( position const& p, color::type c )
 {
 	std::vector<book_entry> ret;
 
@@ -333,88 +572,202 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, int
 	}
 
 	std::stringstream ss;
-	ss << "SELECT move, forecast, searchdepth, eval_version, folded_forecast, folded_depth FROM book WHERE position = (SELECT id FROM position WHERE hash=" << static_cast<sqlite3_int64>(hash) << " LIMIT 1) ORDER BY forecast DESC,searchdepth DESC";
+	ss << "SELECT data FROM position WHERE hash=" << static_cast<sqlite3_int64>(hash);
 
-	if( move_limit != -1 ) {
-		ss << " LIMIT " << move_limit;
-	}
-
-	if( !impl_->query( ss.str(), &get_cb, reinterpret_cast<void*>(&data), false ) ) {
+	if( !impl_->query_row( ss.str(), &get_cb, reinterpret_cast<void*>(&data), true ) ) {
 		ret.clear();
 	}
-
-	if( !ret.empty() && data.found_ != (data.pm - data.moves) ) {
-		ret.clear();
-	}
-
-	std::sort( ret.begin(), ret.end(), SortFolded() );
 
 	return ret;
 }
 
 
 namespace {
-extern "C" int fold_forecast( void* p, int c, char** data, char** /*names*/ )
+extern "C" int get_data_cb( void* p, sqlite3_stmt* statement )
 {
-	if( !p ) {
-		std::cerr << "No user pointer passed to callback function" << std::endl;
+	data_holder* d = reinterpret_cast<data_holder*>(p);
+
+	if( !statement || sqlite3_column_count( statement ) != 1 ) {
 		return 1;
 	}
-	if( c != 2 ) {
-		std::cerr << "Wrong column count" << std::endl;
-		return 1;
+	if( sqlite3_column_type( statement, 0 ) == SQLITE_NULL ) {
+		return 0;
 	}
-	if( !data ) {
-		std::cerr << "No data despite nonzero column count" << std::endl;
-		return 1;
-	}
-	if( !data[0] ) {
-		std::cerr << "First column is NULL" << std::endl;
-		return 1;
-	}
-	if( !data[0] ) {
-		std::cerr << "Second column is NULL" << std::endl;
+
+	uint64_t bytes = sqlite3_column_bytes( statement, 0 );
+	if( bytes % 4 ) {
 		return 1;
 	}
 
-	std::pair<int, int> *ret = reinterpret_cast<std::pair<int, int>*>(p);
-	ret->first = atoi(data[0]);
-	ret->second = atoi(data[1]);
+	if( bytes ) {
+		unsigned char const* data = reinterpret_cast<unsigned char const*>(sqlite3_column_blob( statement, 0 ) );
+		if( !data ) {
+			return 1;
+		}
+
+		*d = data_holder( data, bytes );
+	}
+	else {
+		*d = data_holder();
+	}
 
 	return 0;
 }
 
-extern "C" int fold_position( void* p, int, char** data, char** /*names*/ )
+
+bool get_position( std::string history, position& p, color::type& c )
+{
+	if( history.size() % 2 ) {
+		return false;
+	}
+
+	init_board( p );
+	c = color::white;
+
+	while( !history.empty() ) {
+		std::string ms = history.substr( 0, 2 );
+		history = history.substr( 2 );
+
+		move m;
+		if( !conv_to_move_slow( p, c, m, ms.c_str(), true ) ) {
+			return false;
+		}
+		apply_move( p, m, c );
+		c = static_cast<color::type>(1-c);
+	}
+
+	return true;
+}
+
+
+extern "C" int fold_position( void* p, sqlite3_stmt* statement )
 {
 	book::impl* impl_ = reinterpret_cast<book::impl*>(p);
-	std::string id = data[0];
-	std::string pos = data[1];
-	if( pos.length() % 2 ) {
+
+	if( !statement || sqlite3_column_count(statement) != 2 ) {
+		std::cerr << "Wrong column count" << std::endl;
 		return 1;
 	}
 
-	if( !pos.length() ) {
+	unsigned char const* pos = sqlite3_column_text( statement, 0 );
+	if( !pos ) {
+		std::cerr << "No move history returned" << std::endl;
+		return 1;
+	}
+	std::string const history = reinterpret_cast<char const*>(pos);
+	if( history.size() % 2 ) {
+		std::cerr << "Move history malformed" << std::endl;
+		return 1;
+	}
+	if( !history.size() ) {
 		return 0;
 	}
 
-	std::pair<int, int> best;
-	std::string query = "SELECT folded_forecast, folded_depth FROM book WHERE position = " + id + " ORDER BY folded_forecast DESC, folded_depth ASC LIMIT 1;";
-	if( !impl_->query( query, &fold_forecast, &best ) ) {
+	if( sqlite3_column_type( statement, 1 ) == SQLITE_NULL ) {
+		std::cerr << "NULL data in position to fold." << std::endl;
 		return 1;
 	}
 
-	if( !best.second ) {
-		// This position is not yet in book.
+	uint64_t bytes = sqlite3_column_bytes( statement, 1 );
+	if( bytes % 4 ) {
+		std::cerr << "Data has wrong size" << std::endl;
+		return 1;
+	}
+
+	unsigned char const* data = reinterpret_cast<unsigned char const*>(sqlite3_column_blob( statement, 1 ) );
+	if( !data ) {
+		std::cerr << "No data in non-NULL column" << std::endl;
+		return 1;
+	}
+
+	short forecast = result::loss;
+	unsigned char depth = 0;
+	if( !bytes ) {
+		// Mate or draw.
+		position p;
+		color::type c = color::white;
+		if( !get_position( history, p, c ) ) {
+			std::cerr << "Could not get position from move history" << std::endl;
+			return 1;
+		}
+
+		check_map check( p, c );
+		if( !check.check ) {
+			forecast = 0;
+		}
+	}
+	else {
+		std::vector<book_entry> entries;
+		if( !decode_entries( data, bytes, entries ) ) {
+			std::cerr << "Could not decode entries of position" << std::endl;
+			return 1;
+		}
+
+		for( std::size_t i = 0; i < entries.size(); ++i ) {
+			if( entries[i].forecast > forecast ) {
+				forecast = entries[i].forecast;
+				depth = entries[i].search_depth;
+			}
+			else if( entries[i].forecast == forecast && entries[i].search_depth < depth ) {
+				depth = entries[i].search_depth;
+			}
+		}
+	}
+	forecast = -forecast;
+	++depth;
+
+	// We now got the best forecast of the current position and its depth
+	// Get parent position:
+	std::string parent = history.substr( 0, history.size() - 2 );
+	std::string ms = history.substr( history.size() - 2 );
+
+	data_holder dh;
+	if( !impl_->query_row( "SELECT data FROM position WHERE pos = '" + parent + "'", &get_data_cb, reinterpret_cast<void*>(&dh) ) ) {
+		return 1;
+	}
+	if( !dh.d || !dh.bytes ) {
+		// Can't fold yet. This situation can happen if processing a tree with multiple threads.
 		return 0;
 	}
 
-	std::string parent = pos.substr( 0, pos.length() - 2 );
-	std::string move = pos.substr( pos.length() - 2 );
+	position pp;
+	color::type c = color::white;
+	if( !get_position( parent, pp, c ) ) {
+		return 1;
+	}
 
-	std::stringstream ss;
-	ss << "UPDATE book SET folded_forecast = " << -best.first << ", folded_depth = " << best.second + 1 << " WHERE position = (SELECT id FROM position WHERE pos = '" << parent << "') AND move = '" << move << "';";
+	move_info moves[200];
+	move_info* it = moves;
+	calculate_moves( pp, c, it, check_map( pp, c ) );
+	if( static_cast<uint64_t>(it - moves) != dh.bytes / 4 ) {
+		std::cerr << "Wrong move count in parent position's data: " << (it - moves) << " " << dh.bytes / 4 << std::endl;
+		return 1;
+	}
+	std::sort( moves, it, book_move_sort );
 
-	if( !impl_->query( ss.str(), 0, 0 ) ) {
+	move m;
+	if( !conv_to_move_slow( pp, c, m, ms.c_str(), true ) ) {
+		std::cerr << "Could not get move" << std::endl;
+		return 1;
+	}
+
+	int i = 0;
+	for( ; i < it - moves; ++i ) {
+		if( moves[i].m == m ) {
+			break;
+		}
+	}
+	if( i == it - moves ) {
+		std::cerr << "Target move not found in all valid parent moves" << std::endl;
+		return 1;
+	}
+
+	dh.d[i*4] = static_cast<unsigned short>(forecast) % 256;
+	dh.d[i*4 + 1] = static_cast<unsigned short>(forecast) / 256;
+	dh.d[i*4 + 2] = depth;
+	dh.d[i*4 + 3] = 0;
+
+	if( !impl_->query_bind( "UPDATE position SET data = :1 WHERE pos = '" + parent + "'", dh.d, dh.bytes ) ) {
 		return 1;
 	}
 
@@ -425,7 +778,7 @@ extern "C" int fold_position( void* p, int, char** data, char** /*names*/ )
 
 bool book::add_entries( std::vector<move> const& history, std::vector<book_entry> entries )
 {
-	std::sort( entries.begin(), entries.end() );
+	std::sort( entries.begin(), entries.end(), book_move_sort );
 
 	std::string hs = history_to_string( history );
 
@@ -442,42 +795,35 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 		hash = ~hash;
 	}
 
-	std::stringstream ss;
-	ss << "BEGIN TRANSACTION;";
-	ss << "INSERT OR IGNORE INTO position (pos, hash) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ");";
-	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
-		std::string m = move_to_book_string( it->m );
-		ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth, folded_forecast, folded_depth, eval_version) VALUES ((SELECT id FROM position WHERE pos='" << hs << "'), '"
-		   << m << "', "
-		   << it->forecast << ", "
-		   << it->search_depth << ", "
-		   << it->forecast << ", "
-		   << it->search_depth << ", "
-		   << eval_version
-		   << ");";
-	}
-
 	scoped_lock l(impl_->mtx);
 
+	impl_->logfile << "BEGIN TRANSACTION;";
+	if( !impl_->query("BEGIN TRANSACTION", 0, 0 ) ) {
+		return false;
+	}
+	std::stringstream ss;
+	ss << "INSERT OR REPLACE INTO position (pos, hash, data) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ", :1);";
 	impl_->logfile << ss.str();
 	impl_->logfile.flush();
 
-	if( !impl_->query( ss.str(), 0, 0 ) ) {
+	data_holder dh;
+	encode_entries( entries, dh, true );
+	if( !impl_->query_bind( ss.str(), dh.d, dh.bytes ) ) {
 		return false;
 	}
 
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 		std::stringstream ss;
-		ss << "SELECT id, pos FROM position WHERE pos='" << hs + move_to_book_string( it->m ) << "';";
-		if( !impl_->query( ss.str(), &fold_position, impl_ ) ) {
+		ss << "SELECT pos, data FROM position WHERE pos='" << hs + move_to_book_string( it->m ) << "' AND data IS NOT NULL;";
+		if( !impl_->query_row( ss.str(), &fold_position, impl_ ) ) {
 			return false;
 		}
 	}
 
 	while( hs.size() >= 2 ) {
 		std::stringstream ss;
-		ss << "SELECT id, pos FROM position WHERE pos='" << hs << "';";
-		if( !impl_->query( ss.str(), &fold_position, impl_ ) ) {
+		ss << "SELECT pos, data FROM position WHERE pos='" << hs << "' AND data IS NOT NULL;";
+		if( !impl_->query_row( ss.str(), &fold_position, impl_ ) ) {
 			return false;
 		}
 		hs = hs.substr( 0, hs.size() - 2 );
@@ -504,7 +850,7 @@ uint64_t book::size()
 		return 0;
 	}
 
-	std::string query = "SELECT COUNT(id) FROM position;";
+	std::string query = "SELECT COUNT(pos) FROM position;";
 
 	uint64_t count = 0;
 	impl_->query( query, &count_cb, reinterpret_cast<void*>(&count) );
@@ -590,7 +936,7 @@ std::list<work> book::get_unprocessed_positions()
 
 	scoped_lock l(impl_->mtx);
 
-	std::string query = "SELECT pos FROM position WHERE id NOT IN (SELECT DISTINCT(position) FROM book) ORDER BY LENGTH(pos);";
+	std::string query = "SELECT pos FROM position WHERE data IS NULL ORDER BY LENGTH(pos) ASC;";
 
 	impl_->query( query, &work_cb, reinterpret_cast<void*>(&ret) );
 		
@@ -627,7 +973,7 @@ void book::redo_hashes()
 }
 
 
-std::list<book_entry_with_position> book::get_all_entries( int move_limit )
+std::list<book_entry_with_position> book::get_all_entries()
 {
 	std::list<book_entry_with_position> ret;
 
@@ -644,7 +990,7 @@ std::list<book_entry_with_position> book::get_all_entries( int move_limit )
 	for( std::list<work>::const_iterator it = positions.begin(); it != positions.end(); ++it ) {
 		book_entry_with_position entry;
 		entry.w = *it;
-		entry.entries = get_entries( it->p, it->c, it->move_history, move_limit );
+		entry.entries = get_entries( it->p, it->c, it->move_history );
 
 		if( !entry.entries.empty() ) {
 			ret.push_back( entry );
@@ -661,28 +1007,65 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 
 	scoped_lock l(impl_->mtx);
 
-	std::stringstream ss;
-	ss << "BEGIN TRANSACTION;";
-	std::string m = move_to_book_string( entry.m );
-	ss << "INSERT OR REPLACE INTO book (position, move, forecast, searchdepth, folded_forecast, folded_depth, eval_version) VALUES ((SELECT id FROM position WHERE pos='" << hs << "'), '"
-	   << m << "', "
-	   << entry.forecast << ", "
-	   << entry.search_depth << ", "
-	   << entry.forecast << ", "
-	   << entry.search_depth << ", "
-	   << eval_version
-	   << ");";
-
-	if( !impl_->query( ss.str(), 0, 0 ) ) {
+	if( !impl_->query( "BEGIN TRANSACTION", 0, 0 ) ) {
 		return false;
 	}
 
-	hs += m;
+	data_holder dh;
+	if( !impl_->query_row( "SELECT data FROM position WHERE pos = '" + hs + "'", &get_data_cb, reinterpret_cast<void*>(&dh) ) ) {
+		return false;
+	}
+	if( !dh.bytes ) {
+		std::cerr << "Cannot update empty entry" << std::endl;
+		return false;
+	}
+
+	position p;
+	color::type c;
+	if( !get_position( hs, p, c ) ) {
+		return false;
+	}
+
+	move_info moves[200];
+	move_info* it = moves;
+	calculate_moves( p, c, it, check_map( p, c ) );
+	if( static_cast<uint64_t>(it - moves) != dh.bytes / 4 ) {
+		std::cerr << "Wrong move count in position's data: " << (it - moves) << " " << dh.bytes / 4 << std::endl;
+		return false;
+	}
+	std::sort( moves, it, book_move_sort );
+
+	int i = 0;
+	for( ; i < it - moves; ++i ) {
+		if( moves[i].m == entry.m ) {
+			break;
+		}
+	}
+	if( i == it - moves ) {
+		std::cerr << "Target move not found in all valid moves" << std::endl;
+		return false;
+	}
+
+	if( !dh.d[i*4+3] ) {
+		std::cerr << "Cannot update folded entry" << std::endl;
+		return false;
+	}
+
+	dh.d[i*4] = static_cast<unsigned short>(entry.forecast) % 256;
+	dh.d[i*4 + 1] = static_cast<unsigned short>(entry.forecast) / 256;
+	dh.d[i*4 + 2] = entry.search_depth;
+	dh.d[i*4 + 3] = eval_version;
+
+	if( !impl_->query_bind( "UPDATE position SET data = :1 WHERE pos = '" + hs + "'", dh.d, dh.bytes ) ) {
+		return 1;
+	}
+
+	hs += move_to_book_string( entry.m );
 
 	while( hs.size() >= 2 ) {
 		std::stringstream ss;
-		ss << "SELECT id, pos FROM position WHERE pos='" << hs << "';";
-		if( !impl_->query( ss.str(), &fold_position, impl_ ) ) {
+		ss << "SELECT pos, data FROM position WHERE pos='" << hs << "' AND data IS NOT NULL;";
+		if( !impl_->query_row( ss.str(), &fold_position, impl_ ) ) {
 			return false;
 		}
 		hs = hs.substr( 0, hs.size() - 2 );
@@ -700,26 +1083,12 @@ void book::fold()
 		return;
 	}
 
-	std::cerr << "Resetting folded forcasts to actual forecasts...";
-	query = "UPDATE book set folded_depth = searchdepth;";
-	if( !impl_->query( query, 0, 0 ) ) {
-		return;
-	}
-	std::cerr << " done" << std::endl;
-
-	std::cerr << "Resetting folded depths to actual search depths...";
-	query = "UPDATE book set folded_forecast = forecast;";
-	if( !impl_->query( query, 0, 0 ) ) {
-		return;
-	}
-	std::cerr << " done" << std::endl;
-
 	std::cerr << "Folding";
 	for( uint64_t i = max_length; i > 0; i -= 2 ) {
 		std::cerr << ".";
 		std::stringstream ss;
-		ss << "SELECT id, pos FROM position WHERE length(pos) = " << i << ";";
-		impl_->query( ss.str(), &fold_position, impl_ );
+		ss << "SELECT pos, data FROM position WHERE length(pos) = " << i << " AND data IS NOT NULL;";
+		impl_->query_row( ss.str(), &fold_position, impl_ );
 	}
 	std::cerr << " done" << std::endl;
 
@@ -762,16 +1131,17 @@ extern "C" int stats_queued_cb( void* p, int, char** data, char** /*names*/ ) {
 }
 }
 
+
 book_stats book::stats()
 {
 	book_stats ret;
 
 	scoped_lock l(impl_->mtx);
 
-	std::string query = "SELECT length(pos), count(pos) FROM position WHERE id IN (SELECT DISTINCT(position) FROM book) GROUP BY LENGTH(pos) ORDER BY LENGTH(pos)";
+	std::string query = "SELECT length(pos), count(pos), SUM(LENGTH(data)/4) FROM position WHERE data is NOT NULL GROUP BY LENGTH(pos) ORDER BY LENGTH(pos)";
 	impl_->query( query, &stats_processed_cb, reinterpret_cast<void*>(&ret) );
 	
-	query = "SELECT length(pos), count(pos) FROM position WHERE id NOT IN (SELECT DISTINCT(position) FROM book) GROUP BY LENGTH(pos) ORDER BY LENGTH(pos)";
+	query = "SELECT length(pos), count(pos), SUM(LENGTH(data)/4) FROM position WHERE data is NULL GROUP BY LENGTH(pos) ORDER BY LENGTH(pos)";
 	impl_->query( query, &stats_queued_cb, reinterpret_cast<void*>(&ret) );
 
 	return ret;
@@ -794,11 +1164,10 @@ bool book::set_insert_logfile( std::string const& log_file )
 std::string entries_to_string( std::vector<book_entry> const& entries )
 {
 	std::ostringstream out;
-	out << "  Move       Folded      Current" << std::endl;
+	out << "  Move     Forecast   In book" << std::endl;
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 		out << move_to_string( it->m )
-			<< std::setw(7) << it->folded_forecast << " @ " << std::setw(2) << it->folded_searchdepth
-			<< std::setw(7) << it->forecast << " @ " << std::setw(2) << it->search_depth
+			<< std::setw(7) << it->forecast << " @ " << std::setw(2) << it->search_depth << std::setw(6) << (it->is_folded() ? "yes" : "")
 			<< std::endl;
 	}
 

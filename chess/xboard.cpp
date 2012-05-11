@@ -409,7 +409,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 	// Do a step
 	if( conf.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
-		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.c, state.move_history_, -1, true );
+		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.c, state.move_history_, true );
 		if( moves.empty() ) {
 			std::cerr << "Current position not in book" << std::endl;
 		}
@@ -417,10 +417,10 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 			std::cerr << "Entries from book: " << std::endl;
 			std::cerr << entries_to_string( moves );
 
-			short best = moves.front().folded_forecast;
+			short best = moves.front().forecast;
 			int count_best = 1;
 			for( std::vector<book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
-				if( it->folded_forecast > -33 && it->folded_forecast + 25 >= best && count_best < 3 ) {
+				if( it->forecast > -33 && it->forecast + 25 >= best && count_best < 3 ) {
 					++count_best;
 				}
 			}
