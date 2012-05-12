@@ -30,8 +30,6 @@ bool to_int( std::string const& s, T& t, T min = std::numeric_limits<T>::min(), 
 
 	ss >> t;
 
-	ret = ss;
-
 	if( ss ) {
 		if( t < min ) {
 			t = min;
@@ -39,6 +37,7 @@ bool to_int( std::string const& s, T& t, T min = std::numeric_limits<T>::min(), 
 		else if( t > max ) {
 			t = max;
 		}
+		ret = true;
 	}
 
 	return ret;

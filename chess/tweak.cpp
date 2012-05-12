@@ -205,9 +205,9 @@ public:
 	tweak_score( score& target, int min, int max, std::string const& name )
 		: tweak_base(name)
 	{
-		genes_.push_back(genes.size());
-		genes.push_back( gene_t( &target.mg(), min, max ) );
-		genes_.push_back(genes.size());
+		genes_.push_back(static_cast<int>(genes.size()));
+		genes.push_back(gene_t( &target.mg(), min, max ) );
+		genes_.push_back(static_cast<int>(genes.size()));
 		genes.push_back( gene_t( &target.eg(), min, max ) );
 	}
 
@@ -230,7 +230,7 @@ public:
 	tweak_short( short& target, int min, int max, std::string const& name )
 		: tweak_base(name)
 	{
-		genes_.push_back(genes.size());
+		genes_.push_back(static_cast<int>(genes.size()));
 		genes.push_back( gene_t( &target, min, max ) );
 	}
 
@@ -468,7 +468,7 @@ struct individual
 
 			if( static_cast<short>(difference) > max_diff_ ) {
 				max_diff_ = static_cast<short>(difference);
-				max_diff_pos_ = i;
+				max_diff_pos_ = static_cast<int>(i);
 			}
 		}
 		fitness_ /= data.size();
@@ -775,7 +775,7 @@ void tweak_evaluation()
 	while( true ) {
 		std::cout << ".";
 		std::flush( std::cout );
-		srand ( time(NULL) );
+		srand ( static_cast<unsigned int>(time(NULL)) );
 
 		mutate( pop, seen, data );
 		add_random( pop, seen, data );

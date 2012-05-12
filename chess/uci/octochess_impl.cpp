@@ -314,7 +314,7 @@ void octochess_uci::set_hash_size( uint64_t mb )
 	if( mb < 4 ) {
 		mb = 4;
 	}
-	conf.memory = mb;
+	conf.memory = static_cast<unsigned int>(mb);
 }
 
 

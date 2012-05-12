@@ -76,7 +76,7 @@ void minimalistic_uci_protocol::handle_option( std::string const& args )
 		callbacks_->set_hash_size( value );
 	}
 	if( name == "Threads" ) {
-		callbacks_->set_threads( value );
+		callbacks_->set_threads( static_cast<unsigned int>(value) );
 	}
 	else {
 		std::cerr << "Unknown option: " << args << std::endl;
