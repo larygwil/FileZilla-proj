@@ -2,7 +2,7 @@
 #include "util.hpp"
 #include "zobrist.hpp"
 
-#include "sqlite/sqlite3.h"
+#include "sqlite/sqlite3.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -104,172 +104,23 @@ book_entry::book_entry()
 }
 
 
-class book::impl
+class book::impl : public database
 {
 public:
-	impl() : db()
+	impl( std::string const& book_dir )
+		: database( book_dir + "opening_book.db" )
 	{
 	}
 
-	bool query( std::string const& query, int (*callback)(void*,int,char**,char**), void* data, bool report_errors = true );
-
-	// Mainly for inserting a single blob
-	bool query_bind( std::string const& query, unsigned char const* data, uint64_t len, bool report_errors = true );
-
-	// Mainly for parsing rows containing a blob
-	bool query_row( std::string const& query, int (*callback)(void*,sqlite3_stmt*), void* data, bool report_errors = true );
-
 	mutex mtx;
-	sqlite3* db;
 
 	std::ofstream logfile;
 };
 
 
-bool book::impl::query( std::string const& query, int (*callback)(void*,int,char**,char**), void* data, bool report_errors )
-{
-	bool ret = false;
-
-	char* err_msg = 0;
-	int res = sqlite3_exec( db, query.c_str(), callback, data, &err_msg );
-
-	if( res == SQLITE_OK || res == SQLITE_DONE ) {
-		ret = true;
-	}
-	else if( report_errors ) {
-		std::cerr << "Database failure" << std::endl;
-		std::cerr << "Error code: " << res << std::endl;
-		if( err_msg ) {
-			std::cerr << "Error string: " << err_msg << std::endl;
-		}
-		std::cerr << "Failed query: " << query << std::endl;
-		abort();
-	}
-	
-	sqlite3_free( err_msg );
-
-	return ret;
-}
-
-
-bool book::impl::query_bind( std::string const& query, unsigned char const* data, uint64_t len, bool report_errors )
-{
-	sqlite3_stmt *statement = 0;
-	int res = sqlite3_prepare_v2( db, query.c_str(), -1, &statement, 0 );
-	if( res != SQLITE_OK ) {
-		if( report_errors ) {
-			std::cerr << "Database failure" << std::endl;
-			std::cerr << "Error code: " << res << std::endl;
-			char const* err_msg = sqlite3_errmsg( db );
-			if( err_msg ) {
-				std::cerr << "Error string: " << err_msg << std::endl;
-			}
-			std::cerr << "Failed query: " << query << std::endl;
-			abort();
-		}
-		return false;
-	}
-
-	res = sqlite3_bind_blob( statement, 1, data, len, SQLITE_TRANSIENT );
-	if( res != SQLITE_OK ) {
-		if( report_errors ) {
-			std::cerr << "Database failure" << std::endl;
-			std::cerr << "Error code: " << res << std::endl;
-			char const* err_msg = sqlite3_errmsg( db );
-			if( err_msg ) {
-				std::cerr << "Error string: " << err_msg << std::endl;
-			}
-			std::cerr << "Failed query: " << query << std::endl;
-			abort();
-		}
-		return false;
-	}
-
-	do {
-		res = sqlite3_step( statement );
-	} while( res == SQLITE_BUSY || res == SQLITE_ROW );
-
-	if( res != SQLITE_DONE ) {
-		if( report_errors ) {
-			std::cerr << "Database failure" << std::endl;
-			std::cerr << "Error code: " << res << std::endl;
-			char const* err_msg = sqlite3_errmsg( db );
-			if( err_msg ) {
-				std::cerr << "Error string: " << err_msg << std::endl;
-			}
-			std::cerr << "Failed query: " << query << std::endl;
-			abort();
-		}
-		return false;
-	}
-
-	sqlite3_finalize( statement );
-
-	return true;
-}
-
-
-bool book::impl::query_row( std::string const& query, int (*callback)(void*,sqlite3_stmt*), void* data, bool report_errors )
-{
-	sqlite3_stmt *statement = 0;
-	int res = sqlite3_prepare_v2( db, query.c_str(), -1, &statement, 0 );
-	if( res != SQLITE_OK ) {
-		if( report_errors ) {
-			std::cerr << "Database failure" << std::endl;
-			std::cerr << "Error code: " << res << std::endl;
-			char const* err_msg = sqlite3_errmsg( db );
-			if( err_msg ) {
-				std::cerr << "Error string: " << err_msg << std::endl;
-			}
-			std::cerr << "Failed query: " << query << std::endl;
-			abort();
-		}
-		return false;
-	}
-
-	do {
-		res = sqlite3_step( statement );
-		if( res == SQLITE_ROW ) {
-			if( callback( data, statement ) ) {
-				std::cerr << "Callback requested query abort." << std::endl;
-				std::cerr << "Failed query: " << query << std::endl;
-				return false;
-			}
-		}
-	} while( res == SQLITE_BUSY || res == SQLITE_ROW );
-
-	if( res != SQLITE_DONE ) {
-		if( report_errors ) {
-			std::cerr << "Database failure" << std::endl;
-			std::cerr << "Error code: " << res << std::endl;
-			char const* err_msg = sqlite3_errmsg( db );
-			if( err_msg ) {
-				std::cerr << "Error string: " << err_msg << std::endl;
-			}
-			std::cerr << "Failed query: " << query << std::endl;
-			abort();
-		}
-		return false;
-	}
-
-	sqlite3_finalize( statement );
-
-	return true;
-}
-
-
 book::book( std::string const& book_dir )
-	: impl_( new impl )
+	: impl_( new impl( book_dir ) )
 {
-	std::string fn( book_dir + "opening_book.db" );
-	if( sqlite3_open_v2( fn.c_str(), &impl_->db, SQLITE_OPEN_READWRITE, 0 ) != SQLITE_OK ) {
-		sqlite3_close( impl_->db );
-		impl_->db = 0;
-	}
-	if( impl_->db ) {
-		sqlite3_busy_timeout( impl_->db, 5000 );
-		impl_->query("PRAGMA foreign_keys = ON", 0, 0 );
-	}
 }
 
 
@@ -283,7 +134,7 @@ bool book::is_open() const
 {
 	scoped_lock l(impl_->mtx);
 
-	return impl_->db != 0;
+	return impl_->is_open();
 }
 
 
@@ -453,7 +304,7 @@ bool encode_entries( std::vector<book_entry>& entries, data_holder& data, bool s
 			*(p++) = eval_version;
 		}
 		else {
-			*(p++) = entries[i].eval_version;
+			*(p++) = static_cast<unsigned char>(entries[i].eval_version);
 		}
 	}
 
@@ -526,7 +377,7 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 	{
 		scoped_lock l(impl_->mtx);
 
-		if( !impl_->db ) {
+		if( !impl_->is_open() ) {
 			return ret;
 		}
 
@@ -557,7 +408,7 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c )
 
 	scoped_lock l(impl_->mtx);
 
-	if( !impl_->db ) {
+	if( !impl_->is_open() ) {
 		return ret;
 	}
 
@@ -846,7 +697,7 @@ uint64_t book::size()
 {
 	scoped_lock l(impl_->mtx);
 
-	if( !impl_->db ) {
+	if( !impl_->is_open() ) {
 		return 0;
 	}
 
@@ -863,7 +714,7 @@ void book::mark_for_processing( std::vector<move> const& history )
 {
 	scoped_lock l(impl_->mtx);
 
-	if( !impl_->db ) {
+	if( !impl_->is_open() ) {
 		return;
 	}
 
@@ -1167,7 +1018,7 @@ std::string entries_to_string( std::vector<book_entry> const& entries )
 	out << "  Move     Forecast   In book" << std::endl;
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 		out << move_to_string( it->m )
-			<< std::setw(7) << it->forecast << " @ " << std::setw(2) << it->search_depth << std::setw(6) << (it->is_folded() ? "yes" : "")
+			<< std::setw(7) << it->forecast << " @ " << std::setw(2) << static_cast<int>(it->search_depth) << std::setw(6) << (it->is_folded() ? "yes" : "")
 			<< std::endl;
 	}
 

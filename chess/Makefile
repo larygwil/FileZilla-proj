@@ -39,6 +39,7 @@ OBJECT_FILES = \
 	seen_positions.o \
 	selftest.o \
 	sqlite/sqlite3.o \
+	sqlite/sqlite3_wrapper.o \
 	statistics.o \
 	string.o \
 	tables.o \

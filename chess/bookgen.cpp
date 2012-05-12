@@ -227,7 +227,7 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 				ctx.pv_pool.release(pv);
 			}
 
-			std::cerr << entry.forecast << " d" << entry.search_depth << " v" << entry.eval_version << " -> " << value << " d" << new_depth << " " << move_history.size() << " " << position_to_fen_noclock( p, c ) << " " << move_to_string(entry.m) << std::endl;
+			std::cerr << entry.forecast << " d" << static_cast<int>(entry.search_depth) << " v" << static_cast<int>(entry.eval_version) << " -> " << value << " d" << new_depth << " " << move_history.size() << " " << position_to_fen_noclock( p, c ) << " " << move_to_string(entry.m) << std::endl;
 
 			entry.forecast = value;
 			entry.search_depth = new_depth;

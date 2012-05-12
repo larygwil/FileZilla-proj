@@ -49,7 +49,8 @@ GENERIC_SOURCE_FILES = \
 	tables.cpp \
 	time.cpp \
 	zobrist.cpp \
-	sqlite/sqlite3.o
+	sqlite/sqlite3.o \
+	sqlite/sqlite3_wrapper.o
 
 CHESS_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
 	chess.cpp \

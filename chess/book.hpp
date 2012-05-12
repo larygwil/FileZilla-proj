@@ -17,8 +17,8 @@ struct book_entry
 
 	move m;
 	short forecast;
-	short search_depth;
-	short eval_version;
+	unsigned char search_depth;
+	unsigned char eval_version;
 
 	bool operator<( book_entry const& rhs ) const {
 		if( forecast > rhs.forecast ) {
