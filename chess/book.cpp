@@ -1012,12 +1012,12 @@ bool book::set_insert_logfile( std::string const& log_file )
 }
 
 
-std::string entries_to_string( std::vector<book_entry> const& entries )
+std::string entries_to_string( position const& p, std::vector<book_entry> const& entries )
 {
 	std::ostringstream out;
 	out << "  Move     Forecast   In book" << std::endl;
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
-		out << move_to_string( it->m )
+		out << std::setw(6) << move_to_san( p, it->m )
 			<< std::setw(7) << it->forecast << " @ " << std::setw(2) << static_cast<int>(it->search_depth) << std::setw(6) << (it->is_folded() ? "yes" : "")
 			<< std::endl;
 	}

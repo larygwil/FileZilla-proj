@@ -114,7 +114,7 @@ private:
 };
 
 
-std::string entries_to_string( std::vector<book_entry> const& entries );
+std::string entries_to_string( position const& p, std::vector<book_entry> const& entries );
 
 
 #endif

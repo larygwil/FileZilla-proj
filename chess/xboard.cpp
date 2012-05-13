@@ -415,7 +415,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 		}
 		else {
 			std::cerr << "Entries from book: " << std::endl;
-			std::cerr << entries_to_string( moves );
+			std::cerr << entries_to_string( state.p, moves );
 
 			short best = moves.front().forecast;
 			int count_best = 1;

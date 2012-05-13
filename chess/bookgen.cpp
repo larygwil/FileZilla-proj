@@ -227,7 +227,7 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 				ctx.pv_pool.release(pv);
 			}
 
-			std::cerr << entry.forecast << " d" << static_cast<int>(entry.search_depth) << " v" << static_cast<int>(entry.eval_version) << " -> " << value << " d" << new_depth << " " << move_history.size() << " " << position_to_fen_noclock( p, c ) << " " << move_to_string(entry.m) << std::endl;
+			std::cerr << entry.forecast << " d" << static_cast<int>(entry.search_depth) << " v" << static_cast<int>(entry.eval_version) << " -> " << value << " d" << new_depth << " " << move_history.size() << " " << position_to_fen_noclock( p, c ) << " " << move_to_san( p, entry.m ) << std::endl;
 
 			entry.forecast = value;
 			entry.search_depth = new_depth;
@@ -750,9 +750,9 @@ std::string side_by_side( std::string const& left, std::string const& right, std
 }
 
 
-std::string print_moves( color::type c, std::vector<book_entry> const& moves )
+std::string print_moves( position const& p, color::type c, std::vector<book_entry> const& moves )
 {
-	std::string ret = entries_to_string( moves );
+	std::string ret = entries_to_string( p, moves );
 	if( c == color::white ) {
 		ret += "White to move\n";
 	}
@@ -779,14 +779,14 @@ void print_pos( std::vector<history_entry> const& history, position const& p, co
 		if( !(i%2) ) {
 			ss << i / 2 + 1<< ". ";
 		}
-		ss << move_to_string( history[i].m, false );
+		ss << move_to_san( history[i].p, history[i].m );
 	}
 	std::string line = ss.str();
 	if( !line.empty() ) {
 		std::cout << "Line: " << line << std::endl << std::endl;
 	}
 
-	std::string mstr = print_moves( c, moves );
+	std::string mstr = print_moves( p, c, moves );
 	std::string board = board_to_string( p );
 	//std::string eval = explain_eval( p, c );
 

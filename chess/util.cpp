@@ -425,6 +425,113 @@ std::string move_to_string( move const& m, bool padding )
 }
 
 
+namespace {
+void add_disambiguation( position const& p, color::type c, move const& m, uint64_t possible_moves, std::string& ret ) {
+	uint64_t source_file = 0x0101010101010101ull << (m.source % 8);
+	if( popcount( possible_moves & p.bitboards[c].b[m.piece] ) > 1 ) {
+		ret += 'a' + m.source % 8;
+		if( popcount(p.bitboards[c].b[m.piece] & source_file) > 1 ) {
+			ret += '1' + m.target / 8;
+		}
+	}
+	if( m.captured_piece != pieces::none ) {
+		ret += 'x';
+	}
+	ret += 'a' + m.target % 8;
+	ret += '1' + m.target / 8;
+}
+}
+
+std::string move_to_san( position const& p, move const& m )
+{
+	std::string ret;
+
+	if( m.flags & move_flags::castle ) {
+		if( m.target == 6 || m.target == 62 ) {
+			return "O-O";
+		}
+		else {
+			return "O-O-O";
+		}
+	}
+
+	color::type c;
+	if( p.bitboards[color::white].b[bb_type::all_pieces] & (1ull << m.source) ) {
+		c = color::white;
+	}
+	else {
+		c = color::black;
+	}
+
+	switch( m.piece ) {
+		case pieces::knight:
+			ret += 'N';
+			add_disambiguation( p, c, m, possible_knight_moves[m.target], ret );
+			break;
+		case pieces::bishop:
+			ret += 'B';
+			add_disambiguation( p, c, m, bishop_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ), ret );
+			break;
+		case pieces::rook:
+			ret += 'R';
+			add_disambiguation( p, c, m, rook_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ), ret );
+			break;
+		case pieces::queen:
+			ret += 'Q';
+			add_disambiguation( p, c, m, bishop_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ) | rook_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ), ret );
+			break;
+		case pieces::king:
+			ret += 'K';
+			if( m.captured_piece != pieces::none ) {
+				ret += 'x';
+			}
+			ret += 'a' + m.target % 8;
+			ret += '1' + m.target / 8;
+			break;
+		case pieces::pawn:
+			if( m.captured_piece != pieces::none ) {
+				ret += 'a' + m.source % 8;
+				ret += 'x';
+				ret += 'a' + m.target % 8;
+
+				uint64_t target_file = 0x0101010101010101ull << (m.target % 8);
+				if( popcount(p.bitboards[c].b[bb_type::pawn_control] & target_file & p.bitboards[1-c].b[bb_type::all_pieces]) > 1 ) {
+					ret += '1' + m.target / 8;
+				}
+			}
+			else {
+				ret += 'a' + m.target % 8;
+				ret += '1' + m.target / 8;
+			}
+		
+			{
+				int promotion = m.flags & move_flags::promotion_mask;
+				if( promotion ) {
+					switch( promotion ) {
+						case move_flags::promotion_knight:
+							ret += "=N";
+							break;
+						case move_flags::promotion_bishop:
+							ret += "=B";
+							break;
+						case move_flags::promotion_rook:
+							ret += "=R";
+							break;
+						case move_flags::promotion_queen:
+							ret += "=Q";
+							break;
+					}
+				}
+			}
+			break;
+		default:
+			break;
+	}
+
+	return ret;
+}
+
+
 std::string move_to_long_algebraic( move const& m )
 {
 	std::string ret;
