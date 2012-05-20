@@ -576,16 +576,17 @@ static void evaluate_king_attack( position const& p, color::type c, color::type 
 	attack += popcount( king_melee_attack_by_rook ) * eval_values::king_melee_attack_by_rook * initiative;
 
 	// Take pawn shield into account
-	attack -= (results.pawn_shield[c] * 10) / eval_values::king_attack_pawn_shield;
+	int64_t signed_attack = static_cast<int64_t>(attack);
+	signed_attack -= (results.pawn_shield[c] * 10) / eval_values::king_attack_pawn_shield;
 
-	if( attack < 0 ) {
-		attack = 0;
+	if( signed_attack < 0 ) {
+		signed_attack = 0;
 	}
-	else if( attack > 199 ) {
-		attack = 199;
+	else if( signed_attack > 199 ) {
+		signed_attack = 199;
 	}
 
-	add_score<detail, eval_detail::king_attack>( results, c, eval_values::king_attack[attack] );
+	add_score<detail, eval_detail::king_attack>( results, c, eval_values::king_attack[signed_attack] );
 }
 
 

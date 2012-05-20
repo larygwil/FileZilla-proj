@@ -24,7 +24,7 @@ cp chess-use octochess-r$REV/octochess-linux-generic-r$REV
 strip octochess-r$REV/*
 
 cp opening_book.db octochess-r$REV/
-sqlite3 octochess-r$REV/opening_book.db 'delete from position where position.id not in (select position from book);'
+sqlite3 octochess-r$REV/opening_book.db 'delete from position where data IS NULL;'
 sqlite3 octochess-r$REV/opening_book.db 'vacuum full'
 
 cp AUTHORS octochess-r$REV/authors.txt

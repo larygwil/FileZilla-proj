@@ -1,3 +1,11 @@
+Octochess r4632 (2012-05-20):
+- CECP and UCI: Number of threads can be set
+- CECP and UCI: Size of transposition table can be set
+- CECP: Support fixed move time (st command)
+- Improved playing strength
+- Specialized endgame evaluation
+- Many small performance optimizations
+
 Octochess r4529 (2012-03-25):
 - Improved playing strength
 - Experimental UCI implementation
