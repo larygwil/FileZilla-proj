@@ -188,13 +188,6 @@ void octochess_uci::impl::onRun() {
 
 				lock.lock();
 
-				apply_move( result.best_move );
-
-				{
-					score base_eval = color_to_play_ ? -pos_.base_eval : pos_.base_eval;
-					std::cerr << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << result.forecast << std::endl;
-				}
-
 				if( result.forecast > result::win_threshold ) {
 					last_mate_ = result.forecast;
 				}
@@ -275,7 +268,6 @@ bool octochess_uci::impl::do_book_move() {
 
 			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
 			gui_interface_->tell_best_move( move_to_long_algebraic( best_move.m ) );
-			apply_move( best_move.m );
 		}
 	}
 
@@ -290,7 +282,6 @@ bool octochess_uci::impl::pick_pv_move()
 	if( !m.empty() ) {
 		ret = true;
 		gui_interface_->tell_best_move( move_to_long_algebraic( m ) );
-		apply_move( m );
 	}
 
 	return ret;
