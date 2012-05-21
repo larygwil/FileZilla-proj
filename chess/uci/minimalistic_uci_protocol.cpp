@@ -190,6 +190,8 @@ void minimalistic_uci_protocol::handle_go( std::string const& params ) {
 			t.set_white_increment( duration::milliseconds(extract<uint>(in)) );
 		} else if( cmd == "winc" ) {
 			t.set_black_increment( duration::milliseconds(extract<uint>(in)) );
+		} else if( cmd == "movetime" ) {
+			t.set_movetime( duration::milliseconds(extract<uint>(in)) );
 		}
 	}
 

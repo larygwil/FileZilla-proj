@@ -11,21 +11,24 @@ class position_time {
 public:
 	position_time() {}
 
-	void set_white_time( duration t ) { white_left_ = t; }
-	void set_black_time( duration t ) { black_left_ = t; }
-	void set_white_increment( duration t ) { white_inc_ = t; }
-	void set_black_increment( duration t ) { black_inc_ = t; }
+	void set_white_time( duration const& t ) { white_left_ = t; }
+	void set_black_time( duration const& t ) { black_left_ = t; }
+	void set_white_increment( duration const& t ) { white_inc_ = t; }
+	void set_black_increment( duration const& t ) { black_inc_ = t; }
+	void set_movetime( duration const& t ) { movetime_ = t; }
 
 	duration white_time_left() const { return white_left_; }
 	duration black_time_left() const { return black_left_; }
 	duration white_increment() const { return white_inc_; }
 	duration black_increment() const { return black_inc_; }
+	duration movetime() const { return movetime_; }
 
 private:
 	duration white_left_;
 	duration black_left_;
 	duration white_inc_;
 	duration black_inc_;
+	duration movetime_;
 };
 
 class time_calculation {
