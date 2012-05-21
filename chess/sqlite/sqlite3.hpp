@@ -14,6 +14,8 @@ public:
 	virtual ~database();
 
 	bool is_open() const;
+	bool open( std::string const& file );
+	void close();
 
 	sqlite3* handle() { return db_; }
 

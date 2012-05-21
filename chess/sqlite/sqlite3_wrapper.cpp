@@ -6,14 +6,7 @@
 database::database( std::string const& fn )
 	: db_()
 {
-	if( sqlite3_open_v2( fn.c_str(), &db_, SQLITE_OPEN_READWRITE, 0 ) != SQLITE_OK ) {
-		sqlite3_close( db_ );
-		db_ = 0;
-	}
-	if( db_ ) {
-		sqlite3_busy_timeout( db_, 5000 );
-		query("PRAGMA foreign_keys = ON", 0, 0 );
-	}
+	open( fn );
 }
 
 
@@ -26,6 +19,30 @@ database::~database()
 bool database::is_open() const
 {
 	return db_ != 0;
+}
+
+
+bool database::open( std::string const& fn )
+{
+	close();
+
+	if( sqlite3_open_v2( fn.c_str(), &db_, SQLITE_OPEN_READWRITE, 0 ) != SQLITE_OK ) {
+		sqlite3_close( db_ );
+		db_ = 0;
+	}
+	if( db_ ) {
+		sqlite3_busy_timeout( db_, 5000 );
+		query("PRAGMA foreign_keys = ON", 0, 0 );
+	}
+
+	return is_open();
+}
+
+
+void database::close()
+{
+	sqlite3_close( db_ );
+	db_ = 0;
 }
 
 
