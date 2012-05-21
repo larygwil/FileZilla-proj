@@ -22,7 +22,10 @@ public:
 private:
 	void init();
 	void parse_init( std::string const& line );
-	void parse_command( std::string const& line );
+
+	// Return false if engine should quit
+	bool parse_command( std::string const& line );
+
 	void handle_position( std::string const& params );
 	void handle_go( std::string const& params );
 	void handle_option( std::string const& args );

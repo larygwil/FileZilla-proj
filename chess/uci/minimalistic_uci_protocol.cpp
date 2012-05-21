@@ -23,10 +23,11 @@ void minimalistic_uci_protocol::thread_entry_point( bool already_got_init ) {
 	}
 
 	std::string line;
-	while( std::getline(std::cin, line) ) {
+	bool quit = false;
+	while( !quit && std::getline(std::cin, line) ) {
 		logger::log_input(line);
 		if( connected_ ) {
-			parse_command( line );
+			quit = parse_command( line );
 		} else {
 			parse_init( line );
 		}
@@ -84,30 +85,44 @@ void minimalistic_uci_protocol::handle_option( std::string const& args )
 }
 
 
-void minimalistic_uci_protocol::parse_command( std::string const& line ) {
+bool minimalistic_uci_protocol::parse_command( std::string const& line ) {
+
+	bool quit = false;
+
 	std::string args;
 	std::string cmd = split( line, args );
 
 	if( cmd == "isready" ) {
 		std::cout << "readyok" << std::endl;
-	} else if( cmd == "quit" ) {
+	}
+	else if( cmd == "quit" ) {
 		callbacks_->quit();
 		connected_ = false;
-	} else if( cmd == "stop" ) {
+		quit = true;
+	}
+	else if( cmd == "stop" ) {
 		callbacks_->stop();
-	} else if( cmd == "ucinewgame" ) {
+	}
+	else if( cmd == "ucinewgame" ) {
 		callbacks_->new_game();
-	} else if( cmd == "position" ) {
+	}
+	else if( cmd == "position" ) {
 		handle_position( args );
-	} else if( cmd == "go" ) {
+	}
+	else if( cmd == "go" ) {
 		handle_go( args );
-	} else if( cmd == "go" ) {
+	}
+	else if( cmd == "go" ) {
 		handle_go( args );
-	} else if( cmd == "setoption" ) {
+	}
+	else if( cmd == "setoption" ) {
 		handle_option( args );
-	} else {
+	}
+	else {
 		std::cerr << "unknown command when connected: " << line << std::endl;
 	}
+
+	return quit;
 }
 
 void minimalistic_uci_protocol::handle_position( std::string const& params ) {
