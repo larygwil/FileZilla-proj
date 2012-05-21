@@ -79,6 +79,6 @@ clean:
 	rm -f uci/*.o
 	rm -f uci/*.gcda
 	rm -f tables.cpp
-	rm -f sqlite/sqlite3.o
+	rm -f sqlite/*.o
 
 .PHONY: all clean

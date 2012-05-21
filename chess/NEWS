@@ -1,3 +1,9 @@
+Octochess r4638 (2012-05-21):
+- UCI: Fix quit command not actually quitting
+- UCI: After returning bestmove after a go, the move is not actually applied
+- UCI: Implement support for the OwnBook option
+- UCI: Basic support for the movetime argument to the go command
+
 Octochess r4632 (2012-05-20):
 - CECP and UCI: Number of threads can be set
 - CECP and UCI: Size of transposition table can be set
