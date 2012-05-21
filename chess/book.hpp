@@ -72,6 +72,9 @@ public:
 	book( std::string const& book_dir );
 	~book();
 
+	bool open( std::string const& book_dir );
+	void close();
+
 	bool is_open() const;
 
 	// Returned entries are sorted by folded forecast, highest first.

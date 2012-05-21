@@ -55,6 +55,7 @@ void minimalistic_uci_protocol::send_options()
 {
 	std::cout << "option name Hash type spin default " << callbacks_->get_hash_size() << " min " << callbacks_->get_min_hash_size() << " max 1048576" << std::endl;
 	std::cout << "option name Threads type spin default " << callbacks_->get_threads() << " min 1 max " << callbacks_->get_max_threads() << std::endl;
+	std::cout << "option name OwnBook type check default " << (callbacks_->use_book() ? "true" : "false") << std::endl;
 }
 
 
@@ -64,8 +65,7 @@ void minimalistic_uci_protocol::handle_option( std::string const& args )
 	ss.flags(std::stringstream::skipws);
 	ss.str( args );
 
-	std::string tokName, name, tokValue;
-	uint64_t value;
+	std::string tokName, name, tokValue, value;
 
 	ss >> tokName >> name >> tokValue >> value;
 
@@ -74,10 +74,31 @@ void minimalistic_uci_protocol::handle_option( std::string const& args )
 	}
 
 	if( name == "Hash" ) {
-		callbacks_->set_hash_size( value );
+		uint64_t memory;
+		if( !to_int<uint64_t>( value, memory, callbacks_->get_min_hash_size(), 1048576 ) ) {
+			std::cerr << "malformed setoption: " << args << std::endl;
+		}
+		else {
+			callbacks_->set_hash_size( memory );
+		}
 	}
-	if( name == "Threads" ) {
-		callbacks_->set_threads( static_cast<unsigned int>(value) );
+	else if( name == "Threads" ) {
+		int threads;
+		if( !to_int<int>( value, threads, 1, callbacks_->get_max_threads() ) ) {
+			std::cerr << "malformed setoption: " << args << std::endl;
+		}
+		else {
+			callbacks_->set_threads( threads );
+		}
+	}
+	else if( name == "OwnBook" ) {
+		bool use_book;
+		if( !to_bool( value, use_book ) ) {
+			std::cerr << "malformed setoption: " << args << std::endl;
+		}
+		else {
+			callbacks_->use_book( use_book );
+		}
 	}
 	else {
 		std::cerr << "Unknown option: " << args << std::endl;

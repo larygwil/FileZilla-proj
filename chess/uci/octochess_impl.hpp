@@ -33,6 +33,8 @@ public:
 	virtual unsigned int get_threads() const;
 	virtual unsigned int get_max_threads() const;
 	virtual void set_threads( unsigned int threads );
+	virtual bool use_book() const;
+	virtual void use_book( bool use );
 
 private:
 	virtual void make_moves( std::vector<std::string> const& list_of_moves );

@@ -133,10 +133,22 @@ book::~book()
 bool book::is_open() const
 {
 	scoped_lock l(impl_->mtx);
-
 	return impl_->is_open();
 }
 
+
+void book::close()
+{
+	scoped_lock l(impl_->mtx);
+	impl_->close();
+}
+
+
+bool book::open( std::string const& book_dir )
+{
+	scoped_lock l(impl_->mtx);
+	return impl_->open( book_dir + "opening_book.db" );
+}
 
 namespace {
 struct cb_data {

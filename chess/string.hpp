@@ -43,4 +43,20 @@ bool to_int( std::string const& s, T& t, T min = std::numeric_limits<T>::min(), 
 	return ret;
 }
 
+inline
+bool to_bool( std::string const& s, bool& b )
+{
+	bool ret = false;
+	if( s == "true" || s == "TRUE" || s == "True" || s == "1" ) {
+		b = true;
+		ret = true;
+	}
+	else if( s == "false" || s == "FALSE" || s == "False" || s == "0" ) {
+		b = false;
+		ret = true;
+	}
+
+	return ret;
+}
+
 #endif

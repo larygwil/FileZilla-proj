@@ -333,6 +333,23 @@ void octochess_uci::set_threads( unsigned int threads )
 }
 
 
+bool octochess_uci::use_book() const
+{
+	return impl_->book_.is_open();
+}
+
+
+void octochess_uci::use_book( bool use )
+{
+	if( use ) {
+		impl_->book_.open( conf.book_dir );
+	}
+	else {
+		impl_->book_.close();
+	}
+}
+
+
 }
 }
 
