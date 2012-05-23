@@ -783,7 +783,6 @@ calc_result calc_manager::calc( position& p, color::type c, duration const& move
 		ponder = true;
 	}
 
-	do_abort = false;
 	check_map check( p, c );
 
 	move_info moves[200];

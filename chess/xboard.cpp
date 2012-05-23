@@ -297,6 +297,7 @@ void xboard_thread::onRun()
 		if( abort ) {
 			return;
 		}
+		do_abort = false;
 
 		if( !result.best_move.empty() ) {
 

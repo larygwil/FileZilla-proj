@@ -28,6 +28,8 @@
 
 int const THRESHOLD = 300;
 
+extern volatile bool do_abort;
+
 namespace {
 
 static calc_result tweak_calc( position& p, color::type c, duration const& move_time_limit, int clock, seen_positions& seen
@@ -36,6 +38,7 @@ static calc_result tweak_calc( position& p, color::type c, duration const& move_
 {
 	if( clock > 10 ) {
 		calc_manager cmgr;
+		do_abort = false;
 		return cmgr.calc( p, c, move_time_limit, move_time_limit, clock, seen, last_mate, new_best_cb );
 	}
 

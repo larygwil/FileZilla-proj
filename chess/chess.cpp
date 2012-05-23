@@ -45,6 +45,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include <stdlib.h>
 #include <sstream>
 
+extern volatile bool do_abort;
 
 duration const TIME_LIMIT = duration::seconds(90);
 
@@ -69,6 +70,7 @@ void auto_play()
 
 	calc_manager cmgr;
 	calc_result result;
+	do_abort = false;
 	while( !(result = cmgr.calc( p, c, TIME_LIMIT, TIME_LIMIT, i, seen, last_mate ) ).best_move.empty() ) {
 		if( c == color::white ) {
 			std::cout << std::setw(3) << i << ".";
@@ -123,6 +125,8 @@ void auto_play()
 #ifdef USE_STATISTICS
 	stats.print_total();
 #endif
+
+	do_abort = false;
 }
 
 int main( int argc, char const* argv[] )
