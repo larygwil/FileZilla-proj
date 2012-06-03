@@ -293,7 +293,7 @@ template<bool detail>
 inline static void evaluate_trapped_bishop( position const& p, color::type c, uint64_t bishop, eval_results& results )
 {
 	uint64_t mask = trapped_bishop[c][bishop];
-	if( (mask & p.bitboards[1-c].b[bb_type::pawns]) == mask ) {
+	if( mask && (mask & p.bitboards[1-c].b[bb_type::pawns]) == mask ) {
 		add_score<detail, eval_detail::trapped_bishop>( results, c, eval_values::trapped_bishop );
 	}
 }
