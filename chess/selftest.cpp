@@ -6,6 +6,7 @@
 #include "fen.hpp"
 #include "moves.hpp"
 #include "pawn_structure_hash_table.hpp"
+#include "see.hpp"
 #include "selftest.hpp"
 #include "string.hpp"
 #include "util.hpp"
@@ -552,12 +553,39 @@ static void check_bitscan()
 {
 	check_bitscan( 0x5555555555555555ull, 32, 992 );
 }
+
+static void check_see()
+{
+	std::string const fen = "r3r3/p4ppp/4k3/R3n3/1N1KP3/8/6BP/8 w - -";
+	std::string const ms = "Rxe5";
+
+	position p;
+	color::type c;
+	std::string error;
+	if( !parse_fen_noclock( fen, p, c, &error ) ) {
+		std::cerr << "Could not parse fen: " << error << std::endl;
+		std::cerr << "Fen: " << fen << std::endl;
+		abort();
+	}
+
+	move m;
+	if( !parse_move( p, c, ms, m ) ) {
+		abort();
+	}
+
+	short v = see( p, c, m );
+	if( v <= 0 ) {
+		std::cerr << "See of " << fen << " " << ms << " needs to be bigger than 0, but is " << v << std::endl;
+		abort();
+	}	
+}
 }
 
 bool selftest()
 {
 	check_popcount();
 	check_bitscan();
+	check_see();
 
 	pawn_hash_table.init( conf.pawn_hash_table_size );
 

@@ -81,6 +81,14 @@ int see( position const& p, color::type c, move const& m )
 		if( !(attackers & p.bitboards[c ^ (depth & 1)].b[bb_type::all_pieces]) ) {
 			break;
 		}
+
+		if( attacker_piece == pieces::king ) {
+			// This is needed in case both kings can attack the target square.
+			// If only one piece can attack the target square, see() still returns correct
+			// result even without this condition.
+			score[depth++] = eval_values::material_values[pieces::king].mg();
+			break;
+		}
 	} while( true );
 
 	// Propagate scores back
