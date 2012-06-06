@@ -192,6 +192,9 @@ int main( int argc, char const* argv[] )
 		else if( line == "uci" ) {
 			run_uci( true );
 		}
+		else if( line == "test" ) {
+			selftest();
+		}
 		else {
 			xboard( line );
 		}
