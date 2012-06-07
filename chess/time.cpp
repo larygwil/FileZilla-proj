@@ -273,6 +273,12 @@ bool duration::empty() const
 }
 
 
+void duration::clear()
+{
+	d_ = 0;
+}
+
+
 duration duration::absolute() const {
 	if( negative() ) {
 		return -*this;

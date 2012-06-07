@@ -45,6 +45,8 @@ public:
 
 	bool empty() const;
 
+	void clear();
+
 	duration absolute() const;
 
 	duration operator-() const;
