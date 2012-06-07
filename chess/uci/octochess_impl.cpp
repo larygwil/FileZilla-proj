@@ -149,7 +149,7 @@ void octochess_uci::calculate( calculate_mode_type mode, position_time const& t 
 	transposition_table.init_if_needed( conf.memory );
 
 	scoped_lock lock(impl_->mutex_);
-
+	do_abort = false;
 	if( mode == calculate_mode::infinite ) {
 		impl_->times_.set_infinite_time();
 		impl_->calc_cond_.signal(lock);
