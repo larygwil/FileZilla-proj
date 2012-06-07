@@ -192,6 +192,8 @@ void minimalistic_uci_protocol::handle_go( std::string const& params ) {
 			t.set_black_increment( duration::milliseconds(extract<uint>(in)) );
 		} else if( cmd == "movetime" ) {
 			t.set_movetime( duration::milliseconds(extract<uint>(in)) );
+		} else if( cmd == "movestogo" ) {
+			t.set_moves_to_go( extract<uint>(in) );
 		}
 	}
 
