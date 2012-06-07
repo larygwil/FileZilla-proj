@@ -49,7 +49,7 @@ volatile bool do_abort = false;
 short const ASPIRATION = 40;
 
 def_new_best_move_callback default_new_best_move_callback;
-
+null_new_best_move_callback null_new_best_move_cb;
 
 void sort_moves( move_info* begin, move_info* end, position const& p, color::type c )
 {
