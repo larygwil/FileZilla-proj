@@ -4,11 +4,13 @@
 #include "../chess.hpp"
 
 #include <algorithm>
+#include <iostream>
 
 namespace octochess {
 namespace uci {
 
 time_calculation::time_calculation() 
+: internal_overhead_( duration::milliseconds(50) )
 {
 }
 
@@ -49,18 +51,35 @@ void time_calculation::update(position_time const& t, bool is_white, int half_mo
 		time_limit_ = t.movetime();
 	}
 
+	duration overhead = internal_overhead_;
+	if( time_limit_ > overhead ) {
+		time_limit_ -= overhead;
+	}
+	else {
+		time_limit_ = duration();
+	}
+
 	// Any less time makes no sense.
 	if( time_limit_ < duration::milliseconds(10) ) {
 		time_limit_ = duration::milliseconds(10);
 	}
 }
 
-void time_calculation::after_move_update( duration const& elapsed ) {
+void time_calculation::after_move_update( duration const& elapsed, duration const& used_extra_time )
+{
 	if( time_limit_ > elapsed ) {
 		bonus_time_ = (time_limit_ - elapsed) / 2;
 	}
 	else {
 		bonus_time_ = duration();
+
+		if( time_limit_ + used_extra_time > elapsed ) {
+			duration actual_overhead = elapsed - time_limit_ - used_extra_time;
+			if( actual_overhead > internal_overhead_ ) {
+				std::cerr << "Updating internal overhead from " << internal_overhead_.milliseconds() << " ms to " << actual_overhead.milliseconds() << " ms " << std::endl;
+				internal_overhead_ = actual_overhead;
+			}
+		}
 	}
 	time_remaining_ -= elapsed;
 }

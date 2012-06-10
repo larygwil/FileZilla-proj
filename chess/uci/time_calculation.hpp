@@ -42,7 +42,7 @@ public:
 
 	void set_infinite_time();
 	void update(position_time const&, bool is_white, int half_moves);
-	void after_move_update( duration const& elapsed_time );
+	void after_move_update( duration const& elapsed_time, duration const& used_extra_time );
 
 	duration time_for_this_move() const { return time_limit_; }
 	duration total_remaining() const { return time_remaining_; }
@@ -50,6 +50,7 @@ private:
 	duration time_limit_;
 	duration time_remaining_;
 	duration bonus_time_;
+	duration internal_overhead_;
 };
 
 }

@@ -196,7 +196,7 @@ void octochess_uci::impl::onRun() {
 				duration elapsed = stop - start_time;
 
 				std::cerr << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
-				times_.after_move_update( elapsed );
+				times_.after_move_update( elapsed, result.used_extra_time );
 			}
 		}
 	}
