@@ -22,7 +22,7 @@ struct def_new_best_move_callback : public new_best_move_callback_base
 
 struct null_new_best_move_callback : public new_best_move_callback_base
 {
-	virtual void on_new_best_move( position const& p, color::type c, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv ) {}
+	virtual void on_new_best_move( position const&, color::type, int, int, int, uint64_t, duration const&, pv_entry const* ) {}
 };
 
 extern def_new_best_move_callback default_new_best_move_callback;
