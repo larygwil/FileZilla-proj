@@ -149,9 +149,9 @@ bool evaluate_endgame( position const& p, short& result )
 			uint64_t enemy_king_mask = (pawn % 8) ? 0xc0c0000000000000ull : 0x0303000000000000ull;
 			if( enemy_king_mask & p.bitboards[color::black].b[bb_type::king] ) {
 				bool promotion_square_is_light = (pawn % 8) == 0;
-				bool is_light_squared_bishop = p.bitboards[color::white].b[bb_type::bishops] & light_squared_bishop_mask;
+				bool is_light_squared_bishop = (p.bitboards[color::white].b[bb_type::bishops] & light_squared_bishop_mask) != 0;
 				if( promotion_square_is_light != is_light_squared_bishop ) {
-					result = result::draw;
+					result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
 					return true;
 				}
 			}
@@ -163,7 +163,7 @@ bool evaluate_endgame( position const& p, short& result )
 			uint64_t enemy_king_mask = (pawn % 8) ? 0xc0c0ull : 0x0303ull;
 			if( enemy_king_mask & p.bitboards[color::white].b[bb_type::king] ) {
 				bool promotion_square_is_light = (pawn % 8) == 7;
-				bool is_light_squared_bishop = p.bitboards[color::black].b[bb_type::bishops] & light_squared_bishop_mask;
+				bool is_light_squared_bishop = (p.bitboards[color::black].b[bb_type::bishops] & light_squared_bishop_mask) != 0;
 				if( promotion_square_is_light != is_light_squared_bishop ) {
 					result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
 					return true;
@@ -171,6 +171,18 @@ bool evaluate_endgame( position const& p, short& result )
 			}
 		}
 		break;
+
+	// Easily drawn if opposite colored bishops
+	case white_bishop + black_bishop + white_pawn:
+	case white_bishop + black_bishop + black_pawn:
+		{
+			bool is_light_squared_white_bishop = ((p.bitboards[color::white].b[bb_type::bishops] & light_squared_bishop_mask) != 0);
+			bool is_light_squared_black_bishop = ((p.bitboards[color::black].b[bb_type::bishops] & light_squared_bishop_mask) != 0);
+			if( is_light_squared_white_bishop != is_light_squared_black_bishop ) {
+				result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
+				return true;
+			}
+		}
 
 	case white_bishop + white_knight:
 		result = evaluate_KNBvK( p, color::white );
