@@ -22,6 +22,7 @@ OBJECT_FILES = \
 	eval_values.o \
 	fen.o \
 	hash.o \
+	history.o \
 	logger.o \
 	magic.o \
 	moves.o \

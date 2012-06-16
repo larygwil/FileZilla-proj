@@ -4,6 +4,7 @@
 #include "config.hpp"
 #include "chess.hpp"
 #include "detect_check.hpp"
+#include "history.hpp"
 #include "pvlist.hpp"
 #include "moves.hpp"
 #include "seen_positions.hpp"
@@ -100,6 +101,8 @@ public:
 	seen_positions seen;
 
 	killer_moves killers[2][MAX_DEPTH + 1];
+
+	history history_;
 };
 
 // Depth is number of plies to search multiplied by depth_factor

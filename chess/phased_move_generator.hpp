@@ -74,6 +74,7 @@ public:
 	// move_info's m, evaluation and pawns are filled out, sort is undefined.
 	virtual move_info const* next();
 
+	void update_history();
 private:
 	killer_moves const& killers_;
 };

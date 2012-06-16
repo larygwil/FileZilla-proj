@@ -30,8 +30,8 @@ int const recapture_extension = 6;
 int const cutoff = depth_factor + MAX_QDEPTH + 1;
 
 unsigned int const lmr_searched = 3;
-int const lmr_reduction = depth_factor * 3;
-int const lmr_min_depth = cutoff + depth_factor * 2;
+int const lmr_reduction = depth_factor;
+int const lmr_min_depth = cutoff + depth_factor;
 
 short const razor_pruning[] = { 220, 250, 290 };
 
@@ -286,7 +286,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 				// Helps against zugzwang and some other strange issues
 				short research_value = step( new_depth, ply, ctx, p, hash, c, check, alpha, beta, pv, true, full_eval, last_ply_was_capture );
 				if( research_value >= beta ) {
-					return research_value;;
+					return research_value;
 				}
 			}
 			else {
@@ -338,7 +338,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 
 			bool extended = false;
 
-			uint64_t new_depth = depth - depth_factor;
+			int new_depth = depth - depth_factor;
 
 			// Check extension
 			if( new_check.check ) {
@@ -438,6 +438,7 @@ short step( int depth, int ply, context& ctx, position const& p, uint64_t hash, 
 				best_move = it->m;
 				if( !it->m.captured_piece ) {
 					ctx.killers[c][ply].add_killer( it->m );
+					gen.update_history();
 				}
 				break;
 			}
@@ -561,6 +562,10 @@ public:
 	// Call locked and when finished
 	pv_entry* get_pv() const {
 		return pv_;
+	}
+
+	void reduce_history() {
+		ctx_.history_.reduce();
 	}
 
 	virtual void onRun();
@@ -745,6 +750,13 @@ public:
 		}
 	}
 
+	void reduce_histories()
+	{
+		for( std::vector<processing_thread*>::iterator it = threads_.begin(); it != threads_.end(); ++it ) {
+			(*it)->reduce_history();
+		}
+	}
+
 	mutex mtx_;
 	condition cond_;
 	std::vector<processing_thread*> threads_;
@@ -771,6 +783,7 @@ calc_result calc_manager::calc( position& p, color::type c, duration const& move
 		  , new_best_move_callback_base& new_best_cb )
 {
 	impl_->update_threads();
+	impl_->reduce_histories();
 
 	calc_result result;
 

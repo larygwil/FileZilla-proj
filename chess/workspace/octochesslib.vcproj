@@ -194,6 +194,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\history.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\logger.cpp"
 				>
 			</File>
@@ -341,6 +345,10 @@
 			</File>
 			<File
 				RelativePath="..\hash.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\history.hpp"
 				>
 			</File>
 			<File

@@ -6,12 +6,13 @@
 
 #include <algorithm>
 #include <iostream>
+#include "random.hpp"
 
 namespace {
-void evaluate_noncaptures( move_info* begin, move_info* end, position const& p, color::type c )
+void evaluate_noncaptures( context const& ctx, move_info* begin, move_info* end, position const& p, color::type c )
 {
 	for( move_info* it = begin; it != end; ++it ) {
-		it->sort = evaluate_move( p, c, it->m );
+		it->sort = ctx.history_.get_value( it->m, c );
 	}
 }
 }
@@ -128,7 +129,7 @@ move_info const* qsearch_move_generator::next()
 		else {
 			calculate_moves_noncaptures<true>( p_, c_, ctx.move_ptr, check_ );
 		}
-		evaluate_noncaptures( bad_captures_end_, ctx.move_ptr, p_, c_ );
+		evaluate_noncaptures( ctx, bad_captures_end_, ctx.move_ptr, p_, c_ );
 		phase = phases::noncapture;
 	case phases::noncapture:
 		while( it != ctx.move_ptr ) {
@@ -241,7 +242,7 @@ move_info const* move_generator::next() {
 		ctx.move_ptr = bad_captures_end_;
 		it = bad_captures_end_;
 		calculate_moves_noncaptures<false>( p_, c_, ctx.move_ptr, check_ );
-		evaluate_noncaptures( bad_captures_end_, ctx.move_ptr, p_, c_ );
+		evaluate_noncaptures( ctx, bad_captures_end_, ctx.move_ptr, p_, c_ );
 		phase = phases::noncapture;
 	case phases::noncapture:
 		while( it != ctx.move_ptr ) {
@@ -257,7 +258,6 @@ move_info const* move_generator::next() {
 		phase = phases::bad_captures;
 		it = moves;
 		ctx.move_ptr = bad_captures_end_;
-		//std::sort( moves, ctx.move_ptr, moveSort );
 	case phases::bad_captures:
 		while( it != bad_captures_end_ ) {
 			get_best( it, bad_captures_end_ );
@@ -270,4 +270,11 @@ move_info const* move_generator::next() {
 	}
 
 	return 0;
+}
+
+void move_generator::update_history()
+{
+	if( phase == phases::noncapture ) {
+		ctx.history_.record_cut( bad_captures_end_, it, c_ );
+	}
 }

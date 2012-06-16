@@ -27,6 +27,7 @@ GENERIC_SOURCE_FILES = \
 	eval_values.cpp \
 	fen.cpp \
 	hash.cpp \
+	history.cpp \
 	logger.cpp \
 	magic.cpp \
 	moves.cpp \
