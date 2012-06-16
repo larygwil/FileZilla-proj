@@ -23,7 +23,7 @@ void time_calculation::update(position_time const& t, bool is_white, int half_mo
 
 	if( t.movetime().empty() ) {
 		uint64_t remaining_moves = t.moves_to_go();
-		if( !remaining_moves || !is_white ) {
+		if( !remaining_moves ) {
 			remaining_moves = std::max( 20, (80 - half_moves) / 2 );
 		}
 
