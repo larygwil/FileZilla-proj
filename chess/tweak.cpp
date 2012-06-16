@@ -181,6 +181,7 @@ struct reference_data {
 	short min_eval;
 	short max_eval;
 	double avg_eval;
+	short forecast;
 	std::string fen;
 };
 
@@ -458,6 +459,18 @@ struct individual
 					difference = int(score) - ref.max_eval;
 				}
 			}
+			if( ref.forecast > ref.max_eval && score < ref.min_eval ) {
+				difference *= 2;
+			}
+			else if( ref.forecast < ref.min_eval && score > ref.max_eval ) {
+				difference *= 2;
+			}
+			if( ref.forecast > ref.max_eval && score > ref.max_eval ) {
+				difference /= 2;
+			}
+			else if( ref.forecast < ref.min_eval && score < ref.min_eval ) {
+				difference /= 2;
+			}
 #endif
 
 			if( score < 0 && ref.min_eval > 0 ) {
@@ -678,6 +691,7 @@ std::vector<reference_data> load_data()
 
 	std::ifstream in_fen("test/testpositions.txt");
 	std::ifstream in_scores("test/data.txt");
+	std::ifstream forecasts("test/forecast.txt");
 
 	int endgames = 0;
 	int unknown_endgames = 0;
@@ -687,6 +701,8 @@ std::vector<reference_data> load_data()
 	while( std::getline( in_fen, fen ) ) {
 		std::string score_line;
 		std::getline( in_scores, score_line );
+		std::string forecast_line;
+		std::getline( forecasts, forecast_line );
 
 		short score = 0;
 		int count = 0;
@@ -694,6 +710,7 @@ std::vector<reference_data> load_data()
 		reference_data entry;
 		entry.min_eval = result::win;
 		entry.max_eval = result::loss;
+		to_int<short>( forecast_line, entry.forecast );
 
 		std::istringstream ss(score_line);
 		double tmp;
@@ -767,7 +784,7 @@ void tweak_evaluation()
 	population pop;
 	std::set<individual> seen;
 
-#if 1
+#if 0
 	pop.push_back( new individual() );
 	pop[0]->calc_fitness( data );
 	seen.insert( *pop[0] );
