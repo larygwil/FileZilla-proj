@@ -1,4 +1,4 @@
-CFLAGS = -O3 -g -pipe -march=corei7 -Wall -Wextra -flto -static
+CFLAGS = -O3 -g -pipe -march=corei7 -Wall -Wextra -flto -static -m64
 #CFLAGS = -O0 -g -pipe -Wall -static
 CXXFLAGS = $(CFLAGS) -std=gnu++0x
 
@@ -8,7 +8,7 @@ CXX = g++
 all: octochess bookgen
 
 tables.cpp: tables_gen.cpp
-	$(CXX) -static tables_gen.cpp -o tables_gen
+	$(CXX) -m64 -static tables_gen.cpp -o tables_gen
 	./tables_gen > tables.cpp
 	rm tables_gen
 

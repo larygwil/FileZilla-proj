@@ -1,6 +1,6 @@
 ARCH="corei7"
 REVISION=
-CXXFLAGS = -O3 -g -pipe -march="$(ARCH)" -std=gnu++0x -Wall -flto -fwhole-program -pthread -static $(REVISION)
+CXXFLAGS = -O3 -g -pipe -march="$(ARCH)" -std=gnu++0x -Wall -flto -fwhole-program -pthread -static $(REVISION) -m64
 CFLAGS = -O3 -g -pipe -march="$(ARCH)" -Wall -flto -fwhole-program -pthread -static
 #CXXFLAGS = -O0 -g -pipe -std=gnu++0x
 
@@ -13,7 +13,7 @@ sqlite/sqlite3.o: sqlite/sqlite3.c
 	$(CC) $(CFLAGS) -DSQLITE_OMIT_LOAD_EXTENSION -pthread -static -c -o $@ $<
 
 tables.cpp: tables_gen.cpp
-	$(CXX) tables_gen.cpp -o tables_gen
+	$(CXX) -m64 tables_gen.cpp -o tables_gen
 	./tables_gen > tables.cpp
 	rm tables_gen
 
