@@ -115,7 +115,7 @@ namespace eval_values {
 	void update_derived();
 	bool sane();
 	bool normalize();
-};
+}
 
 extern score pst[2][7][64];
 void init_pst();
