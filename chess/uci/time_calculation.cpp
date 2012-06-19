@@ -22,9 +22,9 @@ void time_calculation::set_infinite_time() {
 void time_calculation::update(position_time const& t, bool is_white, int half_moves) {
 
 	if( t.movetime().empty() ) {
-		uint64_t remaining_moves = t.moves_to_go();
-		if( !remaining_moves ) {
-			remaining_moves = std::max( 20, (80 - half_moves) / 2 );
+		uint64_t remaining_moves = std::max( 20, (80 - half_moves) / 2 );
+		if( t.moves_to_go() && t.moves_to_go() < remaining_moves ) {
+			remaining_moves = t.moves_to_go();
 		}
 
 		duration inc;
