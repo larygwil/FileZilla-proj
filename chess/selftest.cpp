@@ -577,7 +577,45 @@ static void check_see()
 	if( v <= 0 ) {
 		std::cerr << "See of " << fen << " " << ms << " needs to be bigger than 0, but is " << v << std::endl;
 		abort();
-	}	
+	}
+}
+
+
+void do_check_disambiguation( std::string const& fen, std::string const& ms, std::string const& ref )
+{
+	position p;
+	color::type c;
+	std::string error;
+	if( !parse_fen_noclock( fen, p, c, &error ) ) {
+		std::cerr << "Could not parse fen: " << error << std::endl;
+		std::cerr << "Fen: " << fen << std::endl;
+		abort();
+	}
+
+	move m;
+	if( !parse_move( p, c, ms, m ) ) {
+		abort();
+	}
+
+	std::string const san = move_to_san( p, m );
+	if( san != ref ) {
+		std::cerr << "Could not obtain SAN of move." << std::endl;
+		std::cerr << "Actual: " << san << std::endl;
+		std::cerr << "Expected: " << ref << std::endl;
+		std::cerr << "Fen: " << fen << std::endl;
+		abort();
+	}
+}
+
+
+void check_disambiguation()
+{
+	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k3N1 w - - 0 1", "Ngf3", "Ngf3" );
+	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k3N1 w - - 0 1", "N1f3", "Ngf3" );
+	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N3 w - - 0 1", "Ne1f3", "N1f3" );
+	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N3 w - - 0 1", "N1f3", "N1f3" );
+	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne1f3", "Ne1f3" );
+	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne5f3", "N5f3" );
 }
 }
 
@@ -588,6 +626,8 @@ bool selftest()
 	check_see();
 
 	pawn_hash_table.init( conf.pawn_hash_table_size );
+
+	check_disambiguation();
 
 	if( do_selftest() ) {
 		std::cerr << "Self test passed" << std::endl;

@@ -428,10 +428,17 @@ std::string move_to_string( move const& m, bool padding )
 namespace {
 void add_disambiguation( position const& p, color::type c, move const& m, uint64_t possible_moves, std::string& ret ) {
 	uint64_t source_file = 0x0101010101010101ull << (m.source % 8);
+	uint64_t source_rank = 0x00000000000000ffull << (m.source & 0x38);
 	if( popcount( possible_moves & p.bitboards[c].b[m.piece] ) > 1 ) {
-		ret += 'a' + m.source % 8;
-		if( popcount(p.bitboards[c].b[m.piece] & source_file) > 1 ) {
-			ret += '1' + m.target / 8;
+		if( popcount(p.bitboards[c].b[m.piece] & source_file) == 1 ) {
+			ret += 'a' + m.source % 8;
+		}
+		else if( popcount(p.bitboards[c].b[m.piece] & source_rank) == 1 ) {
+			ret += '1' + m.source / 8;
+		}
+		else {
+			ret += 'a' + m.source % 8;
+			ret += '1' + m.source / 8;
 		}
 	}
 	if( m.captured_piece != pieces::none ) {
