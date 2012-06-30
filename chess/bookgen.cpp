@@ -622,7 +622,7 @@ void update( book& b, int entries_per_pos = 5 )
 			std::size_t num = 0;
 			for( std::size_t i = 0; i < entries.size(); ) {
 				++num;
-				if( entries[i].is_folded() || (entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH && entries[i].eval_version >= eval_version) || (entries_per_pos != -1 && num >= static_cast<std::size_t>(entries_per_pos)) ) {
+				if( entries[i].is_folded() || (entries[i].search_depth >= MAX_BOOKSEARCH_DEPTH && entries[i].eval_version >= eval_version) || (entries_per_pos != -1 && num > static_cast<std::size_t>(entries_per_pos)) ) {
 					entries.erase( entries.begin() + i );
 					++removed_moves;
 				}
