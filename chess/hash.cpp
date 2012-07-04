@@ -142,7 +142,7 @@ void hash::store( hash_key key, color::type c, unsigned short remaining_depth, u
 	entry* pos = 0;
 	for( unsigned int i = 0; i < bucket_entries; ++i ) {
 		unsigned char old_age = ((bucket + i)->v >> field_shifts::age) & field_masks::age;
-		unsigned char old_depth = ((bucket + i)->v >> field_shifts::depth) & field_masks::depth;
+		unsigned short old_depth = ((bucket + i)->v >> field_shifts::depth) & field_masks::depth;
 		if( old_age != clock && old_depth < lowest_depth ) {
 			lowest_depth = old_depth;
 			pos = bucket + i;
@@ -166,7 +166,7 @@ void hash::store( hash_key key, color::type c, unsigned short remaining_depth, u
 
 	lowest_depth = 511;
 	for( unsigned int i = 0; i < bucket_entries; ++i ) {
-		unsigned char old_depth = ((bucket + i)->v >> field_shifts::depth) & field_masks::depth;
+		unsigned short old_depth = ((bucket + i)->v >> field_shifts::depth) & field_masks::depth;
 		if( old_depth < lowest_depth ) {
 			lowest_depth = old_depth;
 			pos = bucket + i;
