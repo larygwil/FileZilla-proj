@@ -517,7 +517,7 @@ skip_getline:
 		else if( cmd == "." ) {
 			scoped_lock l( thread.mtx );
 			// TODO: Implement
-			std::cout << "Error (unknown command): .";
+			std::cout << "Error (unknown command): ." << std::endl;
 			continue;
 		}
 
