@@ -341,7 +341,7 @@ void update_derived()
 			if( i > king_attack_offset[c] ) {
 				double factor = i - king_attack_offset[c];
 				factor = std::pow( factor, double(king_attack_exponent[c]) / 100.0 );
-				uint64_t value = king_attack_min[c] + static_cast<uint64_t>(king_attack_rise[c]) * factor;
+				uint64_t value = static_cast<uint64_t>(king_attack_min[c] + static_cast<uint64_t>(king_attack_rise[c]) * factor);
 				v[c] = static_cast<short>(std::min(value, uint64_t(king_attack_min[c] + king_attack_max[c])));
 			}
 			else {
@@ -389,8 +389,8 @@ void update_derived()
 
 	for( int file = 0; file < 8; ++file ) {
 		for( int i = 0; i < 6; ++i ) {
-			advanced_passed_pawn[file][i].mg() = double(passed_pawn[file].mg()) * (1 + std::pow( double(i), double(passed_pawn_advance_power.mg()) / 100.0 ) );
-			advanced_passed_pawn[file][i].eg() = double(passed_pawn[file].eg()) * (1 + std::pow( double(i), double(passed_pawn_advance_power.eg()) / 100.0 ) );
+			advanced_passed_pawn[file][i].mg() = static_cast<short>(double(passed_pawn[file].mg()) * (1 + std::pow( double(i), double(passed_pawn_advance_power.mg()) / 100.0 ) ));
+			advanced_passed_pawn[file][i].eg() = static_cast<short>(double(passed_pawn[file].eg()) * (1 + std::pow( double(i), double(passed_pawn_advance_power.eg()) / 100.0 ) ));
 		}
 	}
 }
