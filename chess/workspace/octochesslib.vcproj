@@ -230,6 +230,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\position.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\pv_move_picker.cpp"
 				>
 			</File>
@@ -282,10 +286,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\tweak.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\util.cpp"
 				>
 			</File>
@@ -321,6 +321,10 @@
 			</File>
 			<File
 				RelativePath="..\config.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\definitions.hpp"
 				>
 			</File>
 			<File
@@ -380,6 +384,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\position.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\pv_move_picker.hpp"
 				>
 			</File>
@@ -429,10 +437,6 @@
 			</File>
 			<File
 				RelativePath="..\time.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\tweak.hpp"
 				>
 			</File>
 			<File
