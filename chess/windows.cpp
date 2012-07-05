@@ -180,23 +180,25 @@ unsigned int get_cpu_count()
 		buffer = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION>(malloc( len ));
 	}
 
-	int count = 0;
+	int count = 1;
 
-	DWORD offset = 0;
-	PSYSTEM_LOGICAL_PROCESSOR_INFORMATION ptr = buffer;
-	while( offset < len ) {
-		switch (ptr->Relationship) {
-			case RelationProcessorCore:
-				count += static_cast<int>(popcount( ptr->ProcessorMask ));
-				break;
-			default:
-				break;
+	if( buffer != 0 ) {
+		DWORD offset = 0;
+		PSYSTEM_LOGICAL_PROCESSOR_INFORMATION ptr = buffer;
+		while( offset < len ) {
+			switch (ptr->Relationship) {
+				case RelationProcessorCore:
+					count += static_cast<int>(popcount( ptr->ProcessorMask ));
+					break;
+				default:
+					break;
+			}
+			offset += sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+			++ptr;
 		}
-		offset += sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
-		++ptr;
-	}
 
-	free( buffer );
+		free( buffer );
+	}
 
 	return count;
 }
