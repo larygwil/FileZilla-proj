@@ -96,7 +96,7 @@ bool perft( std::size_t max_depth )
 		std::cerr << "Calculating number of possible moves in " << (i + 1) << " plies:" << std::endl;
 
 		position p;
-		init_board( p );
+
 		color::type c = color::white;
 
 		uint64_t ret = 0;

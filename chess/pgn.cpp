@@ -46,7 +46,6 @@ bool pgn_reader::next( game& g )
 
 	color::type c = color::white;
 	position p;
-	init_board( p );
 	g.p_ = p;
 	g.c_ = c;
 	g.moves_.clear();

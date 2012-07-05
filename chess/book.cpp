@@ -484,7 +484,7 @@ bool get_position( std::string history, position& p, color::type& c )
 		return false;
 	}
 
-	init_board( p );
+	p.reset();
 	c = color::white;
 
 	while( !history.empty() ) {
@@ -646,7 +646,6 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 	std::string hs = history_to_string( history );
 
 	position p;
-	init_board( p );
 	color::type c = color::white;
 
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
@@ -735,7 +734,6 @@ void book::mark_for_processing( std::vector<move> const& history )
 	ss << "BEGIN TRANSACTION;";
 
 	position p;
-	init_board( p );
 	color::type c = color::white;
 
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
@@ -767,7 +765,6 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 	}
 
 	work w;
-	init_board( w.p );
 	w.c = color::white;
 	w.seen.reset_root( get_zobrist_hash(w.p) );
 

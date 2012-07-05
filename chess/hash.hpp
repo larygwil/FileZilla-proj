@@ -95,7 +95,7 @@
 
 typedef uint64_t hash_key;
 
-struct move;
+class move;
 struct entry;
 
 namespace score_type {

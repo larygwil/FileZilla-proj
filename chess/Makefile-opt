@@ -37,6 +37,7 @@ GENERIC_SOURCE_FILES = \
 	pgn.cpp \
 	platform.cpp \
 	phased_move_generator.cpp \
+	position.cpp \
 	pvlist.cpp \
 	pv_move_picker.cpp \
 	random.cpp \

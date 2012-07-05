@@ -243,7 +243,6 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 void init_book( book& b )
 {
 	position p;
-	init_board(p);
 
 	seen_positions seen( get_zobrist_hash( p ) );
 
@@ -885,7 +884,6 @@ void print_stats( book& b )
 void run( book& b )
 {
 	position p;
-	init_board( p );
 
 	std::vector<move> move_history;
 	std::vector<history_entry> history;

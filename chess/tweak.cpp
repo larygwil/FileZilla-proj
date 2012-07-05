@@ -14,7 +14,6 @@
 #include "zobrist.hpp"
 
 #include <algorithm>
-#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -83,8 +82,6 @@ static void generate_test_positions_impl()
 	transposition_table.clear_data();
 	pawn_hash_table.init( conf.pawn_hash_table_size );
 	position p;
-
-	init_board(p);
 
 	unsigned int i = 1;
 	color::type c = color::white;

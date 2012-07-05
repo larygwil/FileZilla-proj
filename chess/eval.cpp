@@ -9,7 +9,6 @@
 #include "tables.hpp"
 #include "zobrist.hpp"
 
-#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <sstream>

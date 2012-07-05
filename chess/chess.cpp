@@ -59,8 +59,6 @@ void auto_play()
 	timestamp start;
 	position p;
 
-	init_board(p);
-
 	unsigned int i = 1;
 	color::type c = color::white;
 

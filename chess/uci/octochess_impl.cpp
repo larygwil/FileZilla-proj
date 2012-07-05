@@ -95,7 +95,7 @@ octochess_uci::octochess_uci( gui_interface_ptr const& p )
 
 void octochess_uci::new_game() {
 	impl_->color_to_play_ = color::white;
-	init_board(impl_->pos_);
+	impl_->pos_.reset();
 	impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) ); impl_->times_ = time_calculation();
 	impl_->half_moves_played_ = 0;
 	impl_->started_from_root_ = true;
@@ -103,7 +103,7 @@ void octochess_uci::new_game() {
 }
 
 void octochess_uci::set_position( std::string const& fen ) {
-	init_board(impl_->pos_);
+	impl_->pos_.reset();
 	bool success = false;
 	if( fen.empty() ) {
 		impl_->color_to_play_ = color::white;
