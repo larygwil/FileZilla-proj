@@ -59,7 +59,7 @@ void perft( perft_ctx& ctx, int depth, position const& p, color::type c, uint64_
 
 	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
 		position new_pos = p;
-		apply_move( new_pos, it->m, c );
+		apply_move( new_pos, it->m );
 		perft<split_movegen>( ctx, depth, new_pos, static_cast<color::type>(1-c), n );
 	}
 	ctx.move_ptr = moves;
@@ -142,9 +142,8 @@ namespace {
 static bool test_move_generation( std::string const& fen, std::string const& ref_moves )
 {
 	position p;
-	color::type c;
 	std::string error;
-	if( !parse_fen_noclock( fen, p, c, &error ) ) {
+	if( !parse_fen_noclock( fen, p, &error ) ) {
 		std::cerr << "Could not parse fen: " << error << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
 		return false;
@@ -152,8 +151,8 @@ static bool test_move_generation( std::string const& fen, std::string const& ref
 
 	move_info moves[200];
 	move_info* pm = moves;
-	check_map check( p, c );
-	calculate_moves( p, c, pm, check );
+	check_map check( p, p.self() );
+	calculate_moves( p, p.self(), pm, check );
 
 	std::vector<std::string> ms;
 	for( move_info* it = moves; it != pm; ++it ) {
@@ -213,21 +212,20 @@ static bool test_move_generation()
 static bool test_zobrist()
 {
 	position p;
-	color::type c;
-	if( !parse_fen_noclock( "rnbqk2r/1p3pp1/3bpn2/p2pN2p/P1Pp4/4P3/1P1BBPPP/RN1Q1RK1 b kq c3", p, c ) ) {
+	if( !parse_fen_noclock( "rnbqk2r/1p3pp1/3bpn2/p2pN2p/P1Pp4/4P3/1P1BBPPP/RN1Q1RK1 b kq c3", p ) ) {
 		return false;
 	}
 
 	uint64_t old_hash = get_zobrist_hash( p );
 
 	move m;
-	if( !parse_move( p, c, "dxc3", m ) ) {
+	if( !parse_move( p, p.self(), "dxc3", m ) ) {
 		return false;
 	}
 
-	uint64_t new_hash_move = update_zobrist_hash( p, c, old_hash, m );
+	uint64_t new_hash_move = update_zobrist_hash( p, p.self(), old_hash, m );
 
-	apply_move( p, m, c );
+	apply_move( p, m );
 
 	uint64_t new_hash_full = get_zobrist_hash( p );
 
@@ -243,17 +241,16 @@ static bool test_zobrist()
 static bool test_lazy_eval( std::string const& fen, short& max_difference )
 {
 	position p;
-	color::type c;
 	std::string error;
-	if( !parse_fen_noclock( fen, p, c, &error ) ) {
+	if( !parse_fen_noclock( fen, p, &error ) ) {
 		std::cerr << "Could not parse fen: " << error << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
 		return false;
 	}
 
-	score currents = c ? -p.base_eval : p.base_eval;
+	score currents = p.white() ? p.base_eval : -p.base_eval;
 	short current = currents.scale( p.material[0].mg() + p.material[1].mg() );
-	short full = evaluate_full( p, c );
+	short full = evaluate_full( p, p.self() );
 
 	short diff = std::abs( full - current );
 
@@ -311,7 +308,7 @@ static bool test_pst() {
 }
 
 
-static bool test_evaluation( std::string const& fen, position const& p, color::type c )
+static bool test_evaluation( std::string const& fen, position const& p )
 {
 	std::string flipped;
 
@@ -386,9 +383,8 @@ static bool test_evaluation( std::string const& fen, position const& p, color::t
 	}
 
 	position p2;
-	color::type c2;
 	std::string error;
-	if( !parse_fen_noclock( flipped, p2, c2, &error ) ) {
+	if( !parse_fen_noclock( flipped, p2, &error ) ) {
 		std::cerr << "Could not parse fen: " << error << std::endl;
 		std::cerr << "Fen: " << flipped << std::endl;
 		return false;
@@ -410,14 +406,14 @@ static bool test_evaluation( std::string const& fen, position const& p, color::t
 		return false;
 	}
 
-	short eval_full = evaluate_full( p, c );
-	short flipped_eval_full = evaluate_full( p2, c2 );
+	short eval_full = evaluate_full( p, p.self() );
+	short flipped_eval_full = evaluate_full( p2, p2.self() );
 	if( eval_full != flipped_eval_full ) {
 		std::cerr << "Evaluation not symmetric: " << eval_full << " " << flipped_eval_full << " " << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
-		std::cerr << explain_eval( p, c ) << std::endl;
+		std::cerr << explain_eval( p, p.self() ) << std::endl;
 		std::cerr << "Flipped: " << flipped << std::endl;
-		std::cerr << explain_eval( p2, c2 ) << std::endl;
+		std::cerr << explain_eval( p2, p2.self() ) << std::endl;
 		return false;
 	}
 
@@ -443,7 +439,7 @@ static void test_moves_noncaptures( std::string const& fen, position const& p, c
 
 	for( move_info* it = moves_full; it != move_ptr_full; ++it ) {
 		position p2 = p;
-		apply_move( p2, it->m, c );
+		apply_move( p2, it->m );
 		check_map new_check( p2, static_cast<color::type>(1-c) );
 		if( new_check.check ) {
 			move_info* it2;
@@ -470,19 +466,18 @@ static void process_test_positions()
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {
 		position p;
-		color::type c;
 		std::string error;
-		if( !parse_fen_noclock( fen, p, c, &error ) ) {
+		if( !parse_fen_noclock( fen, p, &error ) ) {
 			std::cerr << "Could not parse fen: " << error << std::endl;
 			std::cerr << "Fen: " << fen << std::endl;
 			abort();
 		}
 
-		if( !test_evaluation( fen, p, c ) ) {
+		if( !test_evaluation( fen, p ) ) {
 			abort();
 		}
 
-		test_moves_noncaptures( fen, p, c );
+		test_moves_noncaptures( fen, p, p.self() );
 	}
 }
 
@@ -560,20 +555,19 @@ static void check_see()
 	std::string const ms = "Rxe5";
 
 	position p;
-	color::type c;
 	std::string error;
-	if( !parse_fen_noclock( fen, p, c, &error ) ) {
+	if( !parse_fen_noclock( fen, p, &error ) ) {
 		std::cerr << "Could not parse fen: " << error << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
 		abort();
 	}
 
 	move m;
-	if( !parse_move( p, c, ms, m ) ) {
+	if( !parse_move( p, p.self(), ms, m ) ) {
 		abort();
 	}
 
-	short v = see( p, c, m );
+	short v = see( p, p.self(), m );
 	if( v <= 0 ) {
 		std::cerr << "See of " << fen << " " << ms << " needs to be bigger than 0, but is " << v << std::endl;
 		abort();
@@ -584,16 +578,15 @@ static void check_see()
 void do_check_disambiguation( std::string const& fen, std::string const& ms, std::string const& ref )
 {
 	position p;
-	color::type c;
 	std::string error;
-	if( !parse_fen_noclock( fen, p, c, &error ) ) {
+	if( !parse_fen_noclock( fen, p, &error ) ) {
 		std::cerr << "Could not parse fen: " << error << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
 		abort();
 	}
 
 	move m;
-	if( !parse_move( p, c, ms, m ) ) {
+	if( !parse_move( p, p.self(), ms, m ) ) {
 		abort();
 	}
 

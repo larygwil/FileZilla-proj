@@ -8,8 +8,6 @@
 /*
  * Class to represent a complete chess position, sans repetition history.
  *
- * Default constructor leaves board uninitialized. Call init() to reset board to start position.
- *
  * For performance reasons, position contains some redundancies. Call update_derive to synchronize all derived values
  * from the bitboards.
  */
@@ -38,6 +36,10 @@ public:
 
 	score material[2];
 
+	inline color::type self() const { return c; }
+	inline color::type other() const { return static_cast<color::type>(1-c); }
+	inline bool white() const { return c == color::white; }
+
 	// Material and pst, nothing else.
 	score base_eval;
 
@@ -48,10 +50,14 @@ public:
 	bool is_occupied_square( uint64_t square ) const;
 	uint64_t get_occupancy( uint64_t mask ) const;
 
+	color::type c;
+
 	// Resets position to initial starting position
 	void reset();
 
 	bool verify() const;
+
+	void do_null_move();
 
 private:
 	void init_bitboards();

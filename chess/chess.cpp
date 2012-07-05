@@ -97,7 +97,7 @@ void auto_play()
 			reset_seen = true;
 		}
 
-		apply_move( p, result.best_move, c );
+		apply_move( p, result.best_move );
 		score base_eval = p.base_eval;
 		std::cerr << "Base evaluation (for white): " << base_eval << " centipawns" << std::endl;
 

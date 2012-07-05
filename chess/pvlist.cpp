@@ -106,7 +106,7 @@ std::string pv_to_string( pv_entry const* pv, position p, color::type c, bool us
 				: move_to_string( pv->get_best_move() ) ) 
 		   << " ";
 
-		apply_move( p, pv->get_best_move(), c );
+		apply_move( p, pv->get_best_move() );
 
 		c = static_cast<color::type>(1-c);
 
@@ -125,7 +125,7 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 	while( pv && !pv->get_best_move().empty() ) {
 		ASSERT( is_valid_move( p, c, pv->get_best_move(), check_map(p, c) ) );
 		++depth;
-		apply_move( p, pv->get_best_move(), c );
+		apply_move( p, pv->get_best_move() );
 
 		c = static_cast<color::type>(1-c);
 
@@ -156,7 +156,7 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 			break;
 		}
 
-		apply_move( p, best, c );
+		apply_move( p, best );
 		c = static_cast<color::type>(1-c);
 
 		pv_entry_pool pool;

@@ -22,7 +22,7 @@ std::string move_to_san( position const& p, move const& m );
 // E.g. c4d6, e1g1, e7e8q
 std::string move_to_long_algebraic( move const& m );
 
-void apply_move( position& p, move const& m, color::type c );
+void apply_move( position& p, move const& m );
 
 // Checks if the given move is legal in the given position.
 // Precondition: There must be some position where the move is legal, else the result is undefined.

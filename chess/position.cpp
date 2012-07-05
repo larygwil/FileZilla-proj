@@ -12,11 +12,12 @@ position::position()
 
 void position::reset()
 {
-	for( unsigned int c = 0; c <= 1; ++c ) {
-		castle[c] = 0x3;
-	}
-
+	castle[color::white] = 0x3;
+	castle[color::black] = 0x3;
+	
 	can_en_passant = 0;
+
+	c = color::white;
 
 	init_bitboards();
 
@@ -50,12 +51,12 @@ void position::init_material()
 	material[0] = score();
 	material[1] = score();
 
-	for( int c = 0; c < 2; ++c ) {
+	for( int i = 0; i < 2; ++i ) {
 		for( unsigned int pi = 0; pi < 64; ++pi ) {
-			pieces::type b = get_piece_on_square( *this, static_cast<color::type>(c), pi );
+			pieces::type b = get_piece_on_square( *this, static_cast<color::type>(i), pi );
 
 			if( b != pieces::king ) {
-				material[c] += eval_values::material_values[b];
+				material[i] += eval_values::material_values[b];
 			}
 		}
 	}
@@ -66,15 +67,15 @@ void position::init_eval()
 {
 	base_eval = material[0] - material[1];
 
-	for( int c = 0; c < 2; ++c ) {
+	for( int i = 0; i < 2; ++i ) {
 		score side;
 		for( unsigned int sq = 0; sq < 64; ++sq ) {
-			pieces::type pi = get_piece_on_square( *this, static_cast<color::type>(c), sq );
+			pieces::type pi = get_piece_on_square( *this, static_cast<color::type>(i), sq );
 
-			side += pst[c][pi][sq];
+			side += pst[i][pi][sq];
 		}
 
-		if( c ) {
+		if( i ) {
 			base_eval -= side;
 		}
 		else {
@@ -107,4 +108,10 @@ void position::init_bitboards()
 	bitboards[color::black].b[bb_type::rooks]   = (1ull + (1ull << 7)) << (7*8);
 	bitboards[color::black].b[bb_type::queens]  = (1ull << 3) << (7*8);
 	bitboards[color::black].b[bb_type::king]    = (1ull << 4) << (7*8);
+}
+
+
+void position::do_null_move()
+{
+	c = static_cast<color::type>(1-c);
 }

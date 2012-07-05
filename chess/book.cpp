@@ -495,7 +495,7 @@ bool get_position( std::string history, position& p, color::type& c )
 		if( !conv_to_move_slow( p, c, m, ms.c_str(), true ) ) {
 			return false;
 		}
-		apply_move( p, m, c );
+		apply_move( p, m );
 		c = static_cast<color::type>(1-c);
 	}
 
@@ -649,7 +649,7 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 	color::type c = color::white;
 
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
-		apply_move( p, *it, c );
+		apply_move( p, *it );
 		c = static_cast<color::type>(1-c);
 	}
 	uint64_t hash = get_zobrist_hash( p );
@@ -737,7 +737,7 @@ void book::mark_for_processing( std::vector<move> const& history )
 	color::type c = color::white;
 
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
-		apply_move( p, *it, c );
+		apply_move( p, *it );
 		c = static_cast<color::type>(1-c);
 		uint64_t hash = get_zobrist_hash( p );
 		if( (it - history.begin()) % 2 ) {
@@ -777,7 +777,7 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 			return 1;
 		}
 
-		apply_move( w.p, m, w.c );
+		apply_move( w.p, m );
 		w.c = static_cast<color::type>(1-w.c);
 		w.move_history.push_back( m );
 		w.seen.push_root( get_zobrist_hash(w.p) );

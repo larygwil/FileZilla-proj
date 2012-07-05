@@ -53,7 +53,7 @@ bool deepen_move( book& b, position const& p, color::type c, seen_positions cons
 	ctx.seen = seen;
 
 	position new_pos = p;
-	apply_move( new_pos, m, c );
+	apply_move( new_pos, m );
 
 	uint64_t new_hash = get_zobrist_hash( new_pos );
 	short value;
@@ -67,7 +67,7 @@ bool deepen_move( book& b, position const& p, color::type c, seen_positions cons
 
 		check_map check( new_pos, static_cast<color::type>(1-c) );
 
-		value = -step( depth * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
+		value = -step( depth * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, pv, true );
 		ctx.pv_pool.release(pv);
 	}
 
@@ -101,7 +101,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 		ctx.seen = seen;
 
 		position new_pos = p;
-		apply_move( new_pos, it->m, c );
+		apply_move( new_pos, it->m );
 
 		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
 
@@ -116,7 +116,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 
 			check_map check( new_pos, static_cast<color::type>(1-c) );
 
-			value = -step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
+			value = -step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, pv, true );
 			ctx.pv_pool.release(pv);
 		}
 
@@ -153,7 +153,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 			ctx.seen = seen;
 
 			position new_pos = p;
-			apply_move( new_pos, entry.m, c );
+			apply_move( new_pos, entry.m );
 
 			uint64_t new_hash = update_zobrist_hash( p, c, hash, entry.m );
 
@@ -167,7 +167,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 
 				check_map check( new_pos, static_cast<color::type>(1-c) );
 
-				value = -step( MAX_BOOKSEARCH_DEPTH * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
+				value = -step( MAX_BOOKSEARCH_DEPTH * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, pv, true );
 				ctx.pv_pool.release(pv);
 			}
 
@@ -209,7 +209,7 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 			ctx.seen = seen;
 
 			position new_pos = p;
-			apply_move( new_pos, entry.m, c );
+			apply_move( new_pos, entry.m );
 
 			uint64_t new_hash = update_zobrist_hash( p, c, hash, entry.m );
 
@@ -223,11 +223,11 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 				check_map check( new_pos, static_cast<color::type>(1-c) );
 
 				pv_entry* pv = ctx.pv_pool.get();
-				value = -step( new_depth * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), check, result::loss, result::win, pv, true );
+				value = -step( new_depth * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, pv, true );
 				ctx.pv_pool.release(pv);
 			}
 
-			std::cerr << entry.forecast << " d" << static_cast<int>(entry.search_depth) << " v" << static_cast<int>(entry.eval_version) << " -> " << value << " d" << new_depth << " " << move_history.size() << " " << position_to_fen_noclock( p, c ) << " " << move_to_san( p, entry.m ) << std::endl;
+			std::cerr << entry.forecast << " d" << static_cast<int>(entry.search_depth) << " v" << static_cast<int>(entry.eval_version) << " -> " << value << " d" << new_depth << " " << move_history.size() << " " << position_to_fen_noclock( p ) << " " << move_to_san( p, entry.m ) << std::endl;
 
 			entry.forecast = value;
 			entry.search_depth = new_depth;
@@ -286,7 +286,7 @@ void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, see
 		}
 
 		position new_pos = p;
-		apply_move( new_pos, it->m, c );
+		apply_move( new_pos, it->m );
 
 		std::vector<move> child_history = move_history;
 		child_history.push_back( it->m );
@@ -815,7 +815,7 @@ bool do_deepen_tree( book& b, position p, color::type c, seen_positions seen, st
 	std::vector<book_entry> entries = b.get_entries( p, c, move_history );
 	if( entries.empty() ) {
 		std::stringstream ss;
-		ss << "Calculating " << position_to_fen_noclock( p, c ) << std::endl;
+		ss << "Calculating " << position_to_fen_noclock( p ) << std::endl;
 		for( unsigned int i = 0; i < move_history.size(); ++i ) {
 			if( i ) {
 				ss << " ";
@@ -839,7 +839,7 @@ bool do_deepen_tree( book& b, position p, color::type c, seen_positions seen, st
 	}
 
 	book_entry e = entries.front();
-	apply_move( p, e.m, c );
+	apply_move( p, e.m );
 	move_history.push_back( e.m );
 	seen.push_root( get_zobrist_hash( p ) );
 
@@ -1014,7 +1014,7 @@ void run( book& b )
 
 				move_history.push_back( m );
 
-				apply_move( p, m, c );
+				apply_move( p, m );
 				c = static_cast<color::type>( 1 - c );
 
 				seen.push_root( get_zobrist_hash( p ) );

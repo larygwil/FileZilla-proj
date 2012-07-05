@@ -29,7 +29,6 @@ class octochess_uci::impl : public new_best_move_callback_base, public thread {
 public:
 	impl( gui_interface_ptr const& p )
 		: gui_interface_(p)
-		, color_to_play_()
 		, last_mate_()
 		, half_moves_played_()
 		, started_from_root_()
@@ -60,7 +59,6 @@ public:
 	gui_interface_ptr gui_interface_;
 
 	position pos_;
-	color::type color_to_play_;
 	seen_positions seen_positions_;
 
 	calc_manager calc_manager_;
@@ -94,7 +92,6 @@ octochess_uci::octochess_uci( gui_interface_ptr const& p )
 }
 
 void octochess_uci::new_game() {
-	impl_->color_to_play_ = color::white;
 	impl_->pos_.reset();
 	impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) ); impl_->times_ = time_calculation();
 	impl_->half_moves_played_ = 0;
@@ -106,12 +103,11 @@ void octochess_uci::set_position( std::string const& fen ) {
 	impl_->pos_.reset();
 	bool success = false;
 	if( fen.empty() ) {
-		impl_->color_to_play_ = color::white;
 		impl_->started_from_root_ = true;
 		success = true;
 	}
 	else {
-		if( parse_fen_noclock( fen, impl_->pos_, impl_->color_to_play_, 0 ) ) {	
+		if( parse_fen_noclock( fen, impl_->pos_, 0 ) ) {	
 			impl_->started_from_root_ = false;
 			success = true;
 		}
@@ -136,7 +132,7 @@ void octochess_uci::make_moves( std::vector<std::string> const& moves )
 	bool done = false;
 	for( std::vector<std::string>::const_iterator it = moves.begin(); !done && it != moves.end(); ++it ) {
 		move m;
-		if( parse_move( impl_->pos_, impl_->color_to_play_, *it, m, false ) ) {
+		if( parse_move( impl_->pos_, impl_->pos_.self(), *it, m, false ) ) {
 			impl_->apply_move( m );
 		} else {
 			std::cerr << "invalid syntax with moves: " << *it << std::endl;
@@ -155,7 +151,7 @@ void octochess_uci::calculate( calculate_mode_type mode, position_time const& t 
 		impl_->calc_cond_.signal(lock);
 	}
 	else {
-		impl_->times_.update( t, impl_->color_to_play_ == color::white, impl_->half_moves_played_ );
+		impl_->times_.update( t, impl_->pos_.white(), impl_->half_moves_played_ );
 		if( !impl_->do_book_move() ) {
 			if( !impl_->pick_pv_move() ) {
 				impl_->calc_cond_.signal(lock);
@@ -182,7 +178,7 @@ void octochess_uci::impl::onRun() {
 
 			timestamp start_time;
 
-			calc_result result = calc_manager_.calc( pos_, color_to_play_, times_.time_for_this_move(), times_.total_remaining(), half_moves_played_, seen_positions_, last_mate_, *this );
+			calc_result result = calc_manager_.calc( pos_, pos_.self(), times_.time_for_this_move(), times_.total_remaining(), half_moves_played_, seen_positions_, last_mate_, *this );
 			if( !result.best_move.empty() ) {
 				gui_interface_->tell_best_move( move_to_long_algebraic( result.best_move ) );
 
@@ -238,9 +234,8 @@ void octochess_uci::impl::apply_move( move const& m )
 	if( m.piece == pieces::pawn || m.captured_piece ) {
 		reset_seen = true;
 	}
-	::apply_move( pos_, m, color_to_play_ );
+	::apply_move( pos_, m );
 	++half_moves_played_;
-	color_to_play_ = color_to_play_ == color::white ? color::black : color::white;
 
 	if( !reset_seen ) {
 		seen_positions_.push_root( get_zobrist_hash( pos_ ) );
@@ -254,7 +249,7 @@ bool octochess_uci::impl::do_book_move() {
 	bool ret = false;
 
 	if( conf.use_book && book_.is_open() && half_moves_played_ < 30 && started_from_root_ ) {
-		std::vector<book_entry> moves = book_.get_entries( pos_, color_to_play_ );
+		std::vector<book_entry> moves = book_.get_entries( pos_, pos_.self() );
 		if( !moves.empty() ) {
 			ret = true;
 
@@ -278,7 +273,7 @@ bool octochess_uci::impl::do_book_move() {
 bool octochess_uci::impl::pick_pv_move()
 {
 	bool ret = false;
-	move m = pv_move_picker_.can_use_move_from_pv( pos_, color_to_play_ );
+	move m = pv_move_picker_.can_use_move_from_pv( pos_, pos_.self() );
 	if( !m.empty() ) {
 		ret = true;
 		gui_interface_->tell_best_move( move_to_long_algebraic( m ) );

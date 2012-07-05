@@ -175,7 +175,7 @@ bool pgn_reader::next( game& g )
 				break;
 			}
 
-			apply_move( p, m, c );
+			apply_move( p, m );
 			c = static_cast<color::type>(1-c);
 			g.moves_.push_back(m);
 			token.clear();

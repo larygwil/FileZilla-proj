@@ -32,8 +32,7 @@ enum type {
 struct xboard_state
 {
 	xboard_state()
-		: c()
-		, clock()
+		: clock()
 		, book_( conf.book_dir )
 		, time_remaining()
 		, bonus_time()
@@ -62,8 +61,6 @@ struct xboard_state
 		}
 		move_history_.clear();
 
-		c = color::white;
-
 		clock = 1;
 
 		seen.reset_root( get_zobrist_hash( p ) );
@@ -88,9 +85,8 @@ struct xboard_state
 			reset_seen = true;
 		}
 
-		apply_move( p, m, c );
+		apply_move( p, m );
 		++clock;
-		c = static_cast<color::type>( 1 - c );
 
 		if( !reset_seen ) {
 			seen.push_root( get_zobrist_hash( p ) );
@@ -117,10 +113,6 @@ struct xboard_state
 		// This isn't exactly correct, if popping past root we would need to restore old seen state prior to a reset.
 		seen.pop_root( count );
 
-		if( count % 2 ) {
-			c = static_cast<color::type>(1 - c);
-		}
-
 		while( --count ) {
 			history.pop_back();
 			move_history_.pop_back();
@@ -134,7 +126,7 @@ struct xboard_state
 
 	void update_comm_overhead( duration const& new_remaining )
 	{
-		if( c == last_go_color && moves_between_updates && (time_remaining - new_remaining).absolute() < duration::seconds(2 * moves_between_updates) ) {
+		if( p.self() == last_go_color && moves_between_updates && (time_remaining - new_remaining).absolute() < duration::seconds(2 * moves_between_updates) ) {
 			level_cmd_differences += time_remaining - new_remaining;
 			level_cmd_count += moves_between_updates;
 
@@ -154,7 +146,6 @@ struct xboard_state
 	}
 
 	position p;
-	color::type c;
 	int clock;
 	seen_positions seen;
 	book book_;
@@ -291,7 +282,7 @@ void xboard_thread::onRun()
 		}
 
 
-		calc_result result = cmgr_.calc( state.p, state.c, time_limit, deadline, state.clock, state.seen, state.last_mate, *this );
+		calc_result result = cmgr_.calc( state.p, state.p.self(), time_limit, deadline, state.clock, state.seen, state.last_mate, *this );
 
 		scoped_lock l( mtx );
 
@@ -307,7 +298,7 @@ void xboard_thread::onRun()
 			state.apply( result.best_move );
 
 			{
-				score base_eval = state.c ? -state.p.base_eval : state.p.base_eval;
+				score base_eval = state.p.white() ? state.p.base_eval : -state.p.base_eval;
 				std::cerr << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << result.forecast << std::endl;
 			}
 
@@ -350,7 +341,7 @@ void xboard_thread::onRun()
 	}
 
 	if( ponder_ ) {
-		cmgr_.calc( state.p, state.c, duration::infinity(), duration::infinity(), state.clock, state.seen, state.last_mate, *this );
+		cmgr_.calc( state.p, state.p.self(), duration::infinity(), duration::infinity(), state.clock, state.seen, state.last_mate, *this );
 	}
 }
 
@@ -404,14 +395,14 @@ void xboard_thread::on_new_best_move( position const& p, color::type c, int dept
 void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_time )
 {
 	state.last_go_time = cmd_recv_time;
-	state.last_go_color = state.c;
+	state.last_go_color = state.p.self();
 	++state.moves_between_updates;
 
 	transposition_table.init_if_needed( conf.memory );
 
 	// Do a step
 	if( conf.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
-		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.c, state.move_history_, true );
+		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.p.self(), state.move_history_, true );
 		if( moves.empty() ) {
 			std::cerr << "Current position not in book" << std::endl;
 		}
@@ -433,9 +424,8 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 			state.history.push_back( state.p );
 
-			apply_move( state.p, best_move.m, state.c );
+			apply_move( state.p, best_move.m );
 			++state.clock;
-			state.c = static_cast<color::type>( 1 - state.c );
 			state.move_history_.push_back( best_move.m );
 
 			timestamp stop;
@@ -449,15 +439,14 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 		state.book_.mark_for_processing( state.move_history_ );
 	}
 
-	move pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p, state.c );
+	move pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p, state.p.self() );
 	if( !pv_move.empty() ) {
 		std::cout << "move " << move_to_string( pv_move ) << std::endl;
 
 		state.history.push_back( state.p );
 
-		apply_move( state.p, pv_move, state.c );
+		apply_move( state.p, pv_move );
 		++state.clock;
-		state.c = static_cast<color::type>( 1 - state.c );
 		state.move_history_.push_back( pv_move );
 
 		timestamp stop;
@@ -589,11 +578,11 @@ skip_getline:
 			// Ignore
 		}
 		else if( cmd == "white" ) {
-			state.c = color::white;
+			state.p.c = color::white;
 			state.self = color::black;
 		}
 		else if( cmd == "black" ) {
-			state.c = color::black;
+			state.p.c = color::black;
 			state.self = color::white;
 		}
 		else if( cmd == "undo" ) {
@@ -688,7 +677,7 @@ skip_getline:
 		}
 		else if( cmd == "go" ) {
 			state.mode_ = mode::normal;
-			state.self = state.c;
+			state.self = state.p.self();
 			// TODO: clocks...
 			go( thread, state, cmd_recv_time );
 		}
@@ -702,11 +691,11 @@ skip_getline:
 			state.moves_between_updates = 0;
 		}
 		else if( cmd == "~moves" ) {
-			check_map check( state.p, state.c );
+			check_map check( state.p, state.p.self() );
 
 			move_info moves[200];
 			move_info* pm = moves;
-			calculate_moves( state.p, state.c, pm, check );
+			calculate_moves( state.p, state.p.self(), pm, check );
 
 			std::cout << "Possible moves:" << std::endl;
 			move_info* it = &moves[0];
@@ -715,13 +704,12 @@ skip_getline:
 			}
 		}
 		else if( cmd == "~fen" ) {
-			std::cout << position_to_fen_noclock( state.p, state.c ) << std::endl;
+			std::cout << position_to_fen_noclock( state.p ) << std::endl;
 		}
 		else if( cmd == "setboard" ) {
 			position new_pos;
-			color::type new_c;
 			std::string error;
-			if( !parse_fen_noclock( args, new_pos, new_c, &error ) ) {
+			if( !parse_fen_noclock( args, new_pos, &error ) ) {
 				std::cout << "Error (bad command): Not a valid FEN position: " << error << std::endl;
 				continue;
 			}
@@ -729,7 +717,6 @@ skip_getline:
 
 			state.reset();
 			state.p = new_pos;
-			state.c = new_c;
 			state.seen.reset_root( get_zobrist_hash( state.p ) );
 			state.started_from_root = false;
 
@@ -739,15 +726,15 @@ skip_getline:
 			}
 		}
 		else if( cmd == "~score" ) {
-			std::cout << explain_eval( state.p, state.c ) << std::endl;
+			std::cout << explain_eval( state.p, state.p.self() ) << std::endl;
 		}
 		else if( cmd == "~hash" ) {
 			std::cout << get_zobrist_hash( state.p ) << std::endl;
 		}
 		else if( cmd == "~see" ) {
 			move m;
-			if( parse_move( state.p, state.c, args, m, true ) ) {
-				int see_score = see( state.p, state.c, m );
+			if( parse_move( state.p, state.p.self(), args, m, true ) ) {
+				int see_score = see( state.p, state.p.self(), m );
 				std::cout << "See score: " << see_score << std::endl;
 			}
 		}
@@ -780,10 +767,10 @@ skip_getline:
 		}
 		else {
 			move m;
-			if( parse_move( state.p, state.c, line, m ) ) {
+			if( parse_move( state.p, state.p.self(), line, m ) ) {
 
 				state.apply( m );
-				if( state.mode_ == mode::normal && state.c == state.self ) {
+				if( state.mode_ == mode::normal && state.p.self() == state.self ) {
 					go( thread, state, cmd_recv_time );
 				}
 				else if( state.mode_ == mode::analyze ) {

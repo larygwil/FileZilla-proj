@@ -84,19 +84,17 @@ static void generate_test_positions_impl()
 	position p;
 
 	unsigned int i = 1;
-	color::type c = color::white;
-
 	seen_positions seen( get_zobrist_hash( p ) );
 
 	short last_mate = 0;
 
 	calc_result result;
-	while( !(result = tweak_calc( p, c, duration(), i, seen, last_mate ) ).best_move.empty() ) {
+	while( !(result = tweak_calc( p, p.self(), duration(), i, seen, last_mate ) ).best_move.empty() ) {
 		if( result.forecast > result::win_threshold ) {
 			last_mate = result.forecast;
 		}
 
-		if( !validate_move( p, result.best_move, c ) ) {
+		if( !validate_move( p, result.best_move, p.self() ) ) {
 			std::cerr << std::endl << "NOT A VALID MOVE" << std::endl;
 			exit(1);
 		}
@@ -106,9 +104,7 @@ static void generate_test_positions_impl()
 			reset_seen = true;
 		}
 
-		apply_move( p, result.best_move, c );
-
-		c = static_cast<color::type>(1-c);
+		apply_move( p, result.best_move );
 
 		if( !reset_seen ) {
 			seen.push_root( get_zobrist_hash( p ) );
@@ -127,7 +123,7 @@ static void generate_test_positions_impl()
 		if( conf.max_moves && i >= conf.max_moves ) {
 			std::ofstream out("test/testpositions.txt", std::ofstream::app|std::ofstream::out );
 
-			std::string fen = position_to_fen_noclock( p, c );
+			std::string fen = position_to_fen_noclock( p );
 			out << fen << std::endl;
 
 			break;
@@ -174,7 +170,6 @@ public:
 
 struct reference_data {
 	position p;
-	color::type c;
 	short min_eval;
 	short max_eval;
 	double avg_eval;
@@ -432,7 +427,7 @@ struct individual
 
 			ref.p.update_derived();
 			pawn_hash_table.clear( ref.p.pawn_hash );
-			short score = evaluate_full( ref.p, ref.c );
+			short score = evaluate_full( ref.p, ref.p.self() );
 
 #if 0
 			double difference = std::abs( ref.avg_eval - static_cast<double>(score) );
@@ -675,7 +670,7 @@ void save_new_best( individual& best, std::vector<reference_data>& data )
 		tweak_base const& t = *tweaks[i];
 		std::cerr << "\t" << t.to_string();
 	}
-	std::string fen = position_to_fen_noclock( data[best.max_diff_pos_].p, data[best.max_diff_pos_].c );
+	std::string fen = position_to_fen_noclock( data[best.max_diff_pos_].p );
 	std::cout << "New best: " << best.fitness_ << " " << best.max_diff_ << "  " << fen << std::endl;
 
 	best.calc_fitness( data );
@@ -728,7 +723,7 @@ std::vector<reference_data> load_data()
 		if( !in_scores ) {
 			abort();
 		}
-		if( !parse_fen_noclock( fen, entry.p, entry.c ) ) {
+		if( !parse_fen_noclock( fen, entry.p ) ) {
 			abort();
 		}
 

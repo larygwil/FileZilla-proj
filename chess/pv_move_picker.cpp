@@ -32,8 +32,8 @@ void pv_move_picker::update_pv( position p, color::type c, pv_entry const* pv )
 		ASSERT( !pv->next()->get_best_move().empty() );
 		ASSERT( !pv->next()->next()->get_best_move().empty() );
 
-		apply_move( p, pv->get_best_move(), c );
-		apply_move( p, pv->next()->get_best_move(), static_cast<color::type>(1-c) );
+		apply_move( p, pv->get_best_move() );
+		apply_move( p, pv->next()->get_best_move() );
 
 		hash_ = get_zobrist_hash( p, c );
 		previous_ = pv->next()->get_best_move();

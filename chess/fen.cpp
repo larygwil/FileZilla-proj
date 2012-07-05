@@ -5,7 +5,7 @@
 #include <iostream>
 #include <sstream>
 
-std::string position_to_fen_noclock( position const& p, color::type c )
+std::string position_to_fen_noclock( position const& p )
 {
 	std::stringstream ss;
 
@@ -76,27 +76,27 @@ std::string position_to_fen_noclock( position const& p, color::type c )
 		}
 	}
 
-	if( c ) {
-		ss << " b ";
+	if( p.white() ) {
+		ss << " w ";
 	}
 	else {
-		ss << " w ";
+		ss << " b ";
 	}
 
 	bool can_castle = false;
-	if( p.castle[0] & 0x1 ) {
+	if( p.castle[color::white] & 0x1 ) {
 		can_castle = true;
 		ss << 'K';
 	}
-	if( p.castle[0] & 0x2 ) {
+	if( p.castle[color::white] & 0x2 ) {
 		can_castle = true;
 		ss << 'Q';
 	}
-	if( p.castle[1] & 0x1 ) {
+	if( p.castle[color::black] & 0x1 ) {
 		can_castle = true;
 		ss << 'k';
 	}
-	if( p.castle[1] & 0x2 ) {
+	if( p.castle[color::black] & 0x2 ) {
 		can_castle = true;
 		ss << 'q';
 	}
@@ -117,15 +117,14 @@ std::string position_to_fen_noclock( position const& p, color::type c )
 
 #if 0
 	position p2;
-	color::type c2;
-	if( !parse_fen_noclock( ss.str(), p2, c2 ) ) {
+	if( !parse_fen_noclock( ss.str(), p2 ) ) {
 		std::cerr << "FAIL" << std::endl;
 	}
 #endif
 	return ss.str();
 }
 
-bool parse_fen_noclock( std::string const& fen, position& p, color::type& c, std::string* error )
+bool parse_fen_noclock( std::string const& fen, position& p, std::string* error )
 {
 	std::stringstream in( fen );
 
@@ -150,10 +149,10 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c, std
 		return false;
 	}
 	if( color == "w" || color == "W" ) {
-		c = color::white;
+		p.c = color::white;
 	}
 	else {
-		c = color::black;
+		p.c = color::black;
 	}
 
 	p.castle[0] = 0;
@@ -334,7 +333,7 @@ bool parse_fen_noclock( std::string const& fen, position& p, color::type& c, std
 
 	p.update_derived();
 
-	check_map check( p, static_cast<color::type>(1-c) );
+	check_map check( p, p.other() );
 
 	if( check.check ) {
 		if( error ) {
