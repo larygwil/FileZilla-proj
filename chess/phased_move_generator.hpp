@@ -25,7 +25,7 @@ enum type {
 class phased_move_generator_base
 {
 public:
-	phased_move_generator_base( context& cntx, position const& p, color::type const& c, check_map const& check );
+	phased_move_generator_base( context& cntx, position const& p, check_map const& check );
 	virtual ~phased_move_generator_base();
 
 	virtual move_info const* next() = 0;
@@ -43,7 +43,6 @@ protected:
 	move_info* it;
 
 	position const& p_;
-	color::type const& c_;
 	check_map const& check_;
 	move_info* bad_captures_end_;
 };
@@ -53,7 +52,7 @@ protected:
 class qsearch_move_generator : public phased_move_generator_base
 {
 public:
-	qsearch_move_generator( context& cntx, position const& p, color::type const& c, check_map const& check, bool pv_node, bool include_noncaptures );
+	qsearch_move_generator( context& cntx, position const& p, check_map const& check, bool pv_node, bool include_noncaptures );
 
 	// Returns the next legal move.
 	// move_info's m, evaluation and pawns are filled out, sort is undefined.
@@ -68,7 +67,7 @@ private:
 class move_generator : public phased_move_generator_base
 {
 public:
-	move_generator( context& cntx, killer_moves const& killers, position const& p, color::type const& c, check_map const& check );
+	move_generator( context& cntx, killer_moves const& killers, position const& p, check_map const& check );
 
 	// Returns the next legal move.
 	// move_info's m, evaluation and pawns are filled out, sort is undefined.

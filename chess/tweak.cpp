@@ -31,26 +31,26 @@ extern volatile bool do_abort;
 
 namespace {
 
-static calc_result tweak_calc( position& p, color::type c, duration const& move_time_limit, int clock, seen_positions& seen
+static calc_result tweak_calc( position& p, duration const& move_time_limit, int clock, seen_positions& seen
 		  , short last_mate
 		  , new_best_move_callback_base& new_best_cb = default_new_best_move_callback )
 {
 	if( clock > 10 ) {
 		calc_manager cmgr;
 		do_abort = false;
-		return cmgr.calc( p, c, move_time_limit, move_time_limit, clock, seen, last_mate, new_best_cb );
+		return cmgr.calc( p, move_time_limit, move_time_limit, clock, seen, last_mate, new_best_cb );
 	}
 
-	check_map check( p, c );
+	check_map check( p, p.self() );
 
 	move_info moves[200];
 	move_info* pm = moves;
-	calculate_moves( p, c, pm, check );
+	calculate_moves( p, p.self(), pm, check );
 
 	calc_result result;
 	if( moves == pm ) {
 		if( check.check ) {
-			if( c == color::white ) {
+			if( p.white() ) {
 				std::cerr << "BLACK WINS" << std::endl;
 				result.forecast = result::loss;
 			}
@@ -61,7 +61,7 @@ static calc_result tweak_calc( position& p, color::type c, duration const& move_
 			return result;
 		}
 		else {
-			if( c == color::black ) {
+			if( !p.white() ) {
 				std::cout << std::endl;
 			}
 			std::cerr << "DRAW" << std::endl;
@@ -89,12 +89,12 @@ static void generate_test_positions_impl()
 	short last_mate = 0;
 
 	calc_result result;
-	while( !(result = tweak_calc( p, p.self(), duration(), i, seen, last_mate ) ).best_move.empty() ) {
+	while( !(result = tweak_calc( p, duration(), i, seen, last_mate ) ).best_move.empty() ) {
 		if( result.forecast > result::win_threshold ) {
 			last_mate = result.forecast;
 		}
 
-		if( !validate_move( p, result.best_move, p.self() ) ) {
+		if( !validate_move( p, result.best_move ) ) {
 			std::cerr << std::endl << "NOT A VALID MOVE" << std::endl;
 			exit(1);
 		}

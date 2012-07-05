@@ -24,7 +24,7 @@ static uint64_t least_valuable_attacker( position const& p, color::type c, uint6
 }
 
 
-int see( position const& p, color::type c, move const& m )
+int see( position const& p, move const& m )
 {
 	// Iterative SEE algorithm as described by Fritz Reul, adapted to use bitboards.
 	unsigned char target = m.target;
@@ -51,7 +51,7 @@ int see( position const& p, color::type c, move const& m )
 	score[0] = eval_values::material_values[ m.captured_piece ].mg();
 
 	// Get new attacker
-	if( !(attackers & p.bitboards[1-c].b[bb_type::all_pieces]) ) {
+	if( !(attackers & p.bitboards[p.other()].b[bb_type::all_pieces]) ) {
 		return score[0];
 	}
 
@@ -66,7 +66,7 @@ int see( position const& p, color::type c, move const& m )
 		}
 
 		// We have verified that there's already at least one attacker, so this works.
-		uint64_t attacker_mask = least_valuable_attacker( p, static_cast<color::type>(c ^ (depth & 1)), attackers, attacker_piece );
+		uint64_t attacker_mask = least_valuable_attacker( p, static_cast<color::type>(p.self() ^ (depth & 1)), attackers, attacker_piece );
 
 		++depth;
 
@@ -78,7 +78,7 @@ int see( position const& p, color::type c, move const& m )
 						((bishop_magic( target, all_pieces )) & all_bishops);
 		attackers &= all_pieces;
 
-		if( !(attackers & p.bitboards[c ^ (depth & 1)].b[bb_type::all_pieces]) ) {
+		if( !(attackers & p.bitboards[p.self() ^ (depth & 1)].b[bb_type::all_pieces]) ) {
 			break;
 		}
 

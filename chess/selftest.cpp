@@ -219,7 +219,7 @@ static bool test_zobrist()
 	uint64_t old_hash = get_zobrist_hash( p );
 
 	move m;
-	if( !parse_move( p, p.self(), "dxc3", m ) ) {
+	if( !parse_move( p, "dxc3", m ) ) {
 		return false;
 	}
 
@@ -563,11 +563,11 @@ static void check_see()
 	}
 
 	move m;
-	if( !parse_move( p, p.self(), ms, m ) ) {
+	if( !parse_move( p, ms, m ) ) {
 		abort();
 	}
 
-	short v = see( p, p.self(), m );
+	short v = see( p, m );
 	if( v <= 0 ) {
 		std::cerr << "See of " << fen << " " << ms << " needs to be bigger than 0, but is " << v << std::endl;
 		abort();
@@ -586,7 +586,7 @@ void do_check_disambiguation( std::string const& fen, std::string const& ms, std
 	}
 
 	move m;
-	if( !parse_move( p, p.self(), ms, m ) ) {
+	if( !parse_move( p, ms, m ) ) {
 		abort();
 	}
 

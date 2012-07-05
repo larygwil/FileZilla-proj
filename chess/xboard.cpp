@@ -282,7 +282,7 @@ void xboard_thread::onRun()
 		}
 
 
-		calc_result result = cmgr_.calc( state.p, state.p.self(), time_limit, deadline, state.clock, state.seen, state.last_mate, *this );
+		calc_result result = cmgr_.calc( state.p, time_limit, deadline, state.clock, state.seen, state.last_mate, *this );
 
 		scoped_lock l( mtx );
 
@@ -341,7 +341,7 @@ void xboard_thread::onRun()
 	}
 
 	if( ponder_ ) {
-		cmgr_.calc( state.p, state.p.self(), duration::infinity(), duration::infinity(), state.clock, state.seen, state.last_mate, *this );
+		cmgr_.calc( state.p, duration::infinity(), duration::infinity(), state.clock, state.seen, state.last_mate, *this );
 	}
 }
 
@@ -733,8 +733,8 @@ skip_getline:
 		}
 		else if( cmd == "~see" ) {
 			move m;
-			if( parse_move( state.p, state.p.self(), args, m, true ) ) {
-				int see_score = see( state.p, state.p.self(), m );
+			if( parse_move( state.p, args, m, true ) ) {
+				int see_score = see( state.p, m );
 				std::cout << "See score: " << see_score << std::endl;
 			}
 		}
@@ -767,7 +767,7 @@ skip_getline:
 		}
 		else {
 			move m;
-			if( parse_move( state.p, state.p.self(), line, m ) ) {
+			if( parse_move( state.p, line, m ) ) {
 
 				state.apply( m );
 				if( state.mode_ == mode::normal && state.p.self() == state.self ) {

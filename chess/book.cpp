@@ -199,7 +199,7 @@ bool conv_to_move_slow( position const& p, color::type c, move& m, char const* d
 	ms[2] = (ti % 8) + 'a';
 	ms[3] = (ti / 8) + '1';
 
-	if( !parse_move( p, c, ms, m, print_errors ) ) {
+	if( !parse_move( p, ms, m, print_errors ) ) {
 		return false;
 	}
 

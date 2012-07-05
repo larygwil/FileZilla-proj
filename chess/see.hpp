@@ -3,6 +3,6 @@
 
 #include "chess.hpp"
 
-int see( position const& p, color::type c, move const& m );
+int see( position const& p, move const& m );
 
 #endif

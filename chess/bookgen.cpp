@@ -980,7 +980,7 @@ void run( book& b )
 		}
 		else if( cmd == "deepen" ) {
 			move m;
-			if( parse_move( p, c, args, m ) ) {
+			if( parse_move( p, args, m ) ) {
 				deepen_move( b, p, c, seen, move_history, m );
 
 				std::vector<book_entry> entries = b.get_entries( p, c, move_history );
@@ -1004,7 +1004,7 @@ void run( book& b )
 		}
 		else {
 			move m;
-			if( parse_move( p, c, line, m ) ) {
+			if( parse_move( p, line, m ) ) {
 
 				history_entry h;
 				h.p = p;

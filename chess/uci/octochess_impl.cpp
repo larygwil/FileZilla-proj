@@ -132,7 +132,7 @@ void octochess_uci::make_moves( std::vector<std::string> const& moves )
 	bool done = false;
 	for( std::vector<std::string>::const_iterator it = moves.begin(); !done && it != moves.end(); ++it ) {
 		move m;
-		if( parse_move( impl_->pos_, impl_->pos_.self(), *it, m, false ) ) {
+		if( parse_move( impl_->pos_, *it, m, false ) ) {
 			impl_->apply_move( m );
 		} else {
 			std::cerr << "invalid syntax with moves: " << *it << std::endl;
@@ -178,7 +178,7 @@ void octochess_uci::impl::onRun() {
 
 			timestamp start_time;
 
-			calc_result result = calc_manager_.calc( pos_, pos_.self(), times_.time_for_this_move(), times_.total_remaining(), half_moves_played_, seen_positions_, last_mate_, *this );
+			calc_result result = calc_manager_.calc( pos_, times_.time_for_this_move(), times_.total_remaining(), half_moves_played_, seen_positions_, last_mate_, *this );
 			if( !result.best_move.empty() ) {
 				gui_interface_->tell_best_move( move_to_long_algebraic( result.best_move ) );
 

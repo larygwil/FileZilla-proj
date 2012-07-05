@@ -44,10 +44,8 @@ bool pgn_reader::next( game& g )
 	// Number of open Recursive Annotation Variation, started with '(', closed with ')'.
 	unsigned int rav_stack = 0;
 
-	color::type c = color::white;
 	position p;
 	g.p_ = p;
-	g.c_ = c;
 	g.moves_.clear();
 
 	while( next_line( line ) ) {
@@ -168,7 +166,7 @@ bool pgn_reader::next( game& g )
 			}
 
 			move m;
-			if( !parse_move( p, c, token, m ) ) {
+			if( !parse_move( p, token, m ) ) {
 				std::cerr << "Invalid move: " << token << std::endl;
 				std::cerr << "Line: " << line << std::endl;
 				valid = false;
@@ -176,7 +174,6 @@ bool pgn_reader::next( game& g )
 			}
 
 			apply_move( p, m );
-			c = static_cast<color::type>(1-c);
 			g.moves_.push_back(m);
 			token.clear();
 		}

@@ -53,7 +53,7 @@ public:
 	// May modify seen_positions at indexes > root_position
 	// move_time_limit is the desired time we should calculate.
 	// deadline is the maximum time we may calculate without losing the game.
-	calc_result calc( position& p, color::type c,
+	calc_result calc( position& p,
 		   duration const& move_time_limit, duration const& deadline, int clock,
 		   seen_positions& seen, short last_mate,
 		   new_best_move_callback_base& new_best_cb = default_new_best_move_callback );

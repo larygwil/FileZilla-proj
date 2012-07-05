@@ -8,11 +8,11 @@
 
 struct move_info;
 
-bool validate_move( position const& p, move const& m, color::type c );
+bool validate_move( position const& p, move const& m );
 
 bool validate_move( move const& m, move_info const* begin, move_info const* end );
 
-bool parse_move( position const& p, color::type c, std::string const& line, move& m, bool print_errors = true );
+bool parse_move( position const& p, std::string const& line, move& m, bool print_errors = true );
 
 // E.g. O-O, Na3xf6, b2-b4
 std::string move_to_string( move const& m, bool padding = true );
@@ -27,7 +27,7 @@ void apply_move( position& p, move const& m );
 // Checks if the given move is legal in the given position.
 // Precondition: There must be some position where the move is legal, else the result is undefined.
 //				 e.g. is_valid_move might return true on Na1b1
-bool is_valid_move( position const& p, color::type c, move const& m, check_map const& check );
+bool is_valid_move( position const& p, move const& m, check_map const& check );
 
 std::string board_to_string( position const& p );
 

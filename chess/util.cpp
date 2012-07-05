@@ -19,13 +19,13 @@
 extern unsigned char const queenside_rook_origin[2];
 extern unsigned char const kingside_rook_origin[2];
 
-bool validate_move( position const& p, move const& m, color::type c )
+bool validate_move( position const& p, move const& m )
 {
-	check_map check( p, c );
+	check_map check( p, p.self() );
 
 	move_info moves[200];
 	move_info* pm = moves;
-	calculate_moves( p, c, pm, check );
+	calculate_moves( p, p.self(), pm, check );
 
 	return validate_move( m, moves, pm );
 }
@@ -43,7 +43,7 @@ bool validate_move( move const& m, move_info const* begin, move_info const* end 
 }
 
 
-bool parse_move( position const& p, color::type c, std::string const& line, move& m, bool print_errors )
+bool parse_move( position const& p, std::string const& line, move& m, bool print_errors )
 {
 	std::string str = line;
 	std::size_t len = str.size();
@@ -60,9 +60,9 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 		m.captured_piece = pieces::none;
 		m.flags = move_flags::castle;
 		m.piece = pieces::king;
-		m.source = c ? 60 : 4;
-		m.target = c ? 62 : 6;
-		if( !validate_move( p, m, c ) ) {
+		m.source = p.white() ? 4 : 60;
+		m.target = p.white() ? 6 : 62;
+		if( !validate_move( p, m ) ) {
 			if( print_errors ) {
 				std::cout << "Illegal move (not valid): " << line << std::endl;
 			}
@@ -74,9 +74,9 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 		m.captured_piece = pieces::none;
 		m.flags = move_flags::castle;
 		m.piece = pieces::king;
-		m.source = c ? 60 : 4;
-		m.target = c ? 58 : 2;
-		if( !validate_move( p, m, c ) ) {
+		m.source = p.white() ? 4 : 60;
+		m.target = p.white() ? 2 : 58;
+		if( !validate_move( p, m ) ) {
 			if( print_errors ) {
 				std::cout << "Illegal move (not valid): " << line << std::endl;
 			}
@@ -226,11 +226,11 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 		return false;
 	}
 
-	check_map check( p, c );
+	check_map check( p, p.self() );
 
 	move_info moves[200];
 	move_info* pm = moves;
-	calculate_moves( p, c, pm, check );
+	calculate_moves( p, p.self(), pm, check );
 
 	std::list<move_info> matches;
 
@@ -326,7 +326,7 @@ bool parse_move( position const& p, color::type c, std::string const& line, move
 	}
 
 	move_info match = matches.front();
-	if( promotion && match.m.target / 8 != (c ? 0 : 7) ) {
+	if( promotion && match.m.target / 8 != (p.white() ? 7 : 0) ) {
 		if( print_errors ) {
 			std::cout << "Illegal move (not valid, expecting a promotion): " << line << std::endl;
 		}
@@ -426,14 +426,14 @@ std::string move_to_string( move const& m, bool padding )
 
 
 namespace {
-void add_disambiguation( position const& p, color::type c, move const& m, uint64_t possible_moves, std::string& ret ) {
+void add_disambiguation( position const& p, move const& m, uint64_t possible_moves, std::string& ret ) {
 	uint64_t source_file = 0x0101010101010101ull << (m.source % 8);
 	uint64_t source_rank = 0x00000000000000ffull << (m.source & 0x38);
-	if( popcount( possible_moves & p.bitboards[c].b[m.piece] ) > 1 ) {
-		if( popcount(p.bitboards[c].b[m.piece] & source_file) == 1 ) {
+	if( popcount( possible_moves & p.bitboards[p.self()].b[m.piece] ) > 1 ) {
+		if( popcount(p.bitboards[p.self()].b[m.piece] & source_file) == 1 ) {
 			ret += 'a' + m.source % 8;
 		}
-		else if( popcount(p.bitboards[c].b[m.piece] & source_rank) == 1 ) {
+		else if( popcount(p.bitboards[p.self()].b[m.piece] & source_rank) == 1 ) {
 			ret += '1' + m.source / 8;
 		}
 		else {
@@ -473,19 +473,19 @@ std::string move_to_san( position const& p, move const& m )
 	switch( m.piece ) {
 		case pieces::knight:
 			ret += 'N';
-			add_disambiguation( p, c, m, possible_knight_moves[m.target], ret );
+			add_disambiguation( p, m, possible_knight_moves[m.target], ret );
 			break;
 		case pieces::bishop:
 			ret += 'B';
-			add_disambiguation( p, c, m, bishop_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ), ret );
+			add_disambiguation( p, m, bishop_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ), ret );
 			break;
 		case pieces::rook:
 			ret += 'R';
-			add_disambiguation( p, c, m, rook_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ), ret );
+			add_disambiguation( p, m, rook_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ), ret );
 			break;
 		case pieces::queen:
 			ret += 'Q';
-			add_disambiguation( p, c, m, bishop_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ) | rook_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ), ret );
+			add_disambiguation( p, m, bishop_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ) | rook_magic( m.target, p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] ), ret );
 			break;
 		case pieces::king:
 			ret += 'K';
@@ -869,41 +869,26 @@ pieces::type get_piece_on_square( position const& p, color::type c, uint64_t squ
 	return ret;
 }
 
-bool apply_hash_move( position& p, move const& m, color::type c, check_map const& check )
-{
-#if 0
-	if( !is_valid_move( p, c, m, check ) ) {
-		return false;
-	}
-#else
-	(void)check;
-	(void)c;
-#endif
 
-	apply_move( p, m );
-
-	return true;
-}
-
-bool do_is_valid_move( position const& p, color::type c, move const& m, check_map const& check )
+bool do_is_valid_move( position const& p, move const& m, check_map const& check )
 {
 	// Must move own piece
-	if( m.piece != get_piece_on_square( p, c, m.source ) ) {
+	if( m.piece != get_piece_on_square( p, p.self(), m.source ) ) {
 		return false;
 	}
 
 	// Must move onto square not occupied by self
-	if( p.bitboards[c].b[bb_type::all_pieces] & (1ull << m.target) ) {
+	if( p.bitboards[p.self()].b[bb_type::all_pieces] & (1ull << m.target) ) {
 		return false;
 	}
 
 	if( m.piece == pieces::king ) {
 
-		if( m.captured_piece != get_piece_on_square( p, static_cast<color::type>(1-c), m.target ) ) {
+		if( m.captured_piece != get_piece_on_square( p, p.other(), m.target ) ) {
 			return false;
 		}
 
-		uint64_t other_kings = p.bitboards[1-c].b[bb_type::king];
+		uint64_t other_kings = p.bitboards[p.other()].b[bb_type::king];
 		uint64_t other_king = bitscan( other_kings );
 		if( (1ull << m.target) & possible_king_moves[other_king] ) {
 			return false;
@@ -914,39 +899,39 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 				return false;
 			}
 			if( (m.target & 0x07) == 2 ) {
-				if( !(p.castle[c] & castles::queenside) ) {
+				if( !(p.castle[p.self()] & castles::queenside) ) {
 					return false;
 				}
-				if( !(p.bitboards[c].b[bb_type::rooks] & (1ull << (m.source - 4))) ) {
+				if( !(p.bitboards[p.self()].b[bb_type::rooks] & (1ull << (m.source - 4))) ) {
 					return false;
 				}
-				if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (7ull << (m.source - 3 )) ) {
+				if( (p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces]) & (7ull << (m.source - 3 )) ) {
 					return false;
 				}
-				if( detect_check( p, c, m.source - 1, m.source ) ) {
+				if( detect_check( p, p.self(), m.source - 1, m.source ) ) {
 					return false;
 				}
-				if( detect_check( p, c, m.source - 2, m.source ) ) {
+				if( detect_check( p, p.self(), m.source - 2, m.source ) ) {
 					return false;
 				}
 			}
 			else {
-				if( !(p.castle[c] & castles::kingside) ) {
+				if( !(p.castle[p.self()] & castles::kingside) ) {
 					return false;
 				}
-				if( !(p.bitboards[c].b[bb_type::rooks] & (1ull << (m.source + 3))) ) {
+				if( !(p.bitboards[p.self()].b[bb_type::rooks] & (1ull << (m.source + 3))) ) {
 					return false;
 				}
-				if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (3ull << (m.source + 1 )) ) {
+				if( (p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces]) & (3ull << (m.source + 1 )) ) {
 					return false;
 				}
-				if( detect_check( p, c, m.source + 1, m.source ) ) {
+				if( detect_check( p, p.self(), m.source + 1, m.source ) ) {
 					return false;
 				}
 			}
 		}
 
-		if( detect_check( p, c, m.target, m.source ) ) {
+		if( detect_check( p, p.self(), m.target, m.source ) ) {
 			return false;
 		}
 	}
@@ -964,7 +949,7 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 				return false;
 			}
 
-			if( get_piece_on_square( p, static_cast<color::type>(1-c), m.target % 8 + (m.source & 0xf8) ) != pieces::pawn ) {
+			if( get_piece_on_square( p, p.other(), m.target % 8 + (m.source & 0xf8) ) != pieces::pawn ) {
 				return false;
 			}
 
@@ -991,8 +976,8 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 			}
 
 			// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
-			unsigned char king_col = static_cast<unsigned char>(p.king_pos[c] % 8);
-			unsigned char king_row = static_cast<unsigned char>(p.king_pos[c] / 8);
+			unsigned char king_col = static_cast<unsigned char>(p.king_pos[p.self()] % 8);
+			unsigned char king_row = static_cast<unsigned char>(p.king_pos[p.self()] / 8);
 
 			if( king_row == old_row ) {
 				signed char cx = static_cast<signed char>(old_col) - king_col;
@@ -1007,12 +992,12 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 						continue;
 					}
 
-					if( p.bitboards[c].b[bb_type::all_pieces] & (1ull << (col + old_row * 8 ) ) ) {
+					if( p.bitboards[p.self()].b[bb_type::all_pieces] & (1ull << (col + old_row * 8 ) ) ) {
 						// Own piece
 						continue;
 					}
 
-					pieces::type t = get_piece_on_square( p, static_cast<color::type>(1-c), col + old_row * 8 );
+					pieces::type t = get_piece_on_square( p, p.other(), col + old_row * 8 );
 					if( t == pieces::queen || t == pieces::rook ) {
 						// Not a legal move unfortunately
 						return false;
@@ -1025,7 +1010,7 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 		}
 		else {
 
-			if( m.captured_piece != get_piece_on_square( p, static_cast<color::type>(1-c), m.target ) ) {
+			if( m.captured_piece != get_piece_on_square( p, p.other(), m.target ) ) {
 				return false;
 			}
 
@@ -1048,21 +1033,21 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 			}
 
 			if( m.piece == pieces::bishop ) {
-				uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+				uint64_t const all_blockers = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
 				uint64_t possible_moves = bishop_magic( m.source, all_blockers );
 				if( !(possible_moves & (1ull << m.target ) ) ) {
 					return false;
 				}
 			}
 			else if( m.piece == pieces::rook ) {
-				uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+				uint64_t const all_blockers = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
 				uint64_t possible_moves = rook_magic( m.source, all_blockers );
 				if( !(possible_moves & (1ull << m.target ) ) ) {
 					return false;
 				}
 			}
 			else if( m.piece == pieces::queen) {
-				uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+				uint64_t const all_blockers = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
 				uint64_t possible_moves = rook_magic( m.source, all_blockers ) | bishop_magic( m.source, all_blockers );
 				if( !(possible_moves & (1ull << m.target ) ) ) {
 					return false;
@@ -1070,15 +1055,9 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 			}
 			else if( m.piece == pieces::pawn ) {
 				if( m.flags & move_flags::pawn_double_move ) {
-					if( c == color::white ) {
-						if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (1ull << (m.source + 8) ) ) {
-							return false;
-						}
-					}
-					else {
-						if( (p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]) & (1ull << (m.source - 8) ) ) {
-							return false;
-						}
+					unsigned char pushed = m.source + (p.white() ? 8 : -8);
+					if( (p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces]) & (1ull << pushed ) ) {
+						return false;
 					}
 				}
 			}
@@ -1088,15 +1067,15 @@ bool do_is_valid_move( position const& p, color::type c, move const& m, check_ma
 	return true;
 }
 
-bool is_valid_move( position const& p, color::type c, move const& m, check_map const& check )
+bool is_valid_move( position const& p, move const& m, check_map const& check )
 {
-	bool ret = do_is_valid_move( p, c, m, check );
+	bool ret = do_is_valid_move( p, m, check );
 
 #if 0
 	move_info moves[200];
 	move_info* it = moves;
 	move_info* end = moves;
-	calculate_moves( p, c, end, check );
+	calculate_moves( p, p.self(), end, check );
 	for( ; it != end; ++it ) {
 		if( it->m == m ) {
 			if( ret ) {
@@ -1109,7 +1088,7 @@ bool is_valid_move( position const& p, color::type c, move const& m, check_map c
 	}
 	if( ret || it != end ) {
 		std::cerr << board_to_string( p ) << std::endl;
-		std::cerr << position_to_fen_noclock( p, c ) << std::endl;
+		std::cerr << position_to_fen_noclock( p ) << std::endl;
 		std::cerr << move_to_string( m ) << std::endl;
 		std::cerr << "Ret: " << ret << std::endl;
 		abort();

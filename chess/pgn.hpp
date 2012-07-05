@@ -9,7 +9,6 @@
 struct game
 {
 	position p_;
-	color::type c_;
 	std::list<move> moves_;
 };
 
