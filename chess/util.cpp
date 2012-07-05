@@ -21,7 +21,7 @@ extern unsigned char const kingside_rook_origin[2];
 
 bool validate_move( position const& p, move const& m )
 {
-	check_map check( p, p.self() );
+	check_map check( p );
 
 	move_info moves[200];
 	move_info* pm = moves;
@@ -226,7 +226,7 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 		return false;
 	}
 
-	check_map check( p, p.self() );
+	check_map check( p );
 
 	move_info moves[200];
 	move_info* pm = moves;

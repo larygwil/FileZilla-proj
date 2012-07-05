@@ -691,7 +691,7 @@ skip_getline:
 			state.moves_between_updates = 0;
 		}
 		else if( cmd == "~moves" ) {
-			check_map check( state.p, state.p.self() );
+			check_map check( state.p );
 
 			move_info moves[200];
 			move_info* pm = moves;

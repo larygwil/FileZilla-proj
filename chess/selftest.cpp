@@ -42,7 +42,7 @@ void perft( perft_ctx& ctx, int depth, position const& p, color::type c, uint64_
 
 	move_info* moves = ctx.move_ptr;
 
-	check_map check( p, c );
+	check_map check( p );
 	if( split_movegen ) {
 		calculate_moves_captures( p, c, ctx.move_ptr, check );
 		calculate_moves_noncaptures<false>( p, c, ctx.move_ptr, check );
@@ -151,7 +151,7 @@ static bool test_move_generation( std::string const& fen, std::string const& ref
 
 	move_info moves[200];
 	move_info* pm = moves;
-	check_map check( p, p.self() );
+	check_map check( p );
 	calculate_moves( p, p.self(), pm, check );
 
 	std::vector<std::string> ms;
@@ -223,7 +223,7 @@ static bool test_zobrist()
 		return false;
 	}
 
-	uint64_t new_hash_move = update_zobrist_hash( p, p.self(), old_hash, m );
+	uint64_t new_hash_move = update_zobrist_hash( p, old_hash, m );
 
 	apply_move( p, m );
 
@@ -422,9 +422,9 @@ static bool test_evaluation( std::string const& fen, position const& p )
 }
 
 
-static void test_moves_noncaptures( std::string const& fen, position const& p, color::type c )
+static void test_moves_noncaptures( std::string const& fen, position const& p )
 {
-	check_map check( p, c );
+	check_map check( p );
 	if( check.check ) {
 		return;
 	}
@@ -434,13 +434,13 @@ static void test_moves_noncaptures( std::string const& fen, position const& p, c
 	move_info moves_check[200];
 	move_info* move_ptr_check = moves_check;
 
-	calculate_moves_noncaptures<false>( p, c, move_ptr_full, check );
-	calculate_moves_noncaptures<true>( p, c, move_ptr_check, check );
+	calculate_moves_noncaptures<false>( p, p.self(), move_ptr_full, check );
+	calculate_moves_noncaptures<true>( p, p.self(), move_ptr_check, check );
 
 	for( move_info* it = moves_full; it != move_ptr_full; ++it ) {
 		position p2 = p;
 		apply_move( p2, it->m );
-		check_map new_check( p2, static_cast<color::type>(1-c) );
+		check_map new_check( p2 );
 		if( new_check.check ) {
 			move_info* it2;
 			for( it2 = moves_check; it2 != move_ptr_check; ++it2 ) {
@@ -477,7 +477,7 @@ static void process_test_positions()
 			abort();
 		}
 
-		test_moves_noncaptures( fen, p, p.self() );
+		test_moves_noncaptures( fen, p );
 	}
 }
 

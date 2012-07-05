@@ -354,7 +354,7 @@ extern "C" int get_cb( void* p, sqlite3_stmt* statement )
 	}
 
 	if( !d->pm ) {
-		check_map check( d->p, d->c );
+		check_map check( d->p );
 		d->pm = d->moves;
 		calculate_moves( d->p, d->c, d->pm, check );
 
@@ -554,7 +554,7 @@ extern "C" int fold_position( void* p, sqlite3_stmt* statement )
 			return 1;
 		}
 
-		check_map check( p, c );
+		check_map check( p );
 		if( !check.check ) {
 			forecast = 0;
 		}
@@ -601,7 +601,7 @@ extern "C" int fold_position( void* p, sqlite3_stmt* statement )
 
 	move_info moves[200];
 	move_info* it = moves;
-	calculate_moves( pp, c, it, check_map( pp, c ) );
+	calculate_moves( pp, c, it, check_map( pp ) );
 	if( static_cast<uint64_t>(it - moves) != dh.bytes / 4 ) {
 		std::cerr << "Wrong move count in parent position's data: " << (it - moves) << " " << dh.bytes / 4 << std::endl;
 		return 1;
@@ -765,7 +765,6 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 	}
 
 	work w;
-	w.c = color::white;
 	w.seen.reset_root( get_zobrist_hash(w.p) );
 
 	while( !pos.empty() ) {
@@ -773,12 +772,11 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 		pos = pos.substr( 2 );
 
 		move m;
-		if( !conv_to_move_slow( w.p, w.c, m, ms.c_str(), true ) ) {
+		if( !conv_to_move_slow( w.p, w.p.self(), m, ms.c_str(), true ) ) {
 			return 1;
 		}
 
 		apply_move( w.p, m );
-		w.c = static_cast<color::type>(1-w.c);
 		w.move_history.push_back( m );
 		w.seen.push_root( get_zobrist_hash(w.p) );
 	}
@@ -850,7 +848,7 @@ std::list<book_entry_with_position> book::get_all_entries()
 	for( std::list<work>::const_iterator it = positions.begin(); it != positions.end(); ++it ) {
 		book_entry_with_position entry;
 		entry.w = *it;
-		entry.entries = get_entries( it->p, it->c, it->move_history );
+		entry.entries = get_entries( it->p, it->p.self(), it->move_history );
 
 		if( !entry.entries.empty() ) {
 			ret.push_back( entry );
@@ -888,7 +886,7 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 
 	move_info moves[200];
 	move_info* it = moves;
-	calculate_moves( p, c, it, check_map( p, c ) );
+	calculate_moves( p, c, it, check_map( p ) );
 	if( static_cast<uint64_t>(it - moves) != dh.bytes / 4 ) {
 		std::cerr << "Wrong move count in position's data: " << (it - moves) << " " << dh.bytes / 4 << std::endl;
 		return false;

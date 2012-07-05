@@ -41,7 +41,7 @@ static calc_result tweak_calc( position& p, duration const& move_time_limit, int
 		return cmgr.calc( p, move_time_limit, move_time_limit, clock, seen, last_mate, new_best_cb );
 	}
 
-	check_map check( p, p.self() );
+	check_map check( p );
 
 	move_info moves[200];
 	move_info* pm = moves;

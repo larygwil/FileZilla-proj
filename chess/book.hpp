@@ -37,7 +37,6 @@ struct work {
 	std::vector<move> move_history;
 	seen_positions seen;
 	position p;
-	color::type c;
 };
 
 

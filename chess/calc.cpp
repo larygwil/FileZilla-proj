@@ -149,7 +149,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 		position new_pos = p;
 		apply_move( new_pos, it->m );
-		check_map new_check( new_pos, new_pos.c );
+		check_map new_check( new_pos );
 
 		if( it->m.captured_piece == pieces::none && !check.check && !new_check.check ) {
 			continue;
@@ -167,7 +167,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		}
 
 		short value;
-		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
+		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
 
 		value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -beta, -alpha );
 
@@ -269,11 +269,10 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 
 		pv_entry* cpv = ctx.pv_pool.get();
 
-		check_map new_check( p, p.other() );
-
 		short new_depth = depth - (NULL_MOVE_REDUCTION + 1) * depth_factor;
 
 		p.do_null_move();
+		check_map new_check( p );
 		short value = -step( new_depth, ply + 1, ctx, p, hash, new_check, -beta, -beta + 1, cpv, true );
 		p.do_null_move();
 		ctx.pv_pool.release( cpv );
@@ -324,7 +323,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		++processed_moves;
 
 		short value;
-		uint64_t new_hash = update_zobrist_hash( p, p.self(), hash, it->m );
+		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
 
 		pv_entry* cpv = ctx.pv_pool.get();
 		if( ctx.seen.is_two_fold( new_hash, ply ) ) {
@@ -336,7 +335,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 
 			ctx.seen.set( new_hash, ply );
 
-			check_map new_check( new_pos, new_pos.self() );
+			check_map new_check( new_pos );
 
 			bool extended = false;
 
@@ -618,7 +617,7 @@ short processing_thread::processWork()
 
 	ctx_.seen.push_root( hash );
 
-	check_map check( new_pos, new_pos.self() );
+	check_map check( new_pos );
 
 	// Search using aspiration window:
 	short value;
@@ -796,7 +795,7 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 		ponder = true;
 	}
 
-	check_map check( p, p.self() );
+	check_map check( p );
 
 	move_info moves[200];
 	move_info* pm = moves;

@@ -32,12 +32,12 @@ int const MAX_BOOKSEARCH_DEPTH = 17;
 
 unsigned int const MAX_BOOK_DEPTH = 10;
 
-bool deepen_move( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history, move const& m )
+bool deepen_move( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, move const& m )
 {
 	int depth = MAX_BOOKSEARCH_DEPTH;
 
 	{
-		std::vector<book_entry> entries = b.get_entries( p, c, move_history );
+		std::vector<book_entry> entries = b.get_entries( p, p.self(), move_history );
 		for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 			if( it->m != m ) {
 				continue;
@@ -65,7 +65,7 @@ bool deepen_move( book& b, position const& p, color::type c, seen_positions cons
 
 		pv_entry* pv = ctx.pv_pool.get();
 
-		check_map check( new_pos, static_cast<color::type>(1-c) );
+		check_map check( new_pos );
 
 		value = -step( depth * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, pv, true );
 		ctx.pv_pool.release(pv);
@@ -81,12 +81,12 @@ bool deepen_move( book& b, position const& p, color::type c, seen_positions cons
 }
 
 
-bool calculate_position( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history )
+bool calculate_position( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history )
 {
 	move_info moves[200];
 	move_info* pm = moves;
-	check_map check( p, c );
-	calculate_moves( p, c, pm, check );
+	check_map check( p );
+	calculate_moves( p, p.self(), pm, check );
 	if( pm == moves ) {
 		return true;
 	}
@@ -103,7 +103,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 		position new_pos = p;
 		apply_move( new_pos, it->m );
 
-		uint64_t new_hash = update_zobrist_hash( p, c, hash, it->m );
+		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
 
 		short value;
 		if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
@@ -114,7 +114,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 
 			pv_entry* pv = ctx.pv_pool.get();
 
-			check_map check( new_pos, static_cast<color::type>(1-c) );
+			check_map check( new_pos );
 
 			value = -step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, pv, true );
 			ctx.pv_pool.release(pv);
@@ -155,7 +155,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 			position new_pos = p;
 			apply_move( new_pos, entry.m );
 
-			uint64_t new_hash = update_zobrist_hash( p, c, hash, entry.m );
+			uint64_t new_hash = update_zobrist_hash( p, hash, entry.m );
 
 			short value;
 			if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
@@ -165,7 +165,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 				ctx.seen.push_root( new_hash );
 				pv_entry* pv = ctx.pv_pool.get();
 
-				check_map check( new_pos, static_cast<color::type>(1-c) );
+				check_map check( new_pos );
 
 				value = -step( MAX_BOOKSEARCH_DEPTH * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, pv, true );
 				ctx.pv_pool.release(pv);
@@ -182,7 +182,7 @@ bool calculate_position( book& b, position const& p, color::type c, seen_positio
 }
 
 
-bool update_position( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history, std::vector<book_entry> const& entries )
+bool update_position( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, std::vector<book_entry> const& entries )
 {
 	uint64_t hash = get_zobrist_hash( p );
 
@@ -211,7 +211,7 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 			position new_pos = p;
 			apply_move( new_pos, entry.m );
 
-			uint64_t new_hash = update_zobrist_hash( p, c, hash, entry.m );
+			uint64_t new_hash = update_zobrist_hash( p, hash, entry.m );
 
 			short value;
 			if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
@@ -220,7 +220,7 @@ bool update_position( book& b, position const& p, color::type c, seen_positions 
 			else {
 				ctx.seen.push_root( new_hash );
 
-				check_map check( new_pos, static_cast<color::type>(1-c) );
+				check_map check( new_pos );
 
 				pv_entry* pv = ctx.pv_pool.get();
 				value = -step( new_depth * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, pv, true );
@@ -248,7 +248,7 @@ void init_book( book& b )
 
 	std::vector<move> move_history;
 
-	if( !calculate_position( b, p, color::white, seen, move_history ) ) {
+	if( !calculate_position( b, p, seen, move_history ) ) {
 		std::cerr << "Could not save position" << std::endl;
 		exit(1);
 	}
@@ -275,9 +275,9 @@ struct worklist {
 };
 
 
-void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, seen_positions const& seen, std::vector<move> const& move_history, position const& p, color::type c )
+void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, seen_positions const& seen, std::vector<move> const& move_history, position const& p )
 {
-	std::vector<book_entry> moves = b.get_entries( p, c, move_history );
+	std::vector<book_entry> moves = b.get_entries( p, p.self(), move_history );
 
 	unsigned int i = 0;
 	for( std::vector<book_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it, ++i ) {
@@ -290,7 +290,7 @@ void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, see
 
 		std::vector<move> child_history = move_history;
 		child_history.push_back( it->m );
-		std::vector<book_entry> child_moves = b.get_entries( new_pos, static_cast<color::type>(1-c), child_history );
+		std::vector<book_entry> child_moves = b.get_entries( new_pos, new_pos.self(), child_history );
 
 		seen_positions child_seen = seen;
 		child_seen.push_root( get_zobrist_hash( new_pos ) );
@@ -298,14 +298,13 @@ void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, see
 		if( child_moves.empty() ) {
 			work w;
 			w.p = new_pos;
-			w.c = static_cast<color::type>(1-c);
 			w.move_history = child_history;
 			w.seen = child_seen;
 			wl.work_at_depth[child_history.size()].push_back(w);
 			++wl.count;
 		}
 		else if( child_history.size() < static_cast<std::size_t>(max_depth) ) {
-			get_work( b, wl, max_depth, max_width, child_seen, child_history, new_pos, static_cast<color::type>(1-c) );
+			get_work( b, wl, max_depth, max_width, child_seen, child_history, new_pos );
 		}
 	}
 }
@@ -399,10 +398,10 @@ private:
 void processing_thread::onRun()
 {
 	if( entries_.empty() ) {
-		calculate_position( b_, w_.p, w_.c, w_.seen, w_.move_history );
+		calculate_position( b_, w_.p, w_.seen, w_.move_history );
 	}
 	else {
-		update_position( b_, w_.p, w_.c, w_.seen, w_.move_history, entries_ );
+		update_position( b_, w_.p, w_.seen, w_.move_history, entries_ );
 	}
 
 	scoped_lock l(mutex_);
@@ -412,7 +411,7 @@ void processing_thread::onRun()
 }
 
 
-void go( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history, unsigned int max_depth, unsigned int max_width )
+void go( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, unsigned int max_depth, unsigned int max_width )
 {
 	mutex mtx;
 	condition cond;
@@ -446,7 +445,7 @@ void go( book& b, position const& p, color::type c, seen_positions const& seen, 
 			}
 
 			while( wl.empty() ) {
-				get_work( b, wl, max_depth, max_width, seen, move_history, p, c );
+				get_work( b, wl, max_depth, max_width, seen, move_history, p );
 				if( wl.empty() ) {
 					if( max_depth < MAX_BOOK_DEPTH ) {
 						++max_depth;
@@ -749,10 +748,10 @@ std::string side_by_side( std::string const& left, std::string const& right, std
 }
 
 
-std::string print_moves( position const& p, color::type c, std::vector<book_entry> const& moves )
+std::string print_moves( position const& p, std::vector<book_entry> const& moves )
 {
 	std::string ret = entries_to_string( p, moves );
-	if( c == color::white ) {
+	if( p.white() ) {
 		ret += "White to move\n";
 	}
 	else {
@@ -764,11 +763,10 @@ std::string print_moves( position const& p, color::type c, std::vector<book_entr
 
 struct history_entry {
 	position p;
-	color::type c;
 	move m;
 };
 
-void print_pos( std::vector<history_entry> const& history, position const& p, color::type c, std::vector<book_entry> const& moves )
+void print_pos( std::vector<history_entry> const& history, position const& p, std::vector<book_entry> const& moves )
 {
 	std::stringstream ss;
 	for( unsigned int i = 0; i < history.size(); ++i ) {
@@ -785,7 +783,7 @@ void print_pos( std::vector<history_entry> const& history, position const& p, co
 		std::cout << "Line: " << line << std::endl << std::endl;
 	}
 
-	std::string mstr = print_moves( p, c, moves );
+	std::string mstr = print_moves( p, moves );
 	std::string board = board_to_string( p );
 	//std::string eval = explain_eval( p, c );
 
@@ -810,9 +808,9 @@ void learnpgn( book& b, std::string const& file )
 }
 
 
-bool do_deepen_tree( book& b, position p, color::type c, seen_positions seen, std::vector<move> move_history )
+bool do_deepen_tree( book& b, position p, seen_positions seen, std::vector<move> move_history )
 {
-	std::vector<book_entry> entries = b.get_entries( p, c, move_history );
+	std::vector<book_entry> entries = b.get_entries( p, p.self(), move_history );
 	if( entries.empty() ) {
 		std::stringstream ss;
 		ss << "Calculating " << position_to_fen_noclock( p ) << std::endl;
@@ -828,7 +826,7 @@ bool do_deepen_tree( book& b, position p, color::type c, seen_positions seen, st
 		ss << std::endl;
 		std::cerr << ss.str();
 
-		calculate_position( b, p, c, seen, move_history );
+		calculate_position( b, p, seen, move_history );
 		std::cerr << std::endl;
 
 		return true;
@@ -843,16 +841,16 @@ bool do_deepen_tree( book& b, position p, color::type c, seen_positions seen, st
 	move_history.push_back( e.m );
 	seen.push_root( get_zobrist_hash( p ) );
 
-	return do_deepen_tree( b, p, static_cast<color::type>(1-c), seen, move_history );
+	return do_deepen_tree( b, p, seen, move_history );
 }
 
 
-void deepen_tree( book& b, position const& p, color::type c, seen_positions const& seen, std::vector<move> const& move_history )
+void deepen_tree( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history )
 {
 	bool run = true;
 	while( run ) {
 		run = false;
-		while( do_deepen_tree( b, p, c, seen, move_history ) ) {
+		while( do_deepen_tree( b, p, seen, move_history ) ) {
 			run = true;
 		}
 	}
@@ -890,11 +888,9 @@ void run( book& b )
 
 	seen_positions seen( get_zobrist_hash( p ) );
 
-	color::type c = color::white;
-
 	{
-		std::vector<book_entry> entries = b.get_entries( p, c, move_history );
-		print_pos( history, p, c, entries );
+		std::vector<book_entry> entries = b.get_entries( p, p.self(), move_history );
+		print_pos( history, p, entries );
 	}
 
 	unsigned int max_depth = std::min(4u, MAX_BOOK_DEPTH);
@@ -915,7 +911,7 @@ void run( book& b )
 			continue;
 		}
 		else if( cmd == "go" ) {
-			go( b, p, c, seen, move_history, max_depth, max_width );
+			go( b, p, seen, move_history, max_depth, max_width );
 			return;
 		}
 		else if( cmd == "process" ) {
@@ -954,10 +950,9 @@ void run( book& b )
 				seen.pop_root();
 				history.pop_back();
 				p = h.p;
-				c = h.c;
 
-				std::vector<book_entry> moves = b.get_entries( p, c, move_history );
-				print_pos( history, p, c, moves );
+				std::vector<book_entry> moves = b.get_entries( p, p.self(), move_history );
+				print_pos( history, p,  moves );
 			}
 		}
 		else if( cmd == "update" ) {
@@ -981,10 +976,10 @@ void run( book& b )
 		else if( cmd == "deepen" ) {
 			move m;
 			if( parse_move( p, args, m ) ) {
-				deepen_move( b, p, c, seen, move_history, m );
+				deepen_move( b, p, seen, move_history, m );
 
-				std::vector<book_entry> entries = b.get_entries( p, c, move_history );
-				print_pos( history, p, c, entries );
+				std::vector<book_entry> entries = b.get_entries( p, p.self(), move_history );
+				print_pos( history, p, entries );
 			}
 		}
 		else if( cmd == "fold" ) {
@@ -997,7 +992,7 @@ void run( book& b )
 			b.redo_hashes();
 		}
 		else if( cmd == "treedeepen" ) {
-			deepen_tree( b, p, c, seen, move_history );
+			deepen_tree( b, p, seen, move_history );
 		}
 		else if( cmd == "historystring" ) {
 			std::cerr << b.history_to_string( move_history ) << std::endl;
@@ -1008,27 +1003,25 @@ void run( book& b )
 
 				history_entry h;
 				h.p = p;
-				h.c = c;
 				h.m = m;
 				history.push_back( h );
 
 				move_history.push_back( m );
 
 				apply_move( p, m );
-				c = static_cast<color::type>( 1 - c );
 
 				seen.push_root( get_zobrist_hash( p ) );
 
-				std::vector<book_entry> entries = b.get_entries( p, c, move_history );
+				std::vector<book_entry> entries = b.get_entries( p, p.self(), move_history );
 				if( entries.empty() ) {
 					std::cout << "Position not in book, calculating..." << std::endl;
 
-					if( !calculate_position( b, p, c, seen, move_history ) ) {
+					if( !calculate_position( b, p, seen, move_history ) ) {
 						std::cerr << "Failed to calculate position" << std::endl;
 						exit(1);
 					}
 
-					entries = b.get_entries( p, c, move_history );
+					entries = b.get_entries( p, p.self(), move_history );
 				}
 
 				if( entries.empty() ) {
@@ -1036,7 +1029,7 @@ void run( book& b )
 					exit(1);
 				}
 
-				print_pos( history, p, c, entries );
+				print_pos( history, p, entries );
 			}
 		}
 	}

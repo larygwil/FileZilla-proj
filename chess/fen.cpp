@@ -333,9 +333,7 @@ bool parse_fen_noclock( std::string const& fen, position& p, std::string* error 
 
 	p.update_derived();
 
-	check_map check( p, p.other() );
-
-	if( check.check ) {
+	if( detect_check( p, p.other() ) ) {
 		if( error ) {
 			*error = "The side not to move is in check.";
 		}

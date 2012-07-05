@@ -24,7 +24,7 @@
 class check_map
 {
 public:
-	check_map( position const& p, color::type c );
+	check_map( position const& p );
 
 	unsigned char board[64];
 	unsigned char check;

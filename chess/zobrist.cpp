@@ -147,30 +147,30 @@ static uint64_t get_piece_hash( pieces::type pi, color::type c, int pos )
 }
 }
 
-uint64_t update_zobrist_hash( position const& p, color::type c, uint64_t hash, move const& m )
+uint64_t update_zobrist_hash( position const& p, uint64_t hash, move const& m )
 {
 	hash ^= enpassant[p.can_en_passant];
 
 	if( m.flags & move_flags::enpassant ) {
 		// Was en-passant
-		hash ^= pawns[1-c][(m.target % 8) | (m.source & 0xf8)];
+		hash ^= pawns[p.other()][(m.target % 8) | (m.source & 0xf8)];
 	}
 	else if( m.captured_piece != pieces::none ) {
-		hash ^= get_piece_hash( static_cast<pieces::type>(m.captured_piece), static_cast<color::type>(1-c), m.target );
+		hash ^= get_piece_hash( static_cast<pieces::type>(m.captured_piece), p.other(), m.target );
 		
 		if( m.captured_piece == pieces::rook ) {
-			if( m.target == queenside_rook_origin[1-c] && p.castle[1-c] & 0x2 ) {
-				hash ^= castle[1-c][p.castle[1-c]];
-				hash ^= castle[1-c][p.castle[1-c] & 0x5];
+			if( m.target == queenside_rook_origin[p.other()] && p.castle[p.other()] & 0x2 ) {
+				hash ^= castle[p.other()][p.castle[p.other()]];
+				hash ^= castle[p.other()][p.castle[p.other()] & 0x5];
 			}
-			else if( m.target == kingside_rook_origin[1-c] && p.castle[1-c] & 0x1 ) {
-				hash ^= castle[1-c][p.castle[1-c]];
-				hash ^= castle[1-c][p.castle[1-c] & 0x6];
+			else if( m.target == kingside_rook_origin[p.other()] && p.castle[p.other()] & 0x1 ) {
+				hash ^= castle[p.other()][p.castle[p.other()]];
+				hash ^= castle[p.other()][p.castle[p.other()] & 0x6];
 			}
 		}
 	}
 
-	hash ^= get_piece_hash( m.piece, c, m.source );
+	hash ^= get_piece_hash( m.piece, p.self(), m.source );
 
 	if( m.piece == pieces::pawn ) {
 		unsigned char source_row = m.source / 8;
@@ -182,13 +182,13 @@ uint64_t update_zobrist_hash( position const& p, color::type c, uint64_t hash, m
 		}
 	}
 	else if( m.piece == pieces::rook ) {
-		if( m.source == queenside_rook_origin[c] && p.castle[c] & 0x2 ) {
-			hash ^= castle[c][p.castle[c]];
-			hash ^= castle[c][p.castle[c] & 0x5];
+		if( m.source == queenside_rook_origin[p.self()] && p.castle[p.self()] & 0x2 ) {
+			hash ^= castle[p.self()][p.castle[p.self()]];
+			hash ^= castle[p.self()][p.castle[p.self()] & 0x5];
 		}
-		else if( m.source == kingside_rook_origin[c] && p.castle[c] & 0x1 ) {
-			hash ^= castle[c][p.castle[c]];
-			hash ^= castle[c][p.castle[c] & 0x6];
+		else if( m.source == kingside_rook_origin[p.self()] && p.castle[p.self()] & 0x1 ) {
+			hash ^= castle[p.self()][p.castle[p.self()]];
+			hash ^= castle[p.self()][p.castle[p.self()] & 0x6];
 		}
 	}
 	else if( m.piece == pieces::king ) {
@@ -198,39 +198,39 @@ uint64_t update_zobrist_hash( position const& p, color::type c, uint64_t hash, m
 
 			// Was castling
 			if( target_col == 2 ) {
-				hash ^= rooks[c][0 + target_row * 8];
-				hash ^= rooks[c][3 + target_row * 8];
+				hash ^= rooks[p.self()][0 + target_row * 8];
+				hash ^= rooks[p.self()][3 + target_row * 8];
 			}
 			else {
-				hash ^= rooks[c][7 + target_row * 8];
-				hash ^= rooks[c][5 + target_row * 8];
+				hash ^= rooks[p.self()][7 + target_row * 8];
+				hash ^= rooks[p.self()][5 + target_row * 8];
 			}
-			hash ^= castle[c][p.castle[c]];
-			hash ^= castle[c][0x4];
+			hash ^= castle[p.self()][p.castle[p.self()]];
+			hash ^= castle[p.self()][0x4];
 		}
 		else {
-			hash ^= castle[c][p.castle[c]];
-			hash ^= castle[c][p.castle[c] & 0x4];
+			hash ^= castle[p.self()][p.castle[p.self()]];
+			hash ^= castle[p.self()][p.castle[p.self()] & 0x4];
 		}
 	}
 
 	int promotion = m.flags & move_flags::promotion_mask;
 	if( !promotion ) {
-		hash ^= get_piece_hash( m.piece, c, m.target );
+		hash ^= get_piece_hash( m.piece, p.self(), m.target );
 	}
 	else {
 		switch( promotion ) {
 			case move_flags::promotion_knight:
-				hash ^= knights[c][m.target];
+				hash ^= knights[p.self()][m.target];
 				break;
 			case move_flags::promotion_bishop:
-				hash ^= bishops[c][m.target];
+				hash ^= bishops[p.self()][m.target];
 				break;
 			case move_flags::promotion_rook:
-				hash ^= rooks[c][m.target];
+				hash ^= rooks[p.self()][m.target];
 				break;
 			case move_flags::promotion_queen:
-				hash ^= queens[c][m.target];
+				hash ^= queens[p.self()][m.target];
 				break;
 		}
 	}
