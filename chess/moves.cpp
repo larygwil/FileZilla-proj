@@ -396,16 +396,16 @@ void calc_moves_pawns( position const& p, color::type c, move_info*& moves, chec
 }
 }
 
-void calculate_moves( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calculate_moves( position const& p, move_info*& moves, check_map const& check )
 {
-	calc_moves_king( p, c, moves, check );
+	calc_moves_king( p, p.self(), moves, check );
 
 	if( !check.check || !check.multiple() )
 	{
-		calc_moves_pawns( p, c, moves, check );
-		calc_moves_queens( p, c, moves, check );
-		calc_moves_rooks( p, c, moves, check );
-		calc_moves_bishops( p, c, moves, check );
-		calc_moves_knights( p, c, moves, check );
+		calc_moves_pawns( p, p.self(), moves, check );
+		calc_moves_queens( p, p.self(), moves, check );
+		calc_moves_rooks( p, p.self(), moves, check );
+		calc_moves_bishops( p, p.self(), moves, check );
+		calc_moves_knights( p, p.self(), moves, check );
 	}
 }

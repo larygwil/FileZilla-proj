@@ -25,7 +25,7 @@ bool validate_move( position const& p, move const& m )
 
 	move_info moves[200];
 	move_info* pm = moves;
-	calculate_moves( p, p.self(), pm, check );
+	calculate_moves( p, pm, check );
 
 	return validate_move( m, moves, pm );
 }
@@ -230,7 +230,7 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 
 	move_info moves[200];
 	move_info* pm = moves;
-	calculate_moves( p, p.self(), pm, check );
+	calculate_moves( p, pm, check );
 
 	std::list<move_info> matches;
 

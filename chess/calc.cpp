@@ -63,7 +63,7 @@ void sort_moves( move_info* begin, move_info* end, position const& p )
 }
 
 
-short quiescence_search( int ply, int depth, context& ctx, position const& p, uint64_t hash, color::type c, check_map const& check, short alpha, short beta, short full_eval = result::win )
+short quiescence_search( int ply, int depth, context& ctx, position const& p, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval = result::win )
 {
 #if 0
 	if( get_zobrist_hash(p) != hash ) {
@@ -98,7 +98,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 	short eval;
 	move tt_move;
-	score_type::type t = transposition_table.lookup( hash, c, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
+	score_type::type t = transposition_table.lookup( hash, p.self(), tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
 
 	if ( !pv_node && t != score_type::none ) {
 		return eval;
@@ -106,7 +106,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 
 #if 0
-	full_eval = evaluate_full( p, c, current_evaluation );
+	full_eval = evaluate_full( p, p.self(), current_evaluation );
 	short diff = std::abs( full_eval - current_evaluation );
 	if( diff > LAZY_EVAL ) {
 		std::cerr << "Bug in lazy evaluation, full evaluation differs too much from basic evaluation:" << std::endl;
@@ -120,12 +120,12 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 	if( !check.check ) {
 		if( full_eval == result::win ) {
-			full_eval = evaluate_full( p, c );
+			full_eval = evaluate_full( p, p.self() );
 		}
 		if( full_eval > alpha ) {
 			if( full_eval >= beta ) {
 				if( !do_abort ) {
-					transposition_table.store( hash, c, tt_depth, ply, full_eval, alpha, beta, tt_move, ctx.clock, full_eval );
+					transposition_table.store( hash, p.self(), tt_depth, ply, full_eval, alpha, beta, tt_move, ctx.clock, full_eval );
 				}
 				return full_eval;
 			}
@@ -169,7 +169,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		short value;
 		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
 
-		value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, static_cast<color::type>(1-c), new_check, -beta, -alpha );
+		value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, new_check, -beta, -alpha );
 
 		if( value > best_value ) {
 			best_value = value;
@@ -193,7 +193,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		best_move = tt_move;
 	}
 	if( !do_abort ) {
-		transposition_table.store( hash, c, tt_depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
+		transposition_table.store( hash, p.self(), tt_depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
 	}
 	return best_value;
 }
@@ -209,7 +209,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	ASSERT( p.verify() );
 
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
-		return quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, p.c, check, alpha, beta );
+		return quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, check, alpha, beta );
 	}
 
 	if( do_abort ) {
@@ -257,7 +257,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		   !(p.bitboards[p.self()].b[bb_type::pawns] & (p.white() ? 0x00ff000000000000ull : 0x000000000000ff00ull)) )
 	{
 		short new_beta = beta - razor_pruning[plies_remaining];
-		short value = quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, p.self(), check, new_beta - 1, new_beta, full_eval );
+		short value = quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, check, new_beta - 1, new_beta, full_eval );
 		if( value < new_beta ) {
 			return value;
 		}
@@ -800,7 +800,7 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 	move_info moves[200];
 	move_info* pm = moves;
 
-	calculate_moves( p, p.self(), pm, check );
+	calculate_moves( p, pm, check );
 	sort_moves( moves, pm, p );
 
 	duration time_limit = move_time_limit;

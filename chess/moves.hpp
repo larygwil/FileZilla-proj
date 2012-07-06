@@ -22,12 +22,12 @@ extern MoveSort moveSort;
 
 // Calculates all legal moves
 // Returned evaluation is fast_eval
-void calculate_moves( position const& p, color::type c, move_info*& moves, check_map const& check );
+void calculate_moves( position const& p, move_info*& moves, check_map const& check );
 
 // Returns all legal captures
 // Precondition: Own king not in check
 // Returned evaluation is MVV/LVA
-void calculate_moves_captures( position const& p, color::type c, move_info*& moves, check_map const& check );
+void calculate_moves_captures( position const& p, move_info*& moves, check_map const& check );
 
 // Calculates legal non-captures
 // If only_pseudo_checks is not set,
@@ -35,6 +35,6 @@ void calculate_moves_captures( position const& p, color::type c, move_info*& mov
 // Otherwise, only legal noncaptures are returned that
 // are likely (but not guaranteeded) to give check.
 template<bool only_pseudo_checks>
-void calculate_moves_noncaptures( position const& p, color::type c, move_info*& moves, check_map const& check );
+void calculate_moves_noncaptures( position const& p, move_info*& moves, check_map const& check );
 
 #endif

@@ -249,7 +249,7 @@ bool octochess_uci::impl::do_book_move() {
 	bool ret = false;
 
 	if( conf.use_book && book_.is_open() && half_moves_played_ < 30 && started_from_root_ ) {
-		std::vector<book_entry> moves = book_.get_entries( pos_, pos_.self() );
+		std::vector<book_entry> moves = book_.get_entries( pos_ );
 		if( !moves.empty() ) {
 			ret = true;
 

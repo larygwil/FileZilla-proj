@@ -77,11 +77,11 @@ public:
 	bool is_open() const;
 
 	// Returned entries are sorted by folded forecast, highest first.
-	std::vector<book_entry> get_entries( position const& p, color::type c, std::vector<move> const& history, bool allow_transpositions = false );
+	std::vector<book_entry> get_entries( position const& p, std::vector<move> const& history, bool allow_transpositions = false );
 
 	// As above but does not regard move history and always goes by hash.
 	// Beware: Suspectible to 3-fold repetition
-	std::vector<book_entry> get_entries( position const& p, color::type c );
+	std::vector<book_entry> get_entries( position const& p );
 
 	// Entries do not have to be sorted
 	bool add_entries( std::vector<move> const& history, std::vector<book_entry> entries );

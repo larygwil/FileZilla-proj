@@ -402,7 +402,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 	// Do a step
 	if( conf.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
-		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.p.self(), state.move_history_, true );
+		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.move_history_, true );
 		if( moves.empty() ) {
 			std::cerr << "Current position not in book" << std::endl;
 		}
@@ -695,7 +695,7 @@ skip_getline:
 
 			move_info moves[200];
 			move_info* pm = moves;
-			calculate_moves( state.p, state.p.self(), pm, check );
+			calculate_moves( state.p, pm, check );
 
 			std::cout << "Possible moves:" << std::endl;
 			move_info* it = &moves[0];

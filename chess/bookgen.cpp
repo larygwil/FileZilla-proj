@@ -37,7 +37,7 @@ bool deepen_move( book& b, position const& p, seen_positions const& seen, std::v
 	int depth = MAX_BOOKSEARCH_DEPTH;
 
 	{
-		std::vector<book_entry> entries = b.get_entries( p, p.self(), move_history );
+		std::vector<book_entry> entries = b.get_entries( p, move_history );
 		for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 			if( it->m != m ) {
 				continue;
@@ -86,7 +86,7 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 	move_info moves[200];
 	move_info* pm = moves;
 	check_map check( p );
-	calculate_moves( p, p.self(), pm, check );
+	calculate_moves( p, pm, check );
 	if( pm == moves ) {
 		return true;
 	}
@@ -277,7 +277,7 @@ struct worklist {
 
 void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, seen_positions const& seen, std::vector<move> const& move_history, position const& p )
 {
-	std::vector<book_entry> moves = b.get_entries( p, p.self(), move_history );
+	std::vector<book_entry> moves = b.get_entries( p, move_history );
 
 	unsigned int i = 0;
 	for( std::vector<book_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it, ++i ) {
@@ -290,7 +290,7 @@ void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, see
 
 		std::vector<move> child_history = move_history;
 		child_history.push_back( it->m );
-		std::vector<book_entry> child_moves = b.get_entries( new_pos, new_pos.self(), child_history );
+		std::vector<book_entry> child_moves = b.get_entries( new_pos, child_history );
 
 		seen_positions child_seen = seen;
 		child_seen.push_root( get_zobrist_hash( new_pos ) );
@@ -810,7 +810,7 @@ void learnpgn( book& b, std::string const& file )
 
 bool do_deepen_tree( book& b, position p, seen_positions seen, std::vector<move> move_history )
 {
-	std::vector<book_entry> entries = b.get_entries( p, p.self(), move_history );
+	std::vector<book_entry> entries = b.get_entries( p, move_history );
 	if( entries.empty() ) {
 		std::stringstream ss;
 		ss << "Calculating " << position_to_fen_noclock( p ) << std::endl;
@@ -889,7 +889,7 @@ void run( book& b )
 	seen_positions seen( get_zobrist_hash( p ) );
 
 	{
-		std::vector<book_entry> entries = b.get_entries( p, p.self(), move_history );
+		std::vector<book_entry> entries = b.get_entries( p, move_history );
 		print_pos( history, p, entries );
 	}
 
@@ -951,7 +951,7 @@ void run( book& b )
 				history.pop_back();
 				p = h.p;
 
-				std::vector<book_entry> moves = b.get_entries( p, p.self(), move_history );
+				std::vector<book_entry> moves = b.get_entries( p, move_history );
 				print_pos( history, p,  moves );
 			}
 		}
@@ -978,7 +978,7 @@ void run( book& b )
 			if( parse_move( p, args, m ) ) {
 				deepen_move( b, p, seen, move_history, m );
 
-				std::vector<book_entry> entries = b.get_entries( p, p.self(), move_history );
+				std::vector<book_entry> entries = b.get_entries( p, move_history );
 				print_pos( history, p, entries );
 			}
 		}
@@ -1012,7 +1012,7 @@ void run( book& b )
 
 				seen.push_root( get_zobrist_hash( p ) );
 
-				std::vector<book_entry> entries = b.get_entries( p, p.self(), move_history );
+				std::vector<book_entry> entries = b.get_entries( p, move_history );
 				if( entries.empty() ) {
 					std::cout << "Position not in book, calculating..." << std::endl;
 
@@ -1021,7 +1021,7 @@ void run( book& b )
 						exit(1);
 					}
 
-					entries = b.get_entries( p, p.self(), move_history );
+					entries = b.get_entries( p, move_history );
 				}
 
 				if( entries.empty() ) {

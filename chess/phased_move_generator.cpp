@@ -79,7 +79,7 @@ move_info const* qsearch_move_generator::next()
 		}
 	case phases::captures_gen:
 		ctx.move_ptr = moves;
-		calculate_moves_captures( p_, p_.self(), ctx.move_ptr, check_ );
+		calculate_moves_captures( p_, ctx.move_ptr, check_ );
 		phase = phases::captures;
 	case phases::captures:
 		while( it != ctx.move_ptr ) {
@@ -123,10 +123,10 @@ move_info const* qsearch_move_generator::next()
 		ctx.move_ptr = bad_captures_end_;
 		it = bad_captures_end_;
 		if( check_.check ) {
-			calculate_moves_noncaptures<false>( p_, p_.self(), ctx.move_ptr, check_ );
+			calculate_moves_noncaptures<false>( p_, ctx.move_ptr, check_ );
 		}
 		else {
-			calculate_moves_noncaptures<true>( p_, p_.self(), ctx.move_ptr, check_ );
+			calculate_moves_noncaptures<true>( p_, ctx.move_ptr, check_ );
 		}
 		evaluate_noncaptures( ctx, bad_captures_end_, ctx.move_ptr, p_ );
 		phase = phases::noncapture;
@@ -200,7 +200,7 @@ move_info const* move_generator::next() {
 		}
 	case phases::captures_gen:
 		ctx.move_ptr = moves;
-		calculate_moves_captures( p_, p_.self(), ctx.move_ptr, check_ );
+		calculate_moves_captures( p_, ctx.move_ptr, check_ );
 		phase = phases::captures;
 	case phases::captures:
 		while( it != ctx.move_ptr ) {
@@ -240,7 +240,7 @@ move_info const* move_generator::next() {
 	case phases::noncaptures_gen:
 		ctx.move_ptr = bad_captures_end_;
 		it = bad_captures_end_;
-		calculate_moves_noncaptures<false>( p_, p_.self(), ctx.move_ptr, check_ );
+		calculate_moves_noncaptures<false>( p_, ctx.move_ptr, check_ );
 		evaluate_noncaptures( ctx, bad_captures_end_, ctx.move_ptr, p_ );
 		phase = phases::noncapture;
 	case phases::noncapture:

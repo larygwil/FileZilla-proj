@@ -45,7 +45,7 @@ static calc_result tweak_calc( position& p, duration const& move_time_limit, int
 
 	move_info moves[200];
 	move_info* pm = moves;
-	calculate_moves( p, p.self(), pm, check );
+	calculate_moves( p, pm, check );
 
 	calc_result result;
 	if( moves == pm ) {

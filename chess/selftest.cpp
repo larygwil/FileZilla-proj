@@ -34,7 +34,7 @@ struct perft_ctx {
 
 
 template<bool split_movegen>
-void perft( perft_ctx& ctx, int depth, position const& p, color::type c, uint64_t& n )
+void perft( perft_ctx& ctx, int depth, position const& p, uint64_t& n )
 {
 	if( conf.depth == -1 ) {
 		conf.depth = 8;
@@ -44,11 +44,11 @@ void perft( perft_ctx& ctx, int depth, position const& p, color::type c, uint64_
 
 	check_map check( p );
 	if( split_movegen ) {
-		calculate_moves_captures( p, c, ctx.move_ptr, check );
-		calculate_moves_noncaptures<false>( p, c, ctx.move_ptr, check );
+		calculate_moves_captures( p, ctx.move_ptr, check );
+		calculate_moves_noncaptures<false>( p, ctx.move_ptr, check );
 	}
 	else {
-		calculate_moves( p, c, ctx.move_ptr, check );
+		calculate_moves( p, ctx.move_ptr, check );
 	}
 
 	if( !--depth ) {
@@ -60,7 +60,7 @@ void perft( perft_ctx& ctx, int depth, position const& p, color::type c, uint64_
 	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
 		position new_pos = p;
 		apply_move( new_pos, it->m );
-		perft<split_movegen>( ctx, depth, new_pos, static_cast<color::type>(1-c), n );
+		perft<split_movegen>( ctx, depth, new_pos, n );
 	}
 	ctx.move_ptr = moves;
 }
@@ -97,14 +97,12 @@ bool perft( std::size_t max_depth )
 
 		position p;
 
-		color::type c = color::white;
-
 		uint64_t ret = 0;
 
 		int max_depth = i + 1;
 
 		timestamp start;
-		perft<split_movegen>( ctx, max_depth, p, c, ret );
+		perft<split_movegen>( ctx, max_depth, p, ret );
 		timestamp stop;
 
 
@@ -152,7 +150,7 @@ static bool test_move_generation( std::string const& fen, std::string const& ref
 	move_info moves[200];
 	move_info* pm = moves;
 	check_map check( p );
-	calculate_moves( p, p.self(), pm, check );
+	calculate_moves( p, pm, check );
 
 	std::vector<std::string> ms;
 	for( move_info* it = moves; it != pm; ++it ) {
@@ -434,8 +432,8 @@ static void test_moves_noncaptures( std::string const& fen, position const& p )
 	move_info moves_check[200];
 	move_info* move_ptr_check = moves_check;
 
-	calculate_moves_noncaptures<false>( p, p.self(), move_ptr_full, check );
-	calculate_moves_noncaptures<true>( p, p.self(), move_ptr_check, check );
+	calculate_moves_noncaptures<false>( p, move_ptr_full, check );
+	calculate_moves_noncaptures<true>( p, move_ptr_check, check );
 
 	for( move_info* it = moves_full; it != move_ptr_full; ++it ) {
 		position p2 = p;

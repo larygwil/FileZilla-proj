@@ -153,15 +153,13 @@ bool book::open( std::string const& book_dir )
 namespace {
 struct cb_data {
 	cb_data()
-		: c()
-		, pm()
+		: pm()
 		, valid_()
 	{
 	}
 
 	std::vector<book_entry>* entries;
 	position p;
-	color::type c;
 
 	move_info moves[200];
 	move_info* pm;
@@ -189,7 +187,7 @@ unsigned char conv_to_index( unsigned char s )
 }
 
 
-bool conv_to_move_slow( position const& p, color::type c, move& m, char const* data, bool print_errors ) {
+bool conv_to_move_slow( position const& p, move& m, char const* data, bool print_errors ) {
 	unsigned char si = conv_to_index( data[0] );
 	unsigned char ti = conv_to_index( data[1] );
 
@@ -356,7 +354,7 @@ extern "C" int get_cb( void* p, sqlite3_stmt* statement )
 	if( !d->pm ) {
 		check_map check( d->p );
 		d->pm = d->moves;
-		calculate_moves( d->p, d->c, d->pm, check );
+		calculate_moves( d->p, d->pm, check );
 
 		std::sort( d->moves, d->pm, book_move_sort );
 	}
@@ -382,7 +380,7 @@ extern "C" int get_cb( void* p, sqlite3_stmt* statement )
 }
 
 
-std::vector<book_entry> book::get_entries( position const& p, color::type c, std::vector<move> const& history, bool allow_transpositions )
+std::vector<book_entry> book::get_entries( position const& p, std::vector<move> const& history, bool allow_transpositions )
 {
 	std::vector<book_entry> ret;
 
@@ -395,7 +393,6 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 
 		cb_data data;
 		data.p = p;
-		data.c = c;
 		data.entries = &ret;
 
 		std::string hs = history_to_string( history );
@@ -407,14 +404,14 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c, std
 	}
 
 	if( ret.empty() && allow_transpositions ) {
-		ret = get_entries( p, c );
+		ret = get_entries( p );
 	}
 
 	return ret;
 }
 
 
-std::vector<book_entry> book::get_entries( position const& p, color::type c )
+std::vector<book_entry> book::get_entries( position const& p )
 {
 	std::vector<book_entry> ret;
 
@@ -426,11 +423,10 @@ std::vector<book_entry> book::get_entries( position const& p, color::type c )
 
 	cb_data data;
 	data.p = p;
-	data.c = c;
 	data.entries = &ret;
 
 	uint64_t hash = get_zobrist_hash( p );
-	if( c ) {
+	if( !p.white() ) {
 		hash = ~hash;
 	}
 
@@ -478,25 +474,23 @@ extern "C" int get_data_cb( void* p, sqlite3_stmt* statement )
 }
 
 
-bool get_position( std::string history, position& p, color::type& c )
+bool get_position( std::string history, position& p )
 {
 	if( history.size() % 2 ) {
 		return false;
 	}
 
 	p.reset();
-	c = color::white;
 
 	while( !history.empty() ) {
 		std::string ms = history.substr( 0, 2 );
 		history = history.substr( 2 );
 
 		move m;
-		if( !conv_to_move_slow( p, c, m, ms.c_str(), true ) ) {
+		if( !conv_to_move_slow( p, m, ms.c_str(), true ) ) {
 			return false;
 		}
 		apply_move( p, m );
-		c = static_cast<color::type>(1-c);
 	}
 
 	return true;
@@ -548,8 +542,7 @@ extern "C" int fold_position( void* p, sqlite3_stmt* statement )
 	if( !bytes ) {
 		// Mate or draw.
 		position p;
-		color::type c = color::white;
-		if( !get_position( history, p, c ) ) {
+		if( !get_position( history, p ) ) {
 			std::cerr << "Could not get position from move history" << std::endl;
 			return 1;
 		}
@@ -594,14 +587,13 @@ extern "C" int fold_position( void* p, sqlite3_stmt* statement )
 	}
 
 	position pp;
-	color::type c = color::white;
-	if( !get_position( parent, pp, c ) ) {
+	if( !get_position( parent, pp ) ) {
 		return 1;
 	}
 
 	move_info moves[200];
 	move_info* it = moves;
-	calculate_moves( pp, c, it, check_map( pp ) );
+	calculate_moves( pp, it, check_map( pp ) );
 	if( static_cast<uint64_t>(it - moves) != dh.bytes / 4 ) {
 		std::cerr << "Wrong move count in parent position's data: " << (it - moves) << " " << dh.bytes / 4 << std::endl;
 		return 1;
@@ -609,7 +601,7 @@ extern "C" int fold_position( void* p, sqlite3_stmt* statement )
 	std::sort( moves, it, book_move_sort );
 
 	move m;
-	if( !conv_to_move_slow( pp, c, m, ms.c_str(), true ) ) {
+	if( !conv_to_move_slow( pp, m, ms.c_str(), true ) ) {
 		std::cerr << "Could not get move" << std::endl;
 		return 1;
 	}
@@ -646,11 +638,9 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 	std::string hs = history_to_string( history );
 
 	position p;
-	color::type c = color::white;
 
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
 		apply_move( p, *it );
-		c = static_cast<color::type>(1-c);
 	}
 	uint64_t hash = get_zobrist_hash( p );
 	if( history.size() % 2 ) {
@@ -734,11 +724,9 @@ void book::mark_for_processing( std::vector<move> const& history )
 	ss << "BEGIN TRANSACTION;";
 
 	position p;
-	color::type c = color::white;
 
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
 		apply_move( p, *it );
-		c = static_cast<color::type>(1-c);
 		uint64_t hash = get_zobrist_hash( p );
 		if( (it - history.begin()) % 2 ) {
 			hash = ~hash;
@@ -772,7 +760,7 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 		pos = pos.substr( 2 );
 
 		move m;
-		if( !conv_to_move_slow( w.p, w.p.self(), m, ms.c_str(), true ) ) {
+		if( !conv_to_move_slow( w.p, m, ms.c_str(), true ) ) {
 			return 1;
 		}
 
@@ -848,7 +836,7 @@ std::list<book_entry_with_position> book::get_all_entries()
 	for( std::list<work>::const_iterator it = positions.begin(); it != positions.end(); ++it ) {
 		book_entry_with_position entry;
 		entry.w = *it;
-		entry.entries = get_entries( it->p, it->p.self(), it->move_history );
+		entry.entries = get_entries( it->p, it->move_history );
 
 		if( !entry.entries.empty() ) {
 			ret.push_back( entry );
@@ -879,14 +867,13 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 	}
 
 	position p;
-	color::type c;
-	if( !get_position( hs, p, c ) ) {
+	if( !get_position( hs, p ) ) {
 		return false;
 	}
 
 	move_info moves[200];
 	move_info* it = moves;
-	calculate_moves( p, c, it, check_map( p ) );
+	calculate_moves( p, it, check_map( p ) );
 	if( static_cast<uint64_t>(it - moves) != dh.bytes / 4 ) {
 		std::cerr << "Wrong move count in position's data: " << (it - moves) << " " << dh.bytes / 4 << std::endl;
 		return false;

@@ -356,20 +356,19 @@ void calc_moves_pawns( position const& p, color::type c, move_info*& moves, chec
 }
 
 template<bool only_pseudo_checks>
-void calculate_moves_noncaptures( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calculate_moves_noncaptures( position const& p, move_info*& moves, check_map const& check )
 {
-	calc_moves_king<only_pseudo_checks>( p, c, moves, check );
+	calc_moves_king<only_pseudo_checks>( p, p.self(), moves, check );
 
-	if( !check.check || !check.multiple() )
-	{
-		calc_moves_pawns<only_pseudo_checks>( p, c, moves, check );
-		calc_moves_queens<only_pseudo_checks>( p, c, moves, check );
-		calc_moves_rooks<only_pseudo_checks>( p, c, moves, check );
-		calc_moves_bishops<only_pseudo_checks>( p, c, moves, check );
-		calc_moves_knights<only_pseudo_checks>( p, c, moves, check );
+	if( !check.check || !check.multiple() )	{
+		calc_moves_pawns<only_pseudo_checks>( p, p.self(), moves, check );
+		calc_moves_queens<only_pseudo_checks>( p, p.self(), moves, check );
+		calc_moves_rooks<only_pseudo_checks>( p, p.self(), moves, check );
+		calc_moves_bishops<only_pseudo_checks>( p, p.self(), moves, check );
+		calc_moves_knights<only_pseudo_checks>( p, p.self(), moves, check );
 	}
 }
 
 
-template void calculate_moves_noncaptures<true>( position const& p, color::type c, move_info*& moves, check_map const& check );
-template void calculate_moves_noncaptures<false>( position const& p, color::type c, move_info*& moves, check_map const& check );
+template void calculate_moves_noncaptures<true>( position const& p, move_info*& moves, check_map const& check );
+template void calculate_moves_noncaptures<false>( position const& p, move_info*& moves, check_map const& check );
