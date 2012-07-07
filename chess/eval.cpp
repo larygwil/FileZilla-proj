@@ -798,7 +798,7 @@ static void evaluate_imbalance( position const& p, eval_results& results )
 }
 
 template<bool detail>
-static void do_evaluate( position const& p, color::type to_move, eval_results& results )
+static void do_evaluate( position const& p, eval_results& results )
 {
 	evaluate_pawns<detail>( p, results );
 
@@ -812,7 +812,7 @@ static void do_evaluate( position const& p, color::type to_move, eval_results& r
 
 	evaluate_pawn_shield<detail>( p, results );
 
-	add_score<detail, eval_detail::side_to_move>( results, to_move, eval_values::side_to_move );
+	add_score<detail, eval_detail::side_to_move>( results, p.self(), eval_values::side_to_move );
 
 	for( unsigned int c = 0; c < 2; ++c ) {
 		evaluate_pawns_mobility<detail>( p, static_cast<color::type>(c), results );
@@ -836,12 +836,12 @@ static void do_evaluate( position const& p, color::type to_move, eval_results& r
 	for( unsigned int c = 0; c < 2; ++c ) {
 
 		evaluate_piece_defense<detail>( p, static_cast<color::type>(c), results );
-		evaluate_king_attack<detail>( p, static_cast<color::type>(c), to_move, results );
+		evaluate_king_attack<detail>( p, static_cast<color::type>(c), p.self(), results );
 		//evaluate_drawishness<detail>( p, static_cast<color::type>(c), results );
 		evaluate_center<detail>( p, static_cast<color::type>(c), results );
 	}
 
-	evaluate_passed_pawns<detail>( p, to_move, results );
+	evaluate_passed_pawns<detail>( p, p.self(), results );
 }
 
 score sum_up( position const& p, eval_results const& results ) {
@@ -908,7 +908,7 @@ std::string explain_eval( position const& p )
 		}
 
 		eval_results results;
-		do_evaluate<true>( p, p.self(), results );
+		do_evaluate<true>( p, results );
 
 		score full = sum_up( p, results );
 
@@ -960,7 +960,7 @@ short evaluate_full( position const& p )
 	}
 
 	eval_results results;
-	do_evaluate<false>( p, p.self(), results );
+	do_evaluate<false>( p, results );
 
 	score full = sum_up( p, results );
 	

@@ -86,48 +86,48 @@ void add_if_legal_pawn( move_info*& moves, check_map const& check,
 	}
 }
 
-void add_if_legal_king( position const& p, color::type c,
+void add_if_legal_king( position const& p,
 						move_info*& moves, unsigned char const& source, unsigned char const& target,
 						int flags )
 {
-	if( detect_check( p, c, target, source ) ) {
+	if( detect_check( p, p.self(), target, source ) ) {
 		return;
 	}
 
 	do_add_move( moves, pieces::king, source, target, flags );
 }
 
-void calc_moves_king( position const& p, color::type c, move_info*& moves,
+void calc_moves_king( position const& p, move_info*& moves,
 					  unsigned char const& source, unsigned char const& target )
 {
-	add_if_legal_king( p, c, moves, source, target, move_flags::none );
+	add_if_legal_king( p, moves, source, target, move_flags::none );
 }
 
 
 template<bool only_pseudo_checks>
-void calc_moves_castles( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_castles( position const& p, move_info*& moves, check_map const& check )
 {
 	if( check.check ) {
 		return;
 	}
 
-	unsigned char row = c ? 56 : 0;
+	unsigned char row = p.white() ? 0 : 56;
 	// Queenside castling
-	if( p.castle[c] & 0x2 ) {
-		if( p.get_occupancy( 0xeull << row ) == 0 && !(possible_king_moves[2 + row] & p.bitboards[1-c].b[bb_type::king] ) ) {
-			if( !only_pseudo_checks || (p.king_pos[1-c] % 8) == 3 ) {
-				if( !detect_check( p, c, 3 + row, 3 + row ) ) {
-					add_if_legal_king( p, c, moves, 4 + row, 2 + row, move_flags::castle );
+	if( p.castle[p.self()] & 0x2 ) {
+		if( p.get_occupancy( 0xeull << row ) == 0 && !(possible_king_moves[2 + row] & p.bitboards[p.other()].b[bb_type::king] ) ) {
+			if( !only_pseudo_checks || (p.king_pos[p.other()] % 8) == 3 ) {
+				if( !detect_check( p, p.self(), 3 + row, 3 + row ) ) {
+					add_if_legal_king( p, moves, 4 + row, 2 + row, move_flags::castle );
 				}
 			}
 		}
 	}
 	// Kingside castling
-	if( p.castle[c] & 0x1 ) {
-		if( p.get_occupancy( 0x60ull << row ) == 0 && !(possible_king_moves[6 + row] & p.bitboards[1-c].b[bb_type::king] ) ) {
-			if( !only_pseudo_checks || (p.king_pos[1-c] % 8) == 5 ) {
-				if( !detect_check( p, c, 5 + row, 5 + row ) ) {
-					add_if_legal_king( p, c, moves, 4 + row, 6 + row, move_flags::castle );
+	if( p.castle[p.self()] & 0x1 ) {
+		if( p.get_occupancy( 0x60ull << row ) == 0 && !(possible_king_moves[6 + row] & p.bitboards[p.other()].b[bb_type::king] ) ) {
+			if( !only_pseudo_checks || (p.king_pos[p.other()] % 8) == 5 ) {
+				if( !detect_check( p, p.self(), 5 + row, 5 + row ) ) {
+					add_if_legal_king( p, moves, 4 + row, 6 + row, move_flags::castle );
 				}
 			}
 		}
@@ -135,44 +135,44 @@ void calc_moves_castles( position const& p, color::type c, move_info*& moves, ch
 }
 
 template<bool only_pseudo_checks>
-void calc_moves_king( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_king( position const& p, move_info*& moves, check_map const& check )
 {
-	calc_moves_castles<only_pseudo_checks>( p, c, moves, check );
+	calc_moves_castles<only_pseudo_checks>( p, moves, check );
 
 	if( only_pseudo_checks ) {
-		uint64_t occ = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
-		occ ^= p.bitboards[c].b[bb_type::king];
+		uint64_t occ = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
+		occ ^= p.bitboards[p.self()].b[bb_type::king];
 
-		uint64_t ba = bishop_magic( p.king_pos[1-c], occ ) & (p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::queens]);
-		uint64_t ra = rook_magic( p.king_pos[1-c], occ ) & (p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens]);
+		uint64_t ba = bishop_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()].b[bb_type::bishops] | p.bitboards[p.self()].b[bb_type::queens]);
+		uint64_t ra = rook_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()].b[bb_type::rooks] | p.bitboards[p.self()].b[bb_type::queens]);
 		if( !(ba | ra) ) {
 			return;
 		}
 	}
 
-	uint64_t king_moves = possible_king_moves[p.king_pos[c]] & ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces] | possible_king_moves[p.king_pos[1-c]]);
+	uint64_t king_moves = possible_king_moves[p.king_pos[p.self()]] & ~(p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces] | possible_king_moves[p.king_pos[p.other()]]);
 	while( king_moves ) {
 		uint64_t king_move = bitscan_unset( king_moves );
-		calc_moves_king( p, c, moves,
-						 p.king_pos[c], king_move );
+		calc_moves_king( p, moves,
+						 p.king_pos[p.self()], king_move );
 	}
 }
 
 
 template<bool only_pseudo_checks>
-void calc_moves_queen( position const& p, color::type c, move_info*& moves, check_map const& check, uint64_t queen )
+void calc_moves_queen( position const& p, move_info*& moves, check_map const& check, uint64_t queen )
 {
-	uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
 
 	uint64_t possible_moves = rook_magic( queen, all_blockers ) | bishop_magic( queen, all_blockers );
-	possible_moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
+	possible_moves &= ~(p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces]);
 
 	if( only_pseudo_checks ) {
 		uint64_t occ = all_blockers ^ (1ull << queen);
-		uint64_t ba = bishop_magic( p.king_pos[1-c], occ ) & (p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::queens]);
-		uint64_t ra = rook_magic( p.king_pos[1-c], occ ) & (p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens]);
+		uint64_t ba = bishop_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()].b[bb_type::bishops] | p.bitboards[p.self()].b[bb_type::queens]);
+		uint64_t ra = rook_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()].b[bb_type::rooks] | p.bitboards[p.self()].b[bb_type::queens]);
 		if( !(ba | ra ) ) {
-			possible_moves &= bishop_magic( p.king_pos[1-c], all_blockers ) | rook_magic( p.king_pos[1-c], all_blockers );
+			possible_moves &= bishop_magic( p.king_pos[p.other()], all_blockers ) | rook_magic( p.king_pos[p.other()], all_blockers );
 		}
 	}
 
@@ -184,31 +184,31 @@ void calc_moves_queen( position const& p, color::type c, move_info*& moves, chec
 
 
 template<bool only_pseudo_checks>
-void calc_moves_queens( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_queens( position const& p, move_info*& moves, check_map const& check )
 {
-	uint64_t queens = p.bitboards[c].b[bb_type::queens];
+	uint64_t queens = p.bitboards[p.self()].b[bb_type::queens];
 	while( queens ) {
 		uint64_t queen = bitscan_unset( queens );
-		calc_moves_queen<only_pseudo_checks>( p, c, moves, check, queen );
+		calc_moves_queen<only_pseudo_checks>( p, moves, check, queen );
 	}
 }
 
 
 template<bool only_pseudo_checks>
-void calc_moves_bishop( position const& p, color::type c, move_info*& moves, check_map const& check,
+void calc_moves_bishop( position const& p, move_info*& moves, check_map const& check,
 						uint64_t bishop )
 {
-	uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
 
 	uint64_t possible_moves = bishop_magic( bishop, all_blockers );
-	possible_moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
+	possible_moves &= ~(p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces]);
 
 	if( only_pseudo_checks ) {
 		uint64_t occ = all_blockers ^ (1ull << bishop);
-		uint64_t ba = bishop_magic( p.king_pos[1-c], occ ) & (p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::queens]);
-		uint64_t ra = rook_magic( p.king_pos[1-c], occ ) & (p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens]);
+		uint64_t ba = bishop_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()].b[bb_type::bishops] | p.bitboards[p.self()].b[bb_type::queens]);
+		uint64_t ra = rook_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()].b[bb_type::rooks] | p.bitboards[p.self()].b[bb_type::queens]);
 		if( !(ba | ra ) ) {
-			possible_moves &= bishop_magic( p.king_pos[1-c], all_blockers );
+			possible_moves &= bishop_magic( p.king_pos[p.other()], all_blockers );
 		}
 	}
 
@@ -220,31 +220,31 @@ void calc_moves_bishop( position const& p, color::type c, move_info*& moves, che
 
 
 template<bool only_pseudo_checks>
-void calc_moves_bishops( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_bishops( position const& p, move_info*& moves, check_map const& check )
 {
-	uint64_t bishops = p.bitboards[c].b[bb_type::bishops];
+	uint64_t bishops = p.bitboards[p.self()].b[bb_type::bishops];
 	while( bishops ) {
 		uint64_t bishop = bitscan_unset( bishops );
-		calc_moves_bishop<only_pseudo_checks>( p, c, moves, check, bishop );
+		calc_moves_bishop<only_pseudo_checks>( p, moves, check, bishop );
 	}
 }
 
 
 template<bool only_pseudo_checks>
-void calc_moves_rook( position const& p, color::type c, move_info*& moves, check_map const& check,
+void calc_moves_rook( position const& p, move_info*& moves, check_map const& check,
 					  uint64_t rook )
 {
-	uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
 
 	uint64_t possible_moves = rook_magic( rook, all_blockers );
-	possible_moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
+	possible_moves &= ~(p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces]);
 
 	if( only_pseudo_checks ) {
 		uint64_t occ = all_blockers ^ (1ull << rook);
-		uint64_t ba = bishop_magic( p.king_pos[1-c], occ ) & (p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::queens]);
-		uint64_t ra = rook_magic( p.king_pos[1-c], occ ) & (p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens]);
+		uint64_t ba = bishop_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()].b[bb_type::bishops] | p.bitboards[p.self()].b[bb_type::queens]);
+		uint64_t ra = rook_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()].b[bb_type::rooks] | p.bitboards[p.self()].b[bb_type::queens]);
 		if( !(ba | ra ) ) {
-			possible_moves &= rook_magic( p.king_pos[1-c], all_blockers );
+			possible_moves &= rook_magic( p.king_pos[p.other()], all_blockers );
 		}
 	}
 
@@ -256,29 +256,29 @@ void calc_moves_rook( position const& p, color::type c, move_info*& moves, check
 
 
 template<bool only_pseudo_checks>
-void calc_moves_rooks( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_rooks( position const& p, move_info*& moves, check_map const& check )
 {
-	uint64_t rooks = p.bitboards[c].b[bb_type::rooks];
+	uint64_t rooks = p.bitboards[p.self()].b[bb_type::rooks];
 	while( rooks ) {
 		uint64_t rook = bitscan_unset( rooks );
-		calc_moves_rook<only_pseudo_checks>( p, c, moves, check, rook );
+		calc_moves_rook<only_pseudo_checks>( p, moves, check, rook );
 	}
 }
 
 
 template<bool only_pseudo_checks>
-void calc_moves_knight( position const& p, color::type c, move_info*& moves, check_map const& check,
+void calc_moves_knight( position const& p, move_info*& moves, check_map const& check,
 						uint64_t old_knight )
 {
-	uint64_t new_knights = possible_knight_moves[old_knight] & ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces]);
+	uint64_t new_knights = possible_knight_moves[old_knight] & ~(p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces]);
 
 	if( only_pseudo_checks ) {
-		uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+		uint64_t const all_blockers = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
 		uint64_t occ = all_blockers ^ (1ull << old_knight);
-		uint64_t ba = bishop_magic( p.king_pos[1-c], occ ) & (p.bitboards[c].b[bb_type::bishops] | p.bitboards[c].b[bb_type::queens]);
-		uint64_t ra = rook_magic( p.king_pos[1-c], occ ) & (p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens]);
+		uint64_t ba = bishop_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()].b[bb_type::bishops] | p.bitboards[p.self()].b[bb_type::queens]);
+		uint64_t ra = rook_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()].b[bb_type::rooks] | p.bitboards[p.self()].b[bb_type::queens]);
 		if( !(ba | ra ) ) {
-			new_knights &= possible_knight_moves[p.king_pos[1-c]];
+			new_knights &= possible_knight_moves[p.king_pos[p.other()]];
 		}
 	}
 
@@ -290,12 +290,12 @@ void calc_moves_knight( position const& p, color::type c, move_info*& moves, che
 
 
 template<bool only_pseudo_checks>
-void calc_moves_knights( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_knights( position const& p, move_info*& moves, check_map const& check )
 {
-	uint64_t knights = p.bitboards[c].b[bb_type::knights];
+	uint64_t knights = p.bitboards[p.self()].b[bb_type::knights];
 	while( knights ) {
 		uint64_t knight = bitscan_unset( knights );
-		calc_moves_knight<only_pseudo_checks>( p, c, moves, check, knight );
+		calc_moves_knight<only_pseudo_checks>( p, moves, check, knight );
 	}
 }
 
@@ -303,30 +303,30 @@ void calc_moves_knights( position const& p, color::type c, move_info*& moves, ch
 template<int c, bool only_pseudo_checks>
 void calc_moves_pawn_pushes( position const& p, move_info*& moves, check_map const& check )
 {
-	uint64_t blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t blockers = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
 	uint64_t free = ~blockers;
 
 	uint64_t pawn_pushes;
 	uint64_t double_pushes;
 
 	if( c == color::white ) {
-		pawn_pushes = (p.bitboards[c].b[bb_type::pawns] << 8) & free;
-		double_pushes = ((pawn_pushes & pawn_double_move[c]) << 8) & free;
+		pawn_pushes = (p.bitboards[p.self()].b[bb_type::pawns] << 8) & free;
+		double_pushes = ((pawn_pushes & pawn_double_move[p.self()]) << 8) & free;
 
 		if( only_pseudo_checks ) {
-			uint64_t checks = rook_magic( p.king_pos[1-c], blockers ) | bishop_magic( p.king_pos[1-c], blockers );
-			pawn_pushes &= (checks << 8) | pawn_control[1-c][p.king_pos[1-c]] | 0xff000000000000ffull;
-			double_pushes &= (checks << 16) | pawn_control[1-c][p.king_pos[1-c]] | 0xff000000000000ffull;
+			uint64_t checks = rook_magic( p.king_pos[p.other()], blockers ) | bishop_magic( p.king_pos[p.other()], blockers );
+			pawn_pushes &= (checks << 8) | pawn_control[p.other()][p.king_pos[p.other()]] | 0xff000000000000ffull;
+			double_pushes &= (checks << 16) | pawn_control[p.other()][p.king_pos[p.other()]] | 0xff000000000000ffull;
 		}
 	}
 	else {
-		pawn_pushes = (p.bitboards[c].b[bb_type::pawns] >> 8) & free;
-		double_pushes = ((pawn_pushes & pawn_double_move[c]) >> 8) & free;
+		pawn_pushes = (p.bitboards[p.self()].b[bb_type::pawns] >> 8) & free;
+		double_pushes = ((pawn_pushes & pawn_double_move[p.self()]) >> 8) & free;
 
 		if( only_pseudo_checks ) {
-			uint64_t checks = rook_magic( p.king_pos[1-c], blockers ) | bishop_magic( p.king_pos[1-c], blockers );
-			pawn_pushes &= (checks >> 8) | pawn_control[1-c][p.king_pos[1-c]] | 0xff000000000000ffull;
-			double_pushes &= (checks >> 16) | pawn_control[1-c][p.king_pos[1-c]] | 0xff000000000000ffull;
+			uint64_t checks = rook_magic( p.king_pos[p.other()], blockers ) | bishop_magic( p.king_pos[p.other()], blockers );
+			pawn_pushes &= (checks >> 8) | pawn_control[p.other()][p.king_pos[p.other()]] | 0xff000000000000ffull;
+			double_pushes &= (checks >> 16) | pawn_control[p.other()][p.king_pos[p.other()]] | 0xff000000000000ffull;
 		}
 	}
 	while( double_pushes ) {
@@ -358,14 +358,14 @@ void calc_moves_pawns( position const& p, move_info*& moves, check_map const& ch
 template<bool only_pseudo_checks>
 void calculate_moves_noncaptures( position const& p, move_info*& moves, check_map const& check )
 {
-	calc_moves_king<only_pseudo_checks>( p, p.self(), moves, check );
+	calc_moves_king<only_pseudo_checks>( p, moves, check );
 
 	if( !check.check || !check.multiple() )	{
 		calc_moves_pawns<only_pseudo_checks>( p, moves, check );
-		calc_moves_queens<only_pseudo_checks>( p, p.self(), moves, check );
-		calc_moves_rooks<only_pseudo_checks>( p, p.self(), moves, check );
-		calc_moves_bishops<only_pseudo_checks>( p, p.self(), moves, check );
-		calc_moves_knights<only_pseudo_checks>( p, p.self(), moves, check );
+		calc_moves_queens<only_pseudo_checks>( p, moves, check );
+		calc_moves_rooks<only_pseudo_checks>( p, moves, check );
+		calc_moves_bishops<only_pseudo_checks>( p, moves, check );
+		calc_moves_knights<only_pseudo_checks>( p, moves, check );
 	}
 }
 

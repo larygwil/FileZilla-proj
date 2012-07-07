@@ -90,146 +90,146 @@ void add_if_legal_pawn( move_info*& moves, check_map const& check,
 	}
 }
 
-void add_if_legal_king( position const& p, color::type c, move_info*& moves,
+void add_if_legal_king( position const& p, move_info*& moves,
 						unsigned char const& source, unsigned char const& target,
 						int flags, pieces::type captured )
 {
-	if( detect_check( p, c, target, source ) ) {
+	if( detect_check( p, p.self(), target, source ) ) {
 		return;
 	}
 
 	do_add_move( moves, pieces::king, source, target, flags, captured );
 }
 
-void calc_moves_king( position const& p, color::type c, move_info*& moves,
+void calc_moves_king( position const& p, move_info*& moves,
 					  unsigned char source, unsigned char target )
 {
-	pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), target );
-	add_if_legal_king( p, c, moves, source, target, move_flags::none, captured );
+	pieces::type captured = get_piece_on_square( p, p.other(), target );
+	add_if_legal_king( p, moves, source, target, move_flags::none, captured );
 }
 
 
-void calc_moves_king( position const& p, color::type c, move_info*& moves )
+void calc_moves_king( position const& p, move_info*& moves )
 {
-	uint64_t king_moves = possible_king_moves[p.king_pos[c]] & ~(p.bitboards[c].b[bb_type::all_pieces] | possible_king_moves[p.king_pos[1-c]]) & p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t king_moves = possible_king_moves[p.king_pos[p.self()]] & ~(p.bitboards[p.self()].b[bb_type::all_pieces] | possible_king_moves[p.king_pos[p.other()]]) & p.bitboards[p.other()].b[bb_type::all_pieces];
 	while( king_moves ) {
 		uint64_t i = bitscan_unset( king_moves );
-		calc_moves_king( p, c, moves,
-						 p.king_pos[c], i );
+		calc_moves_king( p, moves,
+						 p.king_pos[p.self()], i );
 	}
 }
 
 
-void calc_moves_queen( position const& p, color::type c, move_info*& moves, check_map const& check, uint64_t queen )
+void calc_moves_queen( position const& p, move_info*& moves, check_map const& check, uint64_t queen )
 {
-	uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
 
 	uint64_t possible_moves = rook_magic( queen, all_blockers ) | bishop_magic( queen, all_blockers );
-	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
+	possible_moves &= p.bitboards[p.other()].b[bb_type::all_pieces];
 
 	while( possible_moves ) {
 		uint64_t queen_move = bitscan_unset( possible_moves );
 
-		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), queen_move );
+		pieces::type captured = get_piece_on_square( p, p.other(), queen_move );
 		add_if_legal( moves, check, pieces::queen, queen, queen_move, move_flags::none, captured );
 	}
 }
 
 
-void calc_moves_queens( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_queens( position const& p, move_info*& moves, check_map const& check )
 {
-	uint64_t queens = p.bitboards[c].b[bb_type::queens];
+	uint64_t queens = p.bitboards[p.self()].b[bb_type::queens];
 	while( queens ) {
 		uint64_t queen = bitscan_unset( queens );
-		calc_moves_queen( p, c, moves, check, queen );
+		calc_moves_queen( p, moves, check, queen );
 	}
 }
 
 
-void calc_moves_bishop( position const& p, color::type c, move_info*& moves, check_map const& check,
+void calc_moves_bishop( position const& p, move_info*& moves, check_map const& check,
 						uint64_t bishop )
 {
-	uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
 
 	uint64_t possible_moves = bishop_magic( bishop, all_blockers );
-	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
+	possible_moves &= p.bitboards[p.other()].b[bb_type::all_pieces];
 
 	while( possible_moves ) {
 		uint64_t bishop_move = bitscan_unset( possible_moves );
 
-		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), bishop_move );
+		pieces::type captured = get_piece_on_square( p, p.other(), bishop_move );
 		add_if_legal( moves, check, pieces::bishop, bishop, bishop_move, move_flags::none, captured );
 	}
 }
 
 
-void calc_moves_bishops( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_bishops( position const& p, move_info*& moves, check_map const& check )
 {
-	uint64_t bishops = p.bitboards[c].b[bb_type::bishops];
+	uint64_t bishops = p.bitboards[p.self()].b[bb_type::bishops];
 	while( bishops ) {
 		uint64_t bishop = bitscan_unset( bishops );
-		calc_moves_bishop( p, c, moves, check, bishop );
+		calc_moves_bishop( p, moves, check, bishop );
 	}
 }
 
 
-void calc_moves_rook( position const& p, color::type c, move_info*& moves, check_map const& check,
+void calc_moves_rook( position const& p, move_info*& moves, check_map const& check,
 					  uint64_t rook )
 {
-	uint64_t const all_blockers = p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces];
 
 	uint64_t possible_moves = rook_magic( rook, all_blockers );
-	possible_moves &= p.bitboards[1-c].b[bb_type::all_pieces];
+	possible_moves &= p.bitboards[p.other()].b[bb_type::all_pieces];
 
 	while( possible_moves ) {
 		uint64_t rook_move = bitscan_unset( possible_moves );
 
-		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), rook_move );
+		pieces::type captured = get_piece_on_square( p, p.other(), rook_move );
 		add_if_legal( moves, check, pieces::rook, rook, rook_move, move_flags::none, captured );
 	}
 }
 
 
-void calc_moves_rooks( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_rooks( position const& p, move_info*& moves, check_map const& check )
 {
-	uint64_t rooks = p.bitboards[c].b[bb_type::rooks];
+	uint64_t rooks = p.bitboards[p.self()].b[bb_type::rooks];
 	while( rooks ) {
 		uint64_t rook = bitscan_unset( rooks );
-		calc_moves_rook( p, c, moves, check, rook );
+		calc_moves_rook( p, moves, check, rook );
 	}
 }
 
 
-void calc_moves_knight( position const& p, color::type c, move_info*& moves, check_map const& check,
+void calc_moves_knight( position const& p, move_info*& moves, check_map const& check,
 						unsigned char source, unsigned char target )
 {
-	pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), target );
+	pieces::type captured = get_piece_on_square( p, p.other(), target );
 	add_if_legal( moves, check, pieces::knight, source, target, move_flags::none, captured );
 }
 
-void calc_moves_knight( position const& p, color::type c, move_info*& moves, check_map const& check,
+void calc_moves_knight( position const& p, move_info*& moves, check_map const& check,
 						uint64_t old_knight )
 {
-	uint64_t new_knights = possible_knight_moves[old_knight] & ~(p.bitboards[c].b[bb_type::all_pieces]) & p.bitboards[1-c].b[bb_type::all_pieces];
+	uint64_t new_knights = possible_knight_moves[old_knight] & ~(p.bitboards[p.self()].b[bb_type::all_pieces]) & p.bitboards[p.other()].b[bb_type::all_pieces];
 	while( new_knights ) {
 		uint64_t new_knight = bitscan_unset( new_knights );
-		calc_moves_knight( p, c, moves, check,
+		calc_moves_knight( p, moves, check,
 						   old_knight, new_knight );
 	}
 }
 
 
-void calc_moves_knights( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_knights( position const& p, move_info*& moves, check_map const& check )
 {
-	uint64_t knights = p.bitboards[c].b[bb_type::knights];
+	uint64_t knights = p.bitboards[p.self()].b[bb_type::knights];
 	while( knights ) {
 		uint64_t knight = bitscan_unset( knights );
-		calc_moves_knight( p, c, moves, check, knight );
+		calc_moves_knight( p, moves, check, knight );
 	}
 }
 
 
-void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& moves, check_map const& check,
+void calc_moves_pawn_en_passant( position const& p, move_info*& moves, check_map const& check,
 								 uint64_t pawn )
 {
 	unsigned char new_col = p.can_en_passant % 8;
@@ -257,7 +257,7 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 	}
 
 	// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
-	uint64_t kings = p.bitboards[c].b[bb_type::king];
+	uint64_t kings = p.bitboards[p.self()].b[bb_type::king];
 	uint64_t king = bitscan( kings );
 	unsigned char king_col = static_cast<unsigned char>(king % 8);
 	unsigned char king_row = static_cast<unsigned char>(king / 8);
@@ -275,12 +275,12 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 				continue;
 			}
 
-			if( p.bitboards[c].b[bb_type::all_pieces] & (1ull << (col + old_row * 8 ) ) ) {
+			if( p.bitboards[p.self()].b[bb_type::all_pieces] & (1ull << (col + old_row * 8 ) ) ) {
 				// Own piece
 				continue;
 			}
 
-			pieces::type t = get_piece_on_square( p, static_cast<color::type>(1-c), col + old_row * 8 );
+			pieces::type t = get_piece_on_square( p, p.other(), col + old_row * 8 );
 
 			if( t == pieces::none ) {
 				continue;
@@ -300,36 +300,36 @@ void calc_moves_pawn_en_passant( position const& p, color::type c, move_info*& m
 }
 
 
-void calc_moves_pawn_captures( position const& p, color::type c, move_info*& moves, check_map const& check, uint64_t pawn_captures, int shift )
+void calc_moves_pawn_captures( position const& p, move_info*& moves, check_map const& check, uint64_t pawn_captures, int shift )
 {
 	while( pawn_captures ) {
 		uint64_t pawn_move = bitscan_unset( pawn_captures );
 
-		pieces::type captured = get_piece_on_square( p, static_cast<color::type>(1-c), pawn_move );
+		pieces::type captured = get_piece_on_square( p, p.other(), pawn_move );
 
 		add_if_legal_pawn( moves, check, pawn_move - shift, pawn_move, captured );
 	}
 }
 
 
-void calc_moves_pawns( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_pawns( position const& p, move_info*& moves, check_map const& check )
 {
-	if( c == color::white ) {
-		uint64_t pawns = p.bitboards[c].b[bb_type::pawns];
-		calc_moves_pawn_captures( p, c, moves, check, ((pawns & 0xfefefefefefefefeull) << 7) & p.bitboards[1-c].b[bb_type::all_pieces], 7 );
-		calc_moves_pawn_captures( p, c, moves, check, ((pawns & 0x7f7f7f7f7f7f7f7full) << 9) & p.bitboards[1-c].b[bb_type::all_pieces], 9 );
+	if( p.white() ) {
+		uint64_t pawns = p.bitboards[p.self()].b[bb_type::pawns];
+		calc_moves_pawn_captures( p, moves, check, ((pawns & 0xfefefefefefefefeull) << 7) & p.bitboards[p.other()].b[bb_type::all_pieces], 7 );
+		calc_moves_pawn_captures( p, moves, check, ((pawns & 0x7f7f7f7f7f7f7f7full) << 9) & p.bitboards[p.other()].b[bb_type::all_pieces], 9 );
 	}
 	else {
-		uint64_t pawns = p.bitboards[c].b[bb_type::pawns];
-		calc_moves_pawn_captures( p, c, moves, check, ((pawns & 0xfefefefefefefefeull) >> 9) & p.bitboards[1-c].b[bb_type::all_pieces], -9 );
-		calc_moves_pawn_captures( p, c, moves, check, ((pawns & 0x7f7f7f7f7f7f7f7full) >> 7) & p.bitboards[1-c].b[bb_type::all_pieces], -7 );
+		uint64_t pawns = p.bitboards[p.self()].b[bb_type::pawns];
+		calc_moves_pawn_captures( p, moves, check, ((pawns & 0xfefefefefefefefeull) >> 9) & p.bitboards[p.other()].b[bb_type::all_pieces], -9 );
+		calc_moves_pawn_captures( p, moves, check, ((pawns & 0x7f7f7f7f7f7f7f7full) >> 7) & p.bitboards[p.other()].b[bb_type::all_pieces], -7 );
 	}
 
 	if( p.can_en_passant ) {
-		uint64_t enpassants = pawn_control[1-c][p.can_en_passant] & p.bitboards[c].b[bb_type::pawns] & pawn_enpassant[c];
+		uint64_t enpassants = pawn_control[p.other()][p.can_en_passant] & p.bitboards[p.self()].b[bb_type::pawns] & pawn_enpassant[p.self()];
 		while( enpassants ) {
 			uint64_t pawn = bitscan_unset( enpassants );
-			calc_moves_pawn_en_passant( p, c, moves, check, pawn );
+			calc_moves_pawn_en_passant( p, moves, check, pawn );
 		}
 	}
 }
@@ -337,11 +337,11 @@ void calc_moves_pawns( position const& p, color::type c, move_info*& moves, chec
 
 void calculate_moves_captures( position const& p, move_info*& moves, check_map const& check )
 {
-	calc_moves_king( p, p.self(), moves );
+	calc_moves_king( p, moves );
 
-	calc_moves_pawns( p, p.self(), moves, check );
-	calc_moves_queens( p, p.self(), moves, check );
-	calc_moves_rooks( p, p.self(), moves, check );
-	calc_moves_bishops( p, p.self(), moves, check );
-	calc_moves_knights( p, p.self(), moves, check );
+	calc_moves_pawns( p, moves, check );
+	calc_moves_queens( p, moves, check );
+	calc_moves_rooks( p, moves, check );
+	calc_moves_bishops( p, moves, check );
+	calc_moves_knights( p, moves, check );
 }

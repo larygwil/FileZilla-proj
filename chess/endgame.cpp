@@ -19,7 +19,7 @@ enum piece_masks : uint64_t {
 
 uint64_t const light_squared_bishop_mask = 0x55aa55aa55aa55aaull;
 
-short evaluate_KNBvK( position /*const&*/ p, color::type c ) {
+short evaluate_KNBvK( position const& p, color::type c ) {
 	// This is a very favorable position
 	short eval = 20000;
 
