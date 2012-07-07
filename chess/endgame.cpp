@@ -183,7 +183,7 @@ bool evaluate_endgame( position const& p, short& result )
 				return true;
 			}
 		}
-
+		break;
 	case white_bishop + white_knight:
 		result = evaluate_KNBvK( p, color::white );
 		return true;
