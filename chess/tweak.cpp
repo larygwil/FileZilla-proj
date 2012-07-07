@@ -427,7 +427,7 @@ struct individual
 
 			ref.p.update_derived();
 			pawn_hash_table.clear( ref.p.pawn_hash );
-			short score = evaluate_full( ref.p, ref.p.self() );
+			short score = evaluate_full( ref.p );
 
 #if 0
 			double difference = std::abs( ref.avg_eval - static_cast<double>(score) );

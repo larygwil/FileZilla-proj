@@ -48,7 +48,7 @@ public:
 	 }
 
 	virtual void onRun();
-	void on_new_best_move( position const& p, color::type c, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
+	void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
 
 	void apply_move( move const& m );
 
@@ -198,7 +198,7 @@ void octochess_uci::impl::onRun() {
 	}
 }
 
-void octochess_uci::impl::on_new_best_move( position const& p, color::type c, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv ) {
+void octochess_uci::impl::on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv ) {
 	info i;
 	i.depth( depth );
 	i.selective_depth( selective_depth );
@@ -222,7 +222,7 @@ void octochess_uci::impl::on_new_best_move( position const& p, color::type c, in
 		i.nodes_per_second( elapsed.get_items_per_second(nodes) );
 	}
 
-	i.principal_variation( pv_to_string(pv, p, c, true) );
+	i.principal_variation( pv_to_string(pv, p, true) );
 
 	gui_interface_->tell_info( i );
 }
@@ -273,7 +273,7 @@ bool octochess_uci::impl::do_book_move() {
 bool octochess_uci::impl::pick_pv_move()
 {
 	bool ret = false;
-	move m = pv_move_picker_.can_use_move_from_pv( pos_, pos_.self() );
+	move m = pv_move_picker_.can_use_move_from_pv( pos_ );
 	if( !m.empty() ) {
 		ret = true;
 		gui_interface_->tell_best_move( move_to_long_algebraic( m ) );

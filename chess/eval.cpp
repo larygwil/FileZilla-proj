@@ -95,21 +95,21 @@ inline void add_score( eval_results& results, score const* s ) {
 
 }
 
-short evaluate_move( position const& p, color::type c, move const& m )
+short evaluate_move( position const& p, move const& m )
 {
-	score delta = -pst[c][m.piece][m.source];
+	score delta = -pst[p.self()][m.piece][m.source];
 
 	if( m.flags & move_flags::castle ) {
-		delta += pst[c][pieces::king][m.target];
+		delta += pst[p.self()][pieces::king][m.target];
 
-		unsigned char row = c ? 56 : 0;
+		unsigned char row = p.white() ? 0 : 56;
 		if( m.target % 8 == 6 ) {
 			// Kingside
-			delta += pst[c][pieces::rook][row + 5] - pst[c][pieces::rook][row + 7];
+			delta += pst[p.self()][pieces::rook][row + 5] - pst[p.self()][pieces::rook][row + 7];
 		}
 		else {
 			// Queenside
-			delta += pst[c][pieces::rook][row + 3] - pst[c][pieces::rook][row];
+			delta += pst[p.self()][pieces::rook][row + 3] - pst[p.self()][pieces::rook][row];
 		}
 	}
 	else {
@@ -117,10 +117,10 @@ short evaluate_move( position const& p, color::type c, move const& m )
 		if( m.captured_piece != pieces::none ) {
 			if( m.flags & move_flags::enpassant ) {
 				unsigned char ep = (m.target & 0x7) | (m.source & 0x38);
-				delta += eval_values::material_values[pieces::pawn] + pst[1-c][pieces::pawn][ep];
+				delta += eval_values::material_values[pieces::pawn] + pst[p.other()][pieces::pawn][ep];
 			}
 			else {
-				delta += eval_values::material_values[m.captured_piece] + pst[1-c][m.captured_piece][m.target];
+				delta += eval_values::material_values[m.captured_piece] + pst[p.other()][m.captured_piece][m.target];
 			}
 		}
 
@@ -128,19 +128,19 @@ short evaluate_move( position const& p, color::type c, move const& m )
 		if( promotion ) {
 			pieces::type promotion_piece = static_cast<pieces::type>(promotion >> move_flags::promotion_shift);
 			delta -= eval_values::material_values[pieces::pawn];
-			delta += eval_values::material_values[promotion_piece] + pst[c][promotion_piece][m.target];
+			delta += eval_values::material_values[promotion_piece] + pst[p.self()][promotion_piece][m.target];
 		}
 		else {
-			delta += pst[c][m.piece][m.target];
+			delta += pst[p.self()][m.piece][m.target];
 		}
 	}
 
 #if 0
 	{
 		position p2 = p;
-		apply_move( p2, m, c );
+		apply_move( p2, m );
 		ASSERT( p2.verify() );
-		ASSERT( p.base_eval + (c ? -delta : delta) == p2.base_eval );
+		ASSERT( p.base_eval + (p.white() ? delta : -delta) == p2.base_eval );
 	}
 #endif
 
@@ -893,7 +893,7 @@ static std::string explain( position const& p, const char* name, eval_detail::ty
 }
 
 
-std::string explain_eval( position const& p, color::type c )
+std::string explain_eval( position const& p )
 {
 	std::stringstream ss;
 
@@ -908,7 +908,7 @@ std::string explain_eval( position const& p, color::type c )
 		}
 
 		eval_results results;
-		do_evaluate<true>( p, c, results );
+		do_evaluate<true>( p, p.self(), results );
 
 		score full = sum_up( p, results );
 
@@ -949,23 +949,23 @@ std::string explain_eval( position const& p, color::type c )
 }
 
 
-short evaluate_full( position const& p, color::type c )
+short evaluate_full( position const& p )
 {
 	short eval = 0;
 	if( evaluate_endgame( p, eval ) ) {
-		if( c ) {
+		if( !p.white() ) {
 			eval = -eval;
 		}
 		return eval;
 	}
 
 	eval_results results;
-	do_evaluate<false>( p, c, results );
+	do_evaluate<false>( p, p.self(), results );
 
 	score full = sum_up( p, results );
 	
 	eval = scale( p, full );
-	if( c ) {
+	if( !p.white() ) {
 		eval = -eval;
 	}
 

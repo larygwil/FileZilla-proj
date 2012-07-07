@@ -203,7 +203,7 @@ public:
 
 	mutex mtx;
 
-	virtual void on_new_best_move( position const& p, color::type c, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
+	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
 
 private:
 	calc_manager cmgr_;
@@ -370,14 +370,14 @@ move xboard_thread::stop()
 }
 
 
-void xboard_thread::on_new_best_move( position const& p, color::type c, int depth, int /*selective_depth*/, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv )
+void xboard_thread::on_new_best_move( position const& p, int depth, int /*selective_depth*/, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv )
 {
 	scoped_lock lock( mtx );
 	if( !abort ) {
 
 		int64_t cs = elapsed.milliseconds() / 10;
 		std::stringstream ss;
-		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(6) << cs << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
+		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(6) << cs << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p ) << std::endl;
 		if( state.post ) {
 			std::cout << ss.str();
 		}
@@ -387,7 +387,7 @@ void xboard_thread::on_new_best_move( position const& p, color::type c, int dept
 
 		best_move = pv->get_best_move();
 
-		state.pv_move_picker_.update_pv( p, c, pv );
+		state.pv_move_picker_.update_pv( p, pv );
 	}
 }
 
@@ -439,7 +439,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 		state.book_.mark_for_processing( state.move_history_ );
 	}
 
-	move pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p, state.p.self() );
+	move pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p );
 	if( !pv_move.empty() ) {
 		std::cout << "move " << move_to_string( pv_move ) << std::endl;
 
@@ -726,7 +726,7 @@ skip_getline:
 			}
 		}
 		else if( cmd == "~score" ) {
-			std::cout << explain_eval( state.p, state.p.self() ) << std::endl;
+			std::cout << explain_eval( state.p ) << std::endl;
 		}
 		else if( cmd == "~hash" ) {
 			std::cout << get_zobrist_hash( state.p ) << std::endl;

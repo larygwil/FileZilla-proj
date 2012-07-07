@@ -248,7 +248,7 @@ static bool test_lazy_eval( std::string const& fen, short& max_difference )
 
 	score currents = p.white() ? p.base_eval : -p.base_eval;
 	short current = currents.scale( p.material[0].mg() + p.material[1].mg() );
-	short full = evaluate_full( p, p.self() );
+	short full = evaluate_full( p );
 
 	short diff = std::abs( full - current );
 
@@ -404,14 +404,14 @@ static bool test_evaluation( std::string const& fen, position const& p )
 		return false;
 	}
 
-	short eval_full = evaluate_full( p, p.self() );
-	short flipped_eval_full = evaluate_full( p2, p2.self() );
+	short eval_full = evaluate_full( p );
+	short flipped_eval_full = evaluate_full( p2 );
 	if( eval_full != flipped_eval_full ) {
 		std::cerr << "Evaluation not symmetric: " << eval_full << " " << flipped_eval_full << " " << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
-		std::cerr << explain_eval( p, p.self() ) << std::endl;
+		std::cerr << explain_eval( p ) << std::endl;
 		std::cerr << "Flipped: " << flipped << std::endl;
-		std::cerr << explain_eval( p2, p2.self() ) << std::endl;
+		std::cerr << explain_eval( p2 ) << std::endl;
 		return false;
 	}
 

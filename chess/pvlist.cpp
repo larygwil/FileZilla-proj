@@ -91,12 +91,8 @@ void pv_entry_pool::clear_pv_move( pv_entry* pv )
 	}
 }
 
-void print_pv( pv_entry const* pv, position p, color::type c )
-{
-	std::cerr << pv_to_string( pv, p, c ) << std::endl;
-}
 
-std::string pv_to_string( pv_entry const* pv, position p, color::type c, bool use_long_algebraic_notation )
+std::string pv_to_string( pv_entry const* pv, position p, bool use_long_algebraic_notation )
 {
 	std::stringstream ss;
 	while( pv && !pv->get_best_move().empty() ) {
@@ -108,14 +104,12 @@ std::string pv_to_string( pv_entry const* pv, position p, color::type c, bool us
 
 		apply_move( p, pv->get_best_move() );
 
-		c = static_cast<color::type>(1-c);
-
 		pv = pv->next();
 	}
 	return ss.str();
 }
 
-void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, int max_qdepth )
+void extend_pv_from_tt( pv_entry* pv, position p, int max_depth, int max_qdepth )
 {
 	// There might be some exact nodes in the transposition table at the end
 	// of the pv. Happens if search aborts early due to exact hit. Here we
@@ -123,11 +117,9 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 	int depth = 0;
 	pv_entry* prev = 0;
 	while( pv && !pv->get_best_move().empty() ) {
-		ASSERT( is_valid_move( p, c, pv->get_best_move(), check_map(p, c) ) );
+		ASSERT( is_valid_move( p, pv->get_best_move(), check_map(p) ) );
 		++depth;
 		apply_move( p, pv->get_best_move() );
-
-		c = static_cast<color::type>(1-c);
 
 		prev = pv;
 		pv = pv->next();
@@ -151,13 +143,12 @@ void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, 
 		move best;
 		short ev;
 		short full_eval;
-		score_type::type s = transposition_table.lookup( hash, c, r, 0, result::loss, result::win, ev, best, full_eval );
+		score_type::type s = transposition_table.lookup( hash, r, 0, result::loss, result::win, ev, best, full_eval );
 		if( s != score_type::exact || best.empty() ) {
 			break;
 		}
 
 		apply_move( p, best );
-		c = static_cast<color::type>(1-c);
 
 		pv_entry_pool pool;
 		if( pv ) {

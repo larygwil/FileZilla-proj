@@ -46,8 +46,7 @@ private:
 	pv_entry* last_free_;
 };
 
-void print_pv( pv_entry const* pv, position p, color::type c );
-std::string pv_to_string( pv_entry const* pv, position p, color::type c, bool use_long_algebraic_notation = false );
-void extend_pv_from_tt( pv_entry* pv, position p, color::type c, int max_depth, int max_qdepth );
+std::string pv_to_string( pv_entry const* pv, position p, bool use_long_algebraic_notation = false );
+void extend_pv_from_tt( pv_entry* pv, position p, int max_depth, int max_qdepth );
 
 #endif

@@ -139,9 +139,9 @@ public:
 
 	// Returns true on hit, caller should return eval.
 	// If it returns false and best_move.other==1, there is a best move.
-	score_type::type lookup( hash_key key, color::type c, unsigned short depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move, short& full_eval );
+	score_type::type lookup( hash_key key, unsigned short depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move, short& full_eval );
 
-	void store( hash_key key, color::type c, unsigned short depth, unsigned char ply, short eval, short alpha, short beta, move const& best_move, unsigned char clock, short full_eval );
+	void store( hash_key key, unsigned short depth, unsigned char ply, short eval, short alpha, short beta, move const& best_move, unsigned char clock, short full_eval );
 
 	void free_hash();
 

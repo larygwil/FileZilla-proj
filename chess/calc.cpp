@@ -54,7 +54,7 @@ null_new_best_move_callback null_new_best_move_cb;
 void sort_moves( move_info* begin, move_info* end, position const& p )
 {
 	for( move_info* it = begin; it != end; ++it ) {
-		it->sort = evaluate_move( p, p.self(), it->m );
+		it->sort = evaluate_move( p, it->m );
 		if( it->m.captured_piece != pieces::none ) {
 			it->sort += eval_values::material_values[ it->m.captured_piece ].mg() * 1000000 - eval_values::material_values[ it->m.piece ].mg();
 		}
@@ -98,7 +98,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 	short eval;
 	move tt_move;
-	score_type::type t = transposition_table.lookup( hash, p.self(), tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
+	score_type::type t = transposition_table.lookup( hash, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
 
 	if ( !pv_node && t != score_type::none ) {
 		return eval;
@@ -120,12 +120,12 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 	if( !check.check ) {
 		if( full_eval == result::win ) {
-			full_eval = evaluate_full( p, p.self() );
+			full_eval = evaluate_full( p );
 		}
 		if( full_eval > alpha ) {
 			if( full_eval >= beta ) {
 				if( !do_abort ) {
-					transposition_table.store( hash, p.self(), tt_depth, ply, full_eval, alpha, beta, tt_move, ctx.clock, full_eval );
+					transposition_table.store( hash, tt_depth, ply, full_eval, alpha, beta, tt_move, ctx.clock, full_eval );
 				}
 				return full_eval;
 			}
@@ -193,7 +193,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		best_move = tt_move;
 	}
 	if( !do_abort ) {
-		transposition_table.store( hash, p.self(), tt_depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
+		transposition_table.store( hash, tt_depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
 	}
 	return best_value;
 }
@@ -232,7 +232,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 
 	{
 		short eval;
-		score_type::type t = transposition_table.lookup( hash, p.c, depth, ply, alpha, beta, eval, tt_move, full_eval );
+		score_type::type t = transposition_table.lookup( hash, depth, ply, alpha, beta, eval, tt_move, full_eval );
 		if( t != score_type::none ) {
 			if( t == score_type::exact ) {
 				ctx.pv_pool.set_pv_move( pv, tt_move );
@@ -248,8 +248,8 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	int plies_remaining = (depth - cutoff) / depth_factor;
 
 	if( !pv_node && !check.check /*&& plies_remaining < 4*/ && full_eval == result::win ) {
-		full_eval = evaluate_full( p, p.c );
-		transposition_table.store( hash, p.c, 0, ply, 0, 0, 0, tt_move, ctx.clock, full_eval );
+		full_eval = evaluate_full( p );
+		transposition_table.store( hash, 0, ply, 0, 0, 0, tt_move, ctx.clock, full_eval );
 	}
 
 	if( !pv_node && !check.check && plies_remaining < static_cast<int>(sizeof(razor_pruning)/sizeof(short)) && full_eval + razor_pruning[plies_remaining] < beta &&
@@ -273,7 +273,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 
 		p.do_null_move();
 		check_map new_check( p );
-		short value = -step( new_depth, ply + 1, ctx, p, hash, new_check, -beta, -beta + 1, cpv, true );
+		short value = -step( new_depth, ply + 1, ctx, p, ~hash, new_check, -beta, -beta + 1, cpv, true );
 		p.do_null_move();
 		ctx.pv_pool.release( cpv );
 
@@ -302,7 +302,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		step( depth - 2 * depth_factor, ply, ctx, p, hash, check, alpha, beta, pv, true, full_eval, last_ply_was_capture );
 
 		short eval;
-		transposition_table.lookup( hash, p.self(), depth, ply, alpha, beta, eval, tt_move, full_eval );
+		transposition_table.lookup( hash, depth, ply, alpha, beta, eval, tt_move, full_eval );
 	}
 
 	short old_alpha = alpha;
@@ -473,7 +473,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		if( best_move.empty() ) {
 			best_move = tt_move;
 		}
-		transposition_table.store( hash, p.self(), depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
+		transposition_table.store( hash, depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
 	}
 
 	return best_value;
@@ -702,10 +702,10 @@ void insert_sorted( sorted_moves& moves, int forecast, move_info const& m, pv_en
 }
 
 
-void def_new_best_move_callback::on_new_best_move( position const& p, color::type c, int depth, int selective_depth , int evaluation, uint64_t nodes, duration const& /*elapsed*/, pv_entry const* pv )
+void def_new_best_move_callback::on_new_best_move( position const& p, int depth, int selective_depth , int evaluation, uint64_t nodes, duration const& /*elapsed*/, pv_entry const* pv )
 {
 	std::stringstream ss;
-	ss << "Best: " << std::setw(2) << depth << " " << std::setw(2) << selective_depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p, c ) << std::endl;
+	ss << "Best: " << std::setw(2) << depth << " " << std::setw(2) << selective_depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p ) << std::endl;
 	std::cerr << ss.str();
 }
 
@@ -834,7 +834,7 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 	{
 		move tt_move;
 		short tmp = 0;
-		transposition_table.lookup( get_zobrist_hash(p), p.self(), 0, 0, 0, 0, tmp, tt_move, tmp );
+		transposition_table.lookup( get_zobrist_hash(p), 0, 0, 0, 0, tmp, tt_move, tmp );
 		for( move_info* it = moves; it != pm; ++it ) {
 			pv_entry* pv = impl_->pv_pool_.get();
 			impl_->pv_pool_.append( pv, it->m, impl_->pv_pool_.get() );
@@ -849,8 +849,8 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 
 	timestamp start;
 
-	short ev = evaluate_full( p, p.self() );
-	new_best_cb.on_new_best_move( p, p.self(), 0, 0, ev, 0, duration(), old_sorted.front().pv );
+	short ev = evaluate_full( p );
+	new_best_cb.on_new_best_move( p, 0, 0, ev, 0, duration(), old_sorted.front().pv );
 
 	result.best_move = moves->m;
 	if( moves + 1 == pm && !ponder ) {
@@ -935,7 +935,7 @@ break2:
 
 						move_info mi = impl_->threads_[t]->get_move();
 						pv_entry* pv = impl_->threads_[t]->get_pv();
-						extend_pv_from_tt( pv, p, p.self(), max_depth, conf.quiescence_depth );
+						extend_pv_from_tt( pv, p, max_depth, conf.quiescence_depth );
 
 						insert_sorted( sorted, value, mi, pv );
 						if( mi.m != pv->get_best_move() ) {
@@ -958,7 +958,7 @@ break2:
 							}
 
 							highest_depth = max_depth;
-							new_best_cb.on_new_best_move( p, p.self(), max_depth, stats.highest_depth(), value, stats.nodes() + stats.quiescence_nodes, timestamp() - start, pv );
+							new_best_cb.on_new_best_move( p, max_depth, stats.highest_depth(), value, stats.nodes() + stats.quiescence_nodes, timestamp() - start, pv );
 						}
 					}
 				}
@@ -1031,7 +1031,7 @@ break2:
 		}
 		std::stringstream ss;
 		ss << std::setw( 7 ) << it->forecast;
-		std::cerr << ss.str() << " " << pv_to_string( it->pv, p, c ) << std::endl;
+		std::cerr << ss.str() << " " << pv_to_string( it->pv, p ) << std::endl;
 
 		pv_entry_pool p;
 		p.release( it->pv );
@@ -1048,7 +1048,7 @@ label_abort:
 		timestamp stop;
 
 		pv_entry const* pv = old_sorted.begin()->pv;
-		new_best_cb.on_new_best_move( p, p.self(), highest_depth, stats.highest_depth(), old_sorted.begin()->forecast, stats.nodes() + stats.quiescence_nodes, stop - start, pv );
+		new_best_cb.on_new_best_move( p, highest_depth, stats.highest_depth(), old_sorted.begin()->forecast, stats.nodes() + stats.quiescence_nodes, stop - start, pv );
 
 		stats.print( stop - start );
 		stats.accumulate( stop - start );

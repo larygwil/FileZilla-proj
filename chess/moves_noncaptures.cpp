@@ -343,10 +343,10 @@ void calc_moves_pawn_pushes( position const& p, move_info*& moves, check_map con
 
 
 template<bool only_pseudo_checks>
-void calc_moves_pawns( position const& p, color::type c, move_info*& moves, check_map const& check )
+void calc_moves_pawns( position const& p, move_info*& moves, check_map const& check )
 {
 
-	if( c == color::white ) {
+	if( p.white() ) {
 		calc_moves_pawn_pushes<color::white, only_pseudo_checks>( p, moves, check );
 	}
 	else {
@@ -361,7 +361,7 @@ void calculate_moves_noncaptures( position const& p, move_info*& moves, check_ma
 	calc_moves_king<only_pseudo_checks>( p, p.self(), moves, check );
 
 	if( !check.check || !check.multiple() )	{
-		calc_moves_pawns<only_pseudo_checks>( p, p.self(), moves, check );
+		calc_moves_pawns<only_pseudo_checks>( p, moves, check );
 		calc_moves_queens<only_pseudo_checks>( p, p.self(), moves, check );
 		calc_moves_rooks<only_pseudo_checks>( p, p.self(), moves, check );
 		calc_moves_bishops<only_pseudo_checks>( p, p.self(), moves, check );

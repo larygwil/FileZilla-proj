@@ -87,12 +87,8 @@ enum type {
 };
 }
 
-void hash::store( hash_key key, color::type c, unsigned short remaining_depth, unsigned char ply, short eval, short alpha, short beta, move const& best_move, unsigned char clock, short full_eval )
+void hash::store( hash_key key, unsigned short remaining_depth, unsigned char ply, short eval, short alpha, short beta, move const& best_move, unsigned char clock, short full_eval )
 {
-	if( c ) {
-		key = ~key;
-	}
-
 	score_type::type t;
 	if( eval >= beta ) {
 		t = score_type::lower_bound;
@@ -186,12 +182,8 @@ void hash::store( hash_key key, color::type c, unsigned short remaining_depth, u
 }
 
 
-score_type::type hash::lookup( hash_key key, color::type c, unsigned short remaining_depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move, short& full_eval )
+score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move, short& full_eval )
 {
-	if( c ) {
-		key = ~key;
-	}
-
 	uint64_t bucket_offset = (key % bucket_count_) * bucket_entries;
 	entry const* bucket = data_ + bucket_offset;
 

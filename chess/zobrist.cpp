@@ -111,16 +111,10 @@ uint64_t get_zobrist_hash( position const& p )
 
 	ret ^= enpassant[p.can_en_passant];
 
-	return ret;
-}
-
-
-uint64_t get_zobrist_hash( position const& p, color::type c )
-{
-	uint64_t ret = get_zobrist_hash( p );
-	if( c ) {
+	if( !p.white() ) {
 		ret = ~ret;
 	}
+
 	return ret;
 }
 
@@ -149,6 +143,7 @@ static uint64_t get_piece_hash( pieces::type pi, color::type c, int pos )
 
 uint64_t update_zobrist_hash( position const& p, uint64_t hash, move const& m )
 {
+	hash = ~hash;
 	hash ^= enpassant[p.can_en_passant];
 
 	if( m.flags & move_flags::enpassant ) {

@@ -12,11 +12,11 @@ class pv_move_picker
 public:
 	pv_move_picker();
 
-	move can_use_move_from_pv( position const& p, color::type c );
+	move can_use_move_from_pv( position const& p );
 
-	move get_hint( position const& p, color::type c );
+	move get_hint( position const& p );
 
-	void update_pv( position p, color::type c, pv_entry const* pv );
+	void update_pv( position p, pv_entry const* pv );
 
 private:
 	uint64_t hash_;
