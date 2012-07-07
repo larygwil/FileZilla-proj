@@ -197,7 +197,11 @@ bool conv_to_move_slow( position const& p, move& m, char const* data, bool print
 	ms[2] = (ti % 8) + 'a';
 	ms[3] = (ti / 8) + '1';
 
-	if( !parse_move( p, ms, m, print_errors ) ) {
+	std::string error;
+	if( !parse_move( p, ms, m, error ) ) {
+		if( print_errors ) {
+			std::cerr << error << ": " << ms << std::endl;
+		}
 		return false;
 	}
 

@@ -132,10 +132,11 @@ void octochess_uci::make_moves( std::vector<std::string> const& moves )
 	bool done = false;
 	for( std::vector<std::string>::const_iterator it = moves.begin(); !done && it != moves.end(); ++it ) {
 		move m;
-		if( parse_move( impl_->pos_, *it, m, false ) ) {
+		std::string error;
+		if( parse_move( impl_->pos_, *it, m, error ) ) {
 			impl_->apply_move( m );
 		} else {
-			std::cerr << "invalid syntax with moves: " << *it << std::endl;
+			std::cerr << error << ": " << *it << std::endl;
 			done = true;
 		}
 	}

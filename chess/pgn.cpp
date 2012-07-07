@@ -166,7 +166,9 @@ bool pgn_reader::next( game& g )
 			}
 
 			move m;
-			if( !parse_move( p, token, m ) ) {
+			std::string error;
+			if( !parse_move( p, token, m, error ) ) {
+				std::cerr << error << std::endl;
 				std::cerr << "Invalid move: " << token << std::endl;
 				std::cerr << "Line: " << line << std::endl;
 				valid = false;

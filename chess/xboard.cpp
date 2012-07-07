@@ -458,6 +458,30 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 	thread.start();
 }
 
+
+bool parse_setboard( xboard_state& state, xboard_thread& thread, std::string const& args, std::string& error )
+{
+	position new_pos;
+	if( !parse_fen_noclock( args, new_pos, &error ) ) {
+		return false;
+	}
+
+	bool analyze = state.mode_ == mode::analyze;
+
+	state.reset();
+	state.p = new_pos;
+	state.seen.reset_root( get_zobrist_hash( state.p ) );
+	state.started_from_root = false;
+
+	if( analyze ) {
+		state.mode_ = mode::analyze;
+		thread.start( true );
+	}
+
+	return true;
+}
+
+
 void xboard( std::string line)
 {
 	xboard_state state;
@@ -707,22 +731,9 @@ skip_getline:
 			std::cout << position_to_fen_noclock( state.p ) << std::endl;
 		}
 		else if( cmd == "setboard" ) {
-			position new_pos;
 			std::string error;
-			if( !parse_fen_noclock( args, new_pos, &error ) ) {
+			if( !parse_setboard( state, thread, args, error ) ) {
 				std::cout << "Error (bad command): Not a valid FEN position: " << error << std::endl;
-				continue;
-			}
-			bool analyze = state.mode_ == mode::analyze;
-
-			state.reset();
-			state.p = new_pos;
-			state.seen.reset_root( get_zobrist_hash( state.p ) );
-			state.started_from_root = false;
-
-			if( analyze ) {
-				state.mode_ = mode::analyze;
-				thread.start( true );
 			}
 		}
 		else if( cmd == "~score" ) {
@@ -733,9 +744,13 @@ skip_getline:
 		}
 		else if( cmd == "~see" ) {
 			move m;
-			if( parse_move( state.p, args, m, true ) ) {
+			std::string error;
+			if( parse_move( state.p, args, m, error ) ) {
 				int see_score = see( state.p, m );
 				std::cout << "See score: " << see_score << std::endl;
+			}
+			else {
+				std::cout << error << ": " << line << std::endl;
 			}
 		}
 		else if( cmd == "st" ) {
@@ -767,7 +782,8 @@ skip_getline:
 		}
 		else {
 			move m;
-			if( parse_move( state.p, line, m ) ) {
+			std::string error;
+			if( parse_move( state.p, line, m, error ) ) {
 
 				state.apply( m );
 				if( state.mode_ == mode::normal && state.p.self() == state.self ) {
@@ -775,6 +791,12 @@ skip_getline:
 				}
 				else if( state.mode_ == mode::analyze ) {
 					thread.start( true );
+				}
+			}
+			else {
+				std::string error2;
+				if( !parse_setboard( state, thread, line, error2 ) ) {
+					std::cout << error << ": " << line << std::endl;
 				}
 			}
 		}

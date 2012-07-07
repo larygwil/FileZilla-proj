@@ -12,7 +12,7 @@ bool validate_move( position const& p, move const& m );
 
 bool validate_move( move const& m, move_info const* begin, move_info const* end );
 
-bool parse_move( position const& p, std::string const& line, move& m, bool print_errors = true );
+bool parse_move( position const& p, std::string const& line, move& m, std::string& error );
 
 // E.g. O-O, Na3xf6, b2-b4
 std::string move_to_string( move const& m, bool padding = true );

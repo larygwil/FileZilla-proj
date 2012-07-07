@@ -43,7 +43,7 @@ bool validate_move( move const& m, move_info const* begin, move_info const* end 
 }
 
 
-bool parse_move( position const& p, std::string const& line, move& m, bool print_errors )
+bool parse_move( position const& p, std::string const& line, move& m, std::string& error )
 {
 	std::string str = line;
 	std::size_t len = str.size();
@@ -63,9 +63,7 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 		m.source = p.white() ? 4 : 60;
 		m.target = p.white() ? 6 : 62;
 		if( !validate_move( p, m ) ) {
-			if( print_errors ) {
-				std::cout << "Illegal move (not valid): " << line << std::endl;
-			}
+			error = "Illegal move (not valid)";
 			return false;
 		}
 		return true;
@@ -77,9 +75,7 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 		m.source = p.white() ? 4 : 60;
 		m.target = p.white() ? 2 : 58;
 		if( !validate_move( p, m ) ) {
-			if( print_errors ) {
-				std::cout << "Illegal move (not valid): " << line << std::endl;
-			}
+			error = "Illegal move (not valid)";
 			return false;
 		}
 		return true;
@@ -140,9 +136,7 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 	case 'N':
 	case 'P':
 		if( piecetype ) {
-			if( print_errors ) {
-				std::cout << "Error (unknown command): " << line << std::endl;
-			}
+			error = "Error (unknown command)";
 			return false;
 		}
 		piecetype = *(s++);
@@ -160,9 +154,7 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 	while( *s ) {
 		if( *s == 'x' || *s == ':' || *s == '-' ) {
 			if( got_separator ) {
-				if( print_errors ) {
-					std::cout << "Error (unknown command): " << line << std::endl;
-				}
+				error = "Error (unknown command)";
 				return false;
 			}
 			got_separator = true;
@@ -172,9 +164,7 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 		}
 		else if( *s >= 'a' && *s <= 'h' ) {
 			if( second_col != -1 ) {
-				if( print_errors ) {
-					std::cout << "Error (unknown command): " << line << std::endl;
-				}
+				error = "Error (unknown command)";
 				return false;
 			}
 			if( !got_separator && first_row == -1 && first_col == -1 ) {
@@ -186,9 +176,7 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 		}
 		else if( *s >= '1' && *s <= '8' ) {
 			if( second_row != -1 ) {
-				if( print_errors ) {
-					std::cout << "Error (unknown command): " << line << std::endl;
-				}
+				error = "Error (unknown command)";
 				return false;
 			}
 			if( !got_separator && second_col == -1 && first_row == -1 ) {
@@ -199,9 +187,7 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 			}
 		}
 		else {
-			if( print_errors ) {
-				std::cout << "Error (unknown command): " << line << std::endl;
-			}
+			error = "Error (unknown command)";
 			return false;
 		}
 
@@ -220,9 +206,7 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 	}
 
 	if( first_col == -1 && first_row == -1 && second_col == -1 && second_row == -1 ) {
-		if( print_errors ) {
-			std::cout << "Error (unknown command): " << line << std::endl;
-		}
+		error = "Error (unknown command)";
 		return false;
 	}
 
@@ -257,9 +241,7 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 			source_piece = 'P';
 			break;
 		default:
-			if( print_errors ) {
-				std::cout << "Error (corrupt internal state): Got a move that does not have a source piece.";
-			}
+			error = "Error (corrupt internal state): Got a move that does not have a source piece.";
 			return false;
 		}
 
@@ -292,44 +274,38 @@ bool parse_move( position const& p, std::string const& line, move& m, bool print
 	}
 
 	if( matches.size() > 1 ) {
-		if( print_errors ) {
-			std::cout << "Illegal move (ambigious): " << line << std::endl;
-			std::cerr << "Candiates:" << std::endl;
-			for( std::list<move_info>::const_iterator it = matches.begin(); it != matches.end(); ++it ) {
-				std::cerr << move_to_string( it->m ) << std::endl;
-			}
+		error = "Illegal move (ambigious)";
+		std::cerr << "Candiates:" << std::endl;
+		for( std::list<move_info>::const_iterator it = matches.begin(); it != matches.end(); ++it ) {
+			std::cerr << move_to_string( it->m ) << std::endl;
 		}
 		return false;
 	}
 	else if( matches.empty() ) {
-		if( print_errors ) {
-			std::cout << "Illegal move (not valid): " << line << std::endl;
-			std::cerr << "Parsed:";
-			if( first_col != -1 ) {
-				std::cerr << " source_file=" << static_cast<char>('a' + first_col);
-			}
-			if( first_row != -1 ) {
-				std::cerr << " source_rank=" << first_row;
-			}
-			if( second_col != -1 ) {
-				std::cerr << " target_file=" << static_cast<char>('a' + second_col);
-			}
-			if( second_row != -1 ) {
-				std::cerr << " target_rank=" << second_row;
-			}
-			if( promotion != pieces::none ) {
-				std::cerr << " promotion=" << static_cast<int>(promotion) << std::endl;
-			}
-			std::cerr << " capture=" << capture << std::endl;
+		error = "Illegal move (not valid)";
+		std::cerr << "Parsed:";
+		if( first_col != -1 ) {
+			std::cerr << " source_file=" << static_cast<char>('a' + first_col);
 		}
+		if( first_row != -1 ) {
+			std::cerr << " source_rank=" << first_row;
+		}
+		if( second_col != -1 ) {
+			std::cerr << " target_file=" << static_cast<char>('a' + second_col);
+		}
+		if( second_row != -1 ) {
+			std::cerr << " target_rank=" << second_row;
+		}
+		if( promotion != pieces::none ) {
+			std::cerr << " promotion=" << static_cast<int>(promotion) << std::endl;
+		}
+		std::cerr << " capture=" << capture << std::endl;
 		return false;
 	}
 
 	move_info match = matches.front();
 	if( promotion && match.m.target / 8 != (p.white() ? 7 : 0) ) {
-		if( print_errors ) {
-			std::cout << "Illegal move (not valid, expecting a promotion): " << line << std::endl;
-		}
+		error = "Illegal move (not valid, expecting a promotion)";
 		return false;
 	}
 

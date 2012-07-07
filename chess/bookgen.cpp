@@ -975,11 +975,15 @@ void run( book& b )
 		}
 		else if( cmd == "deepen" ) {
 			move m;
-			if( parse_move( p, args, m ) ) {
+			std::string error;
+			if( parse_move( p, args, m, error ) ) {
 				deepen_move( b, p, seen, move_history, m );
 
 				std::vector<book_entry> entries = b.get_entries( p, move_history );
 				print_pos( history, p, entries );
+			}
+			else {
+				std::cerr << error << std::endl;
 			}
 		}
 		else if( cmd == "fold" ) {
@@ -999,7 +1003,8 @@ void run( book& b )
 		}
 		else {
 			move m;
-			if( parse_move( p, line, m ) ) {
+			std::string error;
+			if( parse_move( p, line, m, error ) ) {
 
 				history_entry h;
 				h.p = p;
@@ -1030,6 +1035,9 @@ void run( book& b )
 				}
 
 				print_pos( history, p, entries );
+			}
+			else {
+				std::cerr << error << std::endl;
 			}
 		}
 	}

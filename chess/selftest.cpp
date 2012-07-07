@@ -217,7 +217,9 @@ static bool test_zobrist()
 	uint64_t old_hash = get_zobrist_hash( p );
 
 	move m;
-	if( !parse_move( p, "dxc3", m ) ) {
+	std::string error;
+	if( !parse_move( p, "dxc3", m, error ) ) {
+		std::cerr << error << ": dxc3" << std::endl;
 		return false;
 	}
 
@@ -561,7 +563,8 @@ static void check_see()
 	}
 
 	move m;
-	if( !parse_move( p, ms, m ) ) {
+	if( !parse_move( p, ms, m, error ) ) {
+		std::cerr << error << ": " << ms << std::endl;
 		abort();
 	}
 
@@ -584,7 +587,8 @@ void do_check_disambiguation( std::string const& fen, std::string const& ms, std
 	}
 
 	move m;
-	if( !parse_move( p, ms, m ) ) {
+	if( !parse_move( p, ms, m, error ) ) {
+		std::cerr << error << ": " << ms << std::endl;
 		abort();
 	}
 
