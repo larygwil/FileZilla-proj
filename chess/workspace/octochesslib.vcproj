@@ -370,7 +370,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\pgn.cpp"
+				RelativePath="..\pgn.hpp"
 				>
 			</File>
 			<File

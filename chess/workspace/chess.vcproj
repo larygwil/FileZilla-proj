@@ -253,7 +253,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\xboard.cpp"
+				RelativePath="..\xboard.hpp"
 				>
 			</File>
 		</Filter>
