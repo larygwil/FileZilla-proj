@@ -155,6 +155,7 @@ struct cb_data {
 	cb_data()
 		: pm()
 		, valid_()
+		, by_hash_()
 	{
 	}
 
@@ -165,6 +166,7 @@ struct cb_data {
 	move_info* pm;
 
 	bool valid_;
+	bool by_hash_;
 };
 
 unsigned char conv_to_index( unsigned char s )
@@ -346,12 +348,14 @@ extern "C" int get_cb( void* p, sqlite3_stmt* statement )
 
 	uint64_t bytes = sqlite3_column_bytes( statement, 0 );
 	if( bytes % 4 ) {
+		std::cerr << "Wrong data size not multiple of 4: " << bytes << std::endl;
 		return 1;
 	}
 	uint64_t size = bytes / 4;
 
 	unsigned char const* data = reinterpret_cast<unsigned char const*>(sqlite3_column_blob( statement, 0 ) );
 	if( !data ) {
+		std::cerr << "No data" << std::endl;
 		return 1;
 	}
 
@@ -364,10 +368,18 @@ extern "C" int get_cb( void* p, sqlite3_stmt* statement )
 	}
 
 	if( size != (d->pm - d->moves) ) {
-		return 1;
+		if( d->by_hash_ ) {
+			std::cerr << "Possible hash collision" << std::endl;
+			return 0;
+		}
+		else {
+			std::cerr << "Corrupt book entry, expected " << (d->pm - d->moves) << " moves, got " << size << " moves." << std::endl;
+			return 1;
+		}
 	}
 
 	if( !decode_entries( data, bytes, *d->entries ) ) {
+		std::cerr << "Could not decode entries" << std::endl;
 		return 1;
 	}
 
@@ -404,7 +416,10 @@ std::vector<book_entry> book::get_entries( position const& p, std::vector<move> 
 		std::stringstream ss;
 		ss << "SELECT data FROM position WHERE pos = '" << hs << "'";
 
-		impl_->query_row( ss.str(), &get_cb, reinterpret_cast<void*>(&data) );
+		bool success = impl_->query_row( ss.str(), &get_cb, reinterpret_cast<void*>(&data) );
+		if( !success || !data.valid_ ) {
+			ret.clear();
+		}
 	}
 
 	if( ret.empty() && allow_transpositions ) {
@@ -428,17 +443,19 @@ std::vector<book_entry> book::get_entries( position const& p )
 	cb_data data;
 	data.p = p;
 	data.entries = &ret;
+	data.by_hash_ = true;
 
 	uint64_t hash = get_zobrist_hash( p );
-	if( !p.white() ) {
-		hash = ~hash;
-	}
-
+	
 	std::stringstream ss;
 	ss << "SELECT data FROM position WHERE hash=" << static_cast<sqlite3_int64>(hash);
 
-	if( !impl_->query_row( ss.str(), &get_cb, reinterpret_cast<void*>(&data), true ) ) {
+	bool success = impl_->query_row( ss.str(), &get_cb, reinterpret_cast<void*>(&data), true );
+	if( !success || !data.valid_ ) {
 		ret.clear();
+	}
+	else {
+		std::cerr << "Found entry by transposition" << std::endl;
 	}
 
 	return ret;
@@ -647,9 +664,6 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 		apply_move( p, *it );
 	}
 	uint64_t hash = get_zobrist_hash( p );
-	if( history.size() % 2 ) {
-		hash = ~hash;
-	}
 
 	scoped_lock l(impl_->mtx);
 
@@ -732,9 +746,6 @@ void book::mark_for_processing( std::vector<move> const& history )
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
 		apply_move( p, *it );
 		uint64_t hash = get_zobrist_hash( p );
-		if( (it - history.begin()) % 2 ) {
-			hash = ~hash;
-		}
 
 		std::string hs = history_to_string( history.begin(), it + 1 );
 		ss << "INSERT OR IGNORE INTO position (pos, hash) VALUES ('" << hs << "', " << static_cast<sqlite3_int64>(hash) << ");";
@@ -812,9 +823,6 @@ void book::redo_hashes()
 	for( std::list<work>::const_iterator it = positions.begin(); it != positions.end(); ++it ) {
 		std::string hs = history_to_string( it->move_history );
 		uint64_t hash = get_zobrist_hash( it->p );
-		if( it->move_history.size() % 2 ) {
-			hash = ~hash;
-		}
 		ss << "UPDATE position SET hash = " << static_cast<sqlite_int64>(hash) << " WHERE pos='" << hs << "';";
 	}
 
