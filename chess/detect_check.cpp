@@ -32,9 +32,9 @@ bool detect_check( position const& p, color::type c )
 }
 
 
-void calc_check_map_knight( check_map& map, unsigned char king, unsigned char knight )
+void calc_check_map_knight( check_map& map, unsigned char king, uint64_t knight )
 {
-	unsigned char v = 0x80 | knight;
+	unsigned char v = 0x80 | static_cast<unsigned char>(knight);
 	map.board[knight] = v;
 
 	if( !map.board[king] ) {
@@ -52,7 +52,7 @@ static void process_piece( position const& p, check_map& map, uint64_t piece )
 
 	uint64_t block_count = popcount( between & p.bitboards[p.self()].b[bb_type::all_pieces] );
 	if( block_count < 2 ) {
-		uint64_t cpi = piece | 0x80;
+		unsigned char cpi = static_cast<unsigned char>(piece) | 0x80;
 
 		map.board[piece] = cpi;
 
