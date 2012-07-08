@@ -18,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)\..\build\$(ConfigurationName)"
-			IntermediateDirectory="..\build\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\build\bookgen\$(ConfigurationName)"
+			IntermediateDirectory="..\build\bookgen\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			ExcludeBuckets="5;6;8;13"
@@ -94,12 +94,11 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)\..\build\$(ConfigurationName)"
-			IntermediateDirectory="..\build\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\build\bookgen\$(ConfigurationName)"
+			IntermediateDirectory="..\build\bookgen\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
-			BuildLogFile="$(IntDir)\BookgenBuildLog.htm"
 			ExcludeBuckets="5;6;8;13"
 			>
 			<Tool

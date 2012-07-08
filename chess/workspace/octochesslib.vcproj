@@ -18,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)\..\build\$(ConfigurationName)"
-			IntermediateDirectory="..\build\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\build\octochesslib\$(ConfigurationName)"
+			IntermediateDirectory="..\build\octochesslib\$(ConfigurationName)"
 			ConfigurationType="4"
 			CharacterSet="1"
 			ExcludeBuckets="5;6;8;13"
@@ -38,7 +38,6 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				TargetEnvironment="3"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
@@ -83,13 +82,12 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)\..\build\$(ConfigurationName)"
-			IntermediateDirectory="..\build\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\build\octochesslib\$(ConfigurationName)"
+			IntermediateDirectory="..\build\octochesslib\$(ConfigurationName)"
 			ConfigurationType="4"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
-			BuildLogFile="$(IntDir)\OctochesslibBuildLog.htm"
-			ExcludeBuckets="5;6;8;13"
+			ExcludeBuckets="5;6;8;13;15;18"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"

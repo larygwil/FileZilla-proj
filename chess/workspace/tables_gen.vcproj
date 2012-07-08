@@ -18,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)\..\build\$(ConfigurationName)"
-			IntermediateDirectory="..\build\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\build\tables_gen\$(ConfigurationName)"
+			IntermediateDirectory="..\build\tables_gen\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			BuildLogFile="$(IntDir)\TablesGenBuildLog.htm"
