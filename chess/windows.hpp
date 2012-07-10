@@ -165,16 +165,13 @@ int get_system_memory();
 
 #else
 
-inline uint64_t popcount( uint64_t w )
-{
-      w = w - ((w >> 1) & 0x5555555555555555ull);
-      w = (w & 0x3333333333333333ull) + ((w >> 2) & 0x3333333333333333ull);
-      w = (w + (w >> 4)) & 0x0f0f0f0f0f0f0f0full;
-      return (w * 0x0101010101010101ull) >> 56;
-}
+// The fallback
+#define popcount generic_popcount
 
 #endif
 
 #define atoll _atoi64
+
+void usleep( uint64_t usecs );
 
 #endif

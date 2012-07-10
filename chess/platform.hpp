@@ -33,4 +33,15 @@ inline uint64_t bitscan_unset( uint64_t& mask ) {
 	return index;
 }
 
+inline uint64_t generic_popcount( uint64_t w )
+{
+      w = w - ((w >> 1) & 0x5555555555555555ull);
+      w = (w & 0x3333333333333333ull) + ((w >> 2) & 0x3333333333333333ull);
+      w = (w + (w >> 4)) & 0x0f0f0f0f0f0f0f0full;
+      return (w * 0x0101010101010101ull) >> 56;
+}
+
+bool uses_native_popcnt();
+bool cpu_has_popcnt();
+
 #endif

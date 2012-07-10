@@ -188,7 +188,8 @@ unsigned int get_cpu_count()
 		while( offset < len ) {
 			switch (ptr->Relationship) {
 				case RelationProcessorCore:
-					count += static_cast<int>(popcount( ptr->ProcessorMask ));
+					// As get_cpu_count is used in early initialization, use generic popcount.
+					count += static_cast<int>(generic_popcount( ptr->ProcessorMask ));
 					break;
 				default:
 					break;
@@ -255,4 +256,28 @@ uint64_t get_page_size()
 	memset( &info, 0, sizeof(SYSTEM_INFO) );
 	GetSystemInfo( &info );
 	return info.dwPageSize;
+}
+
+bool uses_native_popcnt()
+{
+#if HAS_NATIVE_POPCOUNT
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool cpu_has_popcnt()
+{
+	// eax, ebx, ecx, edx
+	int info[4] = {0, 0, 0, 0};
+	__cpuid( info, 0x1 );
+
+	// Bit 23 indicates POPCNT support
+	return (info[3] & (1 << 23)) != 0;
+}
+
+void usleep( uint64_t usecs )
+{
+	Sleep( static_cast<DWORD>(usecs / 1000) );
 }

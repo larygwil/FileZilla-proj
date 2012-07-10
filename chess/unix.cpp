@@ -249,3 +249,14 @@ uint64_t get_page_size()
 	return static_cast<uint64_t>(getpagesize());
 }
 
+bool uses_native_popcnt()
+{
+	// We may lie
+	return true;
+}
+
+bool cpu_has_popcnt()
+{
+	// We may lie
+	return true;
+}
