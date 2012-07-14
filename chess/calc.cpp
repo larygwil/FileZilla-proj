@@ -983,7 +983,7 @@ break2:
 		else {
 			if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
 				if( max_depth < conf.depth ) {
-					if( alpha > last_mate) {
+					if( alpha > last_mate && !ponder ) {
 						std::cerr << "Early break due to mate at " << max_depth << std::endl;
 						do_abort = true;
 					}
