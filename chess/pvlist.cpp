@@ -128,7 +128,6 @@ void extend_pv_from_tt( pv_entry* pv, position p, int max_depth, int max_qdepth 
 	if( !prev ) {
 		return;
 	}
-	return; // FIXME
 
 	while(true) {
 		uint64_t hash = get_zobrist_hash( p );
@@ -144,7 +143,11 @@ void extend_pv_from_tt( pv_entry* pv, position p, int max_depth, int max_qdepth 
 		short ev;
 		short full_eval;
 		score_type::type s = transposition_table.lookup( hash, r, 0, result::loss, result::win, ev, best, full_eval );
-		if( s != score_type::exact || best.empty() ) {
+		if( best.empty() ) {
+			break;
+		}
+
+		if( !is_valid_move( p, best, check_map(p) ) ) {
 			break;
 		}
 
