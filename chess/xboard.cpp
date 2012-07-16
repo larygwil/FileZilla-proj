@@ -485,7 +485,7 @@ bool parse_setboard( xboard_state& state, xboard_thread& thread, std::string con
 void xboard( std::string line)
 {
 	if( uses_native_popcnt() && !cpu_has_popcnt() ) {
-		std::cerr << "tellusererror Your CPU does not support the POPCNT instruction, but this version of Octochess has been built to use this instruction. Please use a generic (but slower) version of Octochess for your CPU." << std::endl;
+		std::cout << "tellusererror Your CPU does not support the POPCNT instruction, but this version of Octochess has been built to use this instruction. Please use a generic (but slower) version of Octochess for your CPU." << std::endl;
 		usleep(1000);
 		exit(1);
 	}
