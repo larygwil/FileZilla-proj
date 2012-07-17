@@ -2,9 +2,11 @@
 
 set -e
 
-REV=`svn info . | grep '^Revision: ' | grep -o '[0-9]\+'`
+if [ -z "$REV" ]; then
+  REV=`svn info . | grep '^Revision: ' | grep -o '[0-9]\+'`
+fi
 
-if [ "$REV" = "" ]; then
+if [ -z "$REV" ]; then
   echo "Could not get SVN revision"
   exit 1
 fi
@@ -32,4 +34,4 @@ cp COPYING octochess-r$REV/copying.txt
 cp NEWS octochess-r$REV/news.txt
 cp README octochess-r$REV/readme.txt
 
-unix2dos octochess-r$REV/*.txt
+unix2dos --force octochess-r$REV/*.txt

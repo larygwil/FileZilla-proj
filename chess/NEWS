@@ -1,3 +1,13 @@
+Octochess r4690 (2012-07-16):
+- Fix evaluation bug and use new eval values
+- Fix bug in static exchange evaluation leading to assumed king exchange
+- UCI: Fix black increment not being considered in time calculation
+- UCI: Handle movestogo argument to the go command
+- Fix crash in endgame evaluation
+- Fix bug in hash table replacement strategy due to truncation at high search depths
+- Use history based move ordering of noncaptures in search
+- CECP: Tell user an error if trying to use a POPCNT enabled Octochess on a CPU not supporting that instruction
+
 Octochess r4638 (2012-05-21):
 - UCI: Fix quit command not actually quitting
 - UCI: After returning bestmove after a go, the move is not actually applied
