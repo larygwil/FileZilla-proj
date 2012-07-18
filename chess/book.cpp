@@ -367,7 +367,7 @@ extern "C" int get_cb( void* p, sqlite3_stmt* statement )
 		std::sort( d->moves, d->pm, book_move_sort );
 	}
 
-	if( size != (d->pm - d->moves) ) {
+	if( size != static_cast<uint64_t>(d->pm - d->moves) ) {
 		if( d->by_hash_ ) {
 			std::cerr << "Possible hash collision" << std::endl;
 			return 0;
@@ -865,7 +865,8 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 
 	scoped_lock l(impl_->mtx);
 
-	if( !impl_->query( "BEGIN TRANSACTION", 0, 0 ) ) {
+	transaction t( *impl_ );
+	if( !t.init() ) {
 		return false;
 	}
 
@@ -927,7 +928,8 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 		}
 		hs = hs.substr( 0, hs.size() - 2 );
 	}
-	return impl_->query( "COMMIT TRANSACTION;", 0, 0 );
+
+	return t.commit();
 }
 
 void book::fold()

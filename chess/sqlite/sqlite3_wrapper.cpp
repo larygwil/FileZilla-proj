@@ -80,7 +80,7 @@ bool database::query( std::string const& query, int (*callback)(void*,int,char**
 	else if( report_errors ) {
 		print_error( res, query, err_msg );
 	}
-	
+
 	sqlite3_free( err_msg );
 
 	return ret;
@@ -131,6 +131,7 @@ bool database::query_row( std::string const& query, int (*callback)(void*,sqlite
 		if( report_errors ) {
 			print_error( res, query );
 		}
+		sqlite3_finalize( statement );
 		return false;
 	}
 
@@ -143,19 +144,167 @@ bool database::query_row( std::string const& query, int (*callback)(void*,sqlite
 					std::cerr << "Failed query: " << query << std::endl;
 					abort();
 				}
+				sqlite3_finalize( statement );
 				return false;
 			}
 		}
 	} while( res == SQLITE_BUSY || res == SQLITE_ROW );
 
-	if( res != SQLITE_DONE ) {
+	bool ret = false;
+	if( res != SQLITE_DONE && res != SQLITE_OK ) {
 		if( report_errors ) {
 			print_error( res, query );
 		}
-		return false;
+	}
+	else {
+		ret = true;
 	}
 
 	sqlite3_finalize( statement );
 
-	return true;
+	return ret;
+}
+
+
+statement::statement( database& db, std::string const& statement, bool report_errors )
+	: db_(db)
+	, query_( statement )
+	, statement_()
+{
+	if( db_.is_open() ) {
+		int res = sqlite3_prepare_v2( db_.handle(), statement.c_str(), -1, &statement_, 0 );
+		if( res != SQLITE_OK && res != SQLITE_DONE ) {
+			if( report_errors ) {
+				db_.print_error( res, statement, 0 );
+			}
+			sqlite3_finalize( statement_ );
+			statement_ = 0;
+		}
+	}
+	else {
+		if( report_errors ) {
+			std::cerr << "Trying to prepare statement on a database that is not open." << std::endl;
+			std::cerr << "Failed query: " << statement << std::endl;
+		}
+	}
+}
+
+statement::~statement()
+{
+}
+
+
+bool statement::exec( bool report_errors ) {
+	if( !statement_ ) {
+		if( report_errors ) {
+			std::cerr << "Calling exec on an unprepared statement." << std::endl;
+			std::cerr << "Failed query: " << query_ << std::endl;
+		}
+		return false;
+	}
+
+	bool ret = false;
+
+	int res;
+	do {
+		res = sqlite3_step( statement_ );
+	} while( res == SQLITE_BUSY || res == SQLITE_ROW );
+
+	if( res != SQLITE_OK && res != SQLITE_DONE ) {
+		if( report_errors ) {
+			db_.print_error( res, query_, 0 );
+		}
+	}
+	else {
+		ret = true;
+	}
+
+	sqlite3_reset( statement_ );
+
+	return ret;
+}
+
+
+transaction::transaction( database& db )
+	: db_( db )
+	, initialized_()
+	, released_()
+{
+}
+
+
+bool transaction::init( bool report_errors )
+{
+	if( initialized_ ) {
+		if( report_errors ) {
+			std::cerr << "Trying to initialize same transaction more than once." << std::endl;
+		}
+		return false;
+	}
+	statement s( db_, "SAVEPOINT \"transaction\";", report_errors );
+	bool ret = s.exec();
+	if( ret ) {
+		initialized_ = true;
+	}
+
+	return ret;
+}
+
+
+bool transaction::commit( bool report_errors )
+{
+	if( !initialized_ ) {
+		if( report_errors ) {
+			std::cerr << "Trying to commit transaction that hasn't been initialized." << std::endl;
+		}
+		return false;
+	}
+
+	if( released_ ) {
+		if( report_errors ) {
+			std::cerr << "Trying to commit transaction that has already been released." << std::endl;
+		}
+	}
+
+	statement release( db_, "RELEASE SAVEPOINT \"transaction\";", report_errors );
+	bool ret = release.exec( report_errors );
+
+	released_ = true;
+
+	return ret;
+}
+
+
+void transaction::rollback( bool report_errors )
+{
+	if( !initialized_ ) {
+		if( report_errors ) {
+			std::cerr << "Trying to commit transaction that hasn't been initialized." << std::endl;
+		}
+		return;
+	}
+
+	if( released_ ) {
+		if( report_errors ) {
+			std::cerr << "Trying to commit transaction that has already been released." << std::endl;
+		}
+	}
+
+	statement rollback( db_, "ROLLBACK TO SAVEPOINT \"transaction\";", report_errors );
+	rollback.exec();
+
+	statement release( db_, "RELEASE SAVEPOINT \"transaction\";", report_errors );
+	release.exec();
+
+	released_ = true;
+
+	return;
+}
+
+
+transaction::~transaction()
+{
+	if( initialized_ && !released_ ) {
+		rollback();
+	}
 }

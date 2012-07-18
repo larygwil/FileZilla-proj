@@ -32,5 +32,35 @@ private:
 	sqlite3* db_;
 };
 
+class statement
+{
+public:
+	statement( database& db, std::string const& statement, bool report_errors = true );
+	virtual ~statement();
+
+	bool ok() const { return statement_ != 0; }
+
+	bool exec( bool report_errors = true );
+private:
+	database& db_;
+	std::string query_;
+	sqlite3_stmt* statement_;
+};
+
+class transaction
+{
+public:
+	transaction( database& db );
+	virtual ~transaction();
+
+	bool init( bool report_errors = true );
+	bool commit( bool report_errors = true );
+	void rollback( bool report_errors = true );
+
+private:
+	database& db_;
+	bool initialized_;
+	bool released_;
+};
 
 #endif
