@@ -57,7 +57,7 @@ bool pgn_reader::next( game& g )
 			continue;
 		}
 
-		if( line[0] == '[' ) {
+		if( line[0] == '[' && !in_brace ) {
 			if( !g.moves_.empty() ) {
 				pushback_ = line;
 				return true;
