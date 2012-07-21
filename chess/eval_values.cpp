@@ -644,15 +644,9 @@ const score king_values[32] = {
 score pst[2][7][64];
 
 
-void init_pst()
+void update_pst()
 {
 	for( int i = 0; i < 32; ++i ) {
-		pst[0][1][(i / 4) * 8 + i % 4] = pst_data::pawn_values[i];
-		pst[0][2][(i / 4) * 8 + i % 4] = pst_data::knight_values[i];
-		pst[0][3][(i / 4) * 8 + i % 4] = pst_data::bishop_values[i];
-		pst[0][4][(i / 4) * 8 + i % 4] = pst_data::rook_values[i];
-		pst[0][5][(i / 4) * 8 + i % 4] = pst_data::queen_values[i];
-		pst[0][6][(i / 4) * 8 + i % 4] = pst_data::king_values[i];
 		pst[0][1][(i / 4) * 8 + 7 - i % 4] = pst_data::pawn_values[i];
 		pst[0][2][(i / 4) * 8 + 7 - i % 4] = pst_data::knight_values[i];
 		pst[0][3][(i / 4) * 8 + 7 - i % 4] = pst_data::bishop_values[i];
@@ -666,4 +660,18 @@ void init_pst()
 			pst[1][p][i] = pst[0][p][63-i];
 		}
 	}
+}
+
+void init_pst()
+{
+	for( int i = 0; i < 32; ++i ) {
+		pst[0][1][(i / 4) * 8 + i % 4] = pst_data::pawn_values[i];
+		pst[0][2][(i / 4) * 8 + i % 4] = pst_data::knight_values[i];
+		pst[0][3][(i / 4) * 8 + i % 4] = pst_data::bishop_values[i];
+		pst[0][4][(i / 4) * 8 + i % 4] = pst_data::rook_values[i];
+		pst[0][5][(i / 4) * 8 + i % 4] = pst_data::queen_values[i];
+		pst[0][6][(i / 4) * 8 + i % 4] = pst_data::king_values[i];
+	}
+
+	update_pst();
 }

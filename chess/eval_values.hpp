@@ -119,5 +119,6 @@ namespace eval_values {
 
 extern score pst[2][7][64];
 void init_pst();
+void update_pst();
 
 #endif
