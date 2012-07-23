@@ -11,6 +11,7 @@
 #include "pv_move_picker.hpp"
 #include "random.hpp"
 #include "see.hpp"
+#include "statistics.hpp"
 #include "string.hpp"
 #include "time.hpp"
 #include "util.hpp"
@@ -522,7 +523,7 @@ skip_getline:
 
 		logger::log_input( line );
 
-		// The following two commands do not stop the thread.
+		// The following commands do not stop the thread.
 		if( cmd == "hard" ) {
 			scoped_lock l( thread.mtx );
 			conf.ponder = true;
@@ -539,7 +540,13 @@ skip_getline:
 			std::cout << "Error (unknown command): ." << std::endl;
 			continue;
 		}
-
+#ifdef USE_STATISTICS
+		else if( cmd == "~stats" ) {
+			stats.print( duration() );
+			stats.print_details();
+			continue;
+		}
+#endif
 		move best_move = thread.stop();
 
 		scoped_lock l( thread.mtx );

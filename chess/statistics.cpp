@@ -34,8 +34,14 @@ void statistics::print( duration const& elapsed )
 
 	uint64_t full = 0;
 	uint64_t max_depth = 0;
+	uint64_t busiest_count = 0;
+	int busiest_depth = 0;
 	for( int i = 0; i < MAX_DEPTH; ++i ) {
 		if( full_width_nodes[i] ) {
+			if( full_width_nodes[i] >= busiest_count ) {
+				busiest_count = full_width_nodes[i];
+				busiest_depth = i;
+			}
 			max_depth = i;
 		}
 		full += full_width_nodes[i];
@@ -43,23 +49,29 @@ void statistics::print( duration const& elapsed )
 
 	ss << std::endl;
 	ss << "Node stats:" << std::endl;
-	ss << "  Total:            " << std::setw(11) << std::setfill(' ') << full + quiescence_nodes << std::endl;
-	ss << "  Full-width:       " << std::setw(11) << std::setfill(' ') << full << std::endl;
-	ss << "  Max depth:        " << std::setw(11) << std::setfill(' ') << max_depth << std::endl;
-	ss << "  Quiescence:       " << std::setw(11) << std::setfill(' ') << quiescence_nodes << std::endl;
+	ss << "  Total:             " << std::setw(11) << std::setfill(' ') << full + quiescence_nodes << std::endl;
+	ss << "  Full-width:        " << std::setw(11) << std::setfill(' ') << full << std::endl;
+	ss << "  Busiest/max depth: " << std::setw(6) << std::setfill(' ') << busiest_depth << " / " << std::setw(2) << max_depth << std::endl;
+	ss << "  Quiescence:        " << std::setw(11) << std::setfill(' ') << quiescence_nodes << std::endl;
 
 	if( full || quiescence_nodes ) {
 		if( !elapsed.empty() ) {
-			ss << "  Nodes per second: " << std::setw(11) << std::setfill(' ') << elapsed.get_items_per_second(full + quiescence_nodes) << std::endl;
+			ss << "  Nodes per second:  " << std::setw(11) << std::setfill(' ') << elapsed.get_items_per_second(full + quiescence_nodes) << std::endl;
 		}
-		ss << "  Time per node:    " << std::setw(8) << elapsed.nanoseconds() / (full + quiescence_nodes) << " ns" << std::endl;
+		ss << "  Time per node:     " << std::setw(8) << elapsed.nanoseconds() / (full + quiescence_nodes) << " ns" << std::endl;
 	}
 
 	ss << std::endl;
 	ss << "Transposition table stats:" << std::endl;
 	hash::stats s = transposition_table.get_stats( true );
 
-	ss << "- Number of entries: " << std::setw(11) << s.entries << " (" << 100 * static_cast<double>(s.entries) / transposition_table.max_hash_entry_count() << "%)" << std::endl;
+	ss << "- Number of entries: " << std::setw(11) << s.entries << " (";
+	uint64_t max_hash_entry_count = transposition_table.max_hash_entry_count();
+	if( max_hash_entry_count ) {
+		ss << 100 * static_cast<double>(s.entries) / max_hash_entry_count << "%)";
+	}
+	ss << std::endl;
+
 	ss << "- Lookup misses:     " << std::setw(11) << s.misses;
 	if( s.misses + s.hits + s.best_move ) {
 		ss << " (" << static_cast<double>(s.misses) / (s.misses + s.hits + s.best_move) * 100 << "%)";
@@ -164,6 +176,21 @@ uint64_t statistics::nodes()
 }
 
 
+int statistics::busiest_depth() const
+{
+	int busiest = 0;
+	uint64_t busiest_count = 0;
+
+	for( int i = 1; i < MAX_DEPTH && full_width_nodes[i]; ++i ) {
+		if( full_width_nodes[i] >= busiest_count ) {
+			busiest_count = full_width_nodes[i];
+			busiest = i;
+		}
+	}
+	return busiest;
+}
+
+
 int statistics::highest_depth() const
 {
 	int highest = 0;
@@ -173,6 +200,28 @@ int statistics::highest_depth() const
 	highest = i - 1;
 
 	return highest;
+}
+
+
+void statistics::print_details() const
+{
+	std::stringstream ss;
+	try {
+		ss.imbue( std::locale("") );
+	}
+	catch( std::exception const& ) {
+		// Who cares
+	}
+
+	for( int i = 1; i < MAX_DEPTH; ++i ) {
+		uint64_t nodes = full_width_nodes[i];
+		if( nodes ) {
+			ss << std::setw(2) << std::setfill(' ') << i << " ";
+			ss << std::setw(11) << nodes << std::endl;
+		}
+	}
+
+	std::cerr << ss.str();
 }
 
 

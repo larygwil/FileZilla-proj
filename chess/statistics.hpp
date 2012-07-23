@@ -16,8 +16,11 @@ public:
 
 	uint64_t nodes();
 	int highest_depth() const;
+	int busiest_depth() const;
 
 	void print( duration const& elapsed );
+	void print_details() const;
+
 	void reset( bool total );
 	void accumulate( duration const& elapsed );
 
