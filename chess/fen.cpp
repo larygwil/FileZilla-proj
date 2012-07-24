@@ -318,24 +318,12 @@ bool parse_fen_noclock( std::string const& fen, position& p, std::string* error 
 		++cur;
 	}
 
-	if( popcount( p.bitboards[color::white].b[bb_type::king] ) != 1 ) {
-		if( error ) {
-			*error = "Position needs to include exactly one white king.";
-		}
-		return false;
-	}
-	if( popcount( p.bitboards[color::black].b[bb_type::king] ) != 1 ) {
-		if( error ) {
-			*error = "Position needs to include exactly one black king.";
-		}
-		return false;
-	}
-
 	p.update_derived();
 
-	if( detect_check( p, p.other() ) ) {
+	std::string tmp;
+	if( !p.verify(tmp) ) {
 		if( error ) {
-			*error = "The side not to move is in check.";
+			*error = tmp;
 		}
 		return false;
 	}

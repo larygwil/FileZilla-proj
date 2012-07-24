@@ -56,6 +56,7 @@ public:
 	void reset();
 
 	bool verify() const;
+	bool verify( std::string& error ) const;
 
 	void do_null_move();
 

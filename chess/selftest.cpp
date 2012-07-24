@@ -331,11 +331,11 @@ static bool test_evaluation( std::string const& fen, position const& p )
 		flipped += "b";
 	}
 
-	if( remaining[remaining.size()] == '6' ) {
-		remaining[remaining.size()] = '3';
+	if( remaining[remaining.size() - 1] == '6' ) {
+		remaining[remaining.size() - 1] = '3';
 	}
-	else if( remaining[remaining.size()] == '3' ) {
-		remaining[remaining.size()] = '6';
+	else if( remaining[remaining.size() - 1] == '3' ) {
+		remaining[remaining.size() - 1] = '6';
 	}
 	flipped += remaining.substr(1);
 
@@ -459,7 +459,7 @@ static void test_moves_noncaptures( std::string const& fen, position const& p )
 }
 
 
-static void process_test_positions()
+static bool process_test_positions()
 {
 	std::ifstream in_fen("test/testpositions.txt");
 
@@ -470,15 +470,17 @@ static void process_test_positions()
 		if( !parse_fen_noclock( fen, p, &error ) ) {
 			std::cerr << "Could not parse fen: " << error << std::endl;
 			std::cerr << "Fen: " << fen << std::endl;
-			abort();
+			return false;
 		}
 
 		if( !test_evaluation( fen, p ) ) {
-			abort();
+			return false;
 		}
 
 		test_moves_noncaptures( fen, p );
 	}
+
+	return true;
 }
 
 
@@ -487,7 +489,9 @@ static bool do_selftest()
 	if( !test_pst() ) {
 		return false;
 	}
-	process_test_positions();
+	if( !process_test_positions() ) {
+		return false;
+	}
 	if( !test_move_generation() ) {
 		return false;
 	}

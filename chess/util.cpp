@@ -1073,32 +1073,3 @@ bool is_valid_move( position const& p, move const& m, check_map const& check )
 
 	return ret;
 }
-
-bool position::verify() const {
-	position p2 = *this;
-	p2.update_derived();
-	if( base_eval != p2.base_eval ) {
-		std::cerr << "FAIL BASE EVAL!" << std::endl;
-		return false;
-	}
-	if( pawn_hash != p2.pawn_hash ) {
-		std::cerr << "PAWN HASH FAIL" << std::endl;
-		return false;
-	}
-	if( material[0] != p2.material[0] || material[1] != p2.material[1] ) {
-		std::cerr << "Material mismatch!" << std::endl;
-		return false;
-	}
-	for( int c = 0; c < 1; ++c ) {
-		if( bitboards[c].b[bb_type::all_pieces] != p2.bitboards[c].b[bb_type::all_pieces] ) {
-			std::cerr << "Bitboard error: Wron all pieces" << std::endl;
-			return false;
-		}
-		if( bitboards[c].b[bb_type::pawn_control] != p2.bitboards[c].b[bb_type::pawn_control] ) {
-			std::cerr << "Bitboard error: Wrong pawn control!" << std::endl;
-			return false;
-		}
-	}
-
-	return true;
-}
