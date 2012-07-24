@@ -230,7 +230,7 @@ bool position::verify( std::string& error ) const
 				error = "Incorrect enpassant square, pawn could not have made double-move.";
 				return false;
 			}
-			if( !(bitboards[other()].b[bb_type::all_pieces]) & occ ) {
+			if( !(bitboards[other()].b[bb_type::pawns] & occ) ) {
 				error = "Incorrect enpassant square, there is no corresponding pawn.";
 				return false;
 			}
@@ -247,7 +247,7 @@ bool position::verify( std::string& error ) const
 				error = "Incorrect enpassant square, pawn could not have made double-move.";
 				return false;
 			}
-			if( !(bitboards[other()].b[bb_type::all_pieces]) & occ ) {
+			if( !(bitboards[other()].b[bb_type::pawns] & occ) ) {
 				error = "Incorrect enpassant square, there is no corresponding pawn.";
 				return false;
 			}

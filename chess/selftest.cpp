@@ -459,7 +459,24 @@ static void test_moves_noncaptures( std::string const& fen, position const& p )
 }
 
 
-static bool process_test_positions()
+static void test_incorrect_positions()
+{
+	std::ifstream in_fen("test/bad_fen.txt");
+
+	std::string fen;
+	while( std::getline( in_fen, fen ) ) {
+		position p;
+		std::string error;
+		if( parse_fen_noclock( fen, p, &error ) ) {
+			std::cerr << "Fen of invalid position was not rejected." << std::endl;
+			std::cerr << "Fen: " << fen << std::endl;
+			abort();
+		}
+	}
+}
+
+
+static void process_test_positions()
 {
 	std::ifstream in_fen("test/testpositions.txt");
 
@@ -470,17 +487,15 @@ static bool process_test_positions()
 		if( !parse_fen_noclock( fen, p, &error ) ) {
 			std::cerr << "Could not parse fen: " << error << std::endl;
 			std::cerr << "Fen: " << fen << std::endl;
-			return false;
+			abort();
 		}
 
 		if( !test_evaluation( fen, p ) ) {
-			return false;
+			abort();
 		}
 
 		test_moves_noncaptures( fen, p );
 	}
-
-	return true;
 }
 
 
@@ -489,9 +504,8 @@ static bool do_selftest()
 	if( !test_pst() ) {
 		return false;
 	}
-	if( !process_test_positions() ) {
-		return false;
-	}
+	test_incorrect_positions();
+	process_test_positions();
 	if( !test_move_generation() ) {
 		return false;
 	}
