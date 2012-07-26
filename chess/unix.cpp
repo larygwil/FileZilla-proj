@@ -94,7 +94,7 @@ void condition::wait( scoped_lock& l, uint64_t timeout )
 
 		timespec ts;
 		ts.tv_sec = tv.tv_sec + timeout / 1000;
-		ts.tv_nsec = tv.tv_usec * 1000 + (timeout % 1000) * 1000;
+		ts.tv_nsec = tv.tv_usec * 1000 + (timeout % 1000) * 1000 * 1000;
 		if( ts.tv_nsec > 1000000000ll ) {
 			++ts.tv_sec;
 			ts.tv_nsec -= 1000000000ll;

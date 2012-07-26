@@ -51,6 +51,7 @@ public:
 	~condition();
 
 	void wait( scoped_lock& l );
+	// Milliseconds
 	void wait( scoped_lock& l, uint64_t timeout );
 	void signal( scoped_lock& l );
 
