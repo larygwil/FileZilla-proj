@@ -25,7 +25,8 @@ namespace mode {
 enum type {
 	force,
 	normal,
-	analyze
+	analyze,
+	edit
 };
 }
 
@@ -146,6 +147,9 @@ struct xboard_state
 		moves_between_updates = 0;
 	}
 
+	// Returns false if program should quit.
+	bool handle_edit_mode( std::string const& cmd, std::string const& args );
+
 	position p;
 	int clock;
 	seen_positions seen;
@@ -213,6 +217,117 @@ private:
 	move best_move;
 	bool ponder_;
 };
+
+
+bool xboard_state::handle_edit_mode( std::string const& cmd, std::string const& args )
+{
+	if( cmd == "c" ) {
+		p.c = static_cast<color::type>(1-p.c);
+	}
+	else if( cmd == "#" ) {
+		p.clear_bitboards();
+	}
+	else if( cmd == "." ) {
+		p.c = static_cast<color::type>(clock);
+		p.update_derived();
+		p.can_en_passant = 0;
+
+		p.castle[color::white] = 0;
+		p.castle[color::black] = 0;
+		if( p.king_pos[color::white] == 4 ) {
+			if( p.bitboards[color::white].b[bb_type::rooks] & (1ull << 7) ) {
+				p.castle[color::white] |= castles::kingside;
+			}
+			if( p.bitboards[color::white].b[bb_type::rooks] & 1ull ) {
+				p.castle[color::white] |= castles::queenside;
+			}
+		}
+		if( p.king_pos[color::black] == 60 ) {
+			if( p.bitboards[color::black].b[bb_type::rooks] & (1ull << 63) ) {
+				p.castle[color::black] |= castles::kingside;
+			}
+			if( p.bitboards[color::black].b[bb_type::rooks] & (1ull << 56) ) {
+				p.castle[color::black] |= castles::queenside;
+			}
+		}
+
+		move_history_.clear();
+		seen.reset_root( get_zobrist_hash( p ) );
+		started_from_root = false;
+
+		if( !p.verify() ) {
+			// Specs say to tell user error until next edit/new/setboard command. Since we cannot do that yet, refuse to leave edit mode.
+			std::cout << "Error (invalid position): Cannot leave edit mode while the position is not valid." << std::endl;
+		}
+		else {
+			clock = 1;
+			// Not quite correct, but fits the idiom used by Win/XBoard
+			mode_ = mode::force;
+		}
+	}
+	else if( cmd == "quit" ) {
+		return false;
+	}
+	else {
+		if( cmd.size() == 3 ) {
+			int rank = -1;
+			int file = -1;
+			if( cmd[1] >= 'a' && cmd[1] <= 'h' ) {
+				file = cmd[1] - 'a';
+			}
+			else if( cmd[1] >= 'A' && cmd[1] <= 'H' ) {
+				file = cmd[1] - 'H';
+			}
+			if( cmd[2] >= '1' && cmd[2] <= '8' ) {
+				rank = cmd[2] - '1';
+			}
+			int piece = -1;
+			switch( cmd[0] ) {
+			case 'x':
+			case 'X':
+				piece = pieces::none;
+				break;
+			case 'p':
+			case 'P':
+				piece = pieces::pawn;
+				break;
+			case 'n':
+			case 'N':
+				piece = pieces::knight;
+				break;
+			case 'b':
+			case 'B':
+				piece = pieces::bishop;
+				break;
+			case 'r':
+			case 'R':
+				piece = pieces::rook;
+				break;
+			case 'q':
+			case 'Q':
+				piece = pieces::queen;
+				break;
+			case 'k':
+			case 'K':
+				piece = pieces::king;
+				break;
+			default:
+				break;
+			}
+		
+			if( piece != -1 && rank != -1 && file != -1 ) {
+				int sq = static_cast<uint64_t>(file + rank * 8);
+				for( int pi = bb_type::pawns; pi <= bb_type::king; ++pi ) {
+					p.bitboards[p.self()].b[pi] &= ~(1ull << sq);
+				}
+				p.bitboards[p.self()].b[piece] |= 1ull << sq;
+				return true;
+			}
+		}
+		std::cout << "Error (bad command): Not a valid command in edit mode." << std::endl;
+	}
+	return true;
+}
 
 
 xboard_thread::xboard_thread( xboard_state& s )
@@ -523,30 +638,41 @@ skip_getline:
 
 		logger::log_input( line );
 
-		// The following commands do not stop the thread.
-		if( cmd == "hard" ) {
+		{
 			scoped_lock l( thread.mtx );
-			conf.ponder = true;
-			continue;
+
+			if( state.mode_ == mode::edit ) {
+				if( !state.handle_edit_mode( cmd, args ) ) {
+					break;
+				}
+				else {
+					continue;
+				}
+			}
+
+			// The following commands do not stop the thread.
+			if( cmd == "hard" ) {
+				conf.ponder = true;
+				continue;
+			}
+			else if( cmd == "easy" ) {
+				conf.ponder = false;
+				continue;
+			}
+			else if( cmd == "." ) {
+				// TODO: Implement
+				std::cout << "Error (unknown command): ." << std::endl;
+				continue;
+			}
+	#ifdef USE_STATISTICS
+			else if( cmd == "~stats" ) {
+				stats.print( duration() );
+				stats.print_details();
+				continue;
+			}
+	#endif
 		}
-		else if( cmd == "easy" ) {
-			scoped_lock l( thread.mtx );
-			conf.ponder = false;
-			continue;
-		}
-		else if( cmd == "." ) {
-			scoped_lock l( thread.mtx );
-			// TODO: Implement
-			std::cout << "Error (unknown command): ." << std::endl;
-			continue;
-		}
-#ifdef USE_STATISTICS
-		else if( cmd == "~stats" ) {
-			stats.print( duration() );
-			stats.print_details();
-			continue;
-		}
-#endif
+
 		move best_move = thread.stop();
 
 		scoped_lock l( thread.mtx );
@@ -792,6 +918,12 @@ skip_getline:
 			else {
 				std::cout << "Error (bad command): Not a valid st command" << std::endl;
 			}
+		}
+		else if( cmd == "edit" ) {
+			state.mode_ = mode::edit;
+			// We need to keep track of side to play
+			state.clock = state.p.c;
+			state.p.c = color::white;
 		}
 		else {
 			move m;
