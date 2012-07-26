@@ -77,6 +77,8 @@ public:
 	book book_;
 
 	pv_move_picker pv_move_picker_;
+
+	std::vector<move> move_history_;
 };
 
 octochess_uci::octochess_uci( gui_interface_ptr const& p ) 
@@ -97,17 +99,19 @@ void octochess_uci::new_game() {
 	impl_->half_moves_played_ = 0;
 	impl_->started_from_root_ = true;
 	impl_->last_mate_ = 0;
+	impl_->move_history_.clear();
 }
 
 void octochess_uci::set_position( std::string const& fen ) {
 	impl_->pos_.reset();
+	impl_->move_history_.clear();
 	bool success = false;
 	if( fen.empty() ) {
 		impl_->started_from_root_ = true;
 		success = true;
 	}
 	else {
-		if( parse_fen_noclock( fen, impl_->pos_, 0 ) ) {	
+		if( parse_fen_noclock( fen, impl_->pos_, 0 ) ) {
 			impl_->started_from_root_ = false;
 			success = true;
 		}
@@ -217,7 +221,7 @@ void octochess_uci::impl::on_new_best_move( position const& p, int depth, int se
 	} else {
 		i.mate_in_n_moves( mate );
 	}
-	
+
 	i.time_spent( elapsed );
 	if( !elapsed.empty() ) {
 		i.nodes_per_second( elapsed.get_items_per_second(nodes) );
@@ -242,7 +246,9 @@ void octochess_uci::impl::apply_move( move const& m )
 		seen_positions_.push_root( get_zobrist_hash( pos_ ) );
 	} else {
 		seen_positions_.reset_root( get_zobrist_hash( pos_ ) );
-	}	
+	}
+
+	move_history_.push_back( m );
 }
 
 
@@ -264,6 +270,9 @@ bool octochess_uci::impl::do_book_move() {
 
 			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
 			gui_interface_->tell_best_move( move_to_long_algebraic( best_move.m ) );
+		}
+		else if( half_moves_played_ <= 20 ) {
+			book_.mark_for_processing( move_history_ );
 		}
 	}
 
