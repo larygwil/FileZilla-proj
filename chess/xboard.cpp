@@ -218,7 +218,7 @@ private:
 };
 
 
-bool xboard_state::handle_edit_mode( std::string const& cmd, std::string const& args )
+bool xboard_state::handle_edit_mode( std::string const& cmd )
 {
 	if( cmd == "c" ) {
 		p.c = static_cast<color::type>(1-p.c);
@@ -641,7 +641,7 @@ skip_getline:
 			scoped_lock l( thread.mtx );
 
 			if( state.mode_ == mode::edit ) {
-				if( !state.handle_edit_mode( cmd, args ) ) {
+				if( !state.handle_edit_mode( cmd ) ) {
 					break;
 				}
 				else {
