@@ -7,7 +7,7 @@
 #include "time.hpp"
 
 // Upper limits, cannot go higher without recompilation.
-#define MAX_DEPTH  40
+#define MAX_DEPTH  60
 #define MAX_QDEPTH 40
 
 struct config
