@@ -36,10 +36,6 @@ struct perft_ctx {
 template<bool split_movegen>
 void perft( perft_ctx& ctx, int depth, position const& p, uint64_t& n )
 {
-	if( conf.depth == -1 ) {
-		conf.depth = 8;
-	}
-
 	move_info* moves = ctx.move_ptr;
 
 	check_map check( p );

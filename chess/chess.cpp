@@ -126,7 +126,7 @@ int main( int argc, char const* argv[] )
 {
 	console_init();
 
-	std::string const command = conf.init( argc, argv );
+	std::string command = conf.init( argc, argv );
 
 	logger::init( conf.logfile );
 
@@ -152,6 +152,16 @@ int main( int argc, char const* argv[] )
 
 	init_zobrist_tables();
 
+	while( command.empty() ) {
+		if( !std::getline(std::cin, command) ) {
+			std::cerr << "Could not read command" << std::endl;
+			return 1;
+		}
+		if( !command.empty() ) {
+			logger::log_input( command );
+		}
+	}
+
 	if( command == "auto" ) {
 		auto_play();
 	}
@@ -174,27 +184,8 @@ int main( int argc, char const* argv[] )
 	else if( command == "uci" ) {
 		run_uci( false );
 	}
-	else if( command.empty() ) {
-		std::string line;
-		if( !line.empty() ) {
-			logger::log_input( line );
-		}
-		if( !std::getline(std::cin, line) ) {
-			std::cerr << "Could not read command" << std::endl;
-		}
-		else if( line == "uci" ) {
-			run_uci( true );
-		}
-		else if( line == "test" ) {
-			selftest();
-		}
-		else {
-			xboard( line );
-		}
-	}
 	else {
-		std::cerr << "Unknown command: " << command << std::endl;
-		exit(1);
+		xboard( command );
 	}
 
 	logger::cleanup();
