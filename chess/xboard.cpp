@@ -12,8 +12,7 @@
 #include "random.hpp"
 #include "see.hpp"
 #include "statistics.hpp"
-#include "string.hpp"
-#include "time.hpp"
+#include "util/string.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
 

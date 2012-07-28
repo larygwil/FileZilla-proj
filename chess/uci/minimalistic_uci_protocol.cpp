@@ -4,7 +4,7 @@
 #include "time_calculation.hpp"
 
 #include "../logger.hpp"
-#include "../string.hpp"
+#include "../util/string.hpp"
 
 #include <cassert>
 #include <iostream>

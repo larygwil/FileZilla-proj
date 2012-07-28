@@ -1,7 +1,7 @@
 #ifndef OCTOCHESS_UCI_TYPES_HEADER
 #define OCTOCHESS_UCI_TYPES_HEADER
 
-#include "../platform.hpp"
+#include "../util/platform.hpp"
 
 namespace octochess {
 namespace uci {

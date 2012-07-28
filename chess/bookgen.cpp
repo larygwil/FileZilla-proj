@@ -9,10 +9,9 @@
 #include "moves.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "pgn.hpp"
-#include "platform.hpp"
 #include "pvlist.hpp"
 #include "random.hpp"
-#include "string.hpp"
+#include "util/string.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
 

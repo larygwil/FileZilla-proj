@@ -3,7 +3,7 @@
 
 #include "sqlite3.h"
 
-#include "../platform.hpp"
+#include "../util/platform.hpp"
 #include <string>
 
 class database

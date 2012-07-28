@@ -2,7 +2,6 @@
 #define __HASH_H__
 
 #include "chess.hpp"
-#include "platform.hpp"
 
 /*
  * General considerations:

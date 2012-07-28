@@ -2,7 +2,7 @@
 #include <iomanip>
 #include <cstdlib>
 
-#include "platform.hpp"
+#include "util/platform.hpp"
 
 int dist( int x1, int y1, int x2, int y2 )
 {
@@ -14,7 +14,7 @@ int dist( int x1, int y1, int x2, int y2 )
 
 int main()
 {
-	std::cout << "#include \"platform.hpp\"" << std::endl << std::endl;
+	std::cout << "#include \"util/platform.hpp\"" << std::endl << std::endl;
 
 	/*std::cout << "uint64_t mobility_block[64][64] = {" << std::endl;
 

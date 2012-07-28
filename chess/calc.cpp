@@ -7,7 +7,6 @@
 #include "hash.hpp"
 #include "moves.hpp"
 #include "phased_move_generator.hpp"
-#include "platform.hpp"
 #include "random.hpp"
 #include "see.hpp"
 #include "statistics.hpp"

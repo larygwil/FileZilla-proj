@@ -5,7 +5,7 @@
 
 #include "chess.hpp"
 #include "config.hpp"
-#include "time.hpp"
+#include "util/time.hpp"
 
 #ifdef USE_STATISTICS
 class statistics {

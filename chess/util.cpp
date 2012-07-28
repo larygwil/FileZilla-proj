@@ -9,7 +9,6 @@
 #include "moves.hpp"
 #include "util.hpp"
 #include "pawn_structure_hash_table.hpp"
-#include "platform.hpp"
 #include "tables.hpp"
 #include "zobrist.hpp"
 

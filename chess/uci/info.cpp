@@ -1,6 +1,6 @@
 #include "info.hpp"
 
-#include "../time.hpp"
+#include "../util/time.hpp"
 
 #include <sstream>
 

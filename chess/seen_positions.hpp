@@ -1,7 +1,7 @@
 #ifndef __SEEN_POSITIONS_H__
 #define __SEEN_POSITIONS_H__
 
-#include "platform.hpp"
+#include "util/platform.hpp"
 #include "config.hpp"
 
 class seen_positions {

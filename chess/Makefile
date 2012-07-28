@@ -12,6 +12,11 @@ tables.cpp: tables_gen.cpp
 	./tables_gen > tables.cpp
 	rm tables_gen
 
+UTIL_FILES = \
+	util/platform.o \
+	util/string.o \
+	util/time.o \
+
 OBJECT_FILES = \
 	book.o \
 	calc.o \
@@ -31,7 +36,6 @@ OBJECT_FILES = \
 	pawn_structure_hash_table.o \
 	pgn.o \
 	phased_move_generator.o \
-	platform.o \
 	position.o \
 	pvlist.o \
 	pv_move_picker.o \
@@ -43,14 +47,12 @@ OBJECT_FILES = \
 	sqlite/sqlite3.o \
 	sqlite/sqlite3_wrapper.o \
 	statistics.o \
-	string.o \
 	tables.o \
-	time.o \
 	tweak.o \
 	util.o \
 	zobrist.o
 
-CHESS_FILES = $(OBJECT_FILES) \
+CHESS_FILES = \
 	chess.o \
 	xboard.o \
 	uci/info.o \
@@ -67,11 +69,11 @@ sqlite/sqlite3.o: sqlite/sqlite3.c sqlite/sqlite3.h
 	$(CC) $(CFLAGS) -DSQLITE_OMIT_LOAD_EXTENSION -pthread -c -o $@ $<
 
 
-octochess: $(CHESS_FILES)
+octochess: $(UTIL_FILES) $(OBJECT_FILES) $(CHESS_FILES)
 	$(CXX) $(CXXFLAGS) -pthread -o $@ $^
 
 
-bookgen: $(OBJECT_FILES) bookgen.o
+bookgen: $(UTIL_FILES) $(OBJECT_FILES) bookgen.o
 	$(CXX) $(CXXFLAGS) -pthread -o $@ $^
 
 clean:
@@ -80,7 +82,10 @@ clean:
 	rm -f *.o
 	rm -f uci/*.o
 	rm -f uci/*.gcda
+	rm -f util/*.o
+	rm -f util/*.gcda
 	rm -f tables.cpp
 	rm -f sqlite/*.o
+	rm -f sqlite/*.gcda
 
 .PHONY: all clean

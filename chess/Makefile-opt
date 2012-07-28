@@ -17,6 +17,11 @@ tables.cpp: tables_gen.cpp
 	./tables_gen > tables.cpp
 	rm tables_gen
 
+UTIL_SOURCE_FILES = \
+	util/platform.cpp \
+	util/string.cpp \
+	util/time.cpp
+
 GENERIC_SOURCE_FILES = \
 	book.cpp \
 	calc.cpp \
@@ -35,7 +40,6 @@ GENERIC_SOURCE_FILES = \
 	moves_noncaptures.cpp \
 	pawn_structure_hash_table.cpp \
 	pgn.cpp \
-	platform.cpp \
 	phased_move_generator.cpp \
 	position.cpp \
 	pvlist.cpp \
@@ -47,14 +51,12 @@ GENERIC_SOURCE_FILES = \
 	seen_positions.cpp \
 	selftest.cpp \
 	statistics.cpp \
-	string.cpp \
 	tables.cpp \
-	time.cpp \
 	zobrist.cpp \
 	sqlite/sqlite3.o \
 	sqlite/sqlite3_wrapper.cpp
 
-CHESS_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
+CHESS_SOURCE_FILES = $(UTIL_SOURCE_FILES) $(GENERIC_SOURCE_FILES) \
 	chess.cpp \
 	tweak.cpp \
 	xboard.cpp \
@@ -64,7 +66,7 @@ CHESS_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
 	uci/runner.cpp \
 	uci/time_calculation.cpp
 
-BOOKGEN_SOURCE_FILES = $(GENERIC_SOURCE_FILES) \
+BOOKGEN_SOURCE_FILES = $(UTIL_SOURCE_FILES) $(GENERIC_SOURCE_FILES) \
 	bookgen.cpp
 
 chess-gen: *.cpp *.hpp sqlite/sqlite3.o tables.cpp

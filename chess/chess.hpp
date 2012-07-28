@@ -3,7 +3,7 @@
 
 #include <string.h>
 
-#include "platform.hpp"
+#include "util/platform.hpp"
 #include "score.hpp"
 #include "position.hpp"
 

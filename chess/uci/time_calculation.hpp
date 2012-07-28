@@ -2,7 +2,7 @@
 #define OCTOCHESS_UCI_TIME_CALCULATION_HEADER
 
 #include "types.hpp"
-#include "../time.hpp"
+#include "../util/time.hpp"
 
 namespace octochess {
 namespace uci {

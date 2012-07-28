@@ -3,7 +3,7 @@
 
 // This file is mainly used for boot-strapping the magic multiplication move generation.
 
-#include "platform.hpp"
+#include "util/platform.hpp"
 #include "tables.hpp"
 
 inline uint64_t attack( uint64_t pi, uint64_t blockers, uint64_t const* const ray )

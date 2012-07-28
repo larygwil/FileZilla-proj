@@ -14,7 +14,7 @@
 #include "../pv_move_picker.hpp"
 #include "../logger.hpp"
 #include "../random.hpp"
-#include "../string.hpp"
+#include "../util/string.hpp"
 #include "../util.hpp"
 #include "../zobrist.hpp"
 

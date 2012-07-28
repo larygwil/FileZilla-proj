@@ -8,7 +8,7 @@
 #include "hash.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "random.hpp"
-#include "string.hpp"
+#include "util/string.hpp"
 #include "tweak.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"

@@ -1,4 +1,4 @@
-#include "platform.hpp"
+#include "util/platform.hpp"
 #include "random.hpp"
 #include "random_data.hpp"
 

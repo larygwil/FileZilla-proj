@@ -1,7 +1,7 @@
 #ifndef __PAWN_STRUCTURE_HASH_TABLE_H__
 #define __PAWN_STRUCTURE_HASH_TABLE_H__
 
-#include "platform.hpp"
+#include "util/platform.hpp"
 #include "score.hpp"
 
 /*

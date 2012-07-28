@@ -1,5 +1,5 @@
 #include "config.hpp"
-#include "platform.hpp"
+#include "util/platform.hpp"
 
 #include <iostream>
 #include <algorithm>

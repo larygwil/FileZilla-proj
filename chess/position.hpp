@@ -1,7 +1,7 @@
 #ifndef __POSITION_H__
 #define __POSITION_H__
 
-#include "platform.hpp"
+#include "util/platform.hpp"
 #include "definitions.hpp"
 #include "score.hpp"
 

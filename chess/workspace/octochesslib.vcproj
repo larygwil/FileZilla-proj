@@ -272,7 +272,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\string.cpp"
+				RelativePath="..\util\string.cpp"
 				>
 			</File>
 			<File
@@ -280,7 +280,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\time.cpp"
+				RelativePath="..\util\time.cpp"
 				>
 			</File>
 			<File
@@ -288,7 +288,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\windows.cpp"
+				RelativePath="..\util\windows.cpp"
 				>
 			</File>
 			<File
@@ -378,7 +378,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\platform.hpp"
+				RelativePath="..\util\platform.hpp"
 				>
 			</File>
 			<File
@@ -430,11 +430,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\string.hpp"
+				RelativePath="..\util\string.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\time.hpp"
+				RelativePath="..\util\time.hpp"
 				>
 			</File>
 			<File
@@ -442,7 +442,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\windows.hpp"
+				RelativePath="..\util\windows.hpp"
 				>
 			</File>
 			<File

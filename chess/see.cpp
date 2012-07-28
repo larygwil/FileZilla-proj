@@ -2,7 +2,7 @@
 #include "eval.hpp"
 #include "eval_values.hpp"
 #include "magic.hpp"
-#include "platform.hpp"
+#include "util/platform.hpp"
 #include "tables.hpp"
 
 #include <algorithm>

@@ -277,6 +277,19 @@ public:
 		return *this;
 	}
 
+	bool operator==(data_holder const& rhs) const
+	{
+		if( bytes != rhs.bytes ) {
+			return false;
+		}
+		return !memcmp( d, rhs.d, bytes );
+	}
+
+	bool operator!=(data_holder const& rhs) const
+	{
+		return !(*this == rhs);
+	}
+
 	unsigned char* d;
 	uint64_t bytes;
 };
@@ -518,9 +531,9 @@ bool get_position( std::string history, position& p )
 }
 
 
-extern "C" int fold_position( void* p, sqlite3_stmt* statement )
+extern "C" int fold_position( void* q, sqlite3_stmt* statement )
 {
-	book::impl* impl_ = reinterpret_cast<book::impl*>(p);
+	book::impl* impl_ = reinterpret_cast<book::impl*>(q);
 
 	if( !statement || sqlite3_column_count(statement) != 2 ) {
 		std::cerr << "Wrong column count" << std::endl;
@@ -558,17 +571,18 @@ extern "C" int fold_position( void* p, sqlite3_stmt* statement )
 		return 1;
 	}
 
+	position p;
+	if( !get_position( history, p ) ) {
+		std::cerr << "Could not get position from move history" << std::endl;
+		return 1;
+	}
+
+	check_map const check( p );
+
 	short forecast = result::loss;
 	unsigned char depth = 0;
 	if( !bytes ) {
 		// Mate or draw.
-		position p;
-		if( !get_position( history, p ) ) {
-			std::cerr << "Could not get position from move history" << std::endl;
-			return 1;
-		}
-
-		check_map check( p );
 		if( !check.check ) {
 			forecast = 0;
 		}
@@ -580,6 +594,22 @@ extern "C" int fold_position( void* p, sqlite3_stmt* statement )
 			return 1;
 		}
 
+		move_info moves[200];
+		move_info* pm;
+	
+		pm = moves;
+		calculate_moves( p, pm, check );
+
+		std::sort( moves, pm, book_move_sort );
+		
+		if( entries.size() != static_cast<uint64_t>(pm - moves) ) {
+			std::cerr << "Corrupt book entry, expected " << (pm - moves) << " moves, got " << entries.size() << " moves." << std::endl;
+			return 1;
+		}
+		for( unsigned int i = 0; i < entries.size(); ++i ) {
+			entries[i].m = moves[i].m;
+		}
+
 		for( std::size_t i = 0; i < entries.size(); ++i ) {
 			if( entries[i].forecast > forecast ) {
 				forecast = entries[i].forecast;
@@ -587,6 +617,14 @@ extern "C" int fold_position( void* p, sqlite3_stmt* statement )
 			}
 			else if( entries[i].forecast == forecast && entries[i].search_depth < depth ) {
 				depth = entries[i].search_depth;
+			}
+			if( entries[i].eval_version != 0 ) {
+				std::string chs = history + move_to_book_string( entries[i].m );
+				position cp;
+				if( !get_position( chs, cp ) ) {
+					std::cerr << "Corrupt book, child node not found." << std::endl;
+					return 1;
+				}
 			}
 		}
 	}
@@ -638,13 +676,16 @@ extern "C" int fold_position( void* p, sqlite3_stmt* statement )
 		return 1;
 	}
 
-	dh.d[i*4] = static_cast<unsigned short>(forecast) % 256;
-	dh.d[i*4 + 1] = static_cast<unsigned short>(forecast) / 256;
-	dh.d[i*4 + 2] = depth;
-	dh.d[i*4 + 3] = 0;
+	data_holder new_dh = dh;
+	new_dh.d[i*4] = static_cast<unsigned short>(forecast) % 256;
+	new_dh.d[i*4 + 1] = static_cast<unsigned short>(forecast) / 256;
+	new_dh.d[i*4 + 2] = depth;
+	new_dh.d[i*4 + 3] = 0;
 
-	if( !impl_->query_bind( "UPDATE position SET data = :1 WHERE pos = '" + parent + "'", dh.d, dh.bytes ) ) {
-		return 1;
+	if( new_dh != dh ) {
+		if( !impl_->query_bind( "UPDATE position SET data = :1 WHERE pos = '" + parent + "'", dh.d, dh.bytes ) ) {
+			return 1;
+		}
 	}
 
 	return 0;
@@ -909,24 +950,27 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 		return false;
 	}
 
-	dh.d[i*4] = static_cast<unsigned short>(entry.forecast) % 256;
-	dh.d[i*4 + 1] = static_cast<unsigned short>(entry.forecast) / 256;
-	dh.d[i*4 + 2] = entry.search_depth;
-	dh.d[i*4 + 3] = eval_version;
+	data_holder new_dh = dh;
+	new_dh.d[i*4] = static_cast<unsigned short>(entry.forecast) % 256;
+	new_dh.d[i*4 + 1] = static_cast<unsigned short>(entry.forecast) / 256;
+	new_dh.d[i*4 + 2] = entry.search_depth;
+	new_dh.d[i*4 + 3] = eval_version;
 
-	if( !impl_->query_bind( "UPDATE position SET data = :1 WHERE pos = '" + hs + "'", dh.d, dh.bytes ) ) {
-		return 1;
-	}
-
-	hs += move_to_book_string( entry.m );
-
-	while( hs.size() >= 2 ) {
-		std::stringstream ss;
-		ss << "SELECT pos, data FROM position WHERE pos='" << hs << "' AND data IS NOT NULL;";
-		if( !impl_->query_row( ss.str(), &fold_position, impl_ ) ) {
-			return false;
+	if( dh != new_dh ) {
+		if( !impl_->query_bind( "UPDATE position SET data = :1 WHERE pos = '" + hs + "'", new_dh.d, new_dh.bytes ) ) {
+			return 1;
 		}
-		hs = hs.substr( 0, hs.size() - 2 );
+
+		hs += move_to_book_string( entry.m );
+
+		while( hs.size() >= 2 ) {
+			std::stringstream ss;
+			ss << "SELECT pos, data FROM position WHERE pos='" << hs << "' AND data IS NOT NULL;";
+			if( !impl_->query_row( ss.str(), &fold_position, impl_ ) ) {
+				return false;
+			}
+			hs = hs.substr( 0, hs.size() - 2 );
+		}
 	}
 
 	return t.commit();

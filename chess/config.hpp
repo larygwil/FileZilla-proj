@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include "platform.hpp"
-#include "time.hpp"
+#include "util/platform.hpp"
+#include "util/time.hpp"
 
 // Upper limits, cannot go higher without recompilation.
 #define MAX_DEPTH  60

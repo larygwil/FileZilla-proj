@@ -1,7 +1,7 @@
 #ifndef __TABLES_H__
 #define __TABLES_H__
 
-#include "platform.hpp"
+#include "util/platform.hpp"
 
 extern uint64_t const visibility_bishop[64];
 extern uint64_t const visibility_rook[64];
