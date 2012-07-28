@@ -152,6 +152,7 @@ int main( int argc, char const* argv[] )
 
 	init_zobrist_tables();
 
+	bool from_stdin = false;
 	while( command.empty() ) {
 		if( !std::getline(std::cin, command) ) {
 			std::cerr << "Could not read command" << std::endl;
@@ -160,6 +161,7 @@ int main( int argc, char const* argv[] )
 		if( !command.empty() ) {
 			logger::log_input( command );
 		}
+		from_stdin = true;
 	}
 
 	if( command == "auto" ) {
@@ -179,10 +181,10 @@ int main( int argc, char const* argv[] )
 		tweak_evaluation();
 	}
 	else if( command == "xboard" ) {
-		xboard( "" );
+		xboard( from_stdin ? "xboard" : "" );
 	}
 	else if( command == "uci" ) {
-		run_uci( false );
+		run_uci( from_stdin );
 	}
 	else {
 		xboard( command );
