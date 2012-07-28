@@ -147,7 +147,7 @@ struct xboard_state
 	}
 
 	// Returns false if program should quit.
-	bool handle_edit_mode( std::string const& cmd, std::string const& args );
+	bool handle_edit_mode( std::string const& cmd );
 
 	position p;
 	int clock;
