@@ -988,6 +988,9 @@ void run( book& b )
 		else if( cmd == "fold" ) {
 			b.fold();
 		}
+		else if( cmd == "verify" ) {
+			b.fold( true );
+		}
 		else if( cmd == "insert_log" ) {
 			b.set_insert_logfile( args );
 		}

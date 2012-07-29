@@ -100,7 +100,7 @@ public:
 
 	bool update_entry( std::vector<move> const& history, book_entry const& entry );
 
-	void fold();
+	void fold( bool verify = false );
 
 	// If set to a non-empty string, the resulting SQL inserts from calls to add_entries
 	// are logged into the file.

@@ -530,8 +530,7 @@ bool get_position( std::string history, position& p )
 	return true;
 }
 
-
-extern "C" int fold_position( void* q, sqlite3_stmt* statement )
+int do_fold_position( void* q, sqlite3_stmt* statement, bool verify )
 {
 	book::impl* impl_ = reinterpret_cast<book::impl*>(q);
 
@@ -594,20 +593,23 @@ extern "C" int fold_position( void* q, sqlite3_stmt* statement )
 			return 1;
 		}
 
-		move_info moves[200];
-		move_info* pm;
-	
-		pm = moves;
-		calculate_moves( p, pm, check );
+		if( verify ) {
+			move_info moves[200];
+			move_info* pm;
 
-		std::sort( moves, pm, book_move_sort );
-		
-		if( entries.size() != static_cast<uint64_t>(pm - moves) ) {
-			std::cerr << "Corrupt book entry, expected " << (pm - moves) << " moves, got " << entries.size() << " moves." << std::endl;
-			return 1;
-		}
-		for( unsigned int i = 0; i < entries.size(); ++i ) {
-			entries[i].m = moves[i].m;
+			pm = moves;
+			calculate_moves( p, pm, check );
+
+			std::sort( moves, pm, book_move_sort );
+
+			if( entries.size() != static_cast<uint64_t>(pm - moves) ) {
+				std::cerr << "Corrupt book entry, expected " << (pm - moves) << " moves, got " << entries.size() << " moves." << std::endl;
+				return 1;
+			}
+
+			for( unsigned int i = 0; i < entries.size(); ++i ) {
+				entries[i].m = moves[i].m;
+			}
 		}
 
 		for( std::size_t i = 0; i < entries.size(); ++i ) {
@@ -618,7 +620,7 @@ extern "C" int fold_position( void* q, sqlite3_stmt* statement )
 			else if( entries[i].forecast == forecast && entries[i].search_depth < depth ) {
 				depth = entries[i].search_depth;
 			}
-			if( entries[i].eval_version != 0 ) {
+			if( verify && entries[i].eval_version != 0 ) {
 				std::string chs = history + move_to_book_string( entries[i].m );
 				position cp;
 				if( !get_position( chs, cp ) ) {
@@ -641,8 +643,14 @@ extern "C" int fold_position( void* q, sqlite3_stmt* statement )
 		return 1;
 	}
 	if( !dh.d || !dh.bytes ) {
-		// Can't fold yet. This situation can happen if processing a tree with multiple threads.
-		return 0;
+		if( verify ) {
+			std::cerr << "Error in book, position has no parent: " << history << std::endl;
+			return 1;
+		}
+		else {
+			// Can't fold yet. This situation can happen if processing a tree with multiple threads.
+			return 0;
+		}
 	}
 
 	position pp;
@@ -683,12 +691,22 @@ extern "C" int fold_position( void* q, sqlite3_stmt* statement )
 	new_dh.d[i*4 + 3] = 0;
 
 	if( new_dh != dh ) {
-		if( !impl_->query_bind( "UPDATE position SET data = :1 WHERE pos = '" + parent + "'", dh.d, dh.bytes ) ) {
+		if( !impl_->query_bind( "UPDATE position SET data = :1 WHERE pos = '" + parent + "'", new_dh.d, new_dh.bytes ) ) {
 			return 1;
 		}
 	}
 
 	return 0;
+}
+
+extern "C" int fold_position( void* q, sqlite3_stmt* statement )
+{
+	return do_fold_position( q, statement, false );
+}
+
+extern "C" int verify_position( void* q, sqlite3_stmt* statement )
+{
+	return do_fold_position( q, statement, true );
 }
 }
 
@@ -976,7 +994,7 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 	return t.commit();
 }
 
-void book::fold()
+void book::fold( bool verify )
 {
 	scoped_lock l(impl_->mtx);
 
@@ -991,7 +1009,12 @@ void book::fold()
 		std::cerr << ".";
 		std::stringstream ss;
 		ss << "SELECT pos, data FROM position WHERE length(pos) = " << i << " AND data IS NOT NULL;";
-		impl_->query_row( ss.str(), &fold_position, impl_ );
+		if( verify ) {
+			impl_->query_row( ss.str(), &verify_position, impl_ );
+		}
+		else {
+			impl_->query_row( ss.str(), &fold_position, impl_ );
+		}
 	}
 	std::cerr << " done" << std::endl;
 
