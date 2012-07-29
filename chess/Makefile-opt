@@ -18,6 +18,7 @@ tables.cpp: tables_gen.cpp
 	rm tables_gen
 
 UTIL_SOURCE_FILES = \
+	util/mutex_unix.cpp \
 	util/platform.cpp \
 	util/string.cpp \
 	util/thread.cpp \
@@ -83,4 +84,4 @@ bookgen-use: chess-gen
 
 clean:
 	rm -f chess-gen
-	rm -f *.o uci/*.o sqlite/*.o
+	rm -f *.o uci/*.o sqlite/*.o util/*.o

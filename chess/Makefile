@@ -13,6 +13,7 @@ tables.cpp: tables_gen.cpp
 	rm tables_gen
 
 UTIL_FILES = \
+	util/mutex_unix.o \
 	util/platform.o \
 	util/string.o \
 	util/thread.o \

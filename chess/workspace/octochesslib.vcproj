@@ -272,11 +272,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\util\string.cpp"
+				RelativePath="..\tables.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\tables.cpp"
+				RelativePath="..\util\mutex_win.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\util\string.cpp"
 				>
 			</File>
 			<File
@@ -431,6 +435,10 @@
 			</File>
 			<File
 				RelativePath="..\statistics.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\util\mutex.hpp"
 				>
 			</File>
 			<File

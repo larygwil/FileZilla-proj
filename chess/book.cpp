@@ -1,6 +1,7 @@
 #include "book.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
+#include "util/mutex.hpp"
 
 #include "sqlite/sqlite3.hpp"
 

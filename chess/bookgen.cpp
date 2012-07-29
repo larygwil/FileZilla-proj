@@ -11,6 +11,7 @@
 #include "pgn.hpp"
 #include "pvlist.hpp"
 #include "random.hpp"
+#include "util/mutex.hpp"
 #include "util/string.hpp"
 #include "util/thread.hpp"
 #include "util.hpp"

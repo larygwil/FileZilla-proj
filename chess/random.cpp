@@ -1,4 +1,5 @@
 #include "util/platform.hpp"
+#include "util/mutex.hpp"
 #include "random.hpp"
 #include "random_data.hpp"
 

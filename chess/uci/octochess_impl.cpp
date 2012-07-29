@@ -14,6 +14,7 @@
 #include "../pv_move_picker.hpp"
 #include "../logger.hpp"
 #include "../random.hpp"
+#include "../util/mutex.hpp"
 #include "../util/string.hpp"
 #include "../util/thread.hpp"
 #include "../util.hpp"

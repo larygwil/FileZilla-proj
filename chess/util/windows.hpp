@@ -47,51 +47,6 @@ uint64_t timer_precision();
 uint64_t get_time();
 void console_init();
 
-class mutex {
-public:
-	mutex();
-	~mutex();
-
-private:
-	friend class scoped_lock;
-	friend class condition;
-	CRITICAL_SECTION cs_;
-};
-
-
-class scoped_lock
-{
-public:
-	scoped_lock( mutex& m );
-	~scoped_lock();
-
-	void lock();
-	void unlock();
-
-private:
-	friend class condition;
-	mutex& m_;
-	bool locked_;
-};
-
-
-class condition
-{
-public:
-	condition();
-	~condition();
-
-	void wait( scoped_lock& l );
-	// Milliseconds
-	void wait( scoped_lock& l, uint64_t timeout );
-	void signal( scoped_lock& l );
-
-private:
-	CONDITION_VARIABLE cond_;
-	bool signalled_;
-};
-
-
 inline uint64_t bitscan( uint64_t mask )
 {
 #if __MINGW64__

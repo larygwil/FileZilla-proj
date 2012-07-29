@@ -12,6 +12,7 @@
 #include "random.hpp"
 #include "see.hpp"
 #include "statistics.hpp"
+#include "util/mutex.hpp"
 #include "util/string.hpp"
 #include "util/thread.hpp"
 #include "util.hpp"

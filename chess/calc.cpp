@@ -11,6 +11,7 @@
 #include "see.hpp"
 #include "statistics.hpp"
 #include "tables.hpp"
+#include "util/mutex.hpp"
 #include "util/thread.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
@@ -911,7 +912,7 @@ break2:
 			if( !ponder ) {
 				timestamp now;
 				if( time_limit > now - start ) {
-					impl_->cond_.wait( l, (start + time_limit - now).milliseconds() );
+					impl_->cond_.wait( l, start + time_limit - now );
 				}
 
 				now = timestamp();
