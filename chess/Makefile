@@ -15,6 +15,7 @@ tables.cpp: tables_gen.cpp
 UTIL_FILES = \
 	util/platform.o \
 	util/string.o \
+	util/thread.o \
 	util/time.o \
 
 OBJECT_FILES = \

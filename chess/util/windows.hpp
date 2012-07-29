@@ -92,22 +92,6 @@ private:
 };
 
 
-class thread {
-public:
-	thread();
-	virtual ~thread();
-
-	void spawn();
-	void join();
-
-	bool spawned();
-
-	virtual void onRun() = 0;
-private:
-
-	HANDLE t_;
-};
-
 inline uint64_t bitscan( uint64_t mask )
 {
 #if __MINGW64__

@@ -83,23 +83,6 @@ private:
 
 void init_rw_lock( rwlock& l );
 
-class thread {
-public:
-	thread();
-	virtual ~thread();
-
-	void spawn();
-	void join();
-
-	bool spawned();
-
-	virtual void onRun() = 0;
-private:
-
-	pthread_t* t_;
-};
-
-
 unsigned int get_cpu_count();
 
 // In MiB

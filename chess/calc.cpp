@@ -11,6 +11,7 @@
 #include "see.hpp"
 #include "statistics.hpp"
 #include "tables.hpp"
+#include "util/thread.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
 

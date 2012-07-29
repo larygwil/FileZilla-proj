@@ -280,6 +280,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\util\thread.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\util\time.cpp"
 				>
 			</File>
@@ -431,6 +435,10 @@
 			</File>
 			<File
 				RelativePath="..\util\string.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\util\thread.hpp"
 				>
 			</File>
 			<File

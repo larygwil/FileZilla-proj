@@ -114,55 +114,6 @@ void condition::signal( scoped_lock& )
 	WakeConditionVariable( &cond_ );
 }
 
-
-thread::thread()
-	: t_(0)
-{
-}
-
-
-thread::~thread()
-{
-	join();
-}
-
-
-void thread::join()
-{
-	if( !t_ ) {
-		return;
-	}
-
-	WaitForSingleObject( t_, INFINITE );
-
-	CloseHandle( t_ );
-	t_ = 0;
-}
-
-
-bool thread::spawned()
-{
-	return t_ != 0;
-}
-
-
-namespace {
-extern "C" {
-static DWORD WINAPI run( void* p ) {
-	reinterpret_cast<thread*>(p)->onRun();
-	return 0;
-}
-}
-}
-
-
-void thread::spawn()
-{
-	join();
-
-	t_ = CreateThread( NULL, 0, &run, this, 0, 0 );
-}
-
 unsigned int get_cpu_count()
 {
 	PSYSTEM_LOGICAL_PROCESSOR_INFORMATION buffer = 0;

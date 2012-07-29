@@ -13,6 +13,7 @@
 #include "see.hpp"
 #include "statistics.hpp"
 #include "util/string.hpp"
+#include "util/thread.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
 

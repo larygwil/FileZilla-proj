@@ -111,43 +111,6 @@ void condition::signal( scoped_lock& /*l*/ )
 	pthread_cond_signal( &cond_ );
 }
 
-thread::thread()
-	: t_()
-{
-}
-
-thread::~thread()
-{
-	join();
-}
-
-namespace {
-extern "C" {
-static void* run( void* p ) {
-	reinterpret_cast<thread*>(p)->onRun();
-	return 0;
-}
-}
-}
-
-void thread::spawn()
-{
-	join();
-	t_ = new pthread_t;
-	pthread_create( t_, 0, &run, this );
-}
-
-
-void thread::join()
-{
-	if( !t_ ) {
-		return;
-	}
-	pthread_join( *t_, 0 );
-	delete t_;
-	t_ = 0;
-}
-
 
 scoped_lock::scoped_lock( mutex& m )
 	: m_(m), locked_()
@@ -178,11 +141,6 @@ void scoped_lock::unlock()
 	locked_ = false;
 }
 
-
-bool thread::spawned()
-{
-	return t_;
-}
 
 mutex::mutex()
 {

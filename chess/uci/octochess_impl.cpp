@@ -15,6 +15,7 @@
 #include "../logger.hpp"
 #include "../random.hpp"
 #include "../util/string.hpp"
+#include "../util/thread.hpp"
 #include "../util.hpp"
 #include "../zobrist.hpp"
 
