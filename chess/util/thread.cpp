@@ -112,7 +112,8 @@ thread::~thread()
 
 
 void thread::join()
-{	
+{
+	impl_->join();
 }
 
 
