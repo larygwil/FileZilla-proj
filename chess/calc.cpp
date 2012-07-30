@@ -795,7 +795,12 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 
 	bool ponder = false;
 	if( move_time_limit != duration::infinity() ) {
-		std::cerr << "Current move time limit is " << move_time_limit.milliseconds() << " ms" << std::endl;
+		if( deadline != duration::infinity() ) {
+			std::cerr << "Time limit is " << move_time_limit.milliseconds() << " ms with deadline of " << deadline.milliseconds() << " ms" << std::endl;
+		}
+		else {
+			std::cerr << "Time limit is " << move_time_limit.milliseconds() << " ms without deadline" << std::endl;
+		}
 	}
 	else {
 		std::cerr << "Pondering..." << std::endl;
