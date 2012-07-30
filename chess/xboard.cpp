@@ -410,7 +410,7 @@ void xboard_thread::onRun()
 
 		if( !result.best_move.empty() ) {
 
-			std::cout << "move " << move_to_string( result.best_move ) << std::endl;
+			std::cout << "move " << move_to_long_algebraic( result.best_move ) << std::endl;
 
 			state.apply( result.best_move );
 
@@ -537,7 +537,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
 
-			std::cout << "move " << move_to_string( best_move.m ) << std::endl;
+			std::cout << "move " << move_to_long_algebraic( best_move.m ) << std::endl;
 
 			state.history.push_back( state.p );
 
@@ -558,7 +558,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 	move pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p );
 	if( !pv_move.empty() ) {
-		std::cout << "move " << move_to_string( pv_move ) << std::endl;
+		std::cout << "move " << move_to_long_algebraic( pv_move ) << std::endl;
 
 		state.history.push_back( state.p );
 
@@ -686,7 +686,7 @@ skip_getline:
 		}
 		else if( cmd == "?" ) {
 			if( !best_move.empty() ) {
-				std::cout << "move " << move_to_string( best_move ) << std::endl;
+				std::cout << "move " << move_to_long_algebraic( best_move ) << std::endl;
 				state.apply( best_move );
 			}
 			else {
@@ -864,7 +864,7 @@ skip_getline:
 			std::cout << "Possible moves:" << std::endl;
 			move_info* it = &moves[0];
 			for( ; it != pm; ++it ) {
-				std::cout << " " << move_to_string( it->m ) << std::endl;
+				std::cout << " " << move_to_san( state.p, it->m ) << std::endl;
 			}
 		}
 		else if( cmd == "~fen" ) {
