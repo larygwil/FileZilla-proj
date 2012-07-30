@@ -11,10 +11,20 @@ class timestamp
 {
 public:
 	timestamp();
+	timestamp( timestamp const& rhs );
+	timestamp& operator=( timestamp const& rhs );
 
 	bool operator<( timestamp const& rhs ) const;
+	bool operator<=( timestamp const& rhs ) const;
+
+	bool operator>( timestamp const& rhs ) const;
+	bool operator>=( timestamp const& rhs ) const;
+
+	bool operator==( timestamp const& rhs ) const;
+	bool operator!=( timestamp const& rhs ) const;
 
 	timestamp operator+( duration const& rhs ) const;
+	timestamp& operator+=( duration const& rhs );
 private:
 	friend class duration;
 	int64_t t_;

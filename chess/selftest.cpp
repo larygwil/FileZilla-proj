@@ -8,6 +8,8 @@
 #include "pawn_structure_hash_table.hpp"
 #include "see.hpp"
 #include "selftest.hpp"
+#include "util/mutex.hpp"
+#include "util/time.hpp"
 #include "util/string.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
@@ -626,6 +628,72 @@ void check_disambiguation()
 	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne1f3", "Ne1f3" );
 	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne5f3", "N5f3" );
 }
+
+
+void check_condition_wait()
+{
+	mutex m;
+	scoped_lock l(m);
+	condition c;
+
+	for( int i = 100; i <= 1000; i += 100 ) {
+		duration wait = duration::milliseconds(i);
+		timestamp const start;
+		c.wait(l, wait);
+		timestamp const stop;
+
+		duration elapsed = stop - start;
+
+		if( elapsed > (wait + duration::milliseconds(1)) || elapsed < wait ) {
+			std::cerr << "Expected to wait: " << wait.milliseconds() << " ms" << std::endl;
+			std::cerr << "Actually waited:  " << elapsed.milliseconds() << " ms" << std::endl;
+#if UNIX
+			if( elapsed < wait ) {
+				std::cerr << "If there has been a leap second since last reboot, update your kernel and reboot!." << std::endl;
+			}
+#endif
+			abort();
+		}
+	}
+}
+
+void check_time()
+{
+	timestamp t;
+	timestamp t2;
+	timestamp t3 = t2;
+	usleep(100);
+	timestamp t4;
+
+	if( t > t2 ) {
+		std::cerr << "Timestamp error: t > t2" << std::endl;
+		abort();
+	}
+	if( t2 != t3 ) {
+		std::cerr << "Timestamp error: t2 != t3" << std::endl;
+		abort();
+	}
+	if( t4 <= t3 ) {
+		std::cerr << "Timestamp error: t4 <= t3" << std::endl;
+		abort();
+	}
+	if( t3 >= t4 ) {
+		std::cerr << "Timestamp error: t3 >= t4" << std::endl;
+		abort();
+	}
+
+
+	duration d( duration::milliseconds(100) );
+
+	if( d.seconds() != 0 ) {
+		std::cerr << "duration::milliseconds(100).seconds() != 0" << std::endl;
+		abort();
+	}
+	if( d.nanoseconds() != 100000000 ) {
+		std::cerr << "duration::milliseconds(100).nanoseconds() != 100000000" << std::endl;
+		abort();
+	}
+}
 }
 
 bool selftest()
@@ -637,6 +705,9 @@ bool selftest()
 	pawn_hash_table.init( conf.pawn_hash_table_size );
 
 	check_disambiguation();
+
+	check_time();
+	check_condition_wait();
 
 	if( do_selftest() ) {
 		std::cerr << "Self test passed" << std::endl;

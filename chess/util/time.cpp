@@ -65,8 +65,21 @@ int64_t muldiv( int64_t v, int64_t mul, int64_t div )
 
 
 timestamp::timestamp()
-: t_( get_time() )
+	: t_( get_time() )
 {
+}
+
+
+timestamp::timestamp( timestamp const& rhs )
+	: t_( rhs.t_ )
+{
+}
+
+
+timestamp& timestamp::operator=( timestamp const& rhs )
+{
+	t_ = rhs.t_;
+	return *this;
 }
 
 
@@ -76,11 +89,48 @@ bool timestamp::operator<( timestamp const& rhs ) const
 }
 
 
+bool timestamp::operator<=( timestamp const& rhs ) const
+{
+	return t_ <= rhs.t_;
+}
+
+
+bool timestamp::operator>( timestamp const& rhs ) const
+{
+	return t_ > rhs.t_;
+}
+
+
+bool timestamp::operator>=( timestamp const& rhs ) const
+{
+	return t_ >= rhs.t_;
+}
+
+
+bool timestamp::operator==( timestamp const& rhs ) const
+{
+	return t_ == rhs.t_;
+}
+
+
+bool timestamp::operator!=( timestamp const& rhs ) const
+{
+	return t_ != rhs.t_;
+}
+
+
 timestamp timestamp::operator+( duration const& rhs ) const
 {
 	timestamp ret( *this );
 	ret.t_ += rhs.d_;
 	return ret;
+}
+
+
+timestamp& timestamp::operator+=( duration const& rhs )
+{
+	t_ += rhs.d_;
+	return *this;
 }
 
 

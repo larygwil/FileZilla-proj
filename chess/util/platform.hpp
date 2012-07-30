@@ -10,6 +10,7 @@
 #if WINDOWS
   #include "windows.hpp"
 #else
+  #define UNIX 1
   #include "unix.hpp"
 #endif
 
