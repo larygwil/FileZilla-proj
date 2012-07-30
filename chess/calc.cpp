@@ -499,6 +499,12 @@ public:
 	}
 
 
+	virtual ~processing_thread()
+	{
+		join();
+	}
+
+
 	void quit( scoped_lock& l )
 	{
 		state_ = quitting;
