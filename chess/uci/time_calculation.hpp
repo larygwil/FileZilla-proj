@@ -45,7 +45,12 @@ public:
 	void after_move_update( duration const& elapsed_time, duration const& used_extra_time );
 
 	duration time_for_this_move() const { return time_limit_; }
+
+	// Without overhead
 	duration total_remaining() const { return time_remaining_; }
+
+	// Per-move overhead
+	duration overhead() const { return internal_overhead_; }
 private:
 	duration time_limit_;
 	duration time_remaining_;
