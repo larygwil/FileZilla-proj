@@ -662,7 +662,7 @@ void check_time()
 	timestamp t;
 	timestamp t2;
 	timestamp t3 = t2;
-	usleep(100);
+	usleep(2000);
 	timestamp t4;
 
 	if( t > t2 ) {
