@@ -1,3 +1,16 @@
+Octochess r47xx (2012-08-xx):
+- Increase max search depth from 40 to 60 plies
+- Additional sanity checks on positions entered through FEN strings, this fixes crashes on some invalid positions.
+- Fix incorrect wait times on Linux. This was causing calculation to stop up to one second too early, in particular affecting games with fixed move times
+- UCI: Take internal overhead into account when calculating the movetime deadline
+- CECP: Use proper move notation
+- CECP: Support the deprecated edit mode entered through the edit command
+- UCI: Mark opening positions for further processing if not in book
+- Code cleanup, move generic utility code into own subdirectory
+- Improve diagnostic output
+- Bookgen: Improve pgn parser
+- Bookgen: Fix stale transaction
+
 Octochess r4690 (2012-07-16):
 - Fix evaluation bug and use new eval values
 - Fix bug in static exchange evaluation leading to assumed king exchange
@@ -32,4 +45,4 @@ Octochess r4529 (2012-03-25):
 
 
 Octochess r4452 (2012-02-28)
--  Initial version
+- Initial version
