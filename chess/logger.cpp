@@ -5,9 +5,6 @@
 
 namespace logger {
 
-std::streambuf* original_cerr = 0;
-std::streambuf* original_cout = 0;
-
 class logbuf : public std::streambuf
 {
 public:
@@ -26,9 +23,8 @@ public:
 
 	virtual int overflow( int c )
 	{
-		if (c == EOF)
-        {
-            return !EOF;
+		if (c == EOF) {
+			return !EOF;
 		}
 		else {
 			if( logfile_.is_open() ) {
@@ -39,17 +35,22 @@ public:
 	}
 
 	virtual int sync()
-    {
-        int r = orig_->pubsync();
+	{
+		int r = orig_->pubsync();
 		return r == 0 ? 0 : -1;
-    }   
+	}
 
 	std::streambuf* orig_;
 	std::ofstream logfile_;
 };
 
+namespace {
 logbuf* new_cerr = 0;
 logbuf* new_cout = 0;
+std::streambuf* original_cerr = 0;
+std::streambuf* original_cout = 0;
+}
+
 
 
 void init( std::string const& fn ) {
