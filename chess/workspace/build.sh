@@ -33,5 +33,7 @@ cp AUTHORS octochess-r$REV/authors.txt
 cp COPYING octochess-r$REV/copying.txt
 cp NEWS octochess-r$REV/news.txt
 cp README octochess-r$REV/readme.txt
+cp logo.bmp octochess-r$REV/
+cp logo.svg octochess-r$REV/
 
 unix2dos --force octochess-r$REV/*.txt

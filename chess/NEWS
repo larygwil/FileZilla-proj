@@ -1,4 +1,5 @@
 Octochess r47xx (2012-08-xx):
+- Shiny new logo
 - Increase max search depth from 40 to 60 plies
 - Additional sanity checks on positions entered through FEN strings, this fixes crashes on some invalid positions.
 - Fix incorrect wait times on Linux. This was causing calculation to stop up to one second too early, in particular affecting games with fixed move times
