@@ -196,7 +196,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\logger.cpp"
+				RelativePath="..\util\logger.cpp"
 				>
 			</File>
 			<File
@@ -362,7 +362,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\logger.hpp"
+				RelativePath="..\util\logger.hpp"
 				>
 			</File>
 			<File

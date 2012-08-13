@@ -18,6 +18,7 @@ tables.cpp: tables_gen.cpp
 	rm tables_gen
 
 UTIL_SOURCE_FILES = \
+	util/logger.cpp \
 	util/mutex_unix.cpp \
 	util/platform.cpp \
 	util/string.cpp \
@@ -35,7 +36,6 @@ GENERIC_SOURCE_FILES = \
 	fen.cpp \
 	hash.cpp \
 	history.cpp \
-	logger.cpp \
 	magic.cpp \
 	moves.cpp \
 	moves_captures.cpp \

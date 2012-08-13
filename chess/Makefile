@@ -13,6 +13,7 @@ tables.cpp: tables_gen.cpp
 	rm tables_gen
 
 UTIL_FILES = \
+	util/logger.o \
 	util/mutex_unix.o \
 	util/platform.o \
 	util/string.o \
@@ -30,7 +31,6 @@ OBJECT_FILES = \
 	fen.o \
 	hash.o \
 	history.o \
-	logger.o \
 	magic.o \
 	moves.o \
 	moves_captures.o \

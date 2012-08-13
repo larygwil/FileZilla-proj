@@ -3,7 +3,7 @@
 #include "info.hpp"
 #include "time_calculation.hpp"
 
-#include "../logger.hpp"
+#include "../util/logger.hpp"
 #include "../util/string.hpp"
 
 #include <cassert>
