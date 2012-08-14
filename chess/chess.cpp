@@ -21,7 +21,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "eval_values.hpp"
 #include "fen.hpp"
 #include "hash.hpp"
-#include "logger.hpp"
+#include "util/logger.hpp"
 #include "magic.hpp"
 #include "moves.hpp"
 #include "pawn_structure_hash_table.hpp"
