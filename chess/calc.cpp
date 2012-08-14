@@ -77,15 +77,15 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		return result::loss;
 	}
 
+#ifdef USE_STATISTICS
+	++stats.quiescence_nodes;
+#endif
+
 	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
 		if( p.material[color::white].eg() + p.material[color::black].eg() <= eval_values::insufficient_material_threshold ) {
 			return result::draw;
 		}
 	}
-
-#ifdef USE_STATISTICS
-	++stats.quiescence_nodes;
-#endif
 
 	if( !depth ) {
 		return result::draw; //beta;
@@ -217,6 +217,10 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		return result::loss;
 	}
 
+#ifdef USE_STATISTICS
+	stats.node( ply );
+#endif
+
 	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
 		if( p.material[color::white].eg() + p.material[color::black].eg() <= eval_values::insufficient_material_threshold ) {
 			return result::draw;
@@ -224,10 +228,6 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	}
 
 	bool pv_node = alpha + 1 != beta;
-
-#ifdef USE_STATISTICS
-	stats.node( ply );
-#endif
 
 	move tt_move;
 
