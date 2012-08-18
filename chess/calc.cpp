@@ -962,9 +962,11 @@ break2:
 									if( time_limit + extra > deadline ) {
 										extra = deadline - time_limit;
 									}
-									result.used_extra_time += extra;
-									time_limit += extra;
-									std::cerr << "PV changed, adding " << extra.milliseconds() << " ms extra search time." << std::endl;
+									if( extra.milliseconds() > 0 ) {
+										result.used_extra_time += extra;
+										time_limit += extra;
+										std::cerr << "PV changed, adding " << extra.milliseconds() << " ms extra search time." << std::endl;
+									}
 								}
 								result.best_move = mi.m;
 							}
