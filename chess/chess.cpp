@@ -13,7 +13,6 @@ contact tim.kosse@filezilla-project.org for details.
 
 */
 
-#include "book.hpp"
 #include "chess.hpp"
 #include "config.hpp"
 #include "calc.hpp"
