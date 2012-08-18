@@ -59,9 +59,7 @@ struct xboard_state
 	void reset()
 	{
 		p.reset();
-		if( conf.use_book && book_.is_open() ) {
-			std::cerr << "Opening book loaded" << std::endl;
-		}
+
 		move_history_.clear();
 
 		clock = 1;
