@@ -22,8 +22,7 @@ public:
 	short castle[2];
 
 	// 0 if en-passant not possible.
-	// Otherwise board index of last-moved pawn that can be en-passanted in
-	// lower 6 bits, 7th bit color of pawn that is en-passantable.
+	// Otherwise the enpassant square.
 	unsigned char can_en_passant;
 
 	// After setting bitboards, castling rights and en-passant square,
