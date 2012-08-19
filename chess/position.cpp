@@ -113,9 +113,14 @@ void position::init_bitboards()
 }
 
 
-void position::do_null_move()
+unsigned char position::do_null_move()
 {
 	c = static_cast<color::type>(1-c);
+
+	unsigned char enpassant = can_en_passant;
+	can_en_passant = 0;
+
+	return enpassant;
 }
 
 

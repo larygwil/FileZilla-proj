@@ -58,7 +58,7 @@ public:
 	bool verify() const;
 	bool verify( std::string& error ) const;
 
-	void do_null_move();
+	unsigned char do_null_move();
 
 private:
 	void init_bitboards();

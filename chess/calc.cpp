@@ -272,10 +272,12 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 
 		short new_depth = depth - (NULL_MOVE_REDUCTION + 1) * depth_factor;
 
-		p.do_null_move();
+		unsigned char old_enpassant = p.do_null_move();
 		check_map new_check( p );
-		short value = -step( new_depth, ply + 1, ctx, p, ~hash, new_check, -beta, -beta + 1, cpv, true );
+		uint64_t new_hash = ~(hash ^ get_enpassant_hash( old_enpassant ) );
+		short value = -step( new_depth, ply + 1, ctx, p, new_hash, new_check, -beta, -beta + 1, cpv, true );
 		p.do_null_move();
+		p.can_en_passant = old_enpassant;
 		ctx.pv_pool.release( cpv );
 
 		if( value >= beta ) {
