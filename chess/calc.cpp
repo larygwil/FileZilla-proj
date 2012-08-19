@@ -265,20 +265,24 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	}
 
 #if NULL_MOVE_REDUCTION > 0
-	if( !pv_node && !check.check && full_eval >= beta && !last_was_null && depth > (cutoff + depth_factor) && p.material[0].mg() > 1500 && p.material[1].mg() > 1500 ) {
-		null_move_block seen_block( ctx.seen, ply );
-
-		pv_entry* cpv = ctx.pv_pool.get();
+	if( !pv_node && !check.check && full_eval >= beta && !last_was_null && depth >= (cutoff + depth_factor) && p.material[0].mg() > 1500 && p.material[1].mg() > 1500 ) {
 
 		short new_depth = depth - (NULL_MOVE_REDUCTION + 1) * depth_factor;
+		short value;
 
-		unsigned char old_enpassant = p.do_null_move();
-		check_map new_check( p );
-		uint64_t new_hash = ~(hash ^ get_enpassant_hash( old_enpassant ) );
-		short value = -step( new_depth, ply + 1, ctx, p, new_hash, new_check, -beta, -beta + 1, cpv, true );
-		p.do_null_move();
-		p.can_en_passant = old_enpassant;
-		ctx.pv_pool.release( cpv );
+		{
+			null_move_block seen_block( ctx.seen, ply );
+
+			pv_entry* cpv = ctx.pv_pool.get();
+
+			unsigned char old_enpassant = p.do_null_move();
+			check_map new_check( p );
+			uint64_t new_hash = ~(hash ^ get_enpassant_hash( old_enpassant ) );
+			value = -step( new_depth, ply + 1, ctx, p, new_hash, new_check, -beta, -beta + 1, cpv, true );
+			p.do_null_move();
+			p.can_en_passant = old_enpassant;
+			ctx.pv_pool.release( cpv );
+		}
 
 		if( value >= beta ) {
 			if( value >= result::win_threshold ) {
@@ -412,7 +416,8 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 				if( !extended && !pv_node && processed_moves >= lmr_searched && gen.get_phase() >= phases::noncapture &&
 					!check.check && depth > lmr_min_depth )
 				{
-					value = -step(new_depth - lmr_reduction, ply + 1, ctx, new_pos, new_hash, new_check, -alpha-1, -alpha, cpv, false );
+					int lmr_depth = new_depth - lmr_reduction;
+					value = -step(lmr_depth, ply + 1, ctx, new_pos, new_hash, new_check, -alpha-1, -alpha, cpv, false );
 				}
 				else {
 					value = -step(new_depth, ply + 1, ctx, new_pos, new_hash, new_check, -alpha-1, -alpha, cpv, false );
