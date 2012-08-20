@@ -36,6 +36,8 @@ struct config
 
 	int pawn_hash_table_size; // In MiB
 
+	std::string program_name() const;
+
 private:
 	void init_book_dir( std::string self );
 };

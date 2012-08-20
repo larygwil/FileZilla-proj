@@ -23,7 +23,7 @@ public:
 	virtual void quit();
 
 	//generic info
-	virtual std::string name() const { return "Octochess"; }
+	virtual std::string name() const { return conf.program_name(); }
 	virtual std::string author() const { return "Tim Kosse"; }
 
 	// options

@@ -694,7 +694,7 @@ skip_getline:
 		else if( cmd == "protover" ) {
 			//std::cout << "feature ping=1" << std::endl;
 			std::cout << "feature analyze=1" << std::endl;
-			std::cout << "feature myname=\"Octochess\"" << std::endl;
+			std::cout << "feature myname=\"" << conf.program_name() << "\"" << std::endl;
 			std::cout << "feature setboard=1" << std::endl;
 			std::cout << "feature sigint=0" << std::endl;
 			std::cout << "feature variants=\"normal\"" << std::endl;

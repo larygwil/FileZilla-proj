@@ -161,5 +161,14 @@ std::string config::init( int argc,  char const* argv[] )
 	return cmd;
 }
 
+std::string config::program_name() const
+{
+#ifdef REVISION
+	return "Octochess revision " REVISION;
+#else
+	return "Octochess";
+#endif
+}
+
 config conf;
 
