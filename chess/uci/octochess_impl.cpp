@@ -265,7 +265,7 @@ bool octochess_uci::impl::do_book_move() {
 			short best = moves.front().forecast;
 			int count_best = 1;
 			for( std::vector<book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
-				if( it->forecast > -33 && it->forecast + 25 >= best && count_best < 3 ) {
+				if( it->forecast > -30 && it->forecast + 15 >= best ) {
 					++count_best;
 				}
 			}
