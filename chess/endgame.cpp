@@ -188,7 +188,7 @@ bool evaluate_endgame( position const& p, short& result )
 		result = evaluate_KNBvK( p, color::white );
 		return true;
 	case black_bishop + black_knight:
-		result = evaluate_KNBvK( p, color::black );
+		result = -evaluate_KNBvK( p, color::black );
 		return true;
 	default:
 		break;

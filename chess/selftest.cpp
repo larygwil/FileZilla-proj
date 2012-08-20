@@ -1,6 +1,7 @@
 #include "calc.hpp"
 #include "chess.hpp"
 #include "config.hpp"
+#include "endgame.hpp"
 #include "eval.hpp"
 #include "eval_values.hpp"
 #include "fen.hpp"
@@ -135,15 +136,22 @@ template bool perft<false>( std::size_t max_depth );
 
 namespace {
 
-static bool test_move_generation( std::string const& fen, std::string const& ref_moves )
+position test_parse_fen( std::string const& fen )
 {
 	position p;
 	std::string error;
 	if( !parse_fen_noclock( fen, p, &error ) ) {
 		std::cerr << "Could not parse fen: " << error << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
-		return false;
+		abort();
 	}
+
+	return p;
+}
+
+static bool test_move_generation( std::string const& fen, std::string const& ref_moves )
+{
+	position p = test_parse_fen( fen );
 
 	move_info moves[200];
 	move_info* pm = moves;
@@ -207,10 +215,7 @@ static bool test_move_generation()
 
 static bool test_zobrist()
 {
-	position p;
-	if( !parse_fen_noclock( "rnbqk2r/1p3pp1/3bpn2/p2pN2p/P1Pp4/4P3/1P1BBPPP/RN1Q1RK1 b kq c3", p ) ) {
-		return false;
-	}
+	position p = test_parse_fen( "rnbqk2r/1p3pp1/3bpn2/p2pN2p/P1Pp4/4P3/1P1BBPPP/RN1Q1RK1 b kq c3" );
 
 	uint64_t old_hash = get_zobrist_hash( p );
 
@@ -238,13 +243,7 @@ static bool test_zobrist()
 
 static bool test_lazy_eval( std::string const& fen, short& max_difference )
 {
-	position p;
-	std::string error;
-	if( !parse_fen_noclock( fen, p, &error ) ) {
-		std::cerr << "Could not parse fen: " << error << std::endl;
-		std::cerr << "Fen: " << fen << std::endl;
-		return false;
-	}
+	position p = test_parse_fen( fen );
 
 	score currents = p.white() ? p.base_eval : -p.base_eval;
 	short current = currents.scale( p.material[0].mg() + p.material[1].mg() );
@@ -306,9 +305,9 @@ static bool test_pst() {
 }
 
 
-static bool test_evaluation( std::string const& fen, position const& p )
+std::string flip_fen( std::string const& fen )
 {
-	std::string flipped;
+		std::string flipped;
 
 	std::string remaining;
 	std::string first_part = split( fen, remaining );
@@ -380,13 +379,15 @@ static bool test_evaluation( std::string const& fen, position const& p )
 		}
 	}
 
-	position p2;
-	std::string error;
-	if( !parse_fen_noclock( flipped, p2, &error ) ) {
-		std::cerr << "Could not parse fen: " << error << std::endl;
-		std::cerr << "Fen: " << flipped << std::endl;
-		return false;
-	}
+	return flipped;
+}
+
+
+static bool test_evaluation( std::string const& fen, position const& p )
+{
+	std::string flipped = flip_fen( fen );
+
+	position p2 = test_parse_fen( flipped );
 
 	if( p.material[0] != p2.material[1] || p.material[1] != p2.material[0] ) {
 		std::cerr << "Material not symmetric: " << p.material[0] << " " << p.material[1] << " " << p2.material[0] << " " << p2.material[1] << std::endl;
@@ -480,13 +481,7 @@ static void process_test_positions()
 
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {
-		position p;
-		std::string error;
-		if( !parse_fen_noclock( fen, p, &error ) ) {
-			std::cerr << "Could not parse fen: " << error << std::endl;
-			std::cerr << "Fen: " << fen << std::endl;
-			abort();
-		}
+		position p = test_parse_fen( fen );
 
 		if( !test_evaluation( fen, p ) ) {
 			abort();
@@ -570,15 +565,10 @@ static void check_see()
 	std::string const fen = "r3r3/p4ppp/4k3/R3n3/1N1KP3/8/6BP/8 w - -";
 	std::string const ms = "Rxe5";
 
-	position p;
-	std::string error;
-	if( !parse_fen_noclock( fen, p, &error ) ) {
-		std::cerr << "Could not parse fen: " << error << std::endl;
-		std::cerr << "Fen: " << fen << std::endl;
-		abort();
-	}
+	position p = test_parse_fen( fen );
 
 	move m;
+	std::string error;
 	if( !parse_move( p, ms, m, error ) ) {
 		std::cerr << error << ": " << ms << std::endl;
 		abort();
@@ -594,15 +584,10 @@ static void check_see()
 
 void do_check_disambiguation( std::string const& fen, std::string const& ms, std::string const& ref )
 {
-	position p;
-	std::string error;
-	if( !parse_fen_noclock( fen, p, &error ) ) {
-		std::cerr << "Could not parse fen: " << error << std::endl;
-		std::cerr << "Fen: " << fen << std::endl;
-		abort();
-	}
+	position p = test_parse_fen( fen );
 
 	move m;
+	std::string error;
 	if( !parse_move( p, ms, m, error ) ) {
 		std::cerr << error << ": " << ms << std::endl;
 		abort();
@@ -652,6 +637,55 @@ void check_condition_wait()
 				std::cerr << "If there has been a leap second since last reboot, update your kernel and reboot!." << std::endl;
 			}
 #endif
+			abort();
+		}
+	}
+}
+
+void check_endgame_eval()
+{
+	std::string const fens[] = {
+		"8/3k4/8/8/5K2/8/8/8 w - - 0 1",
+		"8/8/2k5/4n1K1/8/8/8/8 w - - 0 1",
+		"8/6B1/8/8/8/7K/2k5/8 w - - 0 1",
+		"5B2/8/8/2n5/8/8/2k4K/8 w - - 0 1",
+		"5b2/8/8/2B5/8/8/2k4K/8 w - - 0 1",
+		"4Q3/8/8/2q5/8/8/2k4K/8 w - - 0 1",
+		"8/5K2/6R1/2r5/1k6/8/8/8 w - - 0 1",
+		"8/5K2/6R1/8/1k6/8/3b4/8 w - - 0 1",
+		"8/5K2/6R1/8/1k6/8/4n3/8 w - - 0 1",
+		"r7/5K2/6R1/8/1k6/8/4n3/8 w - - 0 1",
+		"r7/5K2/6R1/8/1k6/8/1b6/8 w - - 0 1",
+		"3n4/K7/8/6Q1/4k3/8/8/5n2 w - - 0 1",
+		"8/8/8/6Q1/K3k3/2q5/8/5b2 w - - 0 1",
+		"8/8/8/6Q1/K3k3/8/7b/5b2 w - - 0 1",
+		"8/8/8/6Q1/K3k3/8/7n/5q2 w - - 0 1",
+		"8/8/3k4/6P1/8/2K5/7n/8 w - - 0 1",
+		"1b6/8/8/6P1/4k3/2K5/8/8 w - - 0 1",
+		"8/7k/8/8/8/7P/7K/8 w - - 0 1",
+		"8/7k/8/8/8/1B5P/7K/8 w - - 0 1",
+		"8/2b4k/8/8/3P4/3K4/2B5/8 w - - 0 1",
+		"8/7k/8/8/3N4/3K4/2B5/8 w - - 0 1"
+	};
+
+	for( auto const& fen: fens ) {
+		position p = test_parse_fen( fen );
+		position p2 = test_parse_fen( flip_fen( fen ) );
+
+		short ev = 0;
+		if( !evaluate_endgame( p, ev ) ) {
+			std::cerr << "Not recognized as endgame: " << fen << std::endl;
+			abort();
+		}
+		short ev2 = 0;
+		if( !evaluate_endgame( p2, ev2 ) ) {
+			std::cerr << "Not recognized as endgame: " << flip_fen( fen ) << std::endl;
+			abort();
+		}
+
+		if( ev != -ev2 ) {
+			std::cerr << "Difference in endgame evaluation: " << ev << " " << ev2 << std::endl;
+			std::cerr << "Fen: " << fen << std::endl;
 			abort();
 		}
 	}
@@ -708,6 +742,8 @@ bool selftest()
 
 	check_time();
 	check_condition_wait();
+
+	check_endgame_eval();
 
 	if( do_selftest() ) {
 		std::cerr << "Self test passed" << std::endl;
