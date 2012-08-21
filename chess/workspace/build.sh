@@ -15,7 +15,7 @@ rm -rf octochess-r$REV
 mkdir -p octochess-r$REV
 
 make clean
-make -f Makefile-opt chess-use
+make -f Makefile-opt chess-use REVISION="-DREVISION=\\\"$REV\\\""
 cp chess-use octochess-r$REV/octochess-linux-sse4-r$REV
 
 rm -f chess-use

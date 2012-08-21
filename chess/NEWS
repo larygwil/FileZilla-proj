@@ -1,4 +1,4 @@
-Octochess r47xx (2012-08-xx):
+Octochess r4741 (2012-08-21):
 - Shiny new logo
 - Fix endgame evaluation of KvNBK with black being the strong side
 - Two problems with null move heuristic fixed
