@@ -163,11 +163,16 @@ std::string config::init( int argc,  char const* argv[] )
 
 std::string config::program_name() const
 {
+	std::string name = "Octochess";
 #ifdef REVISION
-	return "Octochess revision " REVISION;
-#else
-	return "Octochess";
+	name += " revision " REVISION;
 #endif
+
+	if( sizeof(void*) < 8 ) {
+		name += " 32-bit";
+	}
+
+	return name;
 }
 
 config conf;
