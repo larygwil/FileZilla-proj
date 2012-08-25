@@ -165,8 +165,6 @@ inline static void evaluate_pawns_mobility( position const& p, color::type c, ev
 
 		uint64_t pc = pawn_control[c][pawn];
 
-		results.attacks[c][pieces::pawn] |= pc;
-
 		pc &= ~p.bitboards[c].b[bb_type::all_pieces];
 
 		if( pc & king_attack_zone[1-c][p.king_pos[1-c]] ) {
@@ -815,6 +813,7 @@ static void do_evaluate( position const& p, eval_results& results )
 	add_score<detail, eval_detail::side_to_move>( results, p.self(), eval_values::side_to_move );
 
 	for( unsigned int c = 0; c < 2; ++c ) {
+		results.attacks[c][pieces::pawn] = p.bitboards[c].b[bb_type::pawn_control];
 		evaluate_pawns_mobility<detail>( p, static_cast<color::type>(c), results );
 		evaluate_knights<detail>( p, static_cast<color::type>(c), results );
 		evaluate_bishops<detail>( p, static_cast<color::type>(c), results );
