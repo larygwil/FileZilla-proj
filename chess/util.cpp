@@ -612,13 +612,18 @@ void apply_move( position& p, move const& m )
 		}
 
 		if( m.captured_piece == pieces::pawn ) {
-			p.bitboards[p.other()].b[bb_type::pawn_control] = 0;
 			uint64_t pawns = p.bitboards[p.other()].b[bb_type::pawns];
-			while( pawns ) {
-				uint64_t pawn = bitscan_unset( pawns );
-				p.bitboards[p.other()].b[bb_type::pawn_control] |= pawn_control[p.other()][pawn];
+			if( p.white() ) {
+				p.bitboards[p.other()].b[bb_type::pawn_control] =
+					((pawns & 0xfefefefefefefefeull) >> 9) |
+					((pawns & 0x7f7f7f7f7f7f7f7full) >> 7);
 			}
-
+			else {
+				p.bitboards[p.other()].b[bb_type::pawn_control] =
+					((pawns & 0xfefefefefefefefeull) << 7) |
+					((pawns & 0x7f7f7f7f7f7f7f7full) << 9);
+			}
+			
 			if( m.flags & move_flags::enpassant ) {
 				unsigned char ep = (m.target & 0x7) | (m.source & 0x38);
 				p.pawn_hash ^= get_pawn_structure_hash( p.other(), ep );
@@ -674,11 +679,16 @@ void apply_move( position& p, move const& m )
 	p.bitboards[p.self()].b[bb_type::all_pieces] ^= target_square;
 	
 	if( m.piece == pieces::pawn ) {
-		p.bitboards[p.self()].b[bb_type::pawn_control] = 0;
 		uint64_t pawns = p.bitboards[p.self()].b[bb_type::pawns];
-		while( pawns ) {
-			uint64_t pawn = bitscan_unset( pawns );
-			p.bitboards[p.self()].b[bb_type::pawn_control] |= pawn_control[p.self()][pawn];
+		if( p.white() ) {
+			p.bitboards[p.self()].b[bb_type::pawn_control] =
+				((pawns & 0xfefefefefefefefeull) << 7) |
+				((pawns & 0x7f7f7f7f7f7f7f7full) << 9);
+		}
+		else {
+			p.bitboards[p.self()].b[bb_type::pawn_control] =
+				((pawns & 0xfefefefefefefefeull) >> 9) |
+				((pawns & 0x7f7f7f7f7f7f7f7full) >> 7);
 		}
 
 		p.pawn_hash ^= get_pawn_structure_hash( p.self(), m.source);
