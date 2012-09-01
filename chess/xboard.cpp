@@ -900,6 +900,15 @@ skip_getline:
 				std::cout << "Error (bad command): Not a valid st command" << std::endl;
 			}
 		}
+		else if( cmd == "sd" ) {
+			int64_t d;
+			if( to_int<int64_t>( args, d, 1, MAX_DEPTH ) ) {
+				conf.depth = d;
+			}
+			else {
+				std::cout << "Error (bad command): Not a valid sd command" << std::endl;
+			}
+		}
 		else if( cmd == "memory" ) {
 			unsigned int mem;
 			if( to_int<unsigned int>( args, mem, 4 ) ) {
