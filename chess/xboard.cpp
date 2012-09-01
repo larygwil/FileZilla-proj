@@ -581,16 +581,19 @@ bool parse_setboard( xboard_state& state, xboard_thread& thread, std::string con
 		return false;
 	}
 
-	bool analyze = state.mode_ == mode::analyze;
+	mode::type prev_state = state.mode_;
 
 	state.reset();
 	state.p = new_pos;
 	state.seen.reset_root( get_zobrist_hash( state.p ) );
 	state.started_from_root = false;
 
-	if( analyze ) {
+	if( prev_state == mode::analyze ) {
 		state.mode_ = mode::analyze;
 		thread.start( true );
+	}
+	else if( prev_state == mode::force ) {
+		state.mode_ = mode::force;
 	}
 
 	return true;
@@ -901,8 +904,8 @@ skip_getline:
 			}
 		}
 		else if( cmd == "sd" ) {
-			int64_t d;
-			if( to_int<int64_t>( args, d, 1, MAX_DEPTH ) ) {
+			short d;
+			if( to_int<short>( args, d, 1, MAX_DEPTH ) ) {
 				conf.depth = d;
 			}
 			else {
