@@ -879,7 +879,12 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 
 	short alpha_at_prev_depth = result::loss;
 	int highest_depth = 0;
-	for( int max_depth = 2 + (conf.depth % 2); max_depth <= conf.depth && !do_abort; ++max_depth )
+	int min_depth = 2 + (conf.depth % 2);
+	if( conf.depth < min_depth ) {
+		min_depth = conf.depth;
+	}
+
+	for( int max_depth = min_depth; max_depth <= conf.depth && !do_abort; ++max_depth )
 	{
 		short alpha = result::loss;
 		short beta = result::win;
