@@ -3,7 +3,7 @@
 #include "magic.hpp"
 #include "tables.hpp"
 
-bool detect_check_knights( position const& p, color::type c, unsigned char king )
+bool detect_check_knights( position const& p, color::type c, uint64_t king )
 {
 	uint64_t knights = possible_knight_moves[ king ];
 	knights &= p.bitboards[1-c].b[bb_type::knights];
@@ -11,7 +11,7 @@ bool detect_check_knights( position const& p, color::type c, unsigned char king 
 	return knights != 0;
 }
 
-bool detect_check( position const& p, color::type c, unsigned char king, unsigned char ignore )
+bool detect_check( position const& p, color::type c, uint64_t king,uint64_t ignore )
 {
 	uint64_t blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
 	blockers &= ~(1ull << ignore);

@@ -32,7 +32,7 @@ public:
 	inline bool multiple() const { return (check & 0x40) != 0; }
 };
 
-bool detect_check( position const& p, color::type c, unsigned char king, unsigned char ignore );
+bool detect_check( position const& p, color::type c, uint64_t king, uint64_t ignore );
 bool detect_check( position const& p, color::type c );
 
 #endif

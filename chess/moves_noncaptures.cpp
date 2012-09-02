@@ -15,22 +15,25 @@ extern uint64_t const pawn_double_move[2];
 namespace {
 
 void do_add_move( move_info*& moves, pieces::type const& pi,
-				  unsigned char const& source, unsigned char const& target,
+				  uint64_t const& source, uint64_t const& target,
 				  int flags )
 {
+	ASSERT( source < 64 );
+	ASSERT( target < 64 );
+
 	move_info& mi= *(moves++);
 
 	mi.m.flags = flags;
 	mi.m.piece = pi;
-	mi.m.source = source;
-	mi.m.target = target;
+	mi.m.source = static_cast<unsigned char>(source);
+	mi.m.target = static_cast<unsigned char>(target);
 	mi.m.captured_piece = pieces::none;
 }
 
 // Adds the move if it does not result in self getting into check
 void add_if_legal( move_info*& moves, check_map const& check,
 				  pieces::type const& pi,
-				  unsigned char const& source, unsigned char const& target,
+				  uint64_t const& source, uint64_t const& target,
 				  int flags )
 {
 	unsigned char const& cv_old = check.board[source];
@@ -55,7 +58,7 @@ void add_if_legal( move_info*& moves, check_map const& check,
 }
 
 void add_if_legal_pawn( move_info*& moves, check_map const& check,
-				  unsigned char const& source, unsigned char const& target )
+				  uint64_t const& source, uint64_t const& target )
 {
 	unsigned char const& cv_old = check.board[source];
 	unsigned char const& cv_new = check.board[target];
@@ -87,7 +90,7 @@ void add_if_legal_pawn( move_info*& moves, check_map const& check,
 }
 
 void add_if_legal_king( position const& p,
-						move_info*& moves, unsigned char const& source, unsigned char const& target,
+						move_info*& moves, uint64_t const& source, uint64_t const& target,
 						int flags )
 {
 	if( detect_check( p, p.self(), target, source ) ) {
@@ -98,7 +101,7 @@ void add_if_legal_king( position const& p,
 }
 
 void calc_moves_king( position const& p, move_info*& moves,
-					  unsigned char const& source, unsigned char const& target )
+					  uint64_t const& source, uint64_t const& target )
 {
 	add_if_legal_king( p, moves, source, target, move_flags::none );
 }

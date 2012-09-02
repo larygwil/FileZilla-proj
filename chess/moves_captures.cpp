@@ -15,15 +15,18 @@ extern uint64_t const pawn_enpassant[2];
 namespace {
 
 void do_add_move( move_info*& moves, pieces::type const& pi,
-				  unsigned char const& source, unsigned char const& target,
+				  uint64_t const& source, uint64_t const& target,
 				  int flags, pieces::type captured )
 {
+	ASSERT( source < 64 );
+	ASSERT( target < 64 );
+
 	move_info& mi = *(moves++);
 
 	mi.m.flags = flags;
 	mi.m.piece = pi;
-	mi.m.source = source;
-	mi.m.target = target;
+	mi.m.source = static_cast<unsigned char>(source);
+	mi.m.target = static_cast<unsigned char>(target);
 	mi.m.captured_piece = captured;
 
 	mi.sort = eval_values::material_values[ captured ].mg() * 32 - eval_values::material_values[ pi ].mg();
@@ -32,7 +35,7 @@ void do_add_move( move_info*& moves, pieces::type const& pi,
 // Adds the move if it does not result in self getting into check
 void add_if_legal( move_info*& moves, check_map const& check,
 				  pieces::type const& pi,
-				  unsigned char const& source, unsigned char const& target,
+				  uint64_t const& source, uint64_t const& target,
 				  int flags, pieces::type captured )
 {
 	unsigned char const& cv_old = check.board[source];
@@ -58,7 +61,7 @@ void add_if_legal( move_info*& moves, check_map const& check,
 
 // Adds the move if it does not result in self getting into check
 void add_if_legal_pawn( move_info*& moves, check_map const& check,
-				  unsigned char const& source, unsigned char const& target,
+				  uint64_t const& source, uint64_t const& target,
 				  pieces::type captured )
 {
 	unsigned char const& cv_old = check.board[source];
@@ -91,7 +94,7 @@ void add_if_legal_pawn( move_info*& moves, check_map const& check,
 }
 
 void add_if_legal_king( position const& p, move_info*& moves,
-						unsigned char const& source, unsigned char const& target,
+						uint64_t const& source, uint64_t const& target,
 						int flags, pieces::type captured )
 {
 	if( detect_check( p, p.self(), target, source ) ) {
@@ -102,7 +105,7 @@ void add_if_legal_king( position const& p, move_info*& moves,
 }
 
 void calc_moves_king( position const& p, move_info*& moves,
-					  unsigned char source, unsigned char target )
+					  uint64_t source, uint64_t target )
 {
 	pieces::type captured = get_piece_on_square( p, p.other(), target );
 	add_if_legal_king( p, moves, source, target, move_flags::none, captured );
@@ -201,7 +204,7 @@ void calc_moves_rooks( position const& p, move_info*& moves, check_map const& ch
 
 
 void calc_moves_knight( position const& p, move_info*& moves, check_map const& check,
-						unsigned char source, unsigned char target )
+						uint64_t source, uint64_t target )
 {
 	pieces::type captured = get_piece_on_square( p, p.other(), target );
 	add_if_legal( moves, check, pieces::knight, source, target, move_flags::none, captured );
