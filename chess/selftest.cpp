@@ -23,6 +23,21 @@
 #include <vector>
 
 
+namespace {
+void checking( std::string const& what, bool endline = false )
+{
+	std::cout << "Checking " << what << "... ";
+	if( endline ) {
+		std::cout << std::endl;
+	}
+}
+
+void pass()
+{
+	std::cout << "pass" << std::endl;
+}
+}
+
 struct perft_ctx {
 	perft_ctx()
 		: move_ptr(moves)
@@ -149,7 +164,7 @@ position test_parse_fen( std::string const& fen )
 	return p;
 }
 
-static bool test_move_generation( std::string const& fen, std::string const& ref_moves )
+static void test_move_generation( std::string const& fen, std::string const& ref_moves )
 {
 	position p = test_parse_fen( fen );
 
@@ -181,40 +196,29 @@ static bool test_move_generation( std::string const& fen, std::string const& ref
 		std::cerr << "Fen: " << fen << std::endl;
 		std::cerr << "Reference: " << ref_moves << std::endl;
 		std::cerr << "Actual:    " << s << std::endl;
-
-		return false;
+		abort();
 	}
-
-	return true;
 }
 
 
-static bool test_move_generation()
+static void test_move_generation()
 {
-	if( !test_move_generation( "4R3/p1pp1p1p/b1n1rn2/1p2p1pP/1B1QPBr1/qPPb2PN/Pk1PNP2/R3K3 w Q g6",
-						"c3-c4 f2-f3 h5-h6 h5xg6 Bb4-a5 Bb4-c5 Bb4-d6 Bb4-e7 Bb4-f8 Bb4xa3 Bf4-e3 Bf4xe5 Bf4xg5 Ke1-d1 Ke1-f1 Ne2-c1 Ne2-g1 Nh3-g1 Nh3xg5 Qd4-b6 Qd4-c4 Qd4-c5 Qd4-d5 Qd4-d6 Qd4-e3 Qd4xa7 Qd4xd3 Qd4xd7 Qd4xe5 Ra1-b1 Ra1-c1 Ra1-d1 Re8-a8 Re8-b8 Re8-c8 Re8-d8 Re8-e7 Re8-f8 Re8-g8 Re8-h8 Re8xe6" ) )
-	{
-		return false;
-	}
+	checking("move generation");
 
-	if( !test_move_generation( "r3k2r/8/2p5/1Q6/1q6/2P5/8/R3K2R w KqQk -",
-						"O-O O-O-O c3xb4 Ke1-d1 Ke1-d2 Ke1-e2 Ke1-f1 Ke1-f2 Qb5-a4 Qb5-a5 Qb5-a6 Qb5-b6 Qb5-b7 Qb5-b8 Qb5-c4 Qb5-c5 Qb5-d3 Qb5-d5 Qb5-e2 Qb5-e5 Qb5-f1 Qb5-f5 Qb5-g5 Qb5-h5 Qb5xb4 Qb5xc6 Ra1-a2 Ra1-a3 Ra1-a4 Ra1-a5 Ra1-a6 Ra1-a7 Ra1-b1 Ra1-c1 Ra1-d1 Ra1xa8 Rh1-f1 Rh1-g1 Rh1-h2 Rh1-h3 Rh1-h4 Rh1-h5 Rh1-h6 Rh1-h7 Rh1xh8" ) )
-	{
-		return false;
-	}
+	test_move_generation( "4R3/p1pp1p1p/b1n1rn2/1p2p1pP/1B1QPBr1/qPPb2PN/Pk1PNP2/R3K3 w Q g6",
+						"c3-c4 f2-f3 h5-h6 h5xg6 Bb4-a5 Bb4-c5 Bb4-d6 Bb4-e7 Bb4-f8 Bb4xa3 Bf4-e3 Bf4xe5 Bf4xg5 Ke1-d1 Ke1-f1 Ne2-c1 Ne2-g1 Nh3-g1 Nh3xg5 Qd4-b6 Qd4-c4 Qd4-c5 Qd4-d5 Qd4-d6 Qd4-e3 Qd4xa7 Qd4xd3 Qd4xd7 Qd4xe5 Ra1-b1 Ra1-c1 Ra1-d1 Re8-a8 Re8-b8 Re8-c8 Re8-d8 Re8-e7 Re8-f8 Re8-g8 Re8-h8 Re8xe6" );
+	test_move_generation( "r3k2r/8/2p5/1Q6/1q6/2P5/8/R3K2R w KqQk -",
+						"O-O O-O-O c3xb4 Ke1-d1 Ke1-d2 Ke1-e2 Ke1-f1 Ke1-f2 Qb5-a4 Qb5-a5 Qb5-a6 Qb5-b6 Qb5-b7 Qb5-b8 Qb5-c4 Qb5-c5 Qb5-d3 Qb5-d5 Qb5-e2 Qb5-e5 Qb5-f1 Qb5-f5 Qb5-g5 Qb5-h5 Qb5xb4 Qb5xc6 Ra1-a2 Ra1-a3 Ra1-a4 Ra1-a5 Ra1-a6 Ra1-a7 Ra1-b1 Ra1-c1 Ra1-d1 Ra1xa8 Rh1-f1 Rh1-g1 Rh1-h2 Rh1-h3 Rh1-h4 Rh1-h5 Rh1-h6 Rh1-h7 Rh1xh8" );
+	test_move_generation( "3k4/8/8/q2pP2K/8/8/8/8 w - d6",
+						"e5-e6 Kh5-g4 Kh5-g5 Kh5-g6 Kh5-h4 Kh5-h6");
 
-	if( !test_move_generation( "3k4/8/8/q2pP2K/8/8/8/8 w - d6",
-						"e5-e6 Kh5-g4 Kh5-g5 Kh5-g6 Kh5-h4 Kh5-h6") )
-	{
-		return false;
-	}
-
-	return true;
+	pass();
 }
 
 
-static bool test_zobrist()
+static void test_zobrist()
 {
+	checking("zobrist hashing");
 	position p = test_parse_fen( "rnbqk2r/1p3pp1/3bpn2/p2pN2p/P1Pp4/4P3/1P1BBPPP/RN1Q1RK1 b kq c3" );
 
 	uint64_t old_hash = get_zobrist_hash( p );
@@ -223,7 +227,7 @@ static bool test_zobrist()
 	std::string error;
 	if( !parse_move( p, "dxc3", m, error ) ) {
 		std::cerr << error << ": dxc3" << std::endl;
-		return false;
+		abort();
 	}
 
 	uint64_t new_hash_move = update_zobrist_hash( p, old_hash, m );
@@ -234,10 +238,10 @@ static bool test_zobrist()
 
 	if( new_hash_move != new_hash_full ) {
 		std::cerr << "Hash mismatch: " << new_hash_full << " " << new_hash_move << std::endl;
-		return false;
+		abort();
 	}
 
-	return true;
+	pass();
 }
 
 
@@ -266,8 +270,9 @@ static bool test_lazy_eval( std::string const& fen, short& max_difference )
 }
 
 
-static bool test_lazy_eval()
+static void test_lazy_eval()
 {
+	checking("lazy evaluation");
 	std::ifstream in_fen("test/testpositions.txt");
 
 	short max_difference = 0;
@@ -275,39 +280,38 @@ static bool test_lazy_eval()
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {
 		if( !test_lazy_eval( fen, max_difference ) ) {
-			return false;
+			abort();
 		}
 	}
 
+	pass();
 	std::cout << "Max positional score difference: " << max_difference << std::endl;
-
-	return true;
 }
 
 
-static bool test_pst() {
+static void test_pst() {
+	checking("pst symmetry");
 	for( int i = 0; i < 64; ++i ) {
 		int opposite = (i % 8) + (7 - i / 8) * 8;
 		int mirror = (i / 8) * 8 + 7 - i % 8;
 		for( int p = 1; p < 7; ++p ) {
 			if( pst[0][p][i] != pst[1][p][opposite] ) {
 				std::cerr << "PST not symmetric for piece " << p << ", squares " << i << " and " << opposite << ": " << pst[0][p][i] << " " << pst[1][p][opposite] << std::endl;
-				return false;
+				abort();
 			}
 			if( pst[0][p][i] != pst[0][p][mirror] ) {
 				std::cerr << "PST not symmetric for piece " << p << ", squares " << i << " and " << mirror << ": " << pst[0][p][i] << " " << pst[0][p][mirror] << std::endl;
-				return false;
+				abort();
 			}
 		}
 	}
-
-	return true;
+	pass();
 }
 
 
 std::string flip_fen( std::string const& fen )
 {
-		std::string flipped;
+	std::string flipped;
 
 	std::string remaining;
 	std::string first_part = split( fen, remaining );
@@ -460,6 +464,7 @@ static void test_moves_noncaptures( std::string const& fen, position const& p )
 
 static void test_incorrect_positions()
 {
+	checking("fen validation");
 	std::ifstream in_fen("test/bad_fen.txt");
 
 	std::string fen;
@@ -472,6 +477,7 @@ static void test_incorrect_positions()
 			abort();
 		}
 	}
+	pass();
 }
 
 
@@ -492,33 +498,18 @@ static void process_test_positions()
 }
 
 
-static bool do_selftest()
+static void test_perft()
 {
-	if( !test_pst() ) {
-		return false;
-	}
-	test_incorrect_positions();
-	process_test_positions();
-	if( !test_move_generation() ) {
-		return false;
-	}
-	if( !test_zobrist() ) {
-		return false;
-	}
-	if( !test_lazy_eval() ) {
-		return false;
-	}
+	checking( "perft", true );
 	if( !perft<true>(6) ) {
-		return false;
+		abort();
 	}
 	if( !perft<false>(6) ) {
-		return false;
+		abort();
 	}
-
-	return true;
 }
 
-static void check_popcount( uint64_t v, uint64_t expected )
+static void do_check_popcount( uint64_t v, uint64_t expected )
 {
 	uint64_t c = popcount(v);
 	if( c != expected ) {
@@ -529,39 +520,57 @@ static void check_popcount( uint64_t v, uint64_t expected )
 
 static void check_popcount()
 {
+	checking("popcount");
 	for( unsigned int i = 0; i < 64; ++i ) {
 		uint64_t v = 1ull << i;
-		check_popcount( v, 1 );
+		do_check_popcount( v, 1 );
 
-		check_popcount( v - 1, i );
+		do_check_popcount( v - 1, i );
 	}
+	pass();
 }
 
-static void check_bitscan( uint64_t v, uint64_t expected_count, uint64_t expected_sum )
+static void do_check_bitscan( uint64_t v, uint64_t expected_count, uint64_t expected_sum, uint64_t expected_reverse_sum )
 {
 	uint64_t c = 0;
 	uint64_t sum = 0;
 	uint64_t v2 = v;
+
 	while( v2 ) {
 		++c;
 		uint64_t i = bitscan_unset( v2 );
-		sum += i;
+		sum += i * c;
 	}
-
 	if( c != expected_count || sum != expected_sum ) {
 		std::cerr << "Bitscan failed on " << v << ", got " << c << ", " << sum << ", expected " << expected_count << ", " << expected_sum << std::endl;
 		abort();
 	}
 
+	c = 0;
+	sum = 0;
+	v2 = v;
+	while( v2 ) {
+		++c;
+		uint64_t i = bitscan_reverse( v2 );
+		v2 ^= 1ull << i;
+		sum += i * c;
+	}
+	if( c != expected_count || sum != expected_reverse_sum ) {
+		std::cerr << "Reverse bitscan failed on " << v << ", got " << c << ", " << sum << ", expected " << expected_count << ", " << expected_reverse_sum << std::endl;
+		abort();
+	}
 }
 
 static void check_bitscan()
 {
-	check_bitscan( 0x5555555555555555ull, 32, 992 );
+	checking("bitscan");
+	do_check_bitscan( 0x5555555555555555ull, 32, 21824, 10912 );
+	pass();
 }
 
 static void check_see()
 {
+	checking("static exchange evaluation");
 	std::string const fen = "r3r3/p4ppp/4k3/R3n3/1N1KP3/8/6BP/8 w - -";
 	std::string const ms = "Rxe5";
 
@@ -579,6 +588,7 @@ static void check_see()
 		std::cerr << "See of " << fen << " " << ms << " needs to be bigger than 0, but is " << v << std::endl;
 		abort();
 	}
+	pass();
 }
 
 
@@ -606,17 +616,20 @@ void do_check_disambiguation( std::string const& fen, std::string const& ms, std
 
 void check_disambiguation()
 {
+	checking("disambiguations");
 	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k3N1 w - - 0 1", "Ngf3", "Ngf3" );
 	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k3N1 w - - 0 1", "N1f3", "Ngf3" );
 	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N3 w - - 0 1", "Ne1f3", "N1f3" );
 	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N3 w - - 0 1", "N1f3", "N1f3" );
 	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne1f3", "Ne1f3" );
 	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne5f3", "N5f3" );
+	pass();
 }
 
 
 void check_condition_wait()
 {
+	checking("condition wait");
 	mutex m;
 	scoped_lock l(m);
 	condition c;
@@ -640,10 +653,12 @@ void check_condition_wait()
 			abort();
 		}
 	}
+	pass();
 }
 
 void check_endgame_eval()
 {
+	checking("endgame evaluation");
 	std::string const fens[] = {
 		"8/3k4/8/8/5K2/8/8/8 w - - 0 1",
 		"8/8/2k5/4n1K1/8/8/8/8 w - - 0 1",
@@ -689,10 +704,12 @@ void check_endgame_eval()
 			abort();
 		}
 	}
+	pass();
 }
 
 void check_time()
 {
+	checking("time classes");
 	timestamp t;
 	timestamp t2;
 	timestamp t3 = t2;
@@ -727,6 +744,7 @@ void check_time()
 		std::cerr << "duration::milliseconds(100).nanoseconds() != 100000000" << std::endl;
 		abort();
 	}
+	pass();
 }
 }
 
@@ -745,12 +763,14 @@ bool selftest()
 
 	check_endgame_eval();
 
-	if( do_selftest() ) {
-		std::cerr << "Self test passed" << std::endl;
-		return true;
-	}
+	test_pst();
+	test_incorrect_positions();
+	process_test_positions();
+	test_move_generation();
+	test_zobrist();
+	test_lazy_eval();
+	test_perft();
 
-	std::cerr << "Self test failed" << std::endl;
-	abort();
-	return false;
+	std::cerr << "Self test passed" << std::endl;
+	return true;
 }
