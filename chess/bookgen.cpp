@@ -809,7 +809,7 @@ void learnpgn( book& b, std::string const& file )
 }
 
 
-bool do_deepen_tree( book& b, position p, seen_positions seen, std::vector<move> move_history )
+bool do_deepen_tree( book& b, position const& p, seen_positions seen, std::vector<move> move_history, int offset )
 {
 	std::vector<book_entry> entries = b.get_entries( p, move_history );
 	if( entries.empty() ) {
@@ -837,21 +837,36 @@ bool do_deepen_tree( book& b, position p, seen_positions seen, std::vector<move>
 		return false;
 	}
 
-	book_entry e = entries.front();
-	apply_move( p, e.m );
-	move_history.push_back( e.m );
-	seen.push_root( get_zobrist_hash( p ) );
+	book_entry const& first = entries.front();
+	for( auto const& e: entries ) {
+		if( e.forecast < first.forecast - offset ) {
+			break;
+		}
 
-	return do_deepen_tree( b, p, seen, move_history );
+		position p2 = p;
+		apply_move( p2, e.m );
+		move_history.push_back( e.m );
+		seen.push_root( get_zobrist_hash( p2 ) );
+
+		int new_offset = std::max( 0, offset - first.forecast + e.forecast );
+		bool res = do_deepen_tree( b, p2, seen, move_history, new_offset );
+		move_history.pop_back();
+		seen.pop_root();
+		if( res ) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 
-void deepen_tree( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history )
+void deepen_tree( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, int offset )
 {
 	bool run = true;
 	while( run ) {
 		run = false;
-		while( do_deepen_tree( b, p, seen, move_history ) ) {
+		while( do_deepen_tree( b, p, seen, move_history, offset ) ) {
 			run = true;
 		}
 	}
@@ -1000,7 +1015,11 @@ void run( book& b )
 			b.redo_hashes();
 		}
 		else if( cmd == "treedeepen" ) {
-			deepen_tree( b, p, seen, move_history );
+			int offset = 0;
+			if( !args.empty() ) {
+				to_int( args, offset, 0, 1000 );
+			}
+			deepen_tree( b, p, seen, move_history, offset );
 		}
 		else if( cmd == "historystring" ) {
 			std::cerr << b.history_to_string( move_history ) << std::endl;
