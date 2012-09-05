@@ -8,8 +8,7 @@
 
 #define ASSERT(x) do{ \
 	if( !(x) ) { \
-	std::cerr << "Assertion failed (" << __FILE__ << ":" << __LINE__ << "): " << #x << std::endl; \
-	for(;;){}\
+		std::cerr << "Assertion failed (" << __FILE__ << ":" << __LINE__ << "): " << #x << std::endl; \
 		abort(); \
 	} \
 	break; \
