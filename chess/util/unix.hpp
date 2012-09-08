@@ -22,9 +22,9 @@ int get_system_memory();
 // Precondition: mask != 0
 inline uint64_t bitscan( uint64_t mask )
 {
-	// We cannot use the __builtin_ffsll, as it is way more expensive:
-	// It always adds 1 to the result, which we then have to subtract again.
-	// Not even -O3 can save us there
+#if USE_BUILTINS
+	return __builtin_ctzll( mask );
+#else
 	uint64_t index;
 	asm \
 	( \
@@ -34,13 +34,16 @@ inline uint64_t bitscan( uint64_t mask )
 	);
 
 	return index;
+#endif
 }
-
 
 // Forward bitscan, returns index of highest set bit.
 // Precondition: mask != 0
 inline uint64_t bitscan_reverse( uint64_t mask )
 {
+#if USE_BUILTINS
+	return 63 - __builtin_clzll( mask );
+#else
 	uint64_t index;
 	asm \
 	( \
@@ -48,8 +51,8 @@ inline uint64_t bitscan_reverse( uint64_t mask )
 	:[index] "=r" (index) \
 	:[mask] "mr" (mask) \
 	);
-
 	return index;
+#endif
 }
 
 #define popcount __builtin_popcountll
