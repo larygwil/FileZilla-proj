@@ -754,7 +754,7 @@ bool selftest()
 	check_bitscan();
 	check_see();
 
-	pawn_hash_table.init( conf.pawn_hash_table_size );
+	pawn_hash_table.init( conf.pawn_hash_table_size() );
 
 	check_disambiguation();
 

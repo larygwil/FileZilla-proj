@@ -16,7 +16,7 @@ config::config()
   random_seed(-1), //-1 == based on time
   ponder(),
   use_book(true),
-  pawn_hash_table_size(100)
+  pawn_hash_table_size_(0)
 {
 	if( sizeof(void*) < 8 ) {
 		// Limit default to 1GB on 32bit compile
@@ -173,6 +173,16 @@ std::string config::program_name() const
 	}
 
 	return name;
+}
+
+unsigned int config::pawn_hash_table_size() const
+{
+	unsigned int ret = pawn_hash_table_size_;
+	if( !ret ) {
+		ret = std::min( 64, get_system_memory() / 8 );
+	}
+
+	return ret;
 }
 
 config conf;

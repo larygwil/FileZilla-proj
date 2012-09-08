@@ -52,7 +52,7 @@ void auto_play()
 		conf.depth = 8;
 	}
 	transposition_table.init( conf.memory );
-	pawn_hash_table.init( conf.pawn_hash_table_size );
+	pawn_hash_table.init( conf.pawn_hash_table_size() );
 	timestamp start;
 	position p;
 
@@ -163,7 +163,7 @@ int main( int argc, char const* argv[] )
 		auto_play();
 	}
 	else if( command == "perft" ) {
-		pawn_hash_table.init( conf.pawn_hash_table_size );
+		pawn_hash_table.init( conf.pawn_hash_table_size() );
 		perft<false>();
 	}
 	else if( command == "test" ) {

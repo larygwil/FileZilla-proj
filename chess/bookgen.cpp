@@ -1090,7 +1090,7 @@ int main( int argc, char const* argv[] )
 
 	transposition_table.init( conf.memory );
 
-	pawn_hash_table.init( conf.pawn_hash_table_size );
+	pawn_hash_table.init( conf.pawn_hash_table_size() );
 
 	std::cout << "Opening book" << std::endl;
 

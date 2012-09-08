@@ -88,7 +88,7 @@ octochess_uci::octochess_uci( gui_interface_ptr const& p )
 {
 	p->set_engine_interface(*this);
 
-	pawn_hash_table.init( conf.pawn_hash_table_size );
+	pawn_hash_table.init( conf.pawn_hash_table_size() );
 	if( conf.depth == -1 ) {
 		conf.depth = MAX_DEPTH;
 	}

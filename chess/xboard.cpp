@@ -615,7 +615,7 @@ void xboard( std::string line)
 		conf.depth = MAX_DEPTH;
 	}
 
-	pawn_hash_table.init( conf.pawn_hash_table_size );
+	pawn_hash_table.init( conf.pawn_hash_table_size() );
 
 	if( !line.empty() ) {
 		goto skip_getline;

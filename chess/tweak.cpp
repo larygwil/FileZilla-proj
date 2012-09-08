@@ -80,7 +80,7 @@ static void generate_test_positions_impl()
 	conf.max_moves = 20 + get_random_unsigned_long_long() % 70;
 
 	transposition_table.clear_data();
-	pawn_hash_table.init( conf.pawn_hash_table_size );
+	pawn_hash_table.init( conf.pawn_hash_table_size() );
 	position p;
 
 	unsigned int i = 1;
@@ -765,7 +765,7 @@ void add_random( population & pop, std::set<individual>& seen, std::vector<refer
 
 void tweak_evaluation()
 {
-	pawn_hash_table.init( conf.pawn_hash_table_size );
+	pawn_hash_table.init( conf.pawn_hash_table_size() );
 	std::vector<reference_data> data = load_data();
 
 	init_genes();
