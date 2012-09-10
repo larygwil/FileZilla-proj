@@ -145,22 +145,14 @@ void octochess_uci::make_moves( std::vector<std::string> const& moves )
 	}
 }
 
-void octochess_uci::calculate( calculate_mode_type mode, position_time const& t, uint64_t depth )
+void octochess_uci::calculate( calculate_mode_type mode, position_time const& t, int depth )
 {
 	transposition_table.init_if_needed( conf.memory );
 
 	scoped_lock lock(impl_->mutex_);
 	do_abort = false;
 
-	if( depth == 0xffffffffffffff ) {
-		depth = conf.max_search_depth();
-	}
-	else if( depth < 1 ) {
-		depth = 1;
-	}
-	else if( depth > MAX_DEPTH ) {
-		depth = MAX_DEPTH;
-	}
+	impl_->calc_manager_.set_depth( depth );
 
 	if( mode == calculate_mode::infinite ) {
 		impl_->times_.set_infinite_time();

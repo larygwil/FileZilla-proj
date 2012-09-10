@@ -18,7 +18,7 @@ public:
 	virtual void new_game();
 	virtual void set_position( std::string const& fen );
 	virtual void make_moves( std::string const& list_of_moves );
-	virtual void calculate( calculate_mode_type, position_time const&, uint64_t depth );
+	virtual void calculate( calculate_mode_type, position_time const&, int depth );
 	virtual void stop();
 	virtual void quit();
 

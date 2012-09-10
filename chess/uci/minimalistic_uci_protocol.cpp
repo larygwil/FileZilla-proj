@@ -179,7 +179,7 @@ void minimalistic_uci_protocol::handle_go( std::string const& params ) {
 	}
 	position_time t;
 
-	uint depth = 0xffffffffffffffff;
+	int depth = -1;
 
 	std::istringstream in( params );
 	std::string cmd;
@@ -197,7 +197,7 @@ void minimalistic_uci_protocol::handle_go( std::string const& params ) {
 		} else if( cmd == "movestogo" ) {
 			t.set_moves_to_go( extract<uint>(in) );
 		} else if( cmd == "depth" ) {
-			depth = extract<uint>(in);
+			depth = extract<int>(in);
 		}
 	}
 
