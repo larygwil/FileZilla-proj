@@ -136,7 +136,7 @@ void generate_test_positions()
 {
 	transposition_table.init( conf.memory );
 	
-	conf.depth = 6;
+	conf.set_max_search_depth( 6 );
 	
 	while( true ) {
 		generate_test_positions_impl();

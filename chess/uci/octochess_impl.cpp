@@ -89,9 +89,6 @@ octochess_uci::octochess_uci( gui_interface_ptr const& p )
 	p->set_engine_interface(*this);
 
 	pawn_hash_table.init( conf.pawn_hash_table_size() );
-	if( conf.depth == -1 ) {
-		conf.depth = MAX_DEPTH;
-	}
 	new_game();
 }
 
@@ -148,11 +145,23 @@ void octochess_uci::make_moves( std::vector<std::string> const& moves )
 	}
 }
 
-void octochess_uci::calculate( calculate_mode_type mode, position_time const& t ) {
+void octochess_uci::calculate( calculate_mode_type mode, position_time const& t, uint64_t depth )
+{
 	transposition_table.init_if_needed( conf.memory );
 
 	scoped_lock lock(impl_->mutex_);
 	do_abort = false;
+
+	if( depth == 0xffffffffffffff ) {
+		depth = conf.max_search_depth();
+	}
+	else if( depth < 1 ) {
+		depth = 1;
+	}
+	else if( depth > MAX_DEPTH ) {
+		depth = MAX_DEPTH;
+	}
+
 	if( mode == calculate_mode::infinite ) {
 		impl_->times_.set_infinite_time();
 		impl_->calc_cond_.signal(lock);

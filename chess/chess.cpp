@@ -48,9 +48,6 @@ duration const TIME_LIMIT = duration::seconds(90);
 
 void auto_play()
 {
-	if( conf.depth == -1 ) {
-		conf.depth = 8;
-	}
 	transposition_table.init( conf.memory );
 	pawn_hash_table.init( conf.pawn_hash_table_size() );
 	timestamp start;

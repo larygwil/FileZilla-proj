@@ -728,7 +728,9 @@ void def_new_best_move_callback::on_new_best_move( position const& p, int depth,
 class calc_manager::impl
 {
 public:
-	impl() {
+	impl()
+		: depth_(-1)
+	{
 		update_threads();
 	}
 
@@ -770,11 +772,23 @@ public:
 		}
 	}
 
+	int max_depth() const
+	{
+		if( depth_ <= 0 ) {
+			return conf.max_search_depth();
+		}
+		else {
+			return std::min( depth_, conf.max_search_depth() );
+		}
+	}
+
 	mutex mtx_;
 	condition cond_;
 	std::vector<processing_thread*> threads_;
 
 	pv_entry_pool pv_pool_;
+
+	int depth_;
 };
 
 
@@ -795,6 +809,8 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 		  , short last_mate
 		  , new_best_move_callback_base& new_best_cb )
 {
+	ASSERT( move_time_limit <= deadline );
+
 	impl_->update_threads();
 	impl_->reduce_histories();
 
@@ -879,12 +895,12 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 
 	short alpha_at_prev_depth = result::loss;
 	int highest_depth = 0;
-	int min_depth = 2 + (conf.depth % 2);
-	if( conf.depth < min_depth ) {
-		min_depth = conf.depth;
+	int min_depth = 2 + (impl_->max_depth() % 2);
+	if( impl_->max_depth() < min_depth ) {
+		min_depth = impl_->max_depth();
 	}
 
-	for( int max_depth = min_depth; max_depth <= conf.depth && !do_abort; ++max_depth )
+	for( int max_depth = min_depth; max_depth <= impl_->max_depth() && !do_abort; ++max_depth )
 	{
 		short alpha = result::loss;
 		short beta = result::win;
@@ -1008,7 +1024,7 @@ break2:
 		}
 		else {
 			if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
-				if( max_depth < conf.depth ) {
+				if( max_depth < impl_->max_depth() ) {
 					if( alpha > last_mate && !ponder ) {
 						std::cerr << "Early break due to mate at " << max_depth << std::endl;
 						do_abort = true;
@@ -1082,4 +1098,9 @@ label_abort:
 	}
 
 	return result;
+}
+
+void calc_manager::set_depth( int depth )
+{
+	impl_->depth_ = depth;
 }

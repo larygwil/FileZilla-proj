@@ -10,12 +10,12 @@ config::config()
 : thread_count(get_cpu_count()),
   memory(get_system_memory() / 3 ),
   max_moves(0),
-  depth(-1),
   quiescence_depth(MAX_QDEPTH),
   time_limit( duration::hours(1) ),
   random_seed(-1), //-1 == based on time
   ponder(),
   use_book(true),
+  depth_(-1),
   pawn_hash_table_size_(0)
 {
 	if( sizeof(void*) < 8 ) {
@@ -91,7 +91,7 @@ std::string config::init( int argc,  char const* argv[] )
 				std::cerr << "Invalid argument to " << opt << std::endl;
 				exit(1);
 			}
-			conf.depth = v;
+			conf.set_max_search_depth( v );
 		}
 		else if( opt == "--quiescence" ) {
 			if( ++i >= argc ) {
@@ -174,6 +174,32 @@ std::string config::program_name() const
 
 	return name;
 }
+
+
+int config::max_search_depth() const
+{
+	if( depth_ == -1 ) {
+		return MAX_DEPTH;
+	}
+	else {
+		return depth_;
+	}
+}
+
+
+void config::set_max_search_depth( int depth )
+{
+	if( depth < -1 ) {
+		depth_ = -1;
+	}
+	else if( depth > MAX_DEPTH ) {
+		depth_ = -1;
+	}
+	else {
+		depth_ = depth;
+	}
+}
+
 
 unsigned int config::pawn_hash_table_size() const
 {

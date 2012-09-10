@@ -209,6 +209,10 @@ public:
 
 	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
 
+	void set_depth( int depth ) {
+		cmgr_.set_depth( depth );
+	}
+
 private:
 	calc_manager cmgr_;
 	bool abort;
@@ -611,10 +615,6 @@ void xboard( std::string line)
 	xboard_state state;
 	xboard_thread thread( state );
 
-	if( conf.depth == -1 ) {
-		conf.depth = MAX_DEPTH;
-	}
-
 	pawn_hash_table.init( conf.pawn_hash_table_size() );
 
 	if( !line.empty() ) {
@@ -716,6 +716,7 @@ skip_getline:
 		else if( cmd == "new" ) {
 			bool analyze = state.mode_ == mode::analyze;
 			state.reset();
+			thread.set_depth( -1 );
 			if( analyze ) {
 				state.mode_ = mode::analyze;
 				thread.start( true );
@@ -906,7 +907,7 @@ skip_getline:
 		else if( cmd == "sd" ) {
 			short d;
 			if( to_int<short>( args, d, 1, MAX_DEPTH ) ) {
-				conf.depth = d;
+				thread.set_depth( d );
 			}
 			else {
 				std::cout << "Error (bad command): Not a valid sd command" << std::endl;

@@ -58,6 +58,8 @@ public:
 		   seen_positions& seen, short last_mate,
 		   new_best_move_callback_base& new_best_cb = default_new_best_move_callback );
 
+	void set_depth( int depth );
+
 private:
 	class impl;
 	impl* impl_;

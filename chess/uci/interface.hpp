@@ -35,7 +35,7 @@ public:
 	virtual void new_game() = 0;
 	virtual void set_position( std::string const& fen ) = 0;
 	virtual void make_moves( std::string const& list_of_moves ) = 0;
-	virtual void calculate( calculate_mode_type, position_time const& ) = 0;
+	virtual void calculate( calculate_mode_type, position_time const&, uint64_t depth ) = 0;
 	virtual void stop() = 0;
 	virtual void quit() = 0;
 

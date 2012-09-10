@@ -20,7 +20,6 @@ struct config
 	unsigned int thread_count;
 	unsigned int memory;
 	unsigned int max_moves; // only for auto play
-	signed short depth;
 	unsigned char quiescence_depth;
 
 	duration time_limit;
@@ -36,12 +35,15 @@ struct config
 
 	std::string program_name() const;
 
+	int max_search_depth() const;
+	void set_max_search_depth( int depth );
+
 	unsigned int pawn_hash_table_size() const;
 private:
 	void init_book_dir( std::string self );
 
+	int depth_;
 	unsigned int pawn_hash_table_size_; // In MiB
-
 };
 extern config conf;
 
