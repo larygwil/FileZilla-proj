@@ -119,16 +119,22 @@ bool perft( std::size_t max_depth )
 		perft<split_movegen>( ctx, max_depth, p, ret );
 		timestamp stop;
 
+		duration elapsed = stop - start;
 
-		std::cerr << "Moves: "     << ret << std::endl;
-		std::cerr << "Took:  "     << (stop - start).milliseconds() << " ms" << std::endl;
+		std::cerr << "Moves:     "     << ret << std::endl;
+		std::cerr << "Took:      "     << elapsed.milliseconds() << " ms" << std::endl;
 		if( ret ) {
 			// Will overflow after ~3 months
-			int64_t picoseconds = (stop-start).picoseconds();
+			int64_t picoseconds = elapsed.picoseconds();
 			picoseconds /= ret;
 
 			std::stringstream ss;
 			ss << "Time/move: " << picoseconds / 1000 << "." << std::setw(1) << std::setfill('0') << (picoseconds / 100) % 10 << " ns" << std::endl;
+
+			if( !elapsed.empty() ) {
+				ss << "Moves/s:   " << elapsed.get_items_per_second(ret) << std::endl;
+			}
+
 			std::cerr << ss.str();
 		}
 
