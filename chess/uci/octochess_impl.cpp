@@ -36,6 +36,7 @@ public:
 		, started_from_root_()
 		, running_(true)
 		, book_( conf.book_dir )
+		, depth_(-1)
 	{
 		spawn();
 	}
@@ -81,6 +82,8 @@ public:
 	pv_move_picker pv_move_picker_;
 
 	std::vector<move> move_history_;
+
+	int depth_;
 };
 
 octochess_uci::octochess_uci( gui_interface_ptr const& p ) 
@@ -152,7 +155,7 @@ void octochess_uci::calculate( calculate_mode_type mode, position_time const& t,
 	scoped_lock lock(impl_->mutex_);
 	do_abort = false;
 
-	impl_->calc_manager_.set_depth( depth );
+	impl_->depth_ = depth;
 
 	if( mode == calculate_mode::infinite ) {
 		impl_->times_.set_infinite_time();
@@ -186,7 +189,7 @@ void octochess_uci::impl::onRun() {
 
 			timestamp start_time;
 
-			calc_result result = calc_manager_.calc( pos_, times_.time_for_this_move(), times_.total_remaining() -  times_.overhead(), half_moves_played_, seen_positions_, last_mate_, *this );
+			calc_result result = calc_manager_.calc( pos_, depth_, times_.time_for_this_move(), times_.total_remaining() -  times_.overhead(), half_moves_played_, seen_positions_, last_mate_, *this );
 			if( !result.best_move.empty() ) {
 				gui_interface_->tell_best_move( move_to_long_algebraic( result.best_move ) );
 

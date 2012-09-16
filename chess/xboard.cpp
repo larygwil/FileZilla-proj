@@ -37,8 +37,6 @@ struct xboard_state
 	xboard_state()
 		: clock()
 		, book_( conf.book_dir )
-		, time_remaining()
-		, bonus_time()
 		, mode_(mode::force)
 		, self(color::black)
 		, time_control()
@@ -66,7 +64,7 @@ struct xboard_state
 
 		seen.reset_root( get_zobrist_hash( p ) );
 
-		time_remaining = conf.time_limit;
+		time_remaining = duration::infinity();
 		bonus_time = duration();
 		fixed_move_time = duration();
 
@@ -127,7 +125,7 @@ struct xboard_state
 
 	void update_comm_overhead( duration const& new_remaining )
 	{
-		if( p.self() == last_go_color && moves_between_updates && (time_remaining - new_remaining).absolute() < duration::seconds(2 * moves_between_updates) ) {
+		if( p.self() == last_go_color && moves_between_updates && time_remaining != duration::infinity() && (time_remaining - new_remaining).absolute() < duration::seconds(2 * moves_between_updates) ) {
 			level_cmd_differences += time_remaining - new_remaining;
 			level_cmd_count += moves_between_updates;
 
@@ -210,7 +208,7 @@ public:
 	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
 
 	void set_depth( int depth ) {
-		cmgr_.set_depth( depth );
+		depth_ = depth;
 	}
 
 private:
@@ -219,6 +217,7 @@ private:
 	xboard_state& state;
 	move best_move;
 	bool ponder_;
+	int depth_;
 };
 
 
@@ -337,6 +336,7 @@ xboard_thread::xboard_thread( xboard_state& s )
 : abort()
 , state(s)
 , ponder_()
+, depth_(-1)
 {
 }
 
@@ -401,7 +401,7 @@ void xboard_thread::onRun()
 		}
 
 
-		calc_result result = cmgr_.calc( state.p, time_limit, deadline, state.clock, state.seen, state.last_mate, *this );
+		calc_result result = cmgr_.calc( state.p, depth_, time_limit, deadline, state.clock, state.seen, state.last_mate, *this );
 
 		scoped_lock l( mtx );
 
@@ -442,25 +442,31 @@ void xboard_thread::onRun()
 		duration elapsed = timestamp() - state.last_go_time;
 
 		std::cerr << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
-		if( time_limit > elapsed ) {
-			state.bonus_time = (time_limit - elapsed) / 2;
-		}
-		else {
-			state.bonus_time = duration();
+		if( !time_limit.is_infinity() ) {
+			if( time_limit > elapsed ) {
+				state.bonus_time = (time_limit - elapsed) / 2;
+			}
+			else {
+				state.bonus_time.clear();
 
-			if( time_limit + result.used_extra_time > elapsed ) {
-				duration actual_overhead = elapsed - time_limit - result.used_extra_time;
-				if( actual_overhead > state.internal_overhead ) {
-					std::cerr << "Updating internal overhead from " << state.internal_overhead.milliseconds() << " ms to " << actual_overhead.milliseconds() << " ms " << std::endl;
-					state.internal_overhead = actual_overhead;
+				if( time_limit + result.used_extra_time > elapsed ) {
+					duration actual_overhead = elapsed - time_limit - result.used_extra_time;
+					if( actual_overhead > state.internal_overhead ) {
+						std::cerr << "Updating internal overhead from " << state.internal_overhead.milliseconds() << " ms to " << actual_overhead.milliseconds() << " ms " << std::endl;
+						state.internal_overhead = actual_overhead;
+					}
 				}
 			}
+			state.time_remaining -= elapsed;
 		}
-		state.time_remaining -= elapsed;
+		else {
+			state.bonus_time.clear();
+		}
 	}
 
 	if( ponder_ ) {
-		cmgr_.calc( state.p, duration::infinity(), duration::infinity(), state.clock, state.seen, state.last_mate, *this );
+		std::cerr << "Pondering..." << std::endl;
+		cmgr_.calc( state.p, -1, duration::infinity(), duration::infinity(), state.clock, state.seen, state.last_mate, *this );
 	}
 }
 

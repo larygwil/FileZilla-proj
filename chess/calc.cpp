@@ -729,7 +729,6 @@ class calc_manager::impl
 {
 public:
 	impl()
-		: depth_(-1)
 	{
 		update_threads();
 	}
@@ -772,13 +771,13 @@ public:
 		}
 	}
 
-	int max_depth() const
+	int get_max_depth( int depth ) const
 	{
-		if( depth_ <= 0 ) {
+		if( depth <= 0 ) {
 			return conf.max_search_depth();
 		}
 		else {
-			return std::min( depth_, conf.max_search_depth() );
+			return std::min( depth, conf.max_search_depth() );
 		}
 	}
 
@@ -787,8 +786,6 @@ public:
 	std::vector<processing_thread*> threads_;
 
 	pv_entry_pool pv_pool_;
-
-	int depth_;
 };
 
 
@@ -805,11 +802,13 @@ calc_manager::~calc_manager()
 }
 
 
-calc_result calc_manager::calc( position& p, duration const& move_time_limit, duration const& deadline, int clock, seen_positions& seen
+calc_result calc_manager::calc( position& p, int max_depth, duration const& move_time_limit, duration const& deadline, int clock, seen_positions& seen
 		  , short last_mate
 		  , new_best_move_callback_base& new_best_cb )
 {
 	ASSERT( move_time_limit <= deadline );
+
+	max_depth = impl_->get_max_depth( max_depth );
 
 	impl_->update_threads();
 	impl_->reduce_histories();
@@ -817,8 +816,8 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 	calc_result result;
 
 	bool ponder = false;
-	if( move_time_limit != duration::infinity() ) {
-		if( deadline != duration::infinity() ) {
+	if( !move_time_limit.is_infinity() ) {
+		if( !deadline.is_infinity() ) {
 			std::cerr << "Time limit is " << move_time_limit.milliseconds() << " ms with deadline of " << deadline.milliseconds() << " ms" << std::endl;
 		}
 		else {
@@ -826,7 +825,6 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 		}
 	}
 	else {
-		std::cerr << "Pondering..." << std::endl;
 		ponder = true;
 	}
 
@@ -895,12 +893,12 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 
 	short alpha_at_prev_depth = result::loss;
 	int highest_depth = 0;
-	int min_depth = 2 + (impl_->max_depth() % 2);
-	if( impl_->max_depth() < min_depth ) {
-		min_depth = impl_->max_depth();
+	int min_depth = 2 + (max_depth % 2);
+	if( max_depth < min_depth ) {
+		min_depth = max_depth;
 	}
 
-	for( int max_depth = min_depth; max_depth <= impl_->max_depth() && !do_abort; ++max_depth )
+	for( int depth = min_depth; depth <= max_depth && !do_abort; ++depth )
 	{
 		short alpha = result::loss;
 		short beta = result::win;
@@ -930,7 +928,7 @@ calc_result calc_manager::calc( position& p, duration const& move_time_limit, du
 						continue;
 					}
 
-					impl_->threads_[t]->process( l, p, it->m, max_depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv, seen );
+					impl_->threads_[t]->process( l, p, it->m, depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv, seen );
 
 					// First one is run on its own to get a somewhat sane lower bound for others to work with.
 					if( it++ == old_sorted.begin() ) {
@@ -956,7 +954,7 @@ break2:
 
 				now = timestamp();
 				if( !do_abort && (now - start) > time_limit ) {
-					std::cerr << "Triggering search abort due to time limit at depth " << max_depth << std::endl;
+					std::cerr << "Triggering search abort due to time limit at depth " << depth << std::endl;
 					do_abort = true;
 				}
 			}
@@ -975,7 +973,7 @@ break2:
 
 						move_info mi = impl_->threads_[t]->get_move();
 						pv_entry* pv = impl_->threads_[t]->get_pv();
-						extend_pv_from_tt( pv, p, max_depth, conf.quiescence_depth );
+						extend_pv_from_tt( pv, p, depth, conf.quiescence_depth );
 
 						insert_sorted( sorted, value, mi, pv );
 						if( mi.m != pv->get_best_move() ) {
@@ -985,7 +983,7 @@ break2:
 						if( value > alpha ) {
 							alpha = value;
 							if( mi.m != result.best_move ) {
-								if( !ponder && move_time_limit.seconds() >= 1 && max_depth > 4 && (timestamp() - start) >= (move_time_limit / 10) ) {
+								if( !ponder && move_time_limit.seconds() >= 1 && depth > 4 && (timestamp() - start) >= (move_time_limit / 10) ) {
 									duration extra = move_time_limit / 3;
 									if( time_limit + extra > deadline ) {
 										extra = deadline - time_limit;
@@ -999,8 +997,8 @@ break2:
 								result.best_move = mi.m;
 							}
 
-							highest_depth = max_depth;
-							new_best_cb.on_new_best_move( p, max_depth, stats.highest_depth(), value, stats.nodes() + stats.quiescence_nodes, timestamp() - start, pv );
+							highest_depth = depth;
+							new_best_cb.on_new_best_move( p, depth, stats.highest_depth(), value, stats.nodes() + stats.quiescence_nodes, timestamp() - start, pv );
 						}
 					}
 				}
@@ -1024,9 +1022,9 @@ break2:
 		}
 		else {
 			if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
-				if( max_depth < impl_->max_depth() ) {
+				if( depth < max_depth ) {
 					if( alpha > last_mate && !ponder ) {
-						std::cerr << "Early break due to mate at " << max_depth << std::endl;
+						std::cerr << "Early break due to mate at " << depth << std::endl;
 						do_abort = true;
 					}
 				}
@@ -1098,9 +1096,4 @@ label_abort:
 	}
 
 	return result;
-}
-
-void calc_manager::set_depth( int depth )
-{
-	impl_->depth_ = depth;
 }
