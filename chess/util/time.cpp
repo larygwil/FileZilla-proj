@@ -1,5 +1,6 @@
 #include "time.hpp"
 
+#include <stdexcept>
 
 namespace {
 int64_t gcd( int64_t a, int64_t b )
@@ -148,6 +149,10 @@ duration::duration( timestamp const& lhs, timestamp const& rhs )
 
 int64_t duration::hours() const
 {
+	if( is_infinity() ) {
+		throw std::domain_error( "Cannot express infinity in terms of hours" );
+	}
+
 	return d_ / timer_precision() / 3600;
 }
 
@@ -163,6 +168,10 @@ duration duration::hours( int64_t h )
 
 int64_t duration::minutes() const
 {
+	if( is_infinity() ) {
+		throw std::domain_error( "Cannot express infinity in terms of minutes" );
+	}
+
 	return d_ / timer_precision() / 60;
 }
 
@@ -178,6 +187,10 @@ duration duration::minutes( int64_t m )
 
 int64_t duration::seconds() const
 {
+	if( is_infinity() ) {
+		throw std::domain_error( "Cannot express infinity in terms of seconds" );
+	}
+
 	return d_ / timer_precision();
 }
 
@@ -193,6 +206,11 @@ duration duration::seconds( int64_t s )
 
 int64_t duration::milliseconds() const
 {
+	if( is_infinity() ) {
+		throw std::domain_error( "Cannot express infinity in terms of milliseconds" );
+	}
+
+
 	return muldiv(d_, 1000, timer_precision());
 }
 
@@ -208,6 +226,10 @@ duration duration::milliseconds( int64_t ms )
 
 int64_t duration::nanoseconds() const
 {
+	if( is_infinity() ) {
+		throw std::domain_error( "Cannot express infinity in terms of nanoseconds" );
+	}
+
 	return muldiv(d_, 1000000000ll, timer_precision());
 }
 
@@ -222,6 +244,10 @@ duration duration::nanoseconds( int64_t ns )
 
 int64_t duration::picoseconds() const
 {
+	if( is_infinity() ) {
+		throw std::domain_error( "Cannot express infinity in terms of picoseconds" );
+	}
+
 	return muldiv(d_, 1000000000000ll, timer_precision());
 }
 
@@ -236,7 +262,12 @@ duration duration::picoseconds( int64_t ps )
 
 duration duration::operator-() const
 {
+	if( is_infinity() ) {
+		throw std::domain_error( "Cannot negate infinity()" );
+	}
+
 	duration ret;
+
 	ret.d_ = -d_;
 
 	return ret;
@@ -252,7 +283,13 @@ duration operator-( timestamp const& lhs, timestamp const& rhs )
 duration duration::operator+( duration const& rhs ) const
 {
 	duration ret( *this );
-	ret += rhs;
+
+	if( is_infinity() || rhs.is_infinity() ) {
+		ret = duration::infinity();
+	}
+	else {
+		ret += rhs;
+	}
 
 	return ret;
 }
@@ -260,14 +297,27 @@ duration duration::operator+( duration const& rhs ) const
 
 duration& duration::operator+=( duration const& rhs )
 {
-	d_ += rhs.d_;
+	if( is_infinity() || rhs.is_infinity() ) {
+		*this = duration::infinity();
+	}
+	else {
+		d_ += rhs.d_;
+	}
+
 	return *this;
 }
 
 duration duration::operator-( duration const& rhs ) const
 {
 	duration ret( *this );
-	ret -= rhs;
+
+	if( rhs.is_infinity() ) {
+		throw std::domain_error( "duration: Cannot subtract infinity" );
+	}
+
+	if( !is_infinity() ) {
+		ret -= rhs;
+	}
 
 	return ret;
 }
@@ -275,7 +325,14 @@ duration duration::operator-( duration const& rhs ) const
 
 duration& duration::operator-=( duration const& rhs )
 {
-	d_ -= rhs.d_;
+	if( rhs.is_infinity() ) {
+		throw std::domain_error( "duration: Cannot subtract infinity" );
+	}
+
+	if( !is_infinity() ) {
+		d_ -= rhs.d_;
+	}
+
 	return *this;
 }
 
@@ -283,7 +340,10 @@ duration& duration::operator-=( duration const& rhs )
 duration duration::operator*( int64_t mul ) const
 {
 	duration ret( *this );
-	ret *= mul;
+
+	if( !is_infinity() ) {
+		ret *= mul;
+	}
 
 	return ret;
 }
@@ -291,7 +351,10 @@ duration duration::operator*( int64_t mul ) const
 
 duration& duration::operator*=( int64_t mul )
 {
-	d_ *= mul;
+	if( !is_infinity() ) {
+		d_ *= mul;
+	}
+
 	return *this;
 }
 
@@ -299,7 +362,14 @@ duration& duration::operator*=( int64_t mul )
 duration duration::operator/( int64_t div ) const
 {
 	duration ret( *this );
-	ret /= div;
+	
+	if( !div ) {
+		throw std::domain_error( "Trying to divide by zero" );
+	}
+
+	if( !is_infinity() ) {
+		ret /= div;
+	}
 
 	return ret;
 }
@@ -307,7 +377,14 @@ duration duration::operator/( int64_t div ) const
 
 duration& duration::operator/=( int64_t div )
 {
-	d_ /= div;
+	if( !div ) {
+		throw std::domain_error( "Trying to divide by zero" );
+	}
+
+	if( !is_infinity() ) {
+		d_ /= div;
+	}
+
 	return *this;
 }
 
@@ -365,7 +442,12 @@ bool duration::operator>=( duration const& rhs ) const
 
 int64_t duration::get_items_per_second( int64_t count ) const
 {
-	return muldiv( count, timer_precision(), d_ );
+	if( is_infinity() ) {
+		return 0;
+	}
+	else {
+		return muldiv( count, timer_precision(), d_ );
+	}
 }
 
 
@@ -380,4 +462,10 @@ duration duration::infinity()
 bool duration::operator!=( duration const& rhs ) const
 {
 	return d_ != rhs.d_;
+}
+
+
+bool duration::is_infinity() const
+{
+	return d_ == 0x7fffffffffffffffll;
 }

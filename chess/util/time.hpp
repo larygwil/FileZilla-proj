@@ -82,6 +82,8 @@ public:
 
 	int64_t get_items_per_second( int64_t count ) const;
 
+	bool is_infinity() const;
+
 	static duration infinity();
 private:
 	friend class timestamp;
