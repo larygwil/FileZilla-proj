@@ -1,0 +1,196 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCTargetsPath Condition="'$(VCTargetsPath11)' != '' and '$(VSVersion)' == '' and '$(VisualStudioVersion)' == ''">$(VCTargetsPath11)</VCTargetsPath>
+  </PropertyGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{8B05DC85-6F69-4097-9837-D893BDF3AEF3}</ProjectGuid>
+    <RootNamespace>octochesslib</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.50522.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)\..\build\octochesslib\$(Configuration)\</OutDir>
+    <IntDir>..\build\octochesslib\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)\..\build\octochesslib\$(Configuration)\</OutDir>
+    <IntDir>..\build\octochesslib\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader />
+      <ProgramDataBaseFileName>$(IntDir)octochesslib.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader />
+      <ProgramDataBaseFileName>$(IntDir)octochesslib.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\book.cpp" />
+    <ClCompile Include="..\calc.cpp" />
+    <ClCompile Include="..\config.cpp" />
+    <ClCompile Include="..\detect_check.cpp" />
+    <ClCompile Include="..\endgame.cpp" />
+    <ClCompile Include="..\eval.cpp" />
+    <ClCompile Include="..\eval_values.cpp" />
+    <ClCompile Include="..\fen.cpp" />
+    <ClCompile Include="..\hash.cpp" />
+    <ClCompile Include="..\history.cpp" />
+    <ClCompile Include="..\magic.cpp" />
+    <ClCompile Include="..\moves.cpp" />
+    <ClCompile Include="..\moves_captures.cpp" />
+    <ClCompile Include="..\moves_noncaptures.cpp" />
+    <ClCompile Include="..\pawn_structure_hash_table.cpp" />
+    <ClCompile Include="..\pgn.cpp" />
+    <ClCompile Include="..\phased_move_generator.cpp" />
+    <ClCompile Include="..\position.cpp" />
+    <ClCompile Include="..\pv_move_picker.cpp" />
+    <ClCompile Include="..\pvlist.cpp" />
+    <ClCompile Include="..\random.cpp" />
+    <ClCompile Include="..\score.cpp" />
+    <ClCompile Include="..\see.cpp" />
+    <ClCompile Include="..\seen_positions.cpp" />
+    <ClCompile Include="..\selftest.cpp" />
+    <ClCompile Include="..\sqlite\sqlite3.c" />
+    <ClCompile Include="..\sqlite\sqlite3_wrapper.cpp" />
+    <ClCompile Include="..\statistics.cpp" />
+    <ClCompile Include="..\util\logger.cpp" />
+    <ClCompile Include="..\util\mutex_win.cpp" />
+    <ClCompile Include="..\util\string.cpp" />
+    <ClCompile Include="..\tables.cpp" />
+    <ClCompile Include="..\util\thread.cpp" />
+    <ClCompile Include="..\util\time.cpp" />
+    <ClCompile Include="..\util.cpp" />
+    <ClCompile Include="..\util\windows.cpp" />
+    <ClCompile Include="..\zobrist.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\assert.hpp" />
+    <ClInclude Include="..\book.hpp" />
+    <ClInclude Include="..\calc.hpp" />
+    <ClInclude Include="..\chess.hpp" />
+    <ClInclude Include="..\config.hpp" />
+    <ClInclude Include="..\definitions.hpp" />
+    <ClInclude Include="..\detect_check.hpp" />
+    <ClInclude Include="..\endgame.hpp" />
+    <ClInclude Include="..\eval.hpp" />
+    <ClInclude Include="..\eval_values.hpp" />
+    <ClInclude Include="..\fen.hpp" />
+    <ClInclude Include="..\hash.hpp" />
+    <ClInclude Include="..\history.hpp" />
+    <ClInclude Include="..\magic.hpp" />
+    <ClInclude Include="..\moves.hpp" />
+    <ClInclude Include="..\pawn_structure_hash_table.hpp" />
+    <ClInclude Include="..\pgn.hpp" />
+    <ClInclude Include="..\phased_move_generator.hpp" />
+    <ClInclude Include="..\util\logger.hpp" />
+    <ClInclude Include="..\util\mutex.hpp" />
+    <ClInclude Include="..\util\platform.hpp" />
+    <ClInclude Include="..\position.hpp" />
+    <ClInclude Include="..\pv_move_picker.hpp" />
+    <ClInclude Include="..\pvlist.hpp" />
+    <ClInclude Include="..\random.hpp" />
+    <ClInclude Include="..\random_data.hpp" />
+    <ClInclude Include="..\score.hpp" />
+    <ClInclude Include="..\see.hpp" />
+    <ClInclude Include="..\seen_positions.hpp" />
+    <ClInclude Include="..\selftest.hpp" />
+    <ClInclude Include="..\sliding_piece_attacks.hpp" />
+    <ClInclude Include="..\sqlite\sqlite3.hpp" />
+    <ClInclude Include="..\statistics.hpp" />
+    <ClInclude Include="..\util\string.hpp" />
+    <ClInclude Include="..\util\thread.hpp" />
+    <ClInclude Include="..\util\time.hpp" />
+    <ClInclude Include="..\util.hpp" />
+    <ClInclude Include="..\util\windows.hpp" />
+    <ClInclude Include="..\zobrist.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="tables_gen.vcxproj">
+      <Project>{4b73b174-1be9-40bb-842d-dcd54c1ade8d}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
