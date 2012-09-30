@@ -16,7 +16,7 @@ public:
 	virtual void set_engine_interface( engine_interface& );
 
 
-	virtual void tell_best_move( std::string const& move );
+	virtual void tell_best_move( std::string const& move, std::string const& ponder );
 	virtual void tell_info( info const& );
 
 private:
@@ -28,6 +28,7 @@ private:
 
 	void handle_position( std::string const& params );
 	void handle_go( std::string const& params );
+	void handle_ponderhit();
 	void handle_option( std::string const& args );
 	void identify( std::string const& name, std::string const& author );
 	void send_options();

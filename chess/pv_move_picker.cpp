@@ -9,15 +9,16 @@ pv_move_picker::pv_move_picker()
 }
 
 
-move pv_move_picker::can_use_move_from_pv( position const& p )
+std::pair<move,move> pv_move_picker::can_use_move_from_pv( position const& p )
 {
-	move ret;
+	std::pair<move,move> ret;
 
 	if( get_zobrist_hash( p ) == hash_ ) {
 
 		// Recapture
 		if( previous_.captured_piece != pieces::none && next_.captured_piece != pieces::none && previous_.target == next_.target ) {
-			ret = next_;
+			ret.first = next_;
+			ret.second = ponder_;
 		}
 	}
 
@@ -38,5 +39,14 @@ void pv_move_picker::update_pv( position p, pv_entry const* pv )
 		hash_ = get_zobrist_hash( p );
 		previous_ = pv->next()->get_best_move();
 		next_ = pv->next()->next()->get_best_move();
+		if( pv->next()->next()->next() ) {
+			ponder_ = pv->next()->next()->next()->get_best_move();
+		}
+		else {
+			ponder_.clear();
+		}
+	}
+	else {
+		ponder_.clear();
 	}
 }

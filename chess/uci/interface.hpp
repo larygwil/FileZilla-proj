@@ -22,7 +22,8 @@ namespace uci {
 namespace calculate_mode {
 	enum type {
 		forced,
-		infinite
+		infinite,
+		ponderhit
 	};
 }
 typedef calculate_mode::type calculate_mode_type;
@@ -35,7 +36,7 @@ public:
 	virtual void new_game() = 0;
 	virtual void set_position( std::string const& fen ) = 0;
 	virtual void make_moves( std::string const& list_of_moves ) = 0;
-	virtual void calculate( calculate_mode_type, position_time const&, int depth ) = 0;
+	virtual void calculate( calculate_mode_type, position_time const&, int depth, bool ponder ) = 0;
 	virtual void stop() = 0;
 	virtual void quit() = 0;
 
@@ -64,7 +65,7 @@ class gui_interface {
 public:
 	virtual void set_engine_interface( engine_interface& ) = 0;
 
-	virtual void tell_best_move( std::string const& move ) = 0;
+	virtual void tell_best_move( std::string const& move, std::string const& ponder ) = 0;
 	virtual void tell_info( info const& ) = 0;
 	
 	virtual ~gui_interface() {}

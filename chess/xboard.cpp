@@ -544,6 +544,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 			}
 
 			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
+			ASSERT( !best_move.empty() );
 
 			std::cout << "move " << move_to_long_algebraic( best_move.m ) << std::endl;
 
@@ -564,15 +565,15 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 		state.book_.mark_for_processing( state.move_history_ );
 	}
 
-	move pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p );
-	if( !pv_move.empty() ) {
-		std::cout << "move " << move_to_long_algebraic( pv_move ) << std::endl;
+	std::pair<move,move> pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p );
+	if( !pv_move.first.empty() ) {
+		std::cout << "move " << move_to_long_algebraic( pv_move.first ) << std::endl;
 
 		state.history.push_back( state.p );
 
-		apply_move( state.p, pv_move );
+		apply_move( state.p, pv_move.first );
 		++state.clock;
-		state.move_history_.push_back( pv_move );
+		state.move_history_.push_back( pv_move.first );
 
 		timestamp stop;
 		state.time_remaining -= stop - state.last_go_time;

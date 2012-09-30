@@ -34,21 +34,16 @@ public:
 		, last_mate_()
 		, half_moves_played_()
 		, started_from_root_()
-		, running_(true)
 		, book_( conf.book_dir )
 		, depth_(-1)
+		, ponder_()
 	{
-		spawn();
 	}
 
-	 ~impl() {
-		 running_ = false;
-		 {
-			scoped_lock lock(mutex_);
-			calc_cond_.signal(lock);
-		 }
-		 join();
-	 }
+	~impl() {
+		do_abort = true;
+		join();
+	}
 
 	virtual void onRun();
 	void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
@@ -72,10 +67,7 @@ public:
 	int half_moves_played_;
 	bool started_from_root_;
 
-	bool running_;
-
 	mutex mutex_;
-	condition calc_cond_;
 
 	book book_;
 
@@ -84,6 +76,10 @@ public:
 	std::vector<move> move_history_;
 
 	int depth_;
+
+	bool ponder_;
+
+	calc_result result_;
 };
 
 octochess_uci::octochess_uci( gui_interface_ptr const& p ) 
@@ -96,6 +92,8 @@ octochess_uci::octochess_uci( gui_interface_ptr const& p )
 }
 
 void octochess_uci::new_game() {
+	do_abort = true;
+	impl_->join();
 	impl_->pos_.reset();
 	impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) ); impl_->times_ = time_calculation();
 	impl_->half_moves_played_ = 0;
@@ -105,6 +103,8 @@ void octochess_uci::new_game() {
 }
 
 void octochess_uci::set_position( std::string const& fen ) {
+	do_abort = true;
+	impl_->join();
 	impl_->pos_.reset();
 	impl_->move_history_.clear();
 	bool success = false;
@@ -148,31 +148,58 @@ void octochess_uci::make_moves( std::vector<std::string> const& moves )
 	}
 }
 
-void octochess_uci::calculate( calculate_mode_type mode, position_time const& t, int depth )
+void octochess_uci::calculate( calculate_mode_type mode, position_time const& t, int depth, bool ponder )
 {
 	transposition_table.init_if_needed( conf.memory );
 
+	do_abort = true;
+	impl_->join();
+
 	scoped_lock lock(impl_->mutex_);
+
+	impl_->result_.best_move.clear();
+
 	do_abort = false;
 
-	impl_->depth_ = depth;
-
-	if( mode == calculate_mode::infinite ) {
-		impl_->times_.set_infinite_time();
-		impl_->calc_cond_.signal(lock);
+	if( mode == calculate_mode::ponderhit ) {
+		impl_->ponder_ = false;
+		impl_->spawn();
 	}
 	else {
-		impl_->times_.update( t, impl_->pos_.white(), impl_->half_moves_played_ );
-		if( !impl_->do_book_move() ) {
-			if( !impl_->pick_pv_move() ) {
-				impl_->calc_cond_.signal(lock);
+		impl_->depth_ = depth;
+		impl_->ponder_ = ponder;
+
+		if( mode == calculate_mode::infinite ) {
+			impl_->times_.set_infinite_time();
+			impl_->spawn();
+		}
+		else {
+			impl_->times_.update( t, impl_->pos_.white(), impl_->half_moves_played_ );
+			if( ponder ) {
+				impl_->spawn();
+			}
+			else {
+				if( !impl_->do_book_move() ) {
+					if( !impl_->pick_pv_move() ) {
+						impl_->spawn();
+					}
+				}
 			}
 		}
 	}
 }
 
-void octochess_uci::stop() {
+void octochess_uci::stop()
+{
 	do_abort = true;
+	impl_->join();
+
+	scoped_lock lock(impl_->mutex_);
+
+	if( !impl_->result_.best_move.empty() ) {
+		impl_->gui_interface_->tell_best_move( move_to_long_algebraic( impl_->result_.best_move ), move_to_long_algebraic( impl_->result_.ponder_move ) );
+		impl_->result_.best_move.clear();
+	}
 }
 
 void octochess_uci::quit() {
@@ -181,30 +208,42 @@ void octochess_uci::quit() {
 
 void octochess_uci::impl::onRun() {
 	//the function initiating all the calculating
-	while( running_ ) {
+	if( ponder_ ) {
+		std::cerr << "Pondering..." << std::endl;
+		calc_result result = calc_manager_.calc( pos_, -1, duration::infinity(), duration::infinity(), half_moves_played_, seen_positions_, last_mate_, *this );
+
 		scoped_lock lock(mutex_);
-		calc_cond_.wait(lock);
-		if( running_ ) {
-			lock.unlock();
 
-			timestamp start_time;
+		if( !result.best_move.empty() ) {
+			result_ = result;
+		}
+	}
+	else {
+		timestamp start_time;
 
-			calc_result result = calc_manager_.calc( pos_, depth_, times_.time_for_this_move(), times_.total_remaining() -  times_.overhead(), half_moves_played_, seen_positions_, last_mate_, *this );
-			if( !result.best_move.empty() ) {
-				gui_interface_->tell_best_move( move_to_long_algebraic( result.best_move ) );
+		calc_result result = calc_manager_.calc( pos_, depth_, times_.time_for_this_move(), times_.total_remaining() -  times_.overhead(), half_moves_played_, seen_positions_, last_mate_, *this );
 
-				lock.lock();
+		scoped_lock lock(mutex_);
 
-				if( result.forecast > result::win_threshold ) {
-					last_mate_ = result.forecast;
-				}
+		if( !result.best_move.empty() ) {
 
-				timestamp stop;
-				duration elapsed = stop - start_time;
-
-				std::cerr << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
-				times_.after_move_update( elapsed, result.used_extra_time );
+			if( !times_.time_for_this_move().is_infinity() || do_abort ) {
+				gui_interface_->tell_best_move( move_to_long_algebraic( result.best_move ), move_to_long_algebraic( result.ponder_move ) );
+				result_.best_move.clear();
 			}
+			else {
+				result_ = result;
+			}
+
+			if( result.forecast > result::win_threshold ) {
+				last_mate_ = result.forecast;
+			}
+
+			timestamp stop;
+			duration elapsed = stop - start_time;
+
+			std::cerr << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
+			times_.after_move_update( elapsed, result.used_extra_time );
 		}
 	}
 }
@@ -275,7 +314,7 @@ bool octochess_uci::impl::do_book_move() {
 			}
 
 			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
-			gui_interface_->tell_best_move( move_to_long_algebraic( best_move.m ) );
+			gui_interface_->tell_best_move( move_to_long_algebraic( best_move.m ), "" );
 		}
 		else if( half_moves_played_ <= 20 ) {
 			book_.mark_for_processing( move_history_ );
@@ -289,10 +328,10 @@ bool octochess_uci::impl::do_book_move() {
 bool octochess_uci::impl::pick_pv_move()
 {
 	bool ret = false;
-	move m = pv_move_picker_.can_use_move_from_pv( pos_ );
-	if( !m.empty() ) {
+	std::pair<move,move> m = pv_move_picker_.can_use_move_from_pv( pos_ );
+	if( !m.first.empty() ) {
 		ret = true;
-		gui_interface_->tell_best_move( move_to_long_algebraic( m ) );
+		gui_interface_->tell_best_move( move_to_long_algebraic( m.first ), move_to_long_algebraic( m.second ) );
 	}
 
 	return ret;

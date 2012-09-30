@@ -56,6 +56,7 @@ void minimalistic_uci_protocol::send_options()
 	std::cout << "option name Hash type spin default " << callbacks_->get_hash_size() << " min " << callbacks_->get_min_hash_size() << " max 1048576" << std::endl;
 	std::cout << "option name Threads type spin default " << callbacks_->get_threads() << " min 1 max " << callbacks_->get_max_threads() << std::endl;
 	std::cout << "option name OwnBook type check default " << (callbacks_->use_book() ? "true" : "false") << std::endl;
+	std::cout << "option name Ponder type check default true" << std::endl;
 }
 
 
@@ -133,8 +134,8 @@ bool minimalistic_uci_protocol::parse_command( std::string const& line ) {
 	else if( cmd == "go" ) {
 		handle_go( args );
 	}
-	else if( cmd == "go" ) {
-		handle_go( args );
+	else if( cmd == "ponderhit" ) {
+		handle_ponderhit();
 	}
 	else if( cmd == "setoption" ) {
 		handle_option( args );
@@ -180,6 +181,7 @@ void minimalistic_uci_protocol::handle_go( std::string const& params ) {
 	position_time t;
 
 	int depth = -1;
+	bool ponder = false;
 
 	std::istringstream in( params );
 	std::string cmd;
@@ -198,11 +200,20 @@ void minimalistic_uci_protocol::handle_go( std::string const& params ) {
 			t.set_moves_to_go( extract<uint>(in) );
 		} else if( cmd == "depth" ) {
 			depth = extract<int>(in);
+		} else if( cmd == "ponder" ) {
+			ponder = true;
 		}
 	}
 
-	callbacks_->calculate( mode, t, depth );
+	callbacks_->calculate( mode, t, depth, ponder );
 }
+
+
+void minimalistic_uci_protocol::handle_ponderhit()
+{
+	callbacks_->calculate( calculate_mode::ponderhit, position_time(), -1, false );
+}
+
 
 void minimalistic_uci_protocol::set_engine_interface( engine_interface& p ) {
 	callbacks_ = &p;
@@ -212,8 +223,12 @@ void minimalistic_uci_protocol::identify( std::string const& name, std::string c
 	std::cout << "id name " << name << '\n' << "id author " << author << std::endl;
 }
 
-void minimalistic_uci_protocol::tell_best_move( std::string const& move ) {
-	std::cout << "bestmove " << move << std::endl;
+void minimalistic_uci_protocol::tell_best_move( std::string const& move, std::string const& ponder ) {
+	std::cout << "bestmove " << move;
+	if( !ponder.empty() ) {
+		std::cout << " ponder " << ponder;
+	}
+	std::cout << std::endl;
 }
 
 void minimalistic_uci_protocol::tell_info( info const& i ) {

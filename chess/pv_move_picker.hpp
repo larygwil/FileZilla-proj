@@ -12,9 +12,8 @@ class pv_move_picker
 public:
 	pv_move_picker();
 
-	move can_use_move_from_pv( position const& p );
-
-	move get_hint( position const& p );
+	// First element is the move to execute, the second element a hint to ponder on.
+	std::pair<move, move> can_use_move_from_pv( position const& p );
 
 	void update_pv( position p, pv_entry const* pv );
 
@@ -22,6 +21,7 @@ private:
 	uint64_t hash_;
 	move previous_;
 	move next_;
+	move ponder_;
 };
 
 #endif
