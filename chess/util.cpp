@@ -518,27 +518,29 @@ std::string move_to_long_algebraic( move const& m )
 {
 	std::string ret;
 
-	ret += 'a' + m.source % 8;
-	ret += '1' + m.source / 8;
-	ret += 'a' + m.target % 8;
-	ret += '1' + m.target / 8;
+	if( !m.empty() ) {
+		ret += 'a' + m.source % 8;
+		ret += '1' + m.source / 8;
+		ret += 'a' + m.target % 8;
+		ret += '1' + m.target / 8;
 
-	unsigned char promotion = m.flags & move_flags::promotion_mask;
-	switch( promotion ) {
-	case move_flags::promotion_queen:
-		ret += 'q';
-		break;
-	case move_flags::promotion_rook:
-		ret += 'r';
-		break;
-	case move_flags::promotion_bishop:
-		ret += 'b';
-		break;
-	case move_flags::promotion_knight:
-		ret += 'n';
-		break;
-	default:
-		break;
+		unsigned char promotion = m.flags & move_flags::promotion_mask;
+		switch( promotion ) {
+		case move_flags::promotion_queen:
+			ret += 'q';
+			break;
+		case move_flags::promotion_rook:
+			ret += 'r';
+			break;
+		case move_flags::promotion_bishop:
+			ret += 'b';
+			break;
+		case move_flags::promotion_knight:
+			ret += 'n';
+			break;
+		default:
+			break;
+		}
 	}
 
 	return ret;
