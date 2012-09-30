@@ -39,6 +39,7 @@ public:
 
 	short forecast;
 	move best_move;
+	move ponder_move;
 
 	// Extra time spent, e.g. due to changed PV
 	duration used_extra_time;

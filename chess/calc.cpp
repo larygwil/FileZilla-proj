@@ -995,6 +995,12 @@ break2:
 									}
 								}
 								result.best_move = mi.m;
+								if( pv && pv->next() ) {
+									result.ponder_move = pv->next()->get_best_move();
+								}
+								else {
+									result.ponder_move.clear();
+								}
 							}
 
 							highest_depth = depth;
