@@ -51,15 +51,19 @@
 #define PER_BUCKET_MINFREE 200 // In allocked blocks
 #define OVERALL_MINFREE 500000 // In pages. 500000 is 2GB at 4k pagesize.
 
+#include "pagesize.h"
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <string.h>
 
+static int pagesize = 0;
+
 static volatile int locked = 0;
 
-volatile int malloc_count = 0;
-volatile int free_count = 0;
+//volatile int malloc_count = 0;
+int free_count = 0;
 
 volatile unsigned int canary;
 
@@ -97,7 +101,7 @@ struct _free
 };
 
 // Free pages, sorted by size
-volatile struct _free free_pages[BUCKETS + 1] = {0};
+struct _free free_pages[BUCKETS + 1] = {0};
 
 struct _info* reclaim_free( int pages )
 {
@@ -117,7 +121,7 @@ struct _info* reclaim_free( int pages )
 	for( ; i < BUCKETS; ++i ) {
 		if( free_pages[i].count > PER_BUCKET_MINFREE ) {
 			p = free_pages[i].first;
-			mprotect( p, getpagesize(), PROT_READ | PROT_WRITE );
+			mprotect( p, PAGESIZE, PROT_READ | PROT_WRITE );
 
 			free_pages[i].first = p->next_free;
 			if( !p->next_free ) {
@@ -137,27 +141,27 @@ struct _info* reclaim_free( int pages )
 
 void* malloc( size_t size )
 {
-	int pages = ( size + getpagesize() - 1 ) / getpagesize() + 2;
+	int pages = ( size + PAGESIZE - 1 ) / PAGESIZE + 2;
 
 	void* p = reclaim_free( pages );
 	if( !p ) {
 		// Info page + user data rounded up to next page boundary, guard page
-		p = mmap( 0, getpagesize() * pages, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0 );
+		p = mmap( 0, PAGESIZE * pages, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0 );
 		if( !p) {
 			abort();
 		}
 
 		// Guard page behind
-		mprotect( p + (pages - 1) * getpagesize(), getpagesize(), PROT_NONE );
+		mprotect( p + (pages - 1) * PAGESIZE, PAGESIZE, PROT_NONE );
 
 		struct _info *i = (struct _info*)p;
 		i->orig_pages = pages;
 
 		i->canary = __sync_fetch_and_add( &canary, 1 );
-		*(int*)(p + getpagesize() - sizeof(int) ) = i->canary;
+		*(int*)(p + PAGESIZE - sizeof(int) ) = i->canary;
 	}
 	else {
-		mprotect( p + getpagesize(), (pages - 2) * getpagesize(), PROT_READ | PROT_WRITE );
+		mprotect( p + PAGESIZE, (pages - 2) * PAGESIZE, PROT_READ | PROT_WRITE );
 	}
 
 	struct _info *i = (struct _info*)p;
@@ -166,16 +170,16 @@ void* malloc( size_t size )
 	i->is_free = 0;
 	i->next_free = 0;
 
-	if( (i->pages - 2) * getpagesize() - i->user_size >= 4 ) {
-		*(int*)(p + getpagesize() + i->user_size ) = i->canary;
+	if( (i->pages - 2) * PAGESIZE - i->user_size >= sizeof(int) ) {
+		*(int*)(p + PAGESIZE + i->user_size ) = i->canary;
 	}
 
 	// Info page before, unwritable
-	mprotect( p, getpagesize(), PROT_NONE );
+	mprotect( p, PAGESIZE, PROT_NONE );
 
-	int count = __sync_add_and_fetch( &malloc_count, 1 );
+//	int count = __sync_add_and_fetch( &malloc_count, 1 );
 
-	return p + getpagesize();
+	return p + PAGESIZE;
 }
 
 void* calloc( size_t nmemb, size_t size )
@@ -191,19 +195,19 @@ static void check_sanity( struct _info* i ) {
 	if( i->is_free ) {
 		abort();
 	}
-	if( i->user_size > (i->pages - 2) * getpagesize() ) {
+	if( i->user_size > (i->pages - 2) * PAGESIZE ) {
 		abort();
 	}
 	if( i->pages > i->orig_pages ) {
 		abort();
 	}
 
-	if( *(int*)((void*)i + getpagesize() - sizeof(int) ) != i->canary ) {
+	if( *(int*)((void*)i + PAGESIZE - sizeof(int) ) != i->canary ) {
 		abort();
 	}
 
-	if( (i->pages - 2) * getpagesize() - i->user_size >= 4 ) {
-		if( *(int*)((void*)i + getpagesize() + i->user_size ) != i->canary ) {
+	if( (i->pages - 2) * PAGESIZE - i->user_size >= sizeof(int) ) {
+		if( *(int*)((void*)i + PAGESIZE + i->user_size ) != i->canary ) {
 			abort();
 		}
 	}
@@ -219,24 +223,24 @@ void* realloc( void* old, size_t size )
 	}
 
 	// Round down to nearest page boundary
-	void* aligned_old = old - (intptr_t)old % getpagesize();
+	void* aligned_old = old - (intptr_t)old % PAGESIZE;
 
-	mprotect( aligned_old - getpagesize(), getpagesize(), PROT_READ );
+	mprotect( aligned_old - PAGESIZE, PAGESIZE, PROT_READ );
 
-	struct _info *oldinfo = (struct _info*)(aligned_old - getpagesize() );
+	struct _info *oldinfo = (struct _info*)(aligned_old - PAGESIZE );
 
 	check_sanity( oldinfo );
 
 	void* p;
 	if( size <= oldinfo->user_size ) {
 		p = old;
-		mprotect( aligned_old - getpagesize(), getpagesize(), PROT_WRITE | PROT_READ );
+		mprotect( aligned_old - PAGESIZE, PAGESIZE, PROT_WRITE | PROT_READ );
 		oldinfo->user_size = size;
-		if( (oldinfo->pages - 2) * getpagesize() - oldinfo->user_size >= 4 ) {
+		if( (oldinfo->pages - 2) * PAGESIZE - oldinfo->user_size >= 4 ) {
 			*(int*)(aligned_old + oldinfo->user_size ) = oldinfo->canary;
 		}
 
-		mprotect( aligned_old - getpagesize(), getpagesize(), PROT_NONE );
+		mprotect( aligned_old - PAGESIZE, PAGESIZE, PROT_NONE );
 	}
 	else {
 		p = malloc( size );
@@ -256,15 +260,22 @@ void* realloc( void* old, size_t size )
 	return p;
 }
 
-static void add_to_free( volatile struct _free *f, struct _info *i ) {
+inline static int prepare_add_to_free( struct _info *i )
+{
+	int pages = i->orig_pages;
 	i->next_free = 0;
 	i->is_free = 1;
-	free_count += i->orig_pages;
-	mprotect( i, getpagesize() * i->pages - 1, PROT_NONE );
+	mprotect( i, PAGESIZE * i->pages - 1, PROT_NONE );
+
+	return pages;
+}
+
+inline static void add_to_free( struct _free *f, struct _info *i, int pages ) {
+	free_count += pages;
 	if( f->last ) {
-		mprotect( f->last, getpagesize(), PROT_WRITE );
+		mprotect( f->last, PAGESIZE, PROT_WRITE );
 		f->last->next_free = i;
-		mprotect( f->last, getpagesize(), PROT_NONE );
+		mprotect( f->last, PAGESIZE, PROT_NONE );
 	}
 	f->last = i;
 	if( !f->first ) {
@@ -279,83 +290,89 @@ void free( void* p )
 		return;
 	}
 
-	__sync_sub_and_fetch( &malloc_count, 1 );
+//	__sync_sub_and_fetch( &malloc_count, 1 );
 
 	char* q = p;
 
 	// Round down to nearest page boundary
-	q -= (intptr_t)q % getpagesize();
+	q -= (intptr_t)q % PAGESIZE;
 
 	// Get info page
-	q -= getpagesize();
+	q -= PAGESIZE;
 
 	struct _info *i = (struct _info*)q;
 
-	mprotect( q, getpagesize(), PROT_READ|PROT_WRITE );
+	mprotect( q, PAGESIZE, PROT_READ|PROT_WRITE );
 
 	check_sanity( i );
 
-	lock();
-
 	int bucket = i->orig_pages - 2;
-	if( bucket < 0 || bucket > BUCKETS ) {
-		add_to_free( &free_pages[BUCKETS], i );
+
+	int pages = prepare_add_to_free( i );
+
+	if( bucket < 0 || bucket >= BUCKETS ) {
+		lock();
+		add_to_free( &free_pages[BUCKETS], i, pages );
 		if( free_pages[BUCKETS].count > PER_BUCKET_MINFREE ) {
 			i = free_pages[BUCKETS].first;
-			mprotect( i, getpagesize(), PROT_READ);
+			mprotect( i, PAGESIZE, PROT_READ);
 			free_pages[BUCKETS].first = i->next_free;
 			free_count -= i->orig_pages;
 			if( !i->next_free) {
 				free_pages[BUCKETS].last = 0;
 			}
-			munmap( i, i->orig_pages * getpagesize() );
 			--free_pages[BUCKETS].count;
+			unlock();
+			munmap( i, i->orig_pages * PAGESIZE );
+		}
+		else {
+			unlock();
 		}
 	}
 	else {
-		add_to_free( &free_pages[bucket], i );
+		lock();
+		add_to_free( &free_pages[bucket], i, pages );
+		unlock();
 	}
-
-	unlock();
 }
 
 int posix_memalign(void **memptr, size_t alignment, size_t size)
 {
-	if( alignment <= getpagesize() ) {
+	if( alignment <= PAGESIZE ) {
 
-		if( getpagesize() % alignment ) {
+		if( PAGESIZE % alignment ) {
 			abort();
 		}
 
 		*memptr = malloc( size );
 	}
 	else {
-		if( alignment % getpagesize() ) {
+		if( alignment % PAGESIZE ) {
 			abort();
 		}
 
-		int pages = ( size + getpagesize() - 1 ) / getpagesize() + 2;
+		int pages = ( size + PAGESIZE - 1 ) / PAGESIZE + 2;
 
-		int extra_pages = (getpagesize() % alignment) / getpagesize();
+		int extra_pages = (PAGESIZE % alignment) / PAGESIZE;
 
 		// Info page + user data rounded up to next page boundary, guard page
-		void* p = mmap( 0, getpagesize() * (pages + extra_pages), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0 );
+		void* p = mmap( 0, PAGESIZE * (pages + extra_pages), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0 );
 		if( !p) {
 			abort();
 		}
 
-		int offset_pages = ( (intptr_t)(p + getpagesize() ) % alignment ) / getpagesize();
+		int offset_pages = ( (intptr_t)(p + PAGESIZE ) % alignment ) / PAGESIZE;
 
 		if( offset_pages ) {
-			munmap( p, offset_pages * getpagesize() );
+			munmap( p, offset_pages * PAGESIZE );
 		}
 		if( extra_pages - offset_pages ) {
-			munmap( p + (pages + offset_pages) * getpagesize(), (extra_pages - offset_pages) * getpagesize() );
+			munmap( p + (pages + offset_pages) * PAGESIZE, (extra_pages - offset_pages) * PAGESIZE );
 		}
-		p += offset_pages * getpagesize();
+		p += offset_pages * PAGESIZE;
 
 		// Guard page behind
-		mprotect( p + (pages - 1) * getpagesize(), getpagesize(), PROT_NONE );
+		mprotect( p + (pages - 1) * PAGESIZE, PAGESIZE, PROT_NONE );
 
 		struct _info *i = (struct _info*)p;
 		i->pages = pages;
@@ -365,19 +382,19 @@ int posix_memalign(void **memptr, size_t alignment, size_t size)
 		i->next_free = 0;
 
 		i->canary = __sync_fetch_and_add( &canary, 1 );
-		*(int*)(p + getpagesize() - sizeof(int) ) = i->canary;
+		*(int*)(p + PAGESIZE - sizeof(int) ) = i->canary;
 
-		if( (i->pages - 2) * getpagesize() - i->user_size >= 4 ) {
-			*(int*)(p + getpagesize() + i->user_size ) = i->canary;
+		if( (i->pages - 2) * PAGESIZE - i->user_size >= 4 ) {
+			*(int*)(p + PAGESIZE + i->user_size ) = i->canary;
 		}
 
 		// Info page before, unwritable
-		mprotect( p, getpagesize(), PROT_NONE );
+		mprotect( p, PAGESIZE, PROT_NONE );
 
-		if( ((intptr_t)p + getpagesize() ) % alignment ) {
+		if( ((intptr_t)p + PAGESIZE ) % alignment ) {
 			abort();
 		}
-		*memptr = p + getpagesize();
+		*memptr = p + PAGESIZE;
 	}
 
 	return 0;
