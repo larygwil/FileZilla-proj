@@ -30,6 +30,24 @@ std::string move_to_book_string( move const& m )
 	std::string ret;
 	ret += table[m.source];
 	ret += table[m.target];
+
+	switch( m.flags & move_flags::promotion_mask ) {
+	case move_flags::promotion_queen:
+		ret += 'q';
+		break;
+	case move_flags::promotion_rook:
+		ret += 'r';
+		break;
+	case move_flags::promotion_bishop:
+		ret += 'b';
+		break;
+	case move_flags::promotion_knight:
+		ret += 'n';
+		break;
+	default:
+		ret += ' ';
+		break;
+	}
 	return ret;
 }
 
@@ -193,12 +211,34 @@ unsigned char conv_to_index( unsigned char s )
 bool conv_to_move_slow( position const& p, move& m, char const* data, bool print_errors ) {
 	unsigned char si = conv_to_index( data[0] );
 	unsigned char ti = conv_to_index( data[1] );
-
-	char ms[5] = {0};
+	
+	char ms[6] = {0};
 	ms[0] = (si % 8) + 'a';
 	ms[1] = (si / 8) + '1';
 	ms[2] = (ti % 8) + 'a';
 	ms[3] = (ti / 8) + '1';
+
+	switch( data[2] ) {
+	case 'q':
+		ms[4] = 'q';
+		break;
+	case 'r':
+		ms[4] = 'r';
+		break;
+	case 'b':
+		ms[4] = 'b';
+		break;
+	case 'n':
+		ms[4] = 'n';
+		break;
+	case ' ':
+		break;
+	default:
+		if( print_errors ) {
+			std::cerr << "Invalid promotion character in move history" << std::endl;
+		}
+		return false;
+	}
 
 	std::string error;
 	if( !parse_move( p, ms, m, error ) ) {
@@ -210,21 +250,6 @@ bool conv_to_move_slow( position const& p, move& m, char const* data, bool print
 
 	return true;
 }
-
-bool conv_to_move( char const* data, move& m, move_info const* begin, move_info const* end ) {
-	unsigned char si = conv_to_index( data[0] );
-	unsigned char ti = conv_to_index( data[1] );
-
-	for( ; begin != end; ++begin ) {
-		if( begin->m.source == si && begin->m.target == ti ) {
-			m = begin->m;
-			return true;
-		}
-	}
-
-	return false;
-}
-
 
 class data_holder {
 public:
@@ -511,15 +536,15 @@ extern "C" int get_data_cb( void* p, sqlite3_stmt* statement )
 
 bool get_position( std::string history, position& p )
 {
-	if( history.size() % 2 ) {
+	if( history.size() % 3 ) {
 		return false;
 	}
 
 	p.reset();
 
 	while( !history.empty() ) {
-		std::string ms = history.substr( 0, 2 );
-		history = history.substr( 2 );
+		std::string ms = history.substr( 0, 3 );
+		history = history.substr( 3 );
 
 		move m;
 		if( !conv_to_move_slow( p, m, ms.c_str(), true ) ) {
@@ -530,6 +555,7 @@ bool get_position( std::string history, position& p )
 
 	return true;
 }
+
 
 int do_fold_position( void* q, sqlite3_stmt* statement, bool verify )
 {
@@ -546,7 +572,7 @@ int do_fold_position( void* q, sqlite3_stmt* statement, bool verify )
 		return 1;
 	}
 	std::string const history = reinterpret_cast<char const*>(pos);
-	if( history.size() % 2 ) {
+	if( history.size() % 3 ) {
 		std::cerr << "Move history malformed" << std::endl;
 		return 1;
 	}
@@ -636,8 +662,8 @@ int do_fold_position( void* q, sqlite3_stmt* statement, bool verify )
 
 	// We now got the best forecast of the current position and its depth
 	// Get parent position:
-	std::string parent = history.substr( 0, history.size() - 2 );
-	std::string ms = history.substr( history.size() - 2 );
+	std::string parent = history.substr( 0, history.size() - 3 );
+	std::string ms = history.substr( history.size() - 3 );
 
 	data_holder dh;
 	if( !impl_->query_row( "SELECT data FROM position WHERE pos = '" + parent + "'", &get_data_cb, reinterpret_cast<void*>(&dh) ) ) {
@@ -756,7 +782,7 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 		if( !impl_->query_row( ss.str(), &fold_position, impl_ ) ) {
 			return false;
 		}
-		hs = hs.substr( 0, hs.size() - 2 );
+		hs = hs.substr( 0, hs.size() - 3 );
 	}
 	return impl_->query( "COMMIT TRANSACTION;", 0, 0 );
 }
@@ -823,7 +849,7 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 	std::list<work>* wl = reinterpret_cast<std::list<work>*>(p);
 
 	std::string pos = *data;
-	if( pos.length() % 2 ) {
+	if( pos.length() % 3 ) {
 		return 1;
 	}
 
@@ -831,8 +857,8 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 	w.seen.reset_root( get_zobrist_hash(w.p) );
 
 	while( !pos.empty() ) {
-		std::string ms = pos.substr( 0, 2 );
-		pos = pos.substr( 2 );
+		std::string ms = pos.substr( 0, 3 );
+		pos = pos.substr( 3 );
 
 		move m;
 		if( !conv_to_move_slow( w.p, m, ms.c_str(), true ) ) {
@@ -988,7 +1014,7 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 			if( !impl_->query_row( ss.str(), &fold_position, impl_ ) ) {
 				return false;
 			}
-			hs = hs.substr( 0, hs.size() - 2 );
+			hs = hs.substr( 0, hs.size() - 3 );
 		}
 	}
 
@@ -1057,7 +1083,6 @@ extern "C" int stats_queued_cb( void* p, int, char** data, char** /*names*/ ) {
 	return 0;
 }
 }
-
 
 book_stats book::stats()
 {
