@@ -1058,7 +1058,7 @@ namespace {
 extern "C" int stats_processed_cb( void* p, int, char** data, char** /*names*/ ) {
 	book_stats* stats = reinterpret_cast<book_stats*>(p);
 
-	int64_t depth = atoll( data[0] ) / 2;
+	int64_t depth = atoll( data[0] ) / 3;
 	int64_t processed = atoll( data[1] );
 
 	if( depth > 0 && processed > 0 ) {
@@ -1072,7 +1072,7 @@ extern "C" int stats_processed_cb( void* p, int, char** data, char** /*names*/ )
 extern "C" int stats_queued_cb( void* p, int, char** data, char** /*names*/ ) {
 	book_stats* stats = reinterpret_cast<book_stats*>(p);
 
-	int64_t depth = atoll( data[0] ) / 2;
+	int64_t depth = atoll( data[0] ) / 3;
 	int64_t queued = atoll( data[1] );
 
 	if( depth > 0 && queued > 0 ) {
