@@ -776,7 +776,7 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 		}
 	}
 
-	while( hs.size() >= 2 ) {
+	while( hs.size() >= 3 ) {
 		std::stringstream ss;
 		ss << "SELECT pos, data FROM position WHERE pos='" << hs << "' AND data IS NOT NULL;";
 		if( !impl_->query_row( ss.str(), &fold_position, impl_ ) ) {
@@ -1008,7 +1008,7 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 
 		hs += move_to_book_string( entry.m );
 
-		while( hs.size() >= 2 ) {
+		while( hs.size() >= 3 ) {
 			std::stringstream ss;
 			ss << "SELECT pos, data FROM position WHERE pos='" << hs << "' AND data IS NOT NULL;";
 			if( !impl_->query_row( ss.str(), &fold_position, impl_ ) ) {
@@ -1032,7 +1032,7 @@ void book::fold( bool verify )
 	}
 
 	std::cerr << "Folding";
-	for( uint64_t i = max_length; i > 0; i -= 2 ) {
+	for( uint64_t i = max_length; i > 0; i -= 3 ) {
 		std::cerr << ".";
 		std::stringstream ss;
 		ss << "SELECT pos, data FROM position WHERE length(pos) = " << i << " AND data IS NOT NULL;";
