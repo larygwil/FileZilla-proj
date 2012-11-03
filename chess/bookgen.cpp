@@ -767,7 +767,7 @@ struct history_entry {
 	move m;
 };
 
-void print_pos( std::vector<history_entry> const& history, position const& p, std::vector<book_entry> const& moves )
+void print_pos( std::vector<history_entry> const& history, position const& p, std::vector<book_entry> const& moves, color::type view )
 {
 	std::stringstream ss;
 	for( unsigned int i = 0; i < history.size(); ++i ) {
@@ -785,8 +785,7 @@ void print_pos( std::vector<history_entry> const& history, position const& p, st
 	}
 
 	std::string mstr = print_moves( p, moves );
-	std::string board = board_to_string( p );
-	//std::string eval = explain_eval( p, c );
+	std::string board = board_to_string( p, view );
 
 	std::cout << std::endl;
 	std::cout << side_by_side( mstr, board );
@@ -899,6 +898,7 @@ void run( book& b )
 {
 	position p;
 
+	color::type view = color::white;
 	std::vector<move> move_history;
 	std::vector<history_entry> history;
 
@@ -906,7 +906,7 @@ void run( book& b )
 
 	{
 		std::vector<book_entry> entries = b.get_entries( p, move_history );
-		print_pos( history, p, entries );
+		print_pos( history, p, entries, view );
 	}
 
 	unsigned int max_depth = std::min(4u, MAX_BOOK_DEPTH);
@@ -925,6 +925,12 @@ void run( book& b )
 		std::string cmd = split( line, args );
 		if( cmd.empty() ) {
 			continue;
+		}
+		else if( cmd == "quit" ) {
+			 break;
+		}
+		else if( cmd == "exit") {
+			break;
 		}
 		else if( cmd == "go" ) {
 			go( b, p, seen, move_history, max_depth, max_width );
@@ -961,15 +967,37 @@ void run( book& b )
 				std::cerr << "Already at top" << std::endl;
 			}
 			else {
-				history_entry h = history.back();
-				move_history.pop_back();
-				seen.pop_root();
-				history.pop_back();
-				p = h.p;
+				int count = 1;
+				if( !args.empty() ) {
+					to_int( args, count, 1, static_cast<int>(history.size()) );
+				}
+				for( int i = 0; i < count; ++i ) {
+					history_entry h = history.back();
+					move_history.pop_back();
+					seen.pop_root();
+					history.pop_back();
+					p = h.p;
+				}
 
 				std::vector<book_entry> moves = b.get_entries( p, move_history );
-				print_pos( history, p,  moves );
+				print_pos( history, p,  moves, view );
 			}
+		}
+		else if( cmd == "new" || cmd == "reset" ) {
+			view = color::white;
+			history.clear();
+			move_history.clear();
+			p.reset();
+			seen.reset_root(get_zobrist_hash(p));
+
+			std::vector<book_entry> moves = b.get_entries( p, move_history );
+			print_pos( history, p,  moves, view );
+		}
+		else if( cmd == "flip" ) {
+			view = static_cast<color::type>(1 - view);
+
+			std::vector<book_entry> moves = b.get_entries( p, move_history );
+			print_pos( history, p,  moves, view );
 		}
 		else if( cmd == "update" ) {
 			int v = 5;
@@ -996,7 +1024,7 @@ void run( book& b )
 				deepen_move( b, p, seen, move_history, m );
 
 				std::vector<book_entry> entries = b.get_entries( p, move_history );
-				print_pos( history, p, entries );
+				print_pos( history, p, entries, view );
 			}
 			else {
 				std::cerr << error << std::endl;
@@ -1057,7 +1085,7 @@ void run( book& b )
 					exit(1);
 				}
 
-				print_pos( history, p, entries );
+				print_pos( history, p, entries, view );
 			}
 			else {
 				std::cerr << error << std::endl;

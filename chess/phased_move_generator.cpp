@@ -66,7 +66,7 @@ move_info const* qsearch_move_generator::next()
 #if 0
 			if( !is_valid_move( p_, hash_move, check_ ) ) {
 				std::cerr << "Possible type-1 hash collision:" << std::endl;
-				std::cerr << board_to_string( p_ ) << std::endl;
+				std::cerr << board_to_string( p_, color::white ) << std::endl;
 				std::cerr << position_to_fen_noclock( p_ ) << std::endl;
 				std::cerr << move_to_string( hash_move ) << std::endl;
 			}
@@ -187,7 +187,7 @@ move_info const* move_generator::next() {
 #if 0
 			if( !is_valid_move( p_, c_, hash_move, check_ ) ) {
 				std::cerr << "Possible type-1 hash collision:" << std::endl;
-				std::cerr << board_to_string( p_ ) << std::endl;
+				std::cerr << board_to_string( p_, color::white ) << std::endl;
 				std::cerr << position_to_fen_noclock( p_, c_ ) << std::endl;
 				std::cerr << move_to_string( hash_move ) << std::endl;
 			}

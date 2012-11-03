@@ -29,7 +29,7 @@ void apply_move( position& p, move const& m );
 //				 e.g. is_valid_move might return true on Na1b1
 bool is_valid_move( position const& p, move const& m, check_map const& check );
 
-std::string board_to_string( position const& p );
+std::string board_to_string( position const& p, color::type view );
 
 // Numbered square from 0 - 63
 pieces::type get_piece_on_square( position const& p, color::type c, uint64_t square );

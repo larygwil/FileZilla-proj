@@ -798,27 +798,47 @@ static std::string board_square_to_string( position const& p, int pi )
 		}
 	}
 }
+
+
+std::string row_to_string( position const& p, int row )
+{
+	std::string ret;
+
+	ret += '1' + row;
+	ret += "| ";
+	for( int col = 0; col < 8; ++col ) {
+		ret += board_square_to_string( p, row * 8 + col );
+		ret += ' ';
+	}
+	ret += "|\n";
+
+	return ret;
+}
 }
 
 
-std::string board_to_string( position const& p )
+std::string board_to_string( position const& p, color::type view )
 {
 	std::string ret;
 
 	ret += " +-----------------+\n";
-	for( int row = 7; row >= 0; --row ) {
-
-		ret += '1' + row;
-		ret += "| ";
-		for( int col = 0; col < 8; ++col ) {
-			ret += board_square_to_string( p, row * 8 + col );
-			ret += ' ';
+	if( view == color::white ) {
+		for( int row = 7; row >= 0; --row ) {
+			ret += row_to_string( p, row );
 		}
-
-		ret += "|\n";
+	}
+	else {
+		for( int row = 0; row <= 7; ++row ) {
+			ret += row_to_string( p, row );
+		}
 	}
 	ret += " +-----------------+\n";
-	ret += "   A B C D E F G H \n";
+	if( view == color::white ) {
+		ret += "   A B C D E F G H \n";
+	}
+	else {
+		ret += "   H G F E D C B A \n";
+	}
 
 	return ret;
 }
@@ -1074,7 +1094,7 @@ bool is_valid_move( position const& p, move const& m, check_map const& check )
 		}
 	}
 	if( ret || it != end ) {
-		std::cerr << board_to_string( p ) << std::endl;
+		std::cerr << board_to_string( p, color::white ) << std::endl;
 		std::cerr << position_to_fen_noclock( p ) << std::endl;
 		std::cerr << move_to_string( m ) << std::endl;
 		std::cerr << "Ret: " << ret << std::endl;
