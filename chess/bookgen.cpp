@@ -35,6 +35,11 @@ unsigned int const MAX_BOOK_DEPTH = 10;
 
 bool deepen_move( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, move const& m )
 {
+	if( !b.is_writable() ) {
+		std::cerr << "Cannot deepen move in read-only book." << std::endl;
+		return false;
+	}
+
 	int depth = MAX_BOOKSEARCH_DEPTH;
 
 	{
@@ -605,6 +610,11 @@ void process( book& b )
 
 void update( book& b, int entries_per_pos = 5 )
 {
+	if( !b.is_writable() ) {
+		std::cerr << "Book is read-only" << std::endl;
+		return;
+	}
+
 	std::list<book_entry_with_position> wl = b.get_all_entries();
 	if( wl.empty() ) {
 		return;
@@ -860,8 +870,12 @@ bool do_deepen_tree( book& b, position const& p, seen_positions seen, std::vecto
 }
 
 
-void deepen_tree( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, int offset )
+bool deepen_tree( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, int offset )
 {
+	if( !b.is_writable() ) {
+		std::cerr << "Cannot deepen tree if book is read-only." << std::endl;
+		return false;
+	}
 	bool run = true;
 	while( run ) {
 		run = false;
@@ -869,6 +883,8 @@ void deepen_tree( book& b, position const& p, seen_positions const& seen, std::v
 			run = true;
 		}
 	}
+
+	return true;
 }
 
 
@@ -1021,10 +1037,10 @@ void run( book& b )
 			move m;
 			std::string error;
 			if( parse_move( p, args, m, error ) ) {
-				deepen_move( b, p, seen, move_history, m );
-
-				std::vector<book_entry> entries = b.get_entries( p, move_history );
-				print_pos( history, p, entries, view );
+				if( deepen_move( b, p, seen, move_history, m ) ) {
+					std::vector<book_entry> entries = b.get_entries( p, move_history );
+					print_pos( history, p, entries, view );
+				}
 			}
 			else {
 				std::cerr << error << std::endl;
@@ -1070,11 +1086,20 @@ void run( book& b )
 
 				std::vector<book_entry> entries = b.get_entries( p, move_history );
 				if( entries.empty() ) {
-					std::cout << "Position not in book, calculating..." << std::endl;
+					if( b.is_writable() ) {
+						std::cout << "Position not in book, calculating..." << std::endl;
 
-					if( !calculate_position( b, p, seen, move_history ) ) {
-						std::cerr << "Failed to calculate position" << std::endl;
-						exit(1);
+						if( !calculate_position( b, p, seen, move_history ) ) {
+							std::cerr << "Failed to calculate position" << std::endl;
+							exit(1);
+						}
+					}
+					else {
+						std::cerr << "Position not in book and book is read-only." << std::endl;
+						move_history.pop_back();
+						seen.pop_root();
+						p = h.p;
+						history.pop_back();
 					}
 
 					entries = b.get_entries( p, move_history );

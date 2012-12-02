@@ -14,6 +14,7 @@ public:
 	virtual ~database();
 
 	bool is_open() const;
+	bool is_writable() const;
 	bool open( std::string const& file );
 	void close();
 

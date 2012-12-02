@@ -22,6 +22,12 @@ bool database::is_open() const
 }
 
 
+bool database::is_writable() const
+{
+	return is_open() && sqlite3_db_readonly(db_, "main") == 0;
+}
+
+
 bool database::open( std::string const& fn )
 {
 	close();

@@ -75,6 +75,7 @@ public:
 	void close();
 
 	bool is_open() const;
+	bool is_writable() const;
 
 	// Returned entries are sorted by folded forecast, highest first.
 	std::vector<book_entry> get_entries( position const& p, std::vector<move> const& history, bool allow_transpositions = false );
@@ -86,7 +87,7 @@ public:
 	// Entries do not have to be sorted
 	bool add_entries( std::vector<move> const& history, std::vector<book_entry> entries );
 
-	void mark_for_processing( std::vector<move> const& history );
+	bool mark_for_processing( std::vector<move> const& history );
 
 	uint64_t size();
 
@@ -100,13 +101,13 @@ public:
 
 	bool update_entry( std::vector<move> const& history, book_entry const& entry );
 
-	void fold( bool verify = false );
+	bool fold( bool verify = false );
 
 	// If set to a non-empty string, the resulting SQL inserts from calls to add_entries
 	// are logged into the file.
 	bool set_insert_logfile( std::string const& log_file );
 
-	void redo_hashes();
+	bool redo_hashes();
 
 	std::string history_to_string( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end );
 	std::string history_to_string( std::vector<move> const& history );

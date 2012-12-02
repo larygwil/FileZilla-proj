@@ -740,6 +740,11 @@ extern "C" int verify_position( void* q, sqlite3_stmt* statement )
 
 bool book::add_entries( std::vector<move> const& history, std::vector<book_entry> entries )
 {
+	if( !is_writable() ) {
+		std::cerr << "Cannot add entries to read-only book" << std::endl;
+		return false;
+	}
+
 	std::sort( entries.begin(), entries.end(), book_move_sort );
 
 	std::string hs = history_to_string( history );
@@ -815,12 +820,12 @@ uint64_t book::size()
 }
 
 
-void book::mark_for_processing( std::vector<move> const& history )
+bool book::mark_for_processing( std::vector<move> const& history )
 {
 	scoped_lock l(impl_->mtx);
 
-	if( !impl_->is_open() ) {
-		return;
+	if( !impl_->is_open() || !impl_->is_writable() ) {
+		return false;
 	}
 
 	std::stringstream ss;
@@ -840,6 +845,8 @@ void book::mark_for_processing( std::vector<move> const& history )
 	ss << "COMMIT TRANSACTION;";
 
 	impl_->query( ss.str(), 0, 0 );
+
+	return true;
 }
 
 
@@ -886,13 +893,18 @@ std::list<work> book::get_unprocessed_positions()
 	std::string query = "SELECT pos FROM position WHERE data IS NULL ORDER BY LENGTH(pos) ASC;";
 
 	impl_->query( query, &work_cb, reinterpret_cast<void*>(&ret) );
-		
+
 	return ret;
 }
 
 
-void book::redo_hashes()
+bool book::redo_hashes()
 {
+	if( !impl_->is_writable() ) {
+		std::cerr << "Error: Cannot redo hashes on read-only opening book\n" << std::endl;
+		return false;
+	}
+
 	std::list<work> positions;
 
 	{
@@ -914,6 +926,8 @@ void book::redo_hashes()
 
 	ss << "COMMIT TRANSACTION;";
 	impl_->query( ss.str(), 0, 0 );
+
+	return true;
 }
 
 
@@ -1021,14 +1035,19 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 	return t.commit();
 }
 
-void book::fold( bool verify )
+bool book::fold( bool verify )
 {
 	scoped_lock l(impl_->mtx);
+
+	if( !impl_->is_writable() ) {
+		std::cerr << "Error: Cannot fold read-only opening book\n" << std::endl;
+		return false;
+	}
 
 	uint64_t max_length = 0;
 	std::string query = "BEGIN TRANSACTION; SELECT LENGTH(pos) FROM position ORDER BY LENGTH(pos) DESC LIMIT 1;";
 	if( !impl_->query( query, &count_cb, &max_length ) ) {
-		return;
+		return false;
 	}
 
 	std::cerr << "Folding";
@@ -1048,9 +1067,11 @@ void book::fold( bool verify )
 	std::cerr << "Comitting...";
 	query = "COMMIT TRANSACTION;";
 	if( !impl_->query( query, 0, 0 ) ) {
-		return;
+		return false;
 	}
 	std::cerr << " done" << std::endl;
+
+	return true;
 }
 
 
@@ -1124,4 +1145,9 @@ std::string entries_to_string( position const& p, std::vector<book_entry> const&
 	}
 
 	return out.str();
+}
+
+bool book::is_writable() const
+{
+	return impl_->is_writable();
 }
