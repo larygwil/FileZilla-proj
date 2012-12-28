@@ -276,6 +276,21 @@ static bool test_lazy_eval( std::string const& fen, short& max_difference )
 }
 
 
+static void check_eval()
+{
+	checking("evaluation");
+	if( !eval_values::sane() ) {
+		std::cerr << "Evaluation values not sane" << std::endl;
+		abort();
+	}
+	if( eval_values::normalize() ) {
+		std::cerr << "Evaluation values not normalized" << std::endl;
+		abort();
+	}
+
+	pass();
+}
+
 static void test_lazy_eval()
 {
 	checking("lazy evaluation");
@@ -490,6 +505,9 @@ static void test_incorrect_positions()
 static void process_test_positions()
 {
 	std::ifstream in_fen("test/testpositions.txt");
+	if( !in_fen ) {
+		in_fen = std::ifstream(conf.book_dir + "/test/testpositions.txt");
+	}
 
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {
@@ -767,6 +785,7 @@ bool selftest()
 	check_time();
 	check_condition_wait();
 
+	check_eval();
 	check_endgame_eval();
 
 	test_pst();
