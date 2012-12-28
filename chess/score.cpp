@@ -134,3 +134,18 @@ score score::operator*( score const& m ) const
 
 	return score( mg_ * m.mg_, eg_ * m.eg_ );
 }
+
+
+score score::operator/( short m ) const
+{
+	ASSERT( m != 0 );
+	return score( mg_ / m, eg_ / m );
+}
+
+
+score score::operator/( score const& m ) const
+{
+	ASSERT( m.mg_ != 0 );
+	ASSERT( m.eg_ != 0 );
+	return score( mg_ / m.mg_, eg_ / m.eg_ );
+}

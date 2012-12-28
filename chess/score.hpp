@@ -47,6 +47,9 @@ public:
 	score operator*( short m ) const;
 	score operator*( score const& m ) const;
 
+	score operator/( short m ) const;
+	score operator/( score const& m ) const;
+
 private:
 	short mg_;
 	short eg_;
