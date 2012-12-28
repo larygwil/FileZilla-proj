@@ -31,7 +31,7 @@ struct config
 	bool ponder;
 
 	bool use_book;
-	std::string book_dir;
+	std::string self_dir;
 
 	std::string program_name() const;
 
@@ -40,7 +40,7 @@ struct config
 
 	unsigned int pawn_hash_table_size() const;
 private:
-	void init_book_dir( std::string self );
+	void init_self_dir( std::string self );
 
 	int depth_;
 	unsigned int pawn_hash_table_size_; // In MiB

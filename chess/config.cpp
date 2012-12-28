@@ -27,23 +27,23 @@ config::config()
 }
 
 
-void config::init_book_dir( std::string self )
+void config::init_self_dir( std::string self )
 {
 #if WINDOWS
 	std::replace( self.begin(), self.end(), '\\', '/' );
 #endif
 	if( self.rfind('/') != std::string::npos ) {
-		book_dir = self.substr( 0, self.rfind('/') + 1 );
+		self_dir = self.substr( 0, self.rfind('/') + 1 );
 	}
 #if _MSC_VER
-	if( GetFileAttributesA( (book_dir + "/opening_book.db").c_str() ) == INVALID_FILE_ATTRIBUTES ) {
+	if( GetFileAttributesA( (self_dir + "opening_book.db").c_str() ) == INVALID_FILE_ATTRIBUTES ) {
 		char buffer[MAX_PATH];
 		GetModuleFileNameA( 0, buffer, MAX_PATH );
 		buffer[MAX_PATH - 1] = 0;
-		book_dir = buffer;
-		std::replace( book_dir.begin(), book_dir.end(), '\\', '/' );
-		if( book_dir.rfind('/') != std::string::npos ) {
-			book_dir = book_dir.substr( 0, book_dir.rfind('/') + 1 );
+		self_dir = buffer;
+		std::replace( self_dir.begin(), self_dir.end(), '\\', '/' );
+		if( self_dir.rfind('/') != std::string::npos ) {
+			self_dir = self_dir.substr( 0, self_dir.rfind('/') + 1 );
 		}
 	}
 #endif
@@ -52,7 +52,7 @@ void config::init_book_dir( std::string self )
 
 std::string config::init( int argc,  char const* argv[] )
 {
-	init_book_dir( argv[0] );
+	init_self_dir( argv[0] );
 
 	int i = 1;
 	for( i = 1; i < argc && argv[i][0] == '-'; ++i ) {

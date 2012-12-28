@@ -294,7 +294,7 @@ static void check_eval()
 static void test_lazy_eval()
 {
 	checking("lazy evaluation");
-	std::ifstream in_fen("test/testpositions.txt");
+	std::ifstream in_fen(conf.self_dir + "test/testpositions.txt");
 
 	short max_difference = 0;
 
@@ -486,7 +486,7 @@ static void test_moves_noncaptures( std::string const& fen, position const& p )
 static void test_incorrect_positions()
 {
 	checking("fen validation");
-	std::ifstream in_fen("test/bad_fen.txt");
+	std::ifstream in_fen(conf.self_dir + "test/bad_fen.txt");
 
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {
@@ -504,10 +504,7 @@ static void test_incorrect_positions()
 
 static void process_test_positions()
 {
-	std::ifstream in_fen("test/testpositions.txt");
-	if( !in_fen ) {
-		in_fen = std::ifstream(conf.book_dir + "/test/testpositions.txt");
-	}
+	std::ifstream in_fen(conf.self_dir + "test/testpositions.txt");
 
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {

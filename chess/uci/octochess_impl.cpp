@@ -34,7 +34,7 @@ public:
 		, last_mate_()
 		, half_moves_played_()
 		, started_from_root_()
-		, book_( conf.book_dir )
+		, book_( conf.self_dir )
 		, depth_(-1)
 		, ponder_()
 	{
@@ -392,7 +392,7 @@ bool octochess_uci::use_book() const
 void octochess_uci::use_book( bool use )
 {
 	if( use ) {
-		impl_->book_.open( conf.book_dir );
+		impl_->book_.open( conf.self_dir );
 	}
 	else {
 		impl_->book_.close();

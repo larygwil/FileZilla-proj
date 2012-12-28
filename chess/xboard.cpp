@@ -36,7 +36,7 @@ struct xboard_state
 {
 	xboard_state()
 		: clock()
-		, book_( conf.book_dir )
+		, book_( conf.self_dir )
 		, mode_(mode::force)
 		, self(color::black)
 		, time_control()
