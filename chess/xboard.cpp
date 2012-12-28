@@ -928,6 +928,13 @@ skip_getline:
 				std::cout << "Error (bad command): Not a valid move: " << error << std::endl;
 			}
 		}
+		else if( cmd == "variant" ) {
+			if( args == "normal" ) {
+			}
+			else {
+				std::cout << "Error (bad command): Not a valid variant" << std::endl;
+			}
+		}
 		// Octochess-specific commands mainly for testing and debugging
 		else if( cmd == "moves" ) {
 			check_map check( state.p );
