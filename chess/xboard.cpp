@@ -863,43 +863,10 @@ skip_getline:
 			state.mode_ = mode::normal;
 			state.moves_between_updates = 0;
 		}
-		else if( cmd == "~moves" ) {
-			check_map check( state.p );
-
-			move_info moves[200];
-			move_info* pm = moves;
-			calculate_moves( state.p, pm, check );
-
-			std::cout << "Possible moves:" << std::endl;
-			move_info* it = &moves[0];
-			for( ; it != pm; ++it ) {
-				std::cout << " " << move_to_san( state.p, it->m ) << std::endl;
-			}
-		}
-		else if( cmd == "~fen" ) {
-			std::cout << position_to_fen_noclock( state.p ) << std::endl;
-		}
 		else if( cmd == "setboard" ) {
 			std::string error;
 			if( !parse_setboard( state, thread, args, error ) ) {
 				std::cout << "Error (bad command): Not a valid FEN position: " << error << std::endl;
-			}
-		}
-		else if( cmd == "~score" ) {
-			std::cout << explain_eval( state.p ) << std::endl;
-		}
-		else if( cmd == "~hash" ) {
-			std::cout << get_zobrist_hash( state.p ) << std::endl;
-		}
-		else if( cmd == "~see" ) {
-			move m;
-			std::string error;
-			if( parse_move( state.p, args, m, error ) ) {
-				int see_score = see( state.p, m );
-				std::cout << "See score: " << see_score << std::endl;
-			}
-			else {
-				std::cout << error << ": " << line << std::endl;
 			}
 		}
 		else if( cmd == "st" ) {
@@ -944,6 +911,57 @@ skip_getline:
 			state.clock = state.p.c;
 			state.p.c = color::white;
 		}
+		else if( cmd == "usermove" ) {
+			move m;
+			std::string error;
+			if( parse_move( state.p, args, m, error ) ) {
+
+				state.apply( m );
+				if( state.mode_ == mode::normal && state.p.self() == state.self ) {
+					go( thread, state, cmd_recv_time );
+				}
+				else if( state.mode_ == mode::analyze ) {
+					thread.start( true );
+				}
+			}
+			else {
+				std::cout << "Error (bad command): Not a valid move: " << error << std::endl;
+			}
+		}
+		// Octochess-specific commands mainly for testing and debugging
+		else if( cmd == "moves" ) {
+			check_map check( state.p );
+
+			move_info moves[200];
+			move_info* pm = moves;
+			calculate_moves( state.p, pm, check );
+
+			std::cout << "Possible moves:" << std::endl;
+			move_info* it = &moves[0];
+			for( ; it != pm; ++it ) {
+				std::cout << " " << move_to_san( state.p, it->m ) << std::endl;
+			}
+		}
+		else if( cmd == "fen" ) {
+			std::cout << position_to_fen_noclock( state.p ) << std::endl;
+		}
+		else if( cmd == "score" || cmd == "eval" ) {
+			std::cout << explain_eval( state.p ) << std::endl;
+		}
+		else if( cmd == "hash" ) {
+			std::cout << get_zobrist_hash( state.p ) << std::endl;
+		}
+		else if( cmd == "see" ) {
+			move m;
+			std::string error;
+			if( parse_move( state.p, args, m, error ) ) {
+				int see_score = see( state.p, m );
+				std::cout << "See score: " << see_score << std::endl;
+			}
+			else {
+				std::cout << error << ": " << line << std::endl;
+			}
+		}
 		else {
 			move m;
 			std::string error;
@@ -958,6 +976,7 @@ skip_getline:
 				}
 			}
 			else {
+				// Octochess-specific extension: Raw fen without command is equivalent to setboard.
 				std::string error2;
 				if( !parse_setboard( state, thread, line, error2 ) ) {
 					std::cout << error << ": " << line << std::endl;
