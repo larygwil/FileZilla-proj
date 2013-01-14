@@ -53,6 +53,31 @@ short evaluate_KNBvK( position const& p, color::type c ) {
 }
 
 
+bool evaluate_KPvK( position const& p, color::type c, short& result ) {
+	// Drawn if pawn on a or h file, enemy king in front
+	uint64_t pawn = bitscan(p.bitboards[c].b[bb_type::pawns]);
+	if( p.bitboards[c].b[bb_type::pawns] & 0x8181818181818181ull ) {
+		if( passed_pawns[c][pawn] & p.bitboards[1-c].b[bb_type::king] ) {
+			result = result::draw;
+			return true;
+		}
+	}
+
+	// Won if enemy king cannot catch pawn
+	uint64_t unstoppable = p.bitboards[c].b[bb_type::pawns] & ~rule_of_the_square[1-c][p.c][p.king_pos[1-c]];
+	if( unstoppable ) {
+		if( c == color::black ) {
+			result = result::win_threshold + static_cast<short>(pawn / 8);
+		}
+		else {
+			result = result::loss_threshold - 7 + static_cast<short>(pawn / 8);
+		}
+		return true;
+	}
+	return false;
+}
+
+
 bool evaluate_endgame( position const& p, short& result )
 {
 	uint64_t piece_sum = 0;
@@ -122,26 +147,10 @@ bool evaluate_endgame( position const& p, short& result )
 		result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
 		return true;
 
-	// Drawn if pawn on a or h file, enemy king in front
 	case white_pawn:
-		if( p.bitboards[color::white].b[bb_type::pawns] & 0x8181818181818181ull ) {
-			uint64_t pawn = bitscan(p.bitboards[color::white].b[bb_type::pawns]);
-			if( passed_pawns[color::white][pawn] & p.bitboards[color::black].b[bb_type::king] ) {
-				result = result::draw;
-				return true;
-			}
-		}
-		break;
+		return evaluate_KPvK(p, color::white, result);
 	case black_pawn:
-		if( p.bitboards[color::black].b[bb_type::pawns] & 0x8181818181818181ull ) {
-			uint64_t pawn = bitscan(p.bitboards[color::black].b[bb_type::pawns]);
-			if( passed_pawns[color::black][pawn] & p.bitboards[color::white].b[bb_type::king] ) {
-				result = result::draw;
-				return true;
-			}
-		}
-		break;
-
+		return evaluate_KPvK(p, color::black, result);
 	// Drawn if bishop doesn't control the promotion square and enemy king is on promotion square or next to it
 	case white_bishop + white_pawn:
 		if( p.bitboards[color::white].b[bb_type::pawns] & 0x8181818181818181ull ) {

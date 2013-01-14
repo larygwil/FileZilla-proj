@@ -701,7 +701,9 @@ void check_endgame_eval()
 		"8/7k/8/8/8/7P/7K/8 w - - 0 1",
 		"8/7k/8/8/8/1B5P/7K/8 w - - 0 1",
 		"8/2b4k/8/8/3P4/3K4/2B5/8 w - - 0 1",
-		"8/7k/8/8/3N4/3K4/2B5/8 w - - 0 1"
+		"8/7k/8/8/3N4/3K4/2B5/8 w - - 0 1",
+		"7k/8/8/1p6/8/8/8/6K1 b - - 0 1",
+		"7k/8/8/1p6/8/8/8/7K w - - 0 1"
 	};
 
 	for( auto const& fen: fens ) {
@@ -780,7 +782,6 @@ bool selftest()
 	check_disambiguation();
 
 	check_time();
-	check_condition_wait();
 
 	check_eval();
 	check_endgame_eval();
@@ -791,6 +792,9 @@ bool selftest()
 	test_move_generation();
 	test_zobrist();
 	test_lazy_eval();
+
+	check_condition_wait();
+
 	test_perft();
 
 	std::cerr << "Self test passed" << std::endl;
