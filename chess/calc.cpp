@@ -227,10 +227,17 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		}
 	}
 
+	// Mate distance pruning
+	beta = std::min( static_cast<short>(result::win - ply - 1), beta );
+	alpha = std::max( static_cast<short>(result::loss + ply), alpha );
+	if( alpha >= beta ) {
+		return alpha;
+	}
+
 	bool pv_node = alpha + 1 != beta;
 
+	// Transposition table lookup and cutoff
 	move tt_move;
-
 	{
 		short eval;
 		score_type::type t = transposition_table.lookup( hash, depth, ply, alpha, beta, eval, tt_move, full_eval );
