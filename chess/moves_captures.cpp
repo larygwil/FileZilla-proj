@@ -259,43 +259,37 @@ void calc_moves_pawn_en_passant( position const& p, move_info*& moves, check_map
 		}
 	}
 
-	// Special case: black queen, black pawn, white pawn, white king from left to right on rank 5. Capturing opens up check!
-	uint64_t kings = p.bitboards[p.self()].b[bb_type::king];
-	uint64_t king = bitscan( kings );
-	unsigned char king_col = static_cast<unsigned char>(king % 8);
-	unsigned char king_row = static_cast<unsigned char>(king / 8);
+	// Special case: Enpassant capture uncovers a check against own king, e.g. in this position:
+	// black queen, black pawn, white pawn, white king from left to right on rank 5
+	unsigned char king_col = static_cast<unsigned char>(p.king_pos[p.self()] % 8);
+	unsigned char king_row = static_cast<unsigned char>(p.king_pos[p.self()] / 8);
 
 	if( king_row == old_row ) {
-		signed char cx = static_cast<signed char>(old_col) - king_col;
-		if( cx > 0 ) {
-			cx = 1;
+		uint64_t mask;
+		if( king_col < old_col ) {
+			mask = 0xff & ~((2 << king_col) - 1);
 		}
 		else {
-			cx = -1;
+			mask = (1 << king_col) - 1;
 		}
-		for( signed char col = old_col + cx; col < 8 && col >= 0; col += cx ) {
-			if( col == new_col ) {
-				continue;
+		mask &= ~(1ull << old_col);
+		mask &= ~(1ull << new_col);
+		mask <<= 8 * king_row;
+
+		uint64_t occ = (p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces]) & mask;
+		if( occ ) {
+			uint64_t sq;
+			if( king_col < old_col ) {
+				sq = bitscan( occ );
+			}
+			else {
+				sq = bitscan_reverse( occ );
 			}
 
-			if( p.bitboards[p.self()].b[bb_type::all_pieces] & (1ull << (col + old_row * 8 ) ) ) {
-				// Own piece
-				continue;
-			}
-
-			pieces::type t = get_piece_on_square( p, p.other(), col + old_row * 8 );
-
-			if( t == pieces::none ) {
-				continue;
-			}
-
-			if( t == pieces::queen || t == pieces::rook ) {
-				// Not a legal move unfortunately
+			pieces::type pi = get_piece_on_square( p, p.other(), sq );
+			if( pi == pieces::rook || pi == pieces::queen ) {
 				return;
 			}
-
-			// Harmless piece
-			break;
 		}
 	}
 
