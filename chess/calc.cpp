@@ -709,7 +709,7 @@ struct move_data {
 };
 
 typedef std::vector<move_data> sorted_moves;
-void insert_sorted( sorted_moves& moves, int forecast, move_info const& m, pv_entry* pv )
+void insert_sorted( sorted_moves& moves, short forecast, move_info const& m, pv_entry* pv )
 {
 	sorted_moves::iterator it = moves.begin();
 	while( it != moves.end() && it->forecast >= forecast ) {
@@ -879,9 +879,9 @@ calc_result calc_manager::calc( position& p, int max_depth, duration const& move
 			pv_entry* pv = impl_->pv_pool_.get();
 			impl_->pv_pool_.append( pv, it->m, impl_->pv_pool_.get() );
 			// Initial order is random to get some variation into play with exception being the hash move.
-			int fc = static_cast<int>(get_random_unsigned_long_long() % 1000000);
-			if( it->m == tt_move ) {
-				fc = 1000000000;
+			short fc = 32767;
+			while( it->m != tt_move && fc == 32767 ) {
+				fc = static_cast<short>(get_random_unsigned_long_long());
 			}
 			insert_sorted( old_sorted, fc, *it, pv );
 		}
@@ -974,7 +974,7 @@ break2:
 
 				if( impl_->threads_[t]->got_results() ) {
 					got_first_result = true;
-					int value = impl_->threads_[t]->result();
+					short value = impl_->threads_[t]->result();
 					if( !do_abort ) {
 						++evaluated;
 
