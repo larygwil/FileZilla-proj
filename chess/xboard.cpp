@@ -946,7 +946,15 @@ skip_getline:
 			std::cout << "Possible moves:" << std::endl;
 			move_info* it = &moves[0];
 			for( ; it != pm; ++it ) {
-				std::cout << " " << move_to_san( state.p, it->m ) << std::endl;
+				if( args == "long" ) {
+					std::cout << " " << move_to_long_algebraic( it->m ) << std::endl;
+				}
+				else if( args == "full" ) {
+					std::cout << " " << move_to_string( it->m ) << std::endl;
+				}
+				else {
+					std::cout << " " << move_to_san( state.p, it->m ) << std::endl;
+				}
 			}
 		}
 		else if( cmd == "fen" ) {
