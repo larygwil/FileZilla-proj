@@ -544,7 +544,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 			}
 
 			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
-			ASSERT( !best_move.empty() );
+			ASSERT( !best_move.m.empty() );
 
 			std::cout << "move " << move_to_long_algebraic( best_move.m ) << std::endl;
 

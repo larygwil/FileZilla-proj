@@ -135,7 +135,7 @@ short evaluate_move( position const& p, move const& m )
 		}
 	}
 
-#if 0
+#if VERIFY_EVAL
 	{
 		position p2 = p;
 		apply_move( p2, m );

@@ -63,7 +63,7 @@ move_info const* qsearch_move_generator::next()
 		phase = phases::captures_gen;
 		if( !hash_move.empty() ) {
 			ctx.move_ptr = moves + 1;
-#if 0
+#if CHECK_TYPE_1_COLLISION
 			if( !is_valid_move( p_, hash_move, check_ ) ) {
 				std::cerr << "Possible type-1 hash collision:" << std::endl;
 				std::cerr << board_to_string( p_, color::white ) << std::endl;
@@ -184,7 +184,7 @@ move_info const* move_generator::next() {
 		phase = phases::captures_gen;
 		if( !hash_move.empty() ) {
 			ctx.move_ptr = moves + 1;
-#if 0
+#if CHECK_TYPE_1_COLLISION
 			if( !is_valid_move( p_, c_, hash_move, check_ ) ) {
 				std::cerr << "Possible type-1 hash collision:" << std::endl;
 				std::cerr << board_to_string( p_, color::white ) << std::endl;

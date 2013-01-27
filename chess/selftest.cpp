@@ -72,7 +72,7 @@ void perft( perft_ctx& ctx, int depth, position const& p, uint64_t& n )
 	}
 
 	for( move_info* it = moves; it != ctx.move_ptr; ++it ) {
-		position new_pos = p;
+		position new_pos(p);
 		apply_move( new_pos, it->m );
 		perft<split_movegen>( ctx, depth, new_pos, n );
 	}
@@ -223,6 +223,10 @@ static void test_move_generation()
 						"e5-e6 Ka5-a4 Ka5-a6 Ka5-b4 Ka5-b5 Ka5-b6");
 	test_move_generation( "3k4/8/8/K2pPP1q/8/8/8/8 w - d6",
 						"e5-e6 e5xd6 f5-f6 Ka5-a4 Ka5-a6 Ka5-b4 Ka5-b5 Ka5-b6");
+	test_move_generation( "r1bqkb1r/ppp1ppPp/2n5/8/8/5N2/PpPP1PPP/R1BQKB1R w KQkq -",
+						"a2-a3 a2-a4 c2-c3 c2-c4 d2-d3 d2-d4 g2-g3 g2-g4 g7-g8=B g7-g8=N g7-g8=Q g7-g8=R g7xf8=B g7xf8=N g7xf8=Q g7xf8=R g7xh8=B g7xh8=N g7xh8=Q g7xh8=R h2-h3 h2-h4 Bc1xb2 Bf1-a6 Bf1-b5 Bf1-c4 Bf1-d3 Bf1-e2 Ke1-e2 Nf3-d4 Nf3-e5 Nf3-g1 Nf3-g5 Nf3-h4 Qd1-e2 Ra1-b1 Rh1-g1");
+	test_move_generation( "8/5Rp1/6r1/4p2p/RPp1k2b/4B3/7P/5K2 b - b3 0 1",
+						"c4-c3 Bh4-d8 Bh4-e1 Bh4-e7 Bh4-f2 Bh4-f6 Bh4-g3 Bh4-g5 Ke4-d3 Ke4-d5 Ke4xe3 Rg6-a6 Rg6-b6 Rg6-c6 Rg6-d6 Rg6-e6 Rg6-f6 Rg6-g1 Rg6-g2 Rg6-g3 Rg6-g4 Rg6-g5 Rg6-h6");
 
 	pass();
 }

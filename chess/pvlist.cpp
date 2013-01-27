@@ -66,6 +66,7 @@ void pv_entry_pool::release( pv_entry* pv )
 
 void pv_entry_pool::append( pv_entry* parent, move const& best_move, pv_entry* child )
 {
+	ASSERT( best_move.empty() == (child == 0));
 	if( parent->next_ ) {
 		release( parent->next_ );
 	}

@@ -1078,11 +1078,11 @@ bool is_valid_move( position const& p, move const& m, check_map const& check )
 {
 	bool ret = do_is_valid_move( p, m, check );
 
-#if 0
+#if VERIFY_IS_VALID_MOVE
 	move_info moves[200];
 	move_info* it = moves;
 	move_info* end = moves;
-	calculate_moves( p, p.self(), end, check );
+	calculate_moves( p, end, check );
 	for( ; it != end; ++it ) {
 		if( it->m == m ) {
 			if( ret ) {

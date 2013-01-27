@@ -66,7 +66,7 @@ void sort_moves( move_info* begin, move_info* end, position const& p )
 
 short quiescence_search( int ply, int depth, context& ctx, position const& p, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval = result::win )
 {
-#if 0
+#if VERIFY_HASH
 	if( get_zobrist_hash(p) != hash ) {
 		std::cerr << "FAIL HASH!" << std::endl;
 	}
@@ -202,7 +202,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null, short full_eval, unsigned char last_ply_was_capture )
 {
-#if 0
+#if VERIFY_HASH
 	if( get_zobrist_hash(p) != hash ) {
 		std::cerr << "FAIL HASH!" << std::endl;
 	}
@@ -484,11 +484,21 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	}
 
 	if( !do_abort ) {
-		ctx.pv_pool.append( pv, best_move, best_pv );
 		if( best_move.empty() ) {
-			best_move = tt_move;
+			if( best_pv ) {
+				ctx.pv_pool.release( best_pv );
+			}
+			best_move = tt_move; // TODO: Don't store a best move?
+		}
+		else {
+			ctx.pv_pool.append( pv, best_move, best_pv );
 		}
 		transposition_table.store( hash, depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
+	}
+	else {
+		if( best_pv ) {
+			ctx.pv_pool.release( best_pv );
+		}
 	}
 
 	return best_value;
