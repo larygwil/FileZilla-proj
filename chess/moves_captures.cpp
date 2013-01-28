@@ -334,11 +334,10 @@ void calc_moves_pawns( position const& p, move_info*& moves, check_map const& ch
 
 void calculate_moves_captures( position const& p, move_info*& moves, check_map const& check )
 {
-	calc_moves_king( p, moves );
-
 	calc_moves_pawns( p, moves, check );
 	calc_moves_queens( p, moves, check );
 	calc_moves_rooks( p, moves, check );
 	calc_moves_bishops( p, moves, check );
 	calc_moves_knights( p, moves, check );
+	calc_moves_king( p, moves );
 }

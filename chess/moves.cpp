@@ -395,8 +395,6 @@ void calc_moves_pawns( position const& p, move_info*& moves, check_map const& ch
 
 void calculate_moves( position const& p, move_info*& moves, check_map const& check )
 {
-	calc_moves_king( p, moves, check );
-
 	if( !check.check || !check.multiple() )
 	{
 		calc_moves_pawns( p, moves, check );
@@ -405,4 +403,6 @@ void calculate_moves( position const& p, move_info*& moves, check_map const& che
 		calc_moves_bishops( p, moves, check );
 		calc_moves_knights( p, moves, check );
 	}
+
+	calc_moves_king( p, moves, check );
 }

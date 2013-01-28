@@ -50,7 +50,11 @@ void get_best( move_info* begin, move_info* end ) {
 			best = it;
 		}
 	}
-	std::swap( *begin, *best );
+
+	// Bubble best to front
+	for( ; best != begin; --best ) {
+		std::swap( *(best-1), *best );
+	}
 }
 
 // Returns the next legal move.

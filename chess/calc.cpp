@@ -60,7 +60,7 @@ void sort_moves( move_info* begin, move_info* end, position const& p )
 			it->sort += eval_values::material_values[ it->m.captured_piece ].mg() * 1000000 - eval_values::material_values[ it->m.piece ].mg();
 		}
 	}
-	std::sort( begin, end, moveSort );
+	std::stable_sort( begin, end, moveSort );
 }
 
 
@@ -713,25 +713,20 @@ void processing_thread::onRun()
 }
 
 struct move_data {
-	short forecast;
+	enum state {
+		waiting,
+		busy,
+		done
+	};
+
+	move_data() : s(waiting), pv() {}
+
+	state s;
 	move_info m;
 	pv_entry* pv;
 };
 
 typedef std::vector<move_data> sorted_moves;
-void insert_sorted( sorted_moves& moves, short forecast, move_info const& m, pv_entry* pv )
-{
-	sorted_moves::iterator it = moves.begin();
-	while( it != moves.end() && it->forecast >= forecast ) {
-		++it;
-	}
-	move_data d;
-	d.forecast = forecast;
-	d.m = m;
-	d.pv = pv;
-	moves.insert( it, d );
-}
-
 
 void def_new_best_move_callback::on_new_best_move( position const& p, int depth, int selective_depth , int evaluation, uint64_t nodes, duration const& /*elapsed*/, pv_entry const* pv )
 {
@@ -879,28 +874,33 @@ calc_result calc_manager::calc( position& p, int max_depth, duration const& move
 
 	// Go through them sorted by previous evaluation. This way, if on time pressure,
 	// we can abort processing at high depths early if needed.
-	sorted_moves old_sorted;
+	sorted_moves sorted;
 
 	{
 		move tt_move;
 		short tmp = 0;
 		transposition_table.lookup( get_zobrist_hash(p), 0, 0, 0, 0, tmp, tt_move, tmp );
 		for( move_info* it = moves; it != pm; ++it ) {
+			move_data md;
+			md.m = *it;
+
 			pv_entry* pv = impl_->pv_pool_.get();
 			impl_->pv_pool_.append( pv, it->m, impl_->pv_pool_.get() );
-			// Initial order is random to get some variation into play with exception being the hash move.
-			short fc = 32767;
-			while( it->m != tt_move && fc == 32767 ) {
-				fc = static_cast<short>(get_random_unsigned_long_long());
+			md.pv = pv;
+
+			if( it->m == tt_move ) {
+				sorted.insert( sorted.begin(), md );
 			}
-			insert_sorted( old_sorted, fc, *it, pv );
+			else {
+				sorted.push_back( md );
+			}
 		}
 	}
 
 	timestamp start;
 
 	short ev = evaluate_full( p );
-	new_best_cb.on_new_best_move( p, 0, 0, ev, 0, duration(), old_sorted.front().pv );
+	new_best_cb.on_new_best_move( p, 0, 0, ev, 0, duration(), sorted.front().pv );
 
 	result.best_move = moves->m;
 	if( moves + 1 == pm && !ponder ) {
@@ -915,26 +915,29 @@ calc_result calc_manager::calc( position& p, int max_depth, duration const& move
 		min_depth = max_depth;
 	}
 
-	for( int depth = min_depth; depth <= max_depth && !do_abort; ++depth )
-	{
+	for( int depth = min_depth; depth <= max_depth && !do_abort; ++depth ) {
 		short alpha = result::loss;
 		short beta = result::win;
 
-		sorted_moves sorted;
-
-		sorted_moves::const_iterator it = old_sorted.begin();
 		int evaluated = 0;
 
 		bool got_first_result = false;
 
+		for( sorted_moves::iterator it = sorted.begin(); it != sorted.end(); ++it ) {
+			it->s = move_data::waiting;
+		}
+
 		bool done = false;
 		while( !done ) {
-
 			scoped_lock l( impl_->mtx_ );
 
-			while( it != old_sorted.end() && !do_abort ) {
+			for( sorted_moves::iterator it = sorted.begin(); it != sorted.end() && !do_abort; ++it ) {
 
-				if( !got_first_result && it != old_sorted.begin() ) {
+				if( it->s != move_data::waiting ) {
+					continue;
+				}
+
+				if( !got_first_result && it != sorted.begin() ) {
 					// Need to wait for first result
 					break;
 				}
@@ -945,10 +948,11 @@ calc_result calc_manager::calc( position& p, int max_depth, duration const& move
 						continue;
 					}
 
+					it->s = move_data::busy;
 					impl_->threads_[t]->process( l, p, it->m, depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv, seen );
 
 					// First one is run on its own to get a somewhat sane lower bound for others to work with.
-					if( it++ == old_sorted.begin() ) {
+					if( !got_first_result && it == sorted.begin() ) {
 						goto break2;
 					}
 					break;
@@ -992,7 +996,13 @@ break2:
 						pv_entry* pv = impl_->threads_[t]->get_pv();
 						extend_pv_from_tt( pv, p, depth, conf.quiescence_depth );
 
-						insert_sorted( sorted, value, mi, pv );
+						sorted_moves::iterator it;
+						for( it = sorted.begin(); it != sorted.end() && !do_abort; ++it ) {
+							if( it->m.m == mi.m ) {
+								it->s = move_data::done;
+								break;
+							}
+						}
 						if( mi.m != pv->get_best_move() ) {
 							std::cerr << "FAIL: Wrong PV move" << std::endl;
 						}
@@ -1019,6 +1029,12 @@ break2:
 									result.ponder_move.clear();
 								}
 							}
+							
+							// Bubble new best to front
+							it->m.sort = value;
+							for( ; it != sorted.begin(); --it ) {
+								std::swap( *(it - 1), *it );
+							}
 
 							highest_depth = depth;
 							new_best_cb.on_new_best_move( p, depth, stats.highest_depth(), value, stats.nodes() + stats.quiescence_nodes, timestamp() - start, pv );
@@ -1032,7 +1048,7 @@ break2:
 			}
 
 			if( all_idle ) {
-				if( it == old_sorted.end() ) {
+				if( evaluated == sorted.size() ) {
 					done = true;
 				}
 				else if( do_abort ) {
@@ -1041,7 +1057,7 @@ break2:
 			}
 		}
 		if( do_abort ) {
-			std::cerr << "Aborted with " << evaluated << " of " << old_sorted.size() << " moves evaluated at current depth" << std::endl;
+			std::cerr << "Aborted with " << evaluated << " of " << sorted.size() << " moves evaluated at current depth" << std::endl;
 		}
 		else {
 			if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
@@ -1054,7 +1070,7 @@ break2:
 			}
 			else {
 				duration elapsed = timestamp() - start;
-				if( !ponder && elapsed > (time_limit * 3) / 5 ) {
+				if( !ponder && elapsed > (time_limit * 3) / 5 && depth < max_depth ) {
 					std::cerr << "Not increasing depth due to time limit. Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
 					do_abort = true;
 				}
@@ -1063,22 +1079,6 @@ break2:
 
 
 		if( !sorted.empty() ) {
-			if( !do_abort && old_sorted.size() != sorted.size() ) {
-				std::cerr << "FAIL: A move gone missing! " << old_sorted.size() << " " << sorted.size() << std::endl;
-			}
-
-			if( old_sorted.size() ) {
-				bool found_old_best = false;
-				for( sorted_moves::const_iterator it = sorted.begin(); it != sorted.end(); ++it ) {
-					if( it->m.m == old_sorted.begin()->m.m ) {
-						found_old_best = true;
-					}
-				}
-				if( !found_old_best ) {
-					std::cerr << "FAIL: Old best move not evaluated?" << std::endl;
-				}
-			}
-			sorted.swap( old_sorted );
 			alpha_at_prev_depth = alpha;
 			result.forecast = alpha;
 		}
@@ -1086,19 +1086,6 @@ break2:
 			result.forecast = alpha_at_prev_depth;
 		}
 	}
-
-/*	std::cerr << "Candidates: " << std::endl;
-	for( sorted_moves::const_iterator it = old_sorted.begin(); it != old_sorted.end(); ++it ) {
-		if( it->pv->get_best_move() != it->m.m ) {
-			std::cerr << "FAIL: Wrong PV move" << std::endl;
-		}
-		std::stringstream ss;
-		ss << std::setw( 7 ) << it->forecast;
-		std::cerr << ss.str() << " " << pv_to_string( it->pv, p ) << std::endl;
-
-		pv_entry_pool p;
-		p.release( it->pv );
-	}*/
 
 label_abort:
 	scoped_lock l( impl_->mtx_ );
@@ -1110,8 +1097,8 @@ label_abort:
 	{
 		timestamp stop;
 
-		pv_entry const* pv = old_sorted.begin()->pv;
-		new_best_cb.on_new_best_move( p, highest_depth, stats.highest_depth(), old_sorted.begin()->forecast, stats.nodes() + stats.quiescence_nodes, stop - start, pv );
+		pv_entry const* pv = sorted.begin()->pv;
+		new_best_cb.on_new_best_move( p, highest_depth, stats.highest_depth(), sorted.begin()->m.sort, stats.nodes() + stats.quiescence_nodes, stop - start, pv );
 
 		stats.print( stop - start );
 		stats.accumulate( stop - start );

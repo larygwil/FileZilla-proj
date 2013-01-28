@@ -361,8 +361,6 @@ void calc_moves_pawns( position const& p, move_info*& moves, check_map const& ch
 template<bool only_pseudo_checks>
 void calculate_moves_noncaptures( position const& p, move_info*& moves, check_map const& check )
 {
-	calc_moves_king<only_pseudo_checks>( p, moves, check );
-
 	if( !check.check || !check.multiple() )	{
 		calc_moves_pawns<only_pseudo_checks>( p, moves, check );
 		calc_moves_queens<only_pseudo_checks>( p, moves, check );
@@ -370,6 +368,7 @@ void calculate_moves_noncaptures( position const& p, move_info*& moves, check_ma
 		calc_moves_bishops<only_pseudo_checks>( p, moves, check );
 		calc_moves_knights<only_pseudo_checks>( p, moves, check );
 	}
+	calc_moves_king<only_pseudo_checks>( p, moves, check );
 }
 
 
