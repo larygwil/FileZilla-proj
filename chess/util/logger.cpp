@@ -17,9 +17,11 @@ public:
 		}
 	}
 
-	//virtual std::streamsize xsputn( std::streambuf::char_type const* s, std::streamsize n )
-	//{
-	//}
+	virtual std::streamsize xsputn( std::streambuf::char_type const* s, std::streamsize n )
+	{
+		logfile_.write( s, n );
+		return orig_->sputn( s, n );
+	}
 
 	virtual int overflow( int c )
 	{
