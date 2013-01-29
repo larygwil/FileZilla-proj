@@ -6,6 +6,7 @@
 #include "chess.hpp"
 #include "config.hpp"
 #include "util/time.hpp"
+#include <sstream>
 
 #ifdef USE_STATISTICS
 class statistics {
@@ -19,7 +20,7 @@ public:
 	int busiest_depth() const;
 
 	void print( duration const& elapsed );
-	void print_details() const;
+	void print_details();
 
 	void reset( bool total );
 	void accumulate( duration const& elapsed );
@@ -35,6 +36,11 @@ public:
 
 private:
 	uint64_t full_width_nodes[MAX_DEPTH];
+
+	// Constructing a new stringstream and imbuing it with
+	// a locale each time calling print is really espensive.
+	// Re-use same stream.
+	std::stringstream ss_;
 };
 
 extern statistics stats;
