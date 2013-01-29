@@ -569,9 +569,10 @@ public:
 		return result_;
 	}
 
-	void process( scoped_lock& l, position const& p, move_info const& m, short max_depth, short quiescence_depth, short alpha_at_prev_depth, short alpha, short beta, int clock, pv_entry* pv, seen_positions const& seen )
+	void process( scoped_lock& l, position const& p, uint64_t hash, move_info const& m, short max_depth, short quiescence_depth, short alpha_at_prev_depth, short alpha, short beta, int clock, pv_entry* pv, seen_positions const& seen )
 	{
 		p_ = p;
+		hash_ = hash;
 		m_ = m;
 		max_depth_ = max_depth;
 		quiescence_depth_ = quiescence_depth;
@@ -609,6 +610,7 @@ private:
 	condition waiting_on_work_;
 
 	position p_;
+	uint64_t hash_;
 	move_info m_;
 	short max_depth_;
 	short quiescence_depth_;
@@ -634,7 +636,7 @@ short processing_thread::processWork()
 {
 	position new_pos = p_;
 	apply_move( new_pos, m_.m );
-	uint64_t hash = get_zobrist_hash( new_pos );
+	uint64_t hash = update_zobrist_hash( p_, hash_, m_.m );
 
 	ctx_.clock = clock_ % 256;
 	ctx_.seen = seen_;
@@ -730,12 +732,10 @@ typedef std::vector<move_data> sorted_moves;
 
 void def_new_best_move_callback::on_new_best_move( position const& p, int depth, int selective_depth , int evaluation, uint64_t nodes, duration const& /*elapsed*/, pv_entry const* pv )
 {
-	std::stringstream ss;
-	ss << "Best: " << std::setw(2) << depth << " " << std::setw(2) << selective_depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p ) << std::endl;
-	std::cerr << ss.str();
+	ss_.str( std::string() );
+	ss_ << "Best: " << std::setw(2) << depth << " " << std::setw(2) << selective_depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p ) << std::endl;
+	std::cerr << ss_.str();
 }
-
-
 
 class calc_manager::impl
 {
@@ -876,10 +876,12 @@ calc_result calc_manager::calc( position& p, int max_depth, duration const& move
 	// we can abort processing at high depths early if needed.
 	sorted_moves sorted;
 
+	uint64_t hash = get_zobrist_hash( p );
+
 	{
 		move tt_move;
 		short tmp = 0;
-		transposition_table.lookup( get_zobrist_hash(p), 0, 0, 0, 0, tmp, tt_move, tmp );
+		transposition_table.lookup( hash, 0, 0, 0, 0, tmp, tt_move, tmp );
 		for( move_info* it = moves; it != pm; ++it ) {
 			move_data md;
 			md.m = *it;
@@ -949,7 +951,7 @@ calc_result calc_manager::calc( position& p, int max_depth, duration const& move
 					}
 
 					it->s = move_data::busy;
-					impl_->threads_[t]->process( l, p, it->m, depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv, seen );
+					impl_->threads_[t]->process( l, p, hash, it->m, depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, it->pv, seen );
 
 					// First one is run on its own to get a somewhat sane lower bound for others to work with.
 					if( !got_first_result && it == sorted.begin() ) {
@@ -993,8 +995,6 @@ break2:
 						++evaluated;
 
 						move_info mi = impl_->threads_[t]->get_move();
-						pv_entry* pv = impl_->threads_[t]->get_pv();
-						extend_pv_from_tt( pv, p, depth, conf.quiescence_depth );
 
 						sorted_moves::iterator it;
 						for( it = sorted.begin(); it != sorted.end() && !do_abort; ++it ) {
@@ -1003,11 +1003,12 @@ break2:
 								break;
 							}
 						}
-						if( mi.m != pv->get_best_move() ) {
-							std::cerr << "FAIL: Wrong PV move" << std::endl;
-						}
+						ASSERT( mi.m == impl_->threads_[t]->get_pv()->get_best_move() );
 
 						if( value > alpha ) {
+							pv_entry* pv = impl_->threads_[t]->get_pv();
+							extend_pv_from_tt( pv, p, depth, conf.quiescence_depth );
+
 							alpha = value;
 							if( mi.m != result.best_move ) {
 								if( !ponder && move_time_limit.seconds() >= 1 && depth > 4 && (timestamp() - start) >= (move_time_limit / 10) ) {

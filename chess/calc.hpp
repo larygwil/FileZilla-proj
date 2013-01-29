@@ -9,6 +9,8 @@
 #include "moves.hpp"
 #include "seen_positions.hpp"
 
+#include <sstream>
+
 int const depth_factor = 6;
 
 struct new_best_move_callback_base
@@ -19,6 +21,9 @@ struct new_best_move_callback_base
 struct def_new_best_move_callback : public new_best_move_callback_base
 {
 	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
+
+private:
+	std::stringstream ss_;
 };
 
 struct null_new_best_move_callback : public new_best_move_callback_base
