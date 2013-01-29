@@ -126,12 +126,13 @@ void extend_pv_from_tt( pv_entry* pv, position p, int max_depth, int max_qdepth 
 		pv = pv->next();
 	}
 
-	if( !prev ) {
+	if( !prev || depth >= max_depth ) {
 		return;
 	}
 
+	uint64_t hash = get_zobrist_hash( p );
+
 	while( depth < max_depth ) {
-		uint64_t hash = get_zobrist_hash( p );
 
 		int r;
 		if( depth >= max_depth ) {
@@ -152,6 +153,7 @@ void extend_pv_from_tt( pv_entry* pv, position p, int max_depth, int max_qdepth 
 			break;
 		}
 
+		hash = update_zobrist_hash( p, hash, best );
 		apply_move( p, best );
 
 		pv_entry_pool pool;
