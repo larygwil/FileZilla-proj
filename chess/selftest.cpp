@@ -170,6 +170,18 @@ position test_parse_fen( std::string const& fen )
 	return p;
 }
 
+move test_parse_move( position const& p, std::string const& ms )
+{
+	move m;
+	std::string error;
+	if( !parse_move( p, ms, m, error ) ) {
+		std::cerr << error << ": " << ms << std::endl;
+		abort();
+	}
+
+	return m;
+}
+
 static void test_move_generation( std::string const& fen, std::string const& ref_moves )
 {
 	position p = test_parse_fen( fen );
@@ -231,21 +243,14 @@ static void test_move_generation()
 	pass();
 }
 
-
-static void test_zobrist()
+static void test_zobrist( std::string const& fen, std::string const& ms )
 {
-	checking("zobrist hashing");
-	position p = test_parse_fen( "rnbqk2r/1p3pp1/3bpn2/p2pN2p/P1Pp4/4P3/1P1BBPPP/RN1Q1RK1 b kq c3" );
+	position p = test_parse_fen( fen );
 
 	uint64_t old_hash = get_zobrist_hash( p );
 
-	move m;
-	std::string error;
-	if( !parse_move( p, "dxc3", m, error ) ) {
-		std::cerr << error << ": dxc3" << std::endl;
-		abort();
-	}
-
+	move m = test_parse_move( p, ms );
+	
 	uint64_t new_hash_move = update_zobrist_hash( p, old_hash, m );
 
 	apply_move( p, m );
@@ -253,13 +258,26 @@ static void test_zobrist()
 	uint64_t new_hash_full = get_zobrist_hash( p );
 
 	if( new_hash_move != new_hash_full ) {
-		std::cerr << "Hash mismatch: " << new_hash_full << " " << new_hash_move << std::endl;
+		std::cerr << "Hash mismatch: " << std::endl;
+		std::cerr << "Fen" << fen << std::endl;
+		std::cerr << "Move" << ms << std::endl;
+		std::cerr << "Full: " << new_hash_full << std::endl;
+		std::cerr << "Incremental: " << new_hash_move << std::endl;
 		abort();
 	}
+}
+
+static void test_zobrist()
+{
+	checking("zobrist hashing");
+
+	test_zobrist( "rnbqk2r/1p3pp1/3bpn2/p2pN2p/P1Pp4/4P3/1P1BBPPP/RN1Q1RK1 b kq c3", "dxc3" );
+	test_zobrist( "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "e4" );
+	test_zobrist( "rn1qkbnr/pppb2pp/5p2/1B1pp3/4P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq e6 0 5", "O-O" );
+	test_zobrist( "r3kbnr/pp1n2pp/1qp2p2/3pp2b/4P3/PPN2N1P/2PPBPP1/R1BQR1K1 b kq - 2 10", "O-O-O" );
 
 	pass();
 }
-
 
 static bool test_lazy_eval( std::string const& fen, short& max_difference )
 {
