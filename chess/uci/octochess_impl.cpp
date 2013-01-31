@@ -281,7 +281,9 @@ void octochess_uci::impl::on_new_best_move( position const& p, int depth, int se
 void octochess_uci::impl::apply_move( move const& m )
 {
 	bool reset_seen = false;
-	if( m.piece == pieces::pawn || m.captured_piece ) {
+	pieces::type piece = pos_.get_piece( m );
+	pieces::type captured_piece = pos_.get_captured_piece( m );
+	if( piece == pieces::pawn || captured_piece ) {
 		reset_seen = true;
 	}
 	::apply_move( pos_, m );

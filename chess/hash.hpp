@@ -45,10 +45,10 @@
  * - 16 bit full static evaluation score
  * - 16 bit search score
  * -  2 bit node type
- * - 24 bit move (row/col for source and target: 4 * 3 bit, piece: 3 bit, flags: 6 bit, capture: 3 bit)
+ * - 16 bit move (source and target squares: 2 * 5 bit, flags: 2 bit, promotion: 2 bit)
  * -  9 bit remaining depth
  * -  8 bit age
- * Total: 123 bits.
+ * Total: 115 bits.
  *
  * To avoid expensive calculations, we need to at the very least byte-align
  * the entries, so we have 128 bits. My CPUs (all of which are Intel Core i7)

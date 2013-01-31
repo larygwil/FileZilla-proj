@@ -14,7 +14,7 @@ extern uint64_t const pawn_double_move[2];
 
 namespace {
 
-void do_add_move( move_info*& moves, pieces::type const& pi,
+void do_add_move( move_info*& moves,
 				  uint64_t const& source, uint64_t const& target,
 				  int flags )
 {
@@ -23,16 +23,11 @@ void do_add_move( move_info*& moves, pieces::type const& pi,
 
 	move_info& mi= *(moves++);
 
-	mi.m.flags = flags;
-	mi.m.piece = pi;
-	mi.m.source = static_cast<unsigned char>(source);
-	mi.m.target = static_cast<unsigned char>(target);
-	mi.m.captured_piece = pieces::none;
+	mi.m = move( source, target, flags );
 }
 
 // Adds the move if it does not result in self getting into check
 void add_if_legal( move_info*& moves, check_map const& check,
-				  pieces::type const& pi,
 				  uint64_t const& source, uint64_t const& target,
 				  int flags )
 {
@@ -54,7 +49,7 @@ void add_if_legal( move_info*& moves, check_map const& check,
 		}
 	}
 
-	do_add_move( moves, pi, source, target, flags );
+	do_add_move( moves, source, target, flags );
 }
 
 void add_if_legal_pawn( move_info*& moves, check_map const& check,
@@ -79,13 +74,13 @@ void add_if_legal_pawn( move_info*& moves, check_map const& check,
 	}
 
 	if( target >= 56 || target < 8 ) {
-		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_queen );
-		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_rook );
-		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_bishop );
-		do_add_move( moves, pieces::pawn, source, target, move_flags::promotion_knight );
+		do_add_move( moves, source, target, move_flags::promotion_queen );
+		do_add_move( moves, source, target, move_flags::promotion_rook );
+		do_add_move( moves, source, target, move_flags::promotion_bishop );
+		do_add_move( moves, source, target, move_flags::promotion_knight );
 	}
 	else {
-		do_add_move( moves, pieces::pawn, source, target, move_flags::none );
+		do_add_move( moves, source, target, move_flags::none );
 	}
 }
 
@@ -97,7 +92,7 @@ void add_if_legal_king( position const& p,
 		return;
 	}
 
-	do_add_move( moves, pieces::king, source, target, flags );
+	do_add_move( moves, source, target, flags );
 }
 
 void calc_moves_king( position const& p, move_info*& moves,
@@ -181,7 +176,7 @@ void calc_moves_queen( position const& p, move_info*& moves, check_map const& ch
 
 	while( possible_moves ) {
 		uint64_t queen_move = bitscan_unset( possible_moves );
-		add_if_legal( moves, check, pieces::queen, queen, queen_move, move_flags::none );
+		add_if_legal( moves, check, queen, queen_move, move_flags::none );
 	}
 }
 
@@ -217,7 +212,7 @@ void calc_moves_bishop( position const& p, move_info*& moves, check_map const& c
 
 	while( possible_moves ) {
 		uint64_t bishop_move = bitscan_unset( possible_moves );
-		add_if_legal( moves, check, pieces::bishop, bishop, bishop_move, move_flags::none );
+		add_if_legal( moves, check, bishop, bishop_move, move_flags::none );
 	}
 }
 
@@ -253,7 +248,7 @@ void calc_moves_rook( position const& p, move_info*& moves, check_map const& che
 
 	while( possible_moves ) {
 		uint64_t rook_move = bitscan_unset( possible_moves);
-		add_if_legal( moves, check, pieces::rook, rook, rook_move, move_flags::none );
+		add_if_legal( moves, check, rook, rook_move, move_flags::none );
 	}
 }
 
@@ -287,7 +282,7 @@ void calc_moves_knight( position const& p, move_info*& moves, check_map const& c
 
 	while( new_knights ) {
 		uint64_t new_knight = bitscan_unset( new_knights );
-		add_if_legal( moves, check, pieces::knight, old_knight, new_knight, move_flags::none );
+		add_if_legal( moves, check, old_knight, new_knight, move_flags::none );
 	}
 }
 
@@ -334,7 +329,7 @@ void calc_moves_pawn_pushes( position const& p, move_info*& moves, check_map con
 	}
 	while( double_pushes ) {
 		uint64_t pawn_move = bitscan_unset( double_pushes );
-		add_if_legal( moves, check, pieces::pawn, pawn_move - (c ? -16 : 16), pawn_move, move_flags::pawn_double_move );
+		add_if_legal( moves, check, pawn_move - (c ? -16 : 16), pawn_move, move_flags::none );
 	}
 
 	while( pawn_pushes ) {

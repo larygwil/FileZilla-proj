@@ -8,6 +8,7 @@
 #include "pvlist.hpp"
 #include "moves.hpp"
 #include "seen_positions.hpp"
+#include "util.hpp"
 
 #include <sstream>
 

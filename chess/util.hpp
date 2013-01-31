@@ -15,7 +15,7 @@ bool validate_move( move const& m, move_info const* begin, move_info const* end 
 bool parse_move( position const& p, std::string const& line, move& m, std::string& error );
 
 // E.g. O-O, Na3xf6, b2-b4
-std::string move_to_string( move const& m, bool padding = true );
+std::string move_to_string( position const& p, move const& m, bool padding = true );
 
 std::string move_to_san( position const& p, move const& m );
 
@@ -30,8 +30,5 @@ void apply_move( position& p, move const& m );
 bool is_valid_move( position const& p, move const& m, check_map const& check );
 
 std::string board_to_string( position const& p, color::type view );
-
-// Numbered square from 0 - 63
-pieces::type get_piece_on_square( position const& p, color::type c, uint64_t square );
 
 #endif

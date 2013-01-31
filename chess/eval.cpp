@@ -97,13 +97,14 @@ inline void add_score( eval_results& results, score const* s ) {
 
 short evaluate_move( position const& p, move const& m )
 {
-	score delta = -pst[p.self()][m.piece][m.source];
+	pieces::type piece = p.get_piece(m.source());
+	score delta = -pst[p.self()][piece][m.source()];
 
-	if( m.flags & move_flags::castle ) {
-		delta += pst[p.self()][pieces::king][m.target];
+	if( m.castle() ) {
+		delta += pst[p.self()][pieces::king][m.target()];
 
 		unsigned char row = p.white() ? 0 : 56;
-		if( m.target % 8 == 6 ) {
+		if( m.target() % 8 == 6 ) {
 			// Kingside
 			delta += pst[p.self()][pieces::rook][row + 5] - pst[p.self()][pieces::rook][row + 7];
 		}
@@ -113,25 +114,24 @@ short evaluate_move( position const& p, move const& m )
 		}
 	}
 	else {
-
-		if( m.captured_piece != pieces::none ) {
-			if( m.flags & move_flags::enpassant ) {
-				unsigned char ep = (m.target & 0x7) | (m.source & 0x38);
+		pieces::type captured_piece = p.get_captured_piece( m );
+		if( captured_piece != pieces::none ) {
+			if( m.enpassant() ) {
+				unsigned char ep = (m.target() & 0x7) | (m.source() & 0x38);
 				delta += eval_values::material_values[pieces::pawn] + pst[p.other()][pieces::pawn][ep];
 			}
 			else {
-				delta += eval_values::material_values[m.captured_piece] + pst[p.other()][m.captured_piece][m.target];
+				delta += eval_values::material_values[captured_piece] + pst[p.other()][captured_piece][m.target()];
 			}
 		}
 
-		int promotion = m.flags & move_flags::promotion_mask;
-		if( promotion ) {
-			pieces::type promotion_piece = static_cast<pieces::type>(promotion >> move_flags::promotion_shift);
+		if( m.promotion() ) {
+			pieces::type promotion_piece = m.promotion_piece();
 			delta -= eval_values::material_values[pieces::pawn];
-			delta += eval_values::material_values[promotion_piece] + pst[p.self()][promotion_piece][m.target];
+			delta += eval_values::material_values[promotion_piece] + pst[p.self()][promotion_piece][m.target()];
 		}
 		else {
-			delta += pst[p.self()][m.piece][m.target];
+			delta += pst[p.self()][piece][m.target()];
 		}
 	}
 
@@ -264,7 +264,7 @@ inline static void evaluate_bishop_pin( position const& p, color::type c, uint64
 
 		uint64_t between = between_squares[bishop][p.king_pos[1-c]] & p.bitboards[1-c].b[bb_type::all_pieces];
 		if( popcount( between ) == 1 ) {
-			pieces::type piece = get_piece_on_square( p, static_cast<color::type>(1-c), bitscan( between ) );
+			pieces::type piece = p.get_piece( bitscan( between ) );
 			add_score<detail, eval_detail::absolute_pins>( results, c, eval_values::absolute_pin[ piece ] );
 		}
 	}
@@ -392,7 +392,7 @@ inline static void evaluate_rook_pin( position const& p, color::type c, uint64_t
 
 		uint64_t between = between_squares[rook][p.king_pos[1-c]] & p.bitboards[1-c].b[bb_type::all_pieces];
 		if( popcount( between ) == 1 ) {
-			pieces::type piece = get_piece_on_square( p, static_cast<color::type>(1-c), bitscan( between ) );
+			pieces::type piece = p.get_piece( bitscan( between ) );
 			add_score<detail, eval_detail::absolute_pins>( results, c, eval_values::absolute_pin[ piece ] );
 		}
 	}
@@ -468,7 +468,7 @@ inline static void evaluate_queen_pin( position const& p, color::type c, uint64_
 
 		uint64_t between = between_squares[queen][p.king_pos[1-c]] & p.bitboards[1-c].b[bb_type::all_pieces];
 		if( popcount( between ) == 1 ) {
-			pieces::type piece = get_piece_on_square( p, static_cast<color::type>(1-c), bitscan( between ) );
+			pieces::type piece = p.get_piece( bitscan( between ) );
 			add_score<detail, eval_detail::absolute_pins>( results, c, eval_values::absolute_pin[ piece ] );
 		}
 	}

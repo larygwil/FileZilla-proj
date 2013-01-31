@@ -15,16 +15,9 @@ std::string position_to_fen_noclock( position const& p )
 		for( int col = 0; col < 8; ++col ) {
 			int pi = row * 8 + col;
 
-			pieces::type piece;
-			color::type c;
-			if( p.bitboards[color::black].b[bb_type::all_pieces] & (1ull << pi) ) {
-				c = color::black;
-				piece = get_piece_on_square( p, c, pi );
-			}
-			else {
-				c = color::white;
-				piece = get_piece_on_square( p, c, pi );
-			}
+			pieces_with_color::type pwc = p.get_piece_with_color( pi );
+			pieces::type piece = get_piece( pwc );
+			color::type c = get_color( pwc );
 
 			if( piece == pieces::none ) {
 				++free;

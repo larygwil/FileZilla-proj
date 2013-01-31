@@ -146,50 +146,54 @@ uint64_t update_zobrist_hash( position const& p, uint64_t hash, move const& m )
 	hash = ~hash;
 	hash ^= enpassant[p.can_en_passant];
 
-	if( m.flags & move_flags::enpassant ) {
+	pieces::type piece = p.get_piece( m );
+	pieces::type captured_piece = p.get_captured_piece( m );
+
+	if( m.enpassant() ) {
 		// Was en-passant
-		hash ^= pawns[p.other()][(m.target % 8) | (m.source & 0xf8)];
+		hash ^= pawns[p.other()][(m.target() % 8) | (m.source() & 0xf8)];
 	}
-	else if( m.captured_piece != pieces::none ) {
-		hash ^= get_piece_hash( static_cast<pieces::type>(m.captured_piece), p.other(), m.target );
+	else if( captured_piece != pieces::none ) {
+		hash ^= get_piece_hash( static_cast<pieces::type>(captured_piece), p.other(), m.target() );
 		
-		if( m.captured_piece == pieces::rook ) {
-			if( m.target == queenside_rook_origin[p.other()] && p.castle[p.other()] & 0x2 ) {
+		if( captured_piece == pieces::rook ) {
+			if( m.target() == queenside_rook_origin[p.other()] && p.castle[p.other()] & 0x2 ) {
 				hash ^= castle[p.other()][p.castle[p.other()]];
 				hash ^= castle[p.other()][p.castle[p.other()] & 0x5];
 			}
-			else if( m.target == kingside_rook_origin[p.other()] && p.castle[p.other()] & 0x1 ) {
+			else if( m.target() == kingside_rook_origin[p.other()] && p.castle[p.other()] & 0x1 ) {
 				hash ^= castle[p.other()][p.castle[p.other()]];
 				hash ^= castle[p.other()][p.castle[p.other()] & 0x6];
 			}
 		}
 	}
 
-	hash ^= get_piece_hash( m.piece, p.self(), m.source );
+	hash ^= get_piece_hash( piece, p.self(), m.source() );
 
-	if( m.piece == pieces::pawn ) {
-		unsigned char source_row = m.source / 8;
-		unsigned char target_col = m.target % 8;
-		unsigned char target_row = m.target / 8;
-		if( m.flags & move_flags::pawn_double_move ) {
+	if( piece == pieces::pawn ) {
+		if( (m.source() ^ m.target()) == 16 ) {
+			unsigned char source_row = m.source() / 8;
+			unsigned char target_col = m.target() % 8;
+			unsigned char target_row = m.target() / 8;
+
 			// Becomes en-passantable
 			hash ^= enpassant[target_col + (source_row + target_row) * 4];
 		}
 	}
-	else if( m.piece == pieces::rook ) {
-		if( m.source == queenside_rook_origin[p.self()] && p.castle[p.self()] & 0x2 ) {
+	else if( piece == pieces::rook ) {
+		if( m.source() == queenside_rook_origin[p.self()] && p.castle[p.self()] & 0x2 ) {
 			hash ^= castle[p.self()][p.castle[p.self()]];
 			hash ^= castle[p.self()][p.castle[p.self()] & 0x5];
 		}
-		else if( m.source == kingside_rook_origin[p.self()] && p.castle[p.self()] & 0x1 ) {
+		else if( m.source() == kingside_rook_origin[p.self()] && p.castle[p.self()] & 0x1 ) {
 			hash ^= castle[p.self()][p.castle[p.self()]];
 			hash ^= castle[p.self()][p.castle[p.self()] & 0x6];
 		}
 	}
-	else if( m.piece == pieces::king ) {
-		if( m.flags & move_flags::castle ) {
-			unsigned char target_col = m.target % 8;
-			unsigned char target_row = m.target / 8;
+	else if( piece == pieces::king ) {
+		if( m.castle() ) {
+			unsigned char target_col = m.target() % 8;
+			unsigned char target_row = m.target() / 8;
 
 			// Was castling
 			if( target_col == 2 ) {
@@ -209,30 +213,30 @@ uint64_t update_zobrist_hash( position const& p, uint64_t hash, move const& m )
 		}
 	}
 
-	int promotion = m.flags & move_flags::promotion_mask;
-	if( !promotion ) {
-		hash ^= get_piece_hash( m.piece, p.self(), m.target );
+	if( !m.promotion() ) {
+		hash ^= get_piece_hash( piece, p.self(), m.target() );
 	}
 	else {
+		pieces::type promotion = m.promotion_piece();
 		switch( promotion ) {
-			case move_flags::promotion_knight:
-				hash ^= knights[p.self()][m.target];
+			case pieces::knight:
+				hash ^= knights[p.self()][m.target()];
 				break;
-			case move_flags::promotion_bishop:
-				hash ^= bishops[p.self()][m.target];
+			case pieces::bishop:
+				hash ^= bishops[p.self()][m.target()];
 				break;
-			case move_flags::promotion_rook:
-				hash ^= rooks[p.self()][m.target];
+			case pieces::rook:
+				hash ^= rooks[p.self()][m.target()];
 				break;
-			case move_flags::promotion_queen:
-				hash ^= queens[p.self()][m.target];
+			case pieces::queen:
+			default:
+				hash ^= queens[p.self()][m.target()];
 				break;
 		}
 	}
 
 	return hash;
 }
-
 
 uint64_t get_pawn_structure_hash( color::type c, unsigned char pawn )
 {

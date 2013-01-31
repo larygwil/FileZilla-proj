@@ -824,6 +824,8 @@ bool do_deepen_tree( book& b, position const& p, seen_positions seen, std::vecto
 	if( entries.empty() ) {
 		std::stringstream ss;
 		ss << "Calculating " << position_to_fen_noclock( p ) << std::endl;
+
+		position p2 = p;
 		for( unsigned int i = 0; i < move_history.size(); ++i ) {
 			if( i ) {
 				ss << " ";
@@ -831,7 +833,8 @@ bool do_deepen_tree( book& b, position const& p, seen_positions seen, std::vecto
 			if( !(i%2) ) {
 				ss << i / 2 + 1<< ". ";
 			}
-			ss << move_to_string( move_history[i], false );
+			ss << move_to_san( p2, move_history[i] );
+			apply_move( p2, move_history[i] );
 		}
 		ss << std::endl;
 		std::cerr << ss.str();

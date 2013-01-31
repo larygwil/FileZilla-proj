@@ -40,7 +40,7 @@ pv_entry* pv_entry_pool::get()
 			last_free_ = 0;
 		}
 		ret->next_ = 0;
-		ret->best_move_.piece = pieces::none;
+		ret->best_move_.clear();
 	}
 	else {
 		ret = new pv_entry();
@@ -85,7 +85,7 @@ void pv_entry_pool::set_pv_move( pv_entry* pv, move const& m )
 
 void pv_entry_pool::clear_pv_move( pv_entry* pv )
 {
-	pv->best_move_.piece = pieces::none;
+	pv->best_move_.clear();
 	if( pv->next() ) {
 		release( pv->next_ );
 		pv->next_ = 0;
@@ -100,7 +100,7 @@ std::string pv_to_string( pv_entry const* pv, position p, bool use_long_algebrai
 		ss << 
 			( use_long_algebraic_notation ?
 				move_to_long_algebraic( pv->get_best_move() )
-				: move_to_string( pv->get_best_move() ) ) 
+				: move_to_string( p, pv->get_best_move() ) ) 
 		   << " ";
 
 		apply_move( p, pv->get_best_move() );

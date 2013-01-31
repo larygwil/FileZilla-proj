@@ -80,7 +80,9 @@ struct xboard_state
 	{
 		history.push_back( p );
 		bool reset_seen = false;
-		if( m.piece == pieces::pawn || m.captured_piece ) {
+		pieces::type piece = p.get_piece( m );
+		pieces::type captured_piece = p.get_captured_piece( m );
+		if( piece == pieces::pawn || captured_piece ) {
 			reset_seen = true;
 		}
 
@@ -476,7 +478,7 @@ void xboard_thread::start( bool just_ponder )
 	join();
 	do_abort = false;
 	abort = false;
-	best_move.piece = pieces::none;
+	best_move.clear();
 	ponder_ = just_ponder;
 
 	spawn();
@@ -489,7 +491,7 @@ move xboard_thread::stop()
 	abort = true;
 	join();
 	move m = best_move;
-	best_move.piece = pieces::none;
+	best_move.clear();
 
 	return m;
 }
@@ -950,7 +952,7 @@ skip_getline:
 					std::cout << " " << move_to_long_algebraic( it->m ) << std::endl;
 				}
 				else if( args == "full" ) {
-					std::cout << " " << move_to_string( it->m ) << std::endl;
+					std::cout << " " << move_to_string( state.p, it->m ) << std::endl;
 				}
 				else {
 					std::cout << " " << move_to_san( state.p, it->m ) << std::endl;

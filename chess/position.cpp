@@ -42,6 +42,7 @@ void position::update_derived()
 		king_pos[i] = static_cast<int>(bitscan( bitboards[i].b[bb_type::king] ));
 	}
 
+	init_board();
 	init_material();
 	init_eval();
 	init_pawn_hash();
@@ -53,13 +54,13 @@ void position::init_material()
 	material[0] = score();
 	material[1] = score();
 
-	for( int i = 0; i < 2; ++i ) {
-		for( unsigned int pi = 0; pi < 64; ++pi ) {
-			pieces::type b = get_piece_on_square( *this, static_cast<color::type>(i), pi );
+	for( unsigned int pi = 0; pi < 64; ++pi ) {
+		pieces_with_color::type pwc = get_piece_with_color( pi );
+		color::type c = get_color( pwc );
+		pieces::type b = ::get_piece( pwc );
 
-			if( b != pieces::king ) {
-				material[i] += eval_values::material_values[b];
-			}
+		if( b != pieces::king ) {
+			material[c] += eval_values::material_values[b];
 		}
 	}
 }
@@ -69,21 +70,17 @@ void position::init_eval()
 {
 	base_eval = material[0] - material[1];
 
-	for( int i = 0; i < 2; ++i ) {
-		score side;
-		for( unsigned int sq = 0; sq < 64; ++sq ) {
-			pieces::type pi = get_piece_on_square( *this, static_cast<color::type>(i), sq );
-
-			side += pst[i][pi][sq];
-		}
-
-		if( i ) {
-			base_eval -= side;
-		}
-		else {
-			base_eval += side;
-		}
+	score side[2];
+	for( unsigned int sq = 0; sq < 64; ++sq ) {
+		pieces_with_color::type pwc = get_piece_with_color( sq );
+		color::type c = get_color( pwc );
+		pieces::type pi = ::get_piece( pwc );
+		
+		side[c] += pst[c][pi][sq];
 	}
+
+	base_eval += side[color::white];
+	base_eval -= side[color::black];
 }
 
 
@@ -112,6 +109,19 @@ void position::init_bitboards()
 	bitboards[color::black].b[bb_type::king]    = (1ull << 4) << (7*8);
 }
 
+void position::init_board()
+{
+	for( int sq = 0; sq < 64; ++sq ) {
+		board[sq] = pieces_with_color::none;
+		for( int c = 0; c < 2; ++c ) {
+			for( int type = bb_type::pawns; type <= bb_type::king; ++type) {
+				if( bitboards[c].b[type] & (1ull << sq)) {
+					board[sq] = static_cast<pieces_with_color::type>(c * 8 + type);
+				}
+			}
+		}
+	}
+}
 
 unsigned char position::do_null_move()
 {
@@ -263,6 +273,61 @@ bool position::verify( std::string& error ) const
 		error = "The side not to move is in check.";
 		return false;
 	}
-	
+
+	for( int sq = 0; sq < 64; ++sq ) {
+		pieces_with_color::type pwc = board[sq];
+		color::type c = get_color(pwc);
+		pieces::type pi = ::get_piece(pwc);
+		if( pi == pieces::none ) {
+			if( bitboards[c].b[bb_type::all_pieces] & (1ull << sq) ) {
+				error = "Board contains non-empty square where it should be empty.";
+				return false;
+			}
+		}
+		else if( !(bitboards[c].b[pi] & (1ull << sq) ) ) {
+			error = "Board contains wrong data.";
+			return false;
+		}
+	}
+
 	return true;
+}
+
+pieces_with_color::type position::get_piece_with_color( uint64_t square ) const
+{
+	return board[square];
+}
+
+pieces::type position::get_piece( move const& m ) const
+{
+	return get_piece( m.source() );
+}
+
+pieces::type position::get_captured_piece( move const& m ) const
+{
+	pieces::type ret;
+	if( m.enpassant() ) {
+		ret = pieces::pawn;
+	}
+	else {
+		ret = get_piece( m.target() );
+	}
+	return ret;
+}
+
+pieces_with_color::type position::get_piece_with_color( move const& m ) const
+{
+	return get_piece_with_color( m.source() );
+}
+
+pieces_with_color::type position::get_captured_piece_with_color( move const& m ) const
+{
+	pieces_with_color::type ret;
+	if( m.enpassant() ) {
+		ret = white() ? pieces_with_color::black_pawn : pieces_with_color::white_pawn;
+	}
+	else {
+		ret = get_piece_with_color( m.target() );
+	}
+	return ret;
 }

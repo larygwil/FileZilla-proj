@@ -28,25 +28,28 @@ unsigned char const table[64] = {
 std::string move_to_book_string( move const& m )
 {
 	std::string ret;
-	ret += table[m.source];
-	ret += table[m.target];
+	ret += table[m.source()];
+	ret += table[m.target()];
 
-	switch( m.flags & move_flags::promotion_mask ) {
-	case move_flags::promotion_queen:
-		ret += 'q';
-		break;
-	case move_flags::promotion_rook:
-		ret += 'r';
-		break;
-	case move_flags::promotion_bishop:
-		ret += 'b';
-		break;
-	case move_flags::promotion_knight:
-		ret += 'n';
-		break;
-	default:
+	if( m.promotion() ) {
+		switch( m.promotion_piece() ) {
+			default:
+			case pieces::queen:
+				ret += 'q';
+				break;
+			case pieces::rook:
+				ret += 'r';
+				break;
+			case pieces::bishop:
+				ret += 'b';
+				break;
+			case pieces::knight:
+				ret += 'n';
+				break;
+		}
+	}
+	else {
 		ret += ' ';
-		break;
 	}
 	return ret;
 }
@@ -63,20 +66,20 @@ public:
 	BookMoveSort() {}
 
 	bool operator()( move const& lhs, move const& rhs ) const {
-		if( lhs.source < rhs.source ) {
+		if( lhs.source() < rhs.source() ) {
 			return true;
 		}
-		else if( lhs.source > rhs.source ) {
+		else if( lhs.source() > rhs.source() ) {
 			return false;
 		}
-		if( lhs.target < rhs.target ) {
+		if( lhs.target() < rhs.target() ) {
 			return true;
 		}
-		else if( lhs.target > rhs.target ) {
+		else if( lhs.target() > rhs.target() ) {
 			return false;
 		}
 
-		return (lhs.flags & move_flags::promotion_mask) < (rhs.flags & move_flags::promotion_mask);
+		return lhs.promotion_piece() < rhs.promotion_piece();
 	}
 
 

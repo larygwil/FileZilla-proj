@@ -5,6 +5,8 @@
 #include "definitions.hpp"
 #include "score.hpp"
 
+class move;
+
 /*
  * Class to represent a complete chess position, sans repetition history.
  *
@@ -59,8 +61,20 @@ public:
 
 	unsigned char do_null_move();
 
+	pieces::type get_piece( uint64_t square ) const { return ::get_piece(get_piece_with_color(square)); }
+	pieces_with_color::type get_piece_with_color( uint64_t square ) const;
+
+	// Only call with valid moves
+	pieces::type get_piece( move const& m ) const;
+	pieces::type get_captured_piece( move const& m ) const;
+	pieces_with_color::type get_piece_with_color( move const& m ) const;
+	pieces_with_color::type get_captured_piece_with_color( move const& m ) const;
+
+	pieces_with_color::type board[64];
+
 private:
 	void init_bitboards();
+	void init_board();
 	void init_pawn_hash();
 	void init_material();
 	void init_eval();

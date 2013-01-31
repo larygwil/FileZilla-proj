@@ -23,11 +23,7 @@ void do_add_move( move_info*& moves, pieces::type const& pi,
 
 	move_info& mi = *(moves++);
 
-	mi.m.flags = flags;
-	mi.m.piece = pi;
-	mi.m.source = static_cast<unsigned char>(source);
-	mi.m.target = static_cast<unsigned char>(target);
-	mi.m.captured_piece = captured;
+	mi.m = move(source, target, flags);
 
 	mi.sort = eval_values::material_values[ captured ].mg() * 32 - eval_values::material_values[ pi ].mg();
 }
@@ -107,7 +103,7 @@ void add_if_legal_king( position const& p, move_info*& moves,
 void calc_moves_king( position const& p, move_info*& moves,
 					  uint64_t source, uint64_t target )
 {
-	pieces::type captured = get_piece_on_square( p, p.other(), target );
+	pieces::type captured = p.get_piece( target );
 	add_if_legal_king( p, moves, source, target, move_flags::none, captured );
 }
 
@@ -133,7 +129,7 @@ void calc_moves_queen( position const& p, move_info*& moves, check_map const& ch
 	while( possible_moves ) {
 		uint64_t queen_move = bitscan_unset( possible_moves );
 
-		pieces::type captured = get_piece_on_square( p, p.other(), queen_move );
+		pieces::type captured = p.get_piece( queen_move );
 		add_if_legal( moves, check, pieces::queen, queen, queen_move, move_flags::none, captured );
 	}
 }
@@ -160,7 +156,7 @@ void calc_moves_bishop( position const& p, move_info*& moves, check_map const& c
 	while( possible_moves ) {
 		uint64_t bishop_move = bitscan_unset( possible_moves );
 
-		pieces::type captured = get_piece_on_square( p, p.other(), bishop_move );
+		pieces::type captured = p.get_piece( bishop_move );
 		add_if_legal( moves, check, pieces::bishop, bishop, bishop_move, move_flags::none, captured );
 	}
 }
@@ -187,7 +183,7 @@ void calc_moves_rook( position const& p, move_info*& moves, check_map const& che
 	while( possible_moves ) {
 		uint64_t rook_move = bitscan_unset( possible_moves );
 
-		pieces::type captured = get_piece_on_square( p, p.other(), rook_move );
+		pieces::type captured = p.get_piece( rook_move );
 		add_if_legal( moves, check, pieces::rook, rook, rook_move, move_flags::none, captured );
 	}
 }
@@ -206,7 +202,7 @@ void calc_moves_rooks( position const& p, move_info*& moves, check_map const& ch
 void calc_moves_knight( position const& p, move_info*& moves, check_map const& check,
 						uint64_t source, uint64_t target )
 {
-	pieces::type captured = get_piece_on_square( p, p.other(), target );
+	pieces::type captured = p.get_piece( target );
 	add_if_legal( moves, check, pieces::knight, source, target, move_flags::none, captured );
 }
 
@@ -286,9 +282,12 @@ void calc_moves_pawn_en_passant( position const& p, move_info*& moves, check_map
 				sq = bitscan_reverse( occ );
 			}
 
-			pieces::type pi = get_piece_on_square( p, p.other(), sq );
-			if( pi == pieces::rook || pi == pieces::queen ) {
-				return;
+			pieces_with_color::type pwc = p.get_piece_with_color( sq );
+			if( get_color(pwc) == p.other() ) {
+				pieces::type pi = get_piece(pwc);
+				if( pi == pieces::rook || pi == pieces::queen ) {
+					return;
+				}
 			}
 		}
 	}
@@ -302,7 +301,7 @@ void calc_moves_pawn_captures( position const& p, move_info*& moves, check_map c
 	while( pawn_captures ) {
 		uint64_t pawn_move = bitscan_unset( pawn_captures );
 
-		pieces::type captured = get_piece_on_square( p, p.other(), pawn_move );
+		pieces::type captured = p.get_piece( pawn_move );
 
 		add_if_legal_pawn( moves, check, pawn_move - shift, pawn_move, captured );
 	}

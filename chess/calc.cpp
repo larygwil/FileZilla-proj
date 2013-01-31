@@ -20,9 +20,9 @@
 #include <iomanip>
 #include <iostream>
 #include <math.h>
+#include <map>
 #include <sstream>
 #include <string>
-#include <map>
 #include <vector>
 
 int const check_extension = 6;
@@ -56,8 +56,10 @@ void sort_moves( move_info* begin, move_info* end, position const& p )
 {
 	for( move_info* it = begin; it != end; ++it ) {
 		it->sort = evaluate_move( p, it->m );
-		if( it->m.captured_piece != pieces::none ) {
-			it->sort += eval_values::material_values[ it->m.captured_piece ].mg() * 1000000 - eval_values::material_values[ it->m.piece ].mg();
+		pieces::type captured_piece = p.get_captured_piece( it->m );
+		if( captured_piece != pieces::none ) {
+			pieces::type piece = p.get_piece( it->m.source() );
+			it->sort += eval_values::material_values[ captured_piece ].mg() * 1000000 - eval_values::material_values[ piece ].mg();
 		}
 	}
 	std::stable_sort( begin, end, moveSort );
@@ -136,7 +138,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 	qsearch_move_generator gen( ctx, p, check, pv_node, do_checks );
 
-	if( check.check || tt_move.captured_piece != pieces::none ) {
+	if( check.check || (!tt_move.empty() && p.get_piece( tt_move.target() ) != pieces::none ) ) {
 		gen.hash_move = tt_move;
 	}
 
@@ -148,17 +150,20 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 	move_info const* it;
 	while( (it = gen.next()) ) {
 
-		position new_pos = p;
+		pieces::type piece = p.get_piece( it->m.source() );
+		pieces::type captured_piece = p.get_captured_piece( it->m );
+		
+		position new_pos(p);
 		apply_move( new_pos, it->m );
 		check_map new_check( new_pos );
-
-		if( it->m.captured_piece == pieces::none && !check.check && !new_check.check ) {
+		
+		if( captured_piece == pieces::none && !check.check && !new_check.check ) {
 			continue;
 		}
 
 		// Delta pruning
-		if( !pv_node && !check.check && !new_check.check && (it->m.piece != pieces::pawn || (it->m.target >= 16 && it->m.target < 48 ) ) ) {
-			short new_value = full_eval + eval_values::material_values[it->m.captured_piece].mg() + delta_pruning;
+		if( !pv_node && !check.check && !new_check.check && (piece != pieces::pawn || (it->m.target() >= 16 && it->m.target() < 48 ) ) ) {
+			short new_value = full_eval + eval_values::material_values[captured_piece].mg() + delta_pruning;
 			if( new_value <= alpha ) {
 				if( new_value > best_value ) {
 					best_value = new_value;
@@ -168,8 +173,8 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		}
 
 		short value;
-		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
 
+		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
 		value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, new_check, -beta, -alpha );
 
 		if( value > best_value ) {
@@ -251,7 +256,6 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 			}
 		}
 	}
-
 
 	int plies_remaining = (depth - cutoff) / depth_factor;
 
@@ -339,12 +343,15 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		short value;
 		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
 
+		pieces::type piece = p.get_piece( it->m.source() );
+		pieces::type captured_piece = p.get_captured_piece( it->m );
+
 		pv_entry* cpv = ctx.pv_pool.get();
 		if( ctx.seen.is_two_fold( new_hash, ply ) ) {
 			value = result::draw;
 		}
 		else {
-			position new_pos = p;
+			position new_pos(p);
 			apply_move( new_pos, it->m );
 
 			ctx.seen.set( new_hash, ply );
@@ -364,9 +371,9 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 			bool dangerous_pawn_move = false;
 
 			// Pawn push extension
-			if( it->m.piece == pieces::pawn ) {
+			if( piece == pieces::pawn ) {
 				// Pawn promoting or moving to 7th rank
-				if( it->m.target < 16 || it->m.target >= 48 ) {
+				if( it->m.target() < 16 || it->m.target() >= 48 ) {
 					dangerous_pawn_move = true;
 					if( !extended && pv_node ) {
 						new_depth += pawn_push_extension;
@@ -374,7 +381,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 					}
 				}
 				// Pushing a passed pawn
-				else if( !(passed_pawns[p.self()][it->m.target] & p.bitboards[p.other()].b[bb_type::pawns] ) ) {
+				else if( !(passed_pawns[p.self()][it->m.target()] & p.bitboards[p.other()].b[bb_type::pawns] ) ) {
 					dangerous_pawn_move = true;
 					if( !extended && pv_node ) {
 						new_depth += pawn_push_extension;
@@ -384,13 +391,13 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 			}
 
 			// Recapture extension
-			if( !extended && pv_node && it->m.captured_piece != pieces::none && it->m.target == last_ply_was_capture && see(p, it->m) >= 0 ) {
+			if( !extended && pv_node && captured_piece != pieces::none && it->m.target() == last_ply_was_capture && see(p, it->m) >= 0 ) {
 				new_depth += recapture_extension;
 				extended = true;
 			}
 			unsigned char new_capture = 64;
-			if( it->m.captured_piece != pieces::none ) {
-				new_capture = it->m.target;
+			if( captured_piece != pieces::none ) {
+				new_capture = it->m.target();
 			}
 
 			// Open question: What's the exact reason for always searching exactly the first move full width?
@@ -438,7 +445,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, new_check, -beta, -alpha, cpv, false, result::win, new_capture );
 			}
 
-			if( it->m.captured_piece == pieces::none ) {
+			if( captured_piece == pieces::none ) {
 				++searched_noncaptures;
 			}
 		}
@@ -452,7 +459,8 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 
 			if( value >= beta ) {
 				best_move = it->m;
-				if( !it->m.captured_piece ) {
+		
+				if( !captured_piece ) {
 					ctx.killers[p.self()][ply].add_killer( it->m );
 					gen.update_history();
 				}
@@ -921,7 +929,7 @@ calc_result calc_manager::calc( position& p, int max_depth, duration const& move
 		short alpha = result::loss;
 		short beta = result::win;
 
-		int evaluated = 0;
+		std::size_t evaluated = 0;
 
 		bool got_first_result = false;
 

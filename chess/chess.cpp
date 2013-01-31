@@ -70,7 +70,7 @@ void auto_play()
 		if( result.forecast > result::win_threshold ) {
 			last_mate = result.forecast;
 		}
-		std::cout << " " << move_to_string( result.best_move ) << std::endl;
+		std::cout << " " << move_to_string( p, result.best_move ) << std::endl;
 
 		if( !p.white() ) {
 			++i;
@@ -86,7 +86,9 @@ void auto_play()
 		}
 
 		bool reset_seen = false;
-		if( result.best_move.piece == pieces::pawn || result.best_move.captured_piece ) {
+		pieces::type piece = p.get_piece( result.best_move );
+		pieces::type captured_piece = p.get_captured_piece( result.best_move );
+		if( piece == pieces::pawn || captured_piece ) {
 			reset_seen = true;
 		}
 

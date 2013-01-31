@@ -100,7 +100,9 @@ static void generate_test_positions_impl()
 		}
 
 		bool reset_seen = false;
-		if( result.best_move.piece == pieces::pawn || result.best_move.captured_piece ) {
+		pieces::type piece = p.get_piece(result.best_move.source());
+		pieces::type captured_piece = p.get_captured_piece( result.best_move );
+		if( piece == pieces::pawn || captured_piece ) {
 			reset_seen = true;
 		}
 

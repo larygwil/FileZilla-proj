@@ -33,16 +33,16 @@ void history::reduce()
 	}
 }
 
-int history::get_value( move const& m, color::type c ) const
+int history::get_value( pieces::type piece, move const& m, color::type c ) const
 {
-	return static_cast<int>((cut_[c][m.piece][m.target] << 24ull) / all_[c][m.piece][m.target]);
+	return static_cast<int>((cut_[c][piece][m.target()] << 24ull) / all_[c][piece][m.target()]);
 }
 
-void history::record_cut(const move_info *begin, const move_info *end, color::type c )
+void history::record_cut( position const& p, const move_info *begin, const move_info *end, color::type c )
 {
 	move_info const* cut = end - 1;
-	++cut_[c][cut->m.piece][cut->m.target];
+	++cut_[c][p.get_piece(cut->m.source())][cut->m.target()];
 	for( move_info const* it = begin; it != end; ++it ) {
-		++all_[c][it->m.piece][it->m.target];
+		++all_[c][p.get_piece(it->m.source())][it->m.target()];
 	}
 }

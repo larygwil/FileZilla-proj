@@ -72,8 +72,8 @@ enum type {
 	age = 0,
 	depth = 8,
 	move = 17,
-	node_type = 46,
-	score = 48
+	node_type = 33,
+	score = 35
 };
 }
 
@@ -81,7 +81,7 @@ namespace field_masks {
 enum type {
 	age = 0xff,
 	depth = 0x1ff,
-	move = 0x1ffffff,
+	move = 0xffff,
 	node_type = 0x3,
 	score = 0xffff
 };
@@ -114,13 +114,7 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 
 	uint64_t v = static_cast<uint64_t>(clock) << field_shifts::age;
 	v |= static_cast<uint64_t>(remaining_depth) << field_shifts::depth;
-	v |= (
-				(static_cast<uint64_t>(best_move.flags) ) |
-				(static_cast<uint64_t>(best_move.piece) << 6 ) |
-				(static_cast<uint64_t>(best_move.source) << 9) |
-				(static_cast<uint64_t>(best_move.target) << 15) |
-				(static_cast<uint64_t>(best_move.captured_piece) << 21) ) << field_shifts::move;
-
+	v |= static_cast<uint64_t>(best_move.d) << field_shifts::move;
 	v |= static_cast<uint64_t>(t) << field_shifts::node_type;
 	v |= static_cast<uint64_t>(eval) << field_shifts::score;
 
@@ -195,11 +189,7 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 		}
 		full_eval = static_cast<short>(static_cast<unsigned short>(stored_key & 0xFFFFull));
 
-		best_move.flags = (v >> (field_shifts::move)) & 0x3F;
-		best_move.piece = static_cast<pieces::type>((v >> (field_shifts::move + 6)) & 0x07);
-		best_move.source = (v >> (field_shifts::move + 9)) & 0x3f;
-		best_move.target = (v >> (field_shifts::move + 15)) & 0x3f;
-		best_move.captured_piece = static_cast<pieces::type>((v >> (field_shifts::move + 21)) & 0x07);
+		best_move.d = (v >> field_shifts::move) & 0xFFFF;
 
 		unsigned short depth = (v >> field_shifts::depth) & field_masks::depth;
 
@@ -243,7 +233,7 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 	++stats_.misses;
 #endif
 
-	best_move.piece = pieces::none;
+	best_move.clear();
 	return score_type::none;
 }
 

@@ -13,9 +13,9 @@ public:
 	void reduce();
 
 	// Last move is the one producing the cut
-	void record_cut( move_info const* begin, move_info const* end, color::type c );
+	void record_cut( position const& p, move_info const* begin, move_info const* end, color::type c );
 
-	int get_value( move const& m, color::type c ) const;
+	int get_value( pieces::type piece, move const& m, color::type c ) const;
 
 private:
 	uint64_t cut_[2][7][64];

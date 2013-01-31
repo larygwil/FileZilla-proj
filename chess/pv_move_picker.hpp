@@ -19,7 +19,9 @@ public:
 
 private:
 	uint64_t hash_;
+	position previous_pos_;
 	move previous_;
+	position next_pos_;
 	move next_;
 	move ponder_;
 };

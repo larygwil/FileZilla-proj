@@ -13,6 +13,40 @@ enum type : unsigned char {
 };
 }
 
+
+namespace color {
+enum type {
+	white = 0,
+	black = 1
+};
+}
+
+
+namespace pieces_with_color {
+enum type : unsigned char {
+	none = 0,
+	white_pawn,
+	white_knight,
+	white_bishop,
+	white_rook,
+	white_queen,
+	white_king,
+	black_pawn = 9,
+	black_knight,
+	black_bishop,
+	black_rook,
+	black_queen,
+	black_king
+};
+}
+
+inline pieces::type get_piece( pieces_with_color::type pwc ) {
+	return static_cast<pieces::type>(pwc & 0x7);
+}
+inline color::type get_color( pieces_with_color::type pwc ) {
+	return (pwc >= pieces_with_color::black_pawn) ? color::black : color::white;
+}
+
 namespace bb_type {
 enum type {
 	all_pieces,
@@ -34,14 +68,6 @@ struct bitboard
 };
 
 
-namespace color {
-enum type {
-	white = 0,
-	black = 1
-};
-}
-
-
 namespace castles {
 enum type {
 	none = 0,
@@ -55,15 +81,14 @@ enum type {
 namespace move_flags {
 enum type {
 	none = 0,
-	enpassant = 1,
-	castle = 2,
-	pawn_double_move = 4,
-	promotion_knight = 16,
-	promotion_bishop = 24,
-	promotion_rook = 32,
-	promotion_queen = 40,
-	promotion_mask = 56,
-	promotion_shift = 3
+	castle = 0x1000,
+	enpassant = 0x2000,
+	promotion = 0x3000,
+	promotion_knight = 0x3000,
+	promotion_bishop = 0x7000,
+	promotion_rook = 0xb000,
+	promotion_queen = 0xf000,
+	promotion_mask = 0xc000
 };
 }
 

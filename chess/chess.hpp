@@ -24,34 +24,40 @@ PACKED(class move,
 {
 public:
 	move()
-		: u()
+		: d()
 	{}
 
-	bool empty() const { return piece == pieces::none; }
+	move( unsigned short source, unsigned short target, unsigned short flags ) 
+	: d(source | (target << 6) | flags)
+	{}
+	
+	// Getters
+	bool empty() const { return d == 0; }
 
-	union {
-		uint64_t u;
-		PACKED(struct,
-		{
-			unsigned char flags;
-			pieces::type piece;
-			unsigned char source;
-			unsigned char target;
-			pieces::type captured_piece;
-		});
-	};
+	unsigned char source() const { return d & 0x3f; }
+	unsigned char target() const { return (d >> 6) & 0x3f; }
 
+	bool castle() const { return (d & 0x3000) == 0x1000; }
+	bool enpassant() const { return (d & 0x3000) == 0x2000; }
+	bool promotion() const { return (d & 0x3000) == 0x3000; }
+
+	pieces::type promotion_piece() const { return static_cast<pieces::type>((d >> 14) + 2); }
+
+	// Setters
+	void clear() { d = 0; }
+	
+
+	// Operators
 	bool operator!=( move const& rhs ) const {
-		return u != rhs.u;
+		return d != rhs.d;
 	}
 	bool operator==( move const& rhs ) const {
-		return u == rhs.u;
+		return d == rhs.d;
 	}
 
-	void clear() {
-		u = 0;
-	}
 
+	// Data
+	unsigned short d;
 });
 
 #endif

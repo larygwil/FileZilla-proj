@@ -12,7 +12,7 @@ namespace {
 void evaluate_noncaptures( context const& ctx, move_info* begin, move_info* end, position const& p )
 {
 	for( move_info* it = begin; it != end; ++it ) {
-		it->sort = ctx.history_.get_value( it->m, p.self() );
+		it->sort = ctx.history_.get_value( p.get_piece( it->m ), it->m, p.self() );
 	}
 }
 }
@@ -72,7 +72,7 @@ move_info const* qsearch_move_generator::next()
 				std::cerr << "Possible type-1 hash collision:" << std::endl;
 				std::cerr << board_to_string( p_, color::white ) << std::endl;
 				std::cerr << position_to_fen_noclock( p_ ) << std::endl;
-				std::cerr << move_to_string( hash_move ) << std::endl;
+				std::cerr << move_to_string( p_, hash_move ) << std::endl;
 			}
 			else
 #endif
@@ -93,7 +93,10 @@ move_info const* qsearch_move_generator::next()
 				continue;
 			}
 #if DELAY_BAD_CAPTURES
-			if( it->m.piece > it->m.captured_piece ) {
+			pieces::type piece = p_.get_piece( it->m );
+			pieces::type captured_piece = p_.get_captured_piece( it->m );
+
+			if( piece > captured_piece ) {
 				int see_score = see( p_, it->m );
 				if( see_score < 0 ) {
 					if( check_.check || pv_node_ ) {
@@ -189,11 +192,11 @@ move_info const* move_generator::next() {
 		if( !hash_move.empty() ) {
 			ctx.move_ptr = moves + 1;
 #if CHECK_TYPE_1_COLLISION
-			if( !is_valid_move( p_, c_, hash_move, check_ ) ) {
+			if( !is_valid_move( p_, hash_move, check_ ) ) {
 				std::cerr << "Possible type-1 hash collision:" << std::endl;
 				std::cerr << board_to_string( p_, color::white ) << std::endl;
-				std::cerr << position_to_fen_noclock( p_, c_ ) << std::endl;
-				std::cerr << move_to_string( hash_move ) << std::endl;
+				std::cerr << position_to_fen_noclock( p_ ) << std::endl;
+				std::cerr << move_to_string( p_, hash_move ) << std::endl;
 			}
 			else
 #endif
@@ -213,7 +216,9 @@ move_info const* move_generator::next() {
 
 #if DELAY_BAD_CAPTURES
 				short s;
-				if( it->m.piece > it->m.captured_piece && (s = see( p_, it->m )) < 0 ) {
+				pieces::type piece = p_.get_piece( it->m );
+				pieces::type captured_piece = p_.get_captured_piece( it->m );
+				if( piece > captured_piece && (s = see( p_, it->m )) < 0 ) {
 					*bad_captures_end_ = *(it++);
 					(bad_captures_end_++)->sort = s;
 				}
@@ -231,13 +236,13 @@ move_info const* move_generator::next() {
 	case phases::killer1:
 		phase = phases::killer2;
 		ctx.move_ptr = bad_captures_end_ + 1;
-		if( !killers_.m1.empty() && killers_.m1 != hash_move && is_valid_move( p_, killers_.m1, check_ ) ) {
+		if( !killers_.m1.empty() && killers_.m1 != hash_move && !p_.get_captured_piece(killers_.m1) && is_valid_move( p_, killers_.m1, check_ ) ) {
 			bad_captures_end_->m = killers_.m1;
 			return bad_captures_end_;
 		}
 	case phases::killer2:
 		phase = phases::noncaptures_gen;
-		if( !killers_.m2.empty() && killers_.m2 != hash_move && killers_.m1 != killers_.m2 && is_valid_move( p_, killers_.m2, check_ ) ) {
+		if( !killers_.m2.empty() && killers_.m2 != hash_move && killers_.m1 != killers_.m2 && !p_.get_captured_piece(killers_.m2) && is_valid_move( p_, killers_.m2, check_ ) ) {
 			bad_captures_end_->m = killers_.m2;
 			return bad_captures_end_;
 		}
@@ -278,6 +283,6 @@ move_info const* move_generator::next() {
 void move_generator::update_history()
 {
 	if( phase == phases::noncapture ) {
-		ctx.history_.record_cut( bad_captures_end_, it, p_.self() );
+		ctx.history_.record_cut( p_, bad_captures_end_, it, p_.self() );
 	}
 }

@@ -27,9 +27,9 @@ static uint64_t least_valuable_attacker( position const& p, color::type c, uint6
 int see( position const& p, move const& m )
 {
 	// Iterative SEE algorithm as described by Fritz Reul, adapted to use bitboards.
-	unsigned char target = m.target;
+	unsigned char target = m.target();
 
-	pieces::type attacker_piece = m.piece;
+	pieces::type attacker_piece = p.get_piece(m);
 
 	int score[32];
 
@@ -37,7 +37,7 @@ int see( position const& p, move const& m )
 	uint64_t const all_bishops = p.bitboards[color::white].b[bb_type::bishops] | p.bitboards[color::white].b[bb_type::queens] | p.bitboards[color::black].b[bb_type::bishops] | p.bitboards[color::black].b[bb_type::queens];
 
 	uint64_t all_pieces = p.bitboards[color::white].b[bb_type::all_pieces] | p.bitboards[color::black].b[bb_type::all_pieces];
-	all_pieces ^= 1ull << m.source;
+	all_pieces ^= 1ull << m.source();
 
 	uint64_t attackers =
 			(rook_magic( target, all_pieces ) & all_rooks) |
@@ -48,7 +48,8 @@ int see( position const& p, move const& m )
 			(pawn_control[color::white][target] & p.bitboards[color::black].b[bb_type::pawns]);
 	// Don't have to remove source piece here, done implicitly in the loop.
 
-	score[0] = eval_values::material_values[ m.captured_piece ].mg();
+	pieces::type captured_piece = p.get_captured_piece( m );
+	score[0] = eval_values::material_values[ captured_piece ].mg();
 
 	// Get new attacker
 	if( !(attackers & p.bitboards[p.other()].b[bb_type::all_pieces]) ) {
