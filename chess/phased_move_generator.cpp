@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <iostream>
-#include "random.hpp"
 
 namespace {
 void evaluate_noncaptures( context const& ctx, move_info* begin, move_info* end, position const& p )
