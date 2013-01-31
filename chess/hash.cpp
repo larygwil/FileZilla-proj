@@ -204,8 +204,6 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 				eval += ply;
 			}
 
-			//unsigned char age = (v >> field_shifts::age) & field_masks::age;
-
 			if( ( type == score_type::exact ) ||
 				( type == score_type::lower_bound && beta <= eval ) ||
 				( type == score_type::upper_bound && alpha >= eval ) )
