@@ -80,36 +80,13 @@ void perft( perft_ctx& ctx, int depth, position const& p, uint64_t& n )
 }
 
 template<bool split_movegen>
-bool perft( std::size_t max_depth )
+void perft( position const& p, std::size_t max_depth, uint64_t const* perft_results, std::size_t size )
 {
-	uint64_t const perft_results[] = {
-		20ull,
-		400ull,
-		8902ull,
-		197281ull,
-		4865609ull,
-		119060324ull,
-		3195901860ull,
-		84998978956ull
-	};
-
-	/*
-		alternate:r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -
-		6
-		264
-		9467
-		422333
-		15833292
-		706045033
-	*/
-
 	perft_ctx ctx;
-	for( unsigned int i = 0; i < std::min(max_depth, sizeof(perft_results)/sizeof(uint64_t)); ++i ) {
+	for( unsigned int i = 0; i < std::min(max_depth, size); ++i ) {
 		ctx.move_ptr = ctx.moves;
 
 		std::cerr << "Calculating number of possible moves in " << (i + 1) << " plies:" << std::endl;
-
-		position p;
 
 		uint64_t ret = 0;
 
@@ -140,20 +117,33 @@ bool perft( std::size_t max_depth )
 
 		if( ret != perft_results[i] ) {
 			std::cerr << "FAIL! Expected " << perft_results[i] << " moves." << std::endl;
-			return false;
+			abort();
 		}
 		else {
 			std::cerr << "PASS" << std::endl;
 		}
 		std::cerr << std::endl;
 	}
-
-
-	return true;
 }
-template bool perft<true>( std::size_t max_depth );
-template bool perft<false>( std::size_t max_depth );
+template void perft<true>( std::size_t max_depth );
+template void perft<false>( std::size_t max_depth );
 
+template<bool split_movegen>
+void perft( std::size_t max_depth )
+{
+	position p;
+	uint64_t const perft_results[] = {
+		20ull,
+		400ull,
+		8902ull,
+		197281ull,
+		4865609ull,
+		119060324ull,
+		3195901860ull,
+		84998978956ull
+	};
+	perft<split_movegen>( p, max_depth, perft_results, sizeof(perft_results) / sizeof(uint64_t) );
+}
 
 namespace {
 
@@ -550,11 +540,63 @@ static void process_test_positions()
 static void test_perft()
 {
 	checking( "perft", true );
-	if( !perft<true>(6) ) {
-		abort();
+
+	{
+		perft<true>(6);
+		perft<false>(6);
 	}
-	if( !perft<false>(6) ) {
-		abort();
+	{
+		position p = test_parse_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -");
+		uint64_t const perft_results[] = {
+			6,
+			264,
+			9467,
+			422333,
+			15833292,
+			706045033
+		};
+
+		perft<true>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -");
+		uint64_t const perft_results[] = {
+			14,
+			191,
+			2812,
+			43238,
+			674624,
+			11030083,
+			178633661
+		};
+
+		perft<true>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+		uint64_t const perft_results[] = {
+			48,
+			2039,
+			97862,
+			4085603,
+			193690690
+		};
+
+		perft<true>(p, 5, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 5, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("rnbqkb1r/pp1p1ppp/2p5/4P3/2B5/8/PPP1NnPP/RNBQK2R w KQkq - 0 6");
+		uint64_t const perft_results[] = {
+			42,
+			1352,
+			53392
+		};
+
+		perft<true>(p, 3, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 3, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 }
 
