@@ -670,7 +670,13 @@ void apply_move( position& p, move const& m )
 	}
 
 	if( piece == pieces::pawn && (m.source() ^ m.target()) == 16 ) {
-		p.can_en_passant = (m.target() / 8 + m.source() / 8) * 4 + m.target() % 8;
+		unsigned char ep_square = (m.target() / 8 + m.source() / 8) * 4 + m.target() % 8;
+		if( (1ull << ep_square) & p.bitboards[p.other()].b[bb_type::pawn_control] ) {
+			p.can_en_passant = ep_square;
+		}
+		else {
+			p.can_en_passant = 0;
+		}	
 	}
 	else {
 		p.can_en_passant = 0;

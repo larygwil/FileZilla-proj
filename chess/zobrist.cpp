@@ -176,8 +176,11 @@ uint64_t update_zobrist_hash( position const& p, uint64_t hash, move const& m )
 			unsigned char target_col = m.target() % 8;
 			unsigned char target_row = m.target() / 8;
 
-			// Becomes en-passantable
-			hash ^= enpassant[target_col + (source_row + target_row) * 4];
+			unsigned char ep_square = target_col + (source_row + target_row) * 4;
+			if( (1ull << ep_square) & p.bitboards[p.other()].b[bb_type::pawn_control] ) {
+				// Becomes en-passantable
+				hash ^= enpassant[target_col + (source_row + target_row) * 4];
+			}
 		}
 	}
 	else if( piece == pieces::rook ) {
