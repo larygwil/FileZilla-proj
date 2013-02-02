@@ -46,7 +46,7 @@ public:
 	}
 
 	virtual void onRun();
-	void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
+	void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv );
 
 	void apply_move( move const& m );
 
@@ -248,7 +248,7 @@ void octochess_uci::impl::onRun() {
 	}
 }
 
-void octochess_uci::impl::on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv ) {
+void octochess_uci::impl::on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) {
 	info i;
 	i.depth( depth );
 	i.selective_depth( selective_depth );

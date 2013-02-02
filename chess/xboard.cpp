@@ -207,7 +207,7 @@ public:
 
 	mutex mtx;
 
-	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
+	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv );
 
 	void set_depth( int depth ) {
 		depth_ = depth;
@@ -497,7 +497,7 @@ move xboard_thread::stop()
 }
 
 
-void xboard_thread::on_new_best_move( position const& p, int depth, int /*selective_depth*/, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv )
+void xboard_thread::on_new_best_move( position const& p, int depth, int /*selective_depth*/, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv )
 {
 	scoped_lock lock( mtx );
 	if( !abort || best_move.empty() ) {
@@ -512,7 +512,7 @@ void xboard_thread::on_new_best_move( position const& p, int depth, int /*select
 			std::cerr << ss.str();
 		}
 
-		best_move = pv->get_best_move();
+		best_move = *pv;
 
 		state.pv_move_picker_.update_pv( p, pv );
 	}

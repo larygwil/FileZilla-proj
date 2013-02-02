@@ -15,7 +15,7 @@ public:
 	// First element is the move to execute, the second element a hint to ponder on.
 	std::pair<move, move> can_use_move_from_pv( position const& p );
 
-	void update_pv( position p, pv_entry const* pv );
+	void update_pv( position p, move const* pv );
 
 private:
 	uint64_t hash_;

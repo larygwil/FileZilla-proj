@@ -16,12 +16,12 @@ int const depth_factor = 6;
 
 struct new_best_move_callback_base
 {
-	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv ) = 0;
+	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) = 0;
 };
 
 struct def_new_best_move_callback : public new_best_move_callback_base
 {
-	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, pv_entry const* pv );
+	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv );
 
 private:
 	std::stringstream ss_;
@@ -29,7 +29,7 @@ private:
 
 struct null_new_best_move_callback : public new_best_move_callback_base
 {
-	virtual void on_new_best_move( position const&, int, int, int, uint64_t, duration const&, pv_entry const* ) {}
+	virtual void on_new_best_move( position const&, int, int, int, uint64_t, duration const&, move const* ) {}
 };
 
 extern def_new_best_move_callback default_new_best_move_callback;
@@ -100,7 +100,6 @@ public:
 	}
 
 	unsigned char clock; // The halfmove clock
-	pv_entry_pool pv_pool;
 
 	move_info moves[200 * (MAX_DEPTH + MAX_QDEPTH)];
 	move_info* move_ptr;
@@ -113,6 +112,6 @@ public:
 };
 
 // Depth is number of plies to search multiplied by depth_factor
-short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_map const& check, short alpha, short beta, pv_entry* pv, bool last_was_null, short full_eval = result::win, unsigned char last_ply_was_capture = 64 );
+short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_map const& check, short alpha, short beta, bool last_was_null, short full_eval = result::win, unsigned char last_ply_was_capture = 64 );
 
 #endif

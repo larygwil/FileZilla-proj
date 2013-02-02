@@ -26,28 +26,19 @@ std::pair<move,move> pv_move_picker::can_use_move_from_pv( position const& p )
 }
 
 
-void pv_move_picker::update_pv( position p, pv_entry const* pv )
+void pv_move_picker::update_pv( position p, move const* pv )
 {
-	if( pv && pv->next() && pv->next()->next() ) {
-		ASSERT( !pv->get_best_move().empty() );
-		ASSERT( !pv->next()->get_best_move().empty() );
-		ASSERT( !pv->next()->next()->get_best_move().empty() );
-
-		apply_move( p, pv->get_best_move() );
+	if( pv && !pv->empty() && !pv[1].empty() && !pv[2].empty() ) {
+		apply_move( p, *pv );
 		previous_pos_ = p;
-		apply_move( p, pv->next()->get_best_move() );
+		apply_move( p, pv[1] );
 		next_pos_ = p;
 
 		hash_ = get_zobrist_hash( p );
-		previous_ = pv->next()->get_best_move();
-		next_ = pv->next()->next()->get_best_move();
+		previous_ = pv[1];
+		next_ = pv[2];
 
-		if( pv->next()->next()->next() ) {
-			ponder_ = pv->next()->next()->next()->get_best_move();
-		}
-		else {
-			ponder_.clear();
-		}
+		ponder_ = pv[3];
 	}
 	else {
 		ponder_.clear();
