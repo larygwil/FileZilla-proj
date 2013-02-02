@@ -60,6 +60,8 @@ void get_pv_from_tt( move* pv, position p, int max_depth )
 
 void push_pv_to_tt( move const* pv, position p, int clock )
 {
+	// Commented out for now, this code somehow results in 8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - - becoming unsolvable.
+#if 0
 	ASSERT( pv && !pv->empty() );
 
 	apply_move( p, *pv );
@@ -75,12 +77,14 @@ void push_pv_to_tt( move const* pv, position p, int clock )
 		short full_eval;
 		transposition_table.lookup( hash, 0, 0, result::loss, result::win, ev, best, full_eval );
 		if( best != *pv ) {
-			transposition_table.store( hash, 0, ply, result::loss, result::loss, result::loss, *pv, clock, result::win );
+			std::cerr << "Push " << move_to_string(p, *pv) << " " << move_to_string(p, best) << " " << ply << std::endl;
+			transposition_table.store( hash, 0, ply, 0, 0, 0, *pv, clock, result::win );
 		}
 
-		hash = update_zobrist_hash( p, hash, best );
+		hash = update_zobrist_hash( p, hash, *pv );
 		apply_move( p, *pv );
 		++pv;
 		++ply;
 	}
+#endif
 }
