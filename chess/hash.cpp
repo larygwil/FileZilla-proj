@@ -139,27 +139,14 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 		}
 	}
 
-	if( pos ) {
-		pos->v = v;
-#if USE_STATISTICS
-		if( !pos->key ) {
-			++stats_.entries;
-		}
-		else {
-			++stats_.index_collisions;
-		}
-#endif
-		pos->key = save_key;
-
-		return;
-	}
-
-	lowest_depth = 511;
-	for( unsigned int i = 0; i < bucket_entries; ++i ) {
-		unsigned short old_depth = ((bucket + i)->v >> field_shifts::depth) & field_masks::depth;
-		if( old_depth < lowest_depth ) {
-			lowest_depth = old_depth;
-			pos = bucket + i;
+	if( !pos ) {
+		lowest_depth = 511;
+		for( unsigned int i = 0; i < bucket_entries; ++i ) {
+			unsigned short old_depth = ((bucket + i)->v >> field_shifts::depth) & field_masks::depth;
+			if( old_depth < lowest_depth ) {
+				lowest_depth = old_depth;
+				pos = bucket + i;
+			}
 		}
 	}
 
