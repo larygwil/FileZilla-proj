@@ -15,6 +15,13 @@ public:
 			logfile_.open( fn.c_str(), std::ios_base::app );
 			logfile_.setf( std::ios::unitbuf );
 		}
+
+		orig_->pubsetbuf( buffer_, 1024 );
+	}
+
+	virtual ~logbuf()
+	{
+		orig_->pubsetbuf( 0, 0 );
 	}
 
 	virtual std::streamsize xsputn( std::streambuf::char_type const* s, std::streamsize n )
@@ -44,6 +51,8 @@ public:
 
 	std::streambuf* orig_;
 	std::ofstream logfile_;
+
+	char buffer_[1024];
 };
 
 namespace {

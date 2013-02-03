@@ -28,7 +28,7 @@ uint64_t get_time() {
 
 void console_init()
 {
-	std::cout.setf(std::ios::unitbuf);
+	//std::cout.setf(std::ios::unitbuf);
 }
 
 

@@ -507,9 +507,11 @@ void xboard_thread::on_new_best_move( position const& p, int depth, int /*select
 		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(6) << cs << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p ) << std::endl;
 		if( state.post ) {
 			std::cout << ss.str();
+			std::cout.flush();
 		}
 		else {
 			std::cerr << ss.str();
+			std::cerr.flush();
 		}
 
 		best_move = *pv;

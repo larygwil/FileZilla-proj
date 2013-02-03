@@ -789,6 +789,7 @@ void print_pos( std::vector<history_entry> const& history, position const& p, st
 
 	std::cout << std::endl;
 	std::cout << side_by_side( mstr, board );
+	std::cout.flush();
 }
 
 

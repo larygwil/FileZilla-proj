@@ -30,6 +30,9 @@ void checking( std::string const& what, bool endline = false )
 	if( endline ) {
 		std::cout << std::endl;
 	}
+	else {
+		std::cout.flush();
+	}
 }
 
 void pass()
