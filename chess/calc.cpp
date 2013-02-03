@@ -593,8 +593,6 @@ private:
 	short result_;
 	int clock_;
 
-	move pv_[MAX_DEPTH];
-
 	seen_positions seen_;
 
 	context ctx_;
