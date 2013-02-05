@@ -654,6 +654,8 @@ void apply_move( position& p, move const& m )
 			delta += pst[p.other()][captured_piece][m.target()] + eval_values::material_values[ captured_piece ];
 		}
 		p.material[p.other()] -= eval_values::material_values[ captured_piece ];
+
+		p.piece_sum -= 1ull << ((captured_piece - 1 + (p.white() ? 5 : 0) ) * 4);
 	}
 
 	if( piece == pieces::rook ) {
@@ -694,6 +696,9 @@ void apply_move( position& p, move const& m )
 		delta += eval_values::material_values[promotion_piece] + pst[p.self()][promotion_piece][m.target()];
 
 		p.board[m.target()] = static_cast<pieces_with_color::type>(m.promotion_piece() + (p.white() ? 0 : 8));
+
+		p.piece_sum -= 1ull << (p.black() ? 20 : 0);
+		p.piece_sum += 1ull << ((promotion_piece - 1 + (p.black() ? 5 : 0) ) * 4);
 	}
 	else {
 		p.bitboards[p.self()].b[piece] ^= target_square;

@@ -46,6 +46,19 @@ void position::update_derived()
 	init_material();
 	init_eval();
 	init_pawn_hash();
+	init_piece_sum();
+}
+
+
+void position::init_piece_sum()
+{
+	piece_sum = 0;
+	for( int c = 0; c < 2; ++c ) {
+		for( int piece = pieces::pawn; piece < pieces::king; ++piece ) {
+			uint64_t count = popcount( bitboards[c].b[piece] );
+			piece_sum |= count << ((piece - 1 + (c ? 5 : 0)) * 4);
+		}
+	}
 }
 
 
@@ -288,6 +301,19 @@ bool position::verify( std::string& error ) const
 			error = "Board contains wrong data.";
 			return false;
 		}
+	}
+
+
+	uint64_t ver_piece_sum = 0;
+	for( int c = 0; c < 2; ++c ) {
+		for( int piece = pieces::pawn; piece < pieces::king; ++piece ) {
+			uint64_t count = popcount( bitboards[c].b[piece] );
+			ver_piece_sum |= count << ((piece - 1 + (c ? 5 : 0)) * 4);
+		}
+	}
+	if( piece_sum != ver_piece_sum ) {
+		error = "Piece sum mismatch.";
+		return false;
 	}
 
 	return true;

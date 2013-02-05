@@ -40,6 +40,7 @@ public:
 	inline color::type self() const { return c; }
 	inline color::type other() const { return static_cast<color::type>(1-c); }
 	inline bool white() const { return c == color::white; }
+	inline bool black() const { return c == color::black; }
 
 	// Material and pst, nothing else.
 	score base_eval;
@@ -72,12 +73,16 @@ public:
 
 	pieces_with_color::type board[64];
 
+	// Used as key to switch between endgame evaluations
+	uint64_t piece_sum;
+
 private:
 	void init_bitboards();
 	void init_board();
 	void init_pawn_hash();
 	void init_material();
 	void init_eval();
+	void init_piece_sum();
 };
 
 #endif

@@ -19,7 +19,8 @@ enum piece_masks : uint64_t {
 
 uint64_t const light_squared_bishop_mask = 0x55aa55aa55aa55aaull;
 
-short evaluate_KNBvK( position const& p, color::type c ) {
+short evaluate_KNBvK( position const& p, color::type c )
+{
 	// This is a very favorable position
 	short eval = 20000;
 
@@ -53,7 +54,8 @@ short evaluate_KNBvK( position const& p, color::type c ) {
 }
 
 
-bool evaluate_KPvK( position const& p, color::type c, short& result ) {
+bool evaluate_KPvK( position const& p, color::type c, short& result )
+{
 	// Drawn if pawn on a or h file, enemy king in front
 	uint64_t pawn = bitscan(p.bitboards[c].b[bb_type::pawns]);
 	if( p.bitboards[c].b[bb_type::pawns] & 0x8181818181818181ull ) {
@@ -77,19 +79,100 @@ bool evaluate_KPvK( position const& p, color::type c, short& result ) {
 	return false;
 }
 
-
-bool evaluate_endgame( position const& p, short& result )
+bool evaluate_KBPvKP( position const& p, color::type c, short& result )
 {
-	uint64_t piece_sum = 0;
+	// This endgame is drawn if pawn on home rank on a, b, g or h with kind behind it or in adjacent corner and enemy pawn ahead of it.
+	// As in: 8/8/8/b7/8/3k2p1/6P1/7K w - -
+	// Color of bishop does not matter.
+	
+	// Special exception: 8/8/8/3b4/8/5k1p/7P/7K b - - 0 1
+	// We rely on search finding it.
 
-	for( int c = 0; c < 2; ++c ) {
-		for( int piece = pieces::pawn; piece < pieces::king; ++piece ) {
-			uint64_t count = popcount( p.bitboards[c].b[piece] );
-			piece_sum |= count << ((piece - 1 + (c ? 5 : 0)) * 4);
+	if( !((p.bitboards[c].b[bb_type::pawns]) & (c ? 0x0000000000C30000ull : 0x0000C30000000000ull)) ) {
+		return false;
+	}
+
+	uint64_t own_pawn = bitscan( p.bitboards[c].b[bb_type::pawns] );
+
+	uint64_t other_pawn = own_pawn;
+	if( c ) {
+		other_pawn -= 8;
+	}
+	else {
+		other_pawn += 8;
+	}
+	if( p.bitboards[1-c].b[bb_type::pawns] != (1ull << other_pawn) ) {
+		return false;
+	}
+
+	int king_pos = p.king_pos[1-c];
+	if( king_pos / 8 != (c ? 0 : 7 ) ) {
+		return false;
+	}
+
+	if( own_pawn % 8 < 2 ) {
+		if( king_pos % 8 > 1 ) {
+			return false;
+		}
+	}
+	else {
+		if( king_pos % 8 < 6 ) {
+			return false;
 		}
 	}
 
-	switch( piece_sum ) {
+	result = result::draw;
+
+	return true;
+}
+
+bool evaluate_KPvKP( position const& p, color::type c, short& result )
+{
+	// This endgame is drawn if pawn on home rank on a, b, g or h with kind behind it or in adjacent corner and enemy pawn ahead of it.
+	// As in: 8/8/8/8/8/3k2p1/6P1/7K w - -
+	// Color of bishop does not matter.
+
+	if( !((p.bitboards[c].b[bb_type::pawns]) & (c ? 0x0000000000C30000ull : 0x0000C30000000000ull)) ) {
+		return false;
+	}
+
+	uint64_t own_pawn = bitscan( p.bitboards[c].b[bb_type::pawns] );
+
+	uint64_t other_pawn = own_pawn;
+	if( c ) {
+		other_pawn -= 8;
+	}
+	else {
+		other_pawn += 8;
+	}
+	if( p.bitboards[1-c].b[bb_type::pawns] != (1ull << other_pawn) ) {
+		return false;
+	}
+
+	int king_pos = p.king_pos[1-c];
+	if( king_pos / 8 != (c ? 0 : 7 ) ) {
+		return false;
+	}
+
+	if( own_pawn % 8 < 2 ) {
+		if( king_pos % 8 > 1 ) {
+			return false;
+		}
+	}
+	else {
+		if( king_pos % 8 < 6 ) {
+			return false;
+		}
+	}
+
+	result = 0;
+
+	return true;
+}
+
+bool evaluate_endgame( position const& p, short& result )
+{
+	switch( p.piece_sum ) {
 	// Totally insufficient material.
 	case 0:
 	case white_knight:
@@ -199,6 +282,14 @@ bool evaluate_endgame( position const& p, short& result )
 	case black_bishop + black_knight:
 		result = -evaluate_KNBvK( p, color::black );
 		return true;
+	case white_bishop + white_pawn + black_pawn:
+		return evaluate_KBPvKP( p, color::white, result );
+	case black_bishop + black_pawn + white_pawn:
+		return evaluate_KBPvKP( p, color::black, result );
+	case white_pawn + black_pawn:
+		if( !evaluate_KPvKP( p, p.self(), result ) ) {
+			return evaluate_KPvKP( p, p.other(), result );
+		}
 	default:
 		break;
 	}
