@@ -55,6 +55,9 @@ public:
 		return d == rhs.d;
 	}
 
+	bool operator<( move const& rhs ) const {
+		return d < rhs.d;
+	}
 
 	// Data
 	unsigned short d;
