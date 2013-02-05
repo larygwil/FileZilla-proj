@@ -114,19 +114,31 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 
 	uint64_t v = static_cast<uint64_t>(clock) << field_shifts::age;
 	v |= static_cast<uint64_t>(remaining_depth) << field_shifts::depth;
-	v |= static_cast<uint64_t>(best_move.d) << field_shifts::move;
 	v |= static_cast<uint64_t>(t) << field_shifts::node_type;
 	v |= static_cast<uint64_t>(eval) << field_shifts::score;
 
-	unsigned long long save_key = ((key ^ v) & 0xffffffffffff0000ull) | static_cast<unsigned short>(full_eval);
-
 	for( unsigned int i = 0; i < bucket_entries; ++i ) {
-		if( !((((bucket + i)->v ^ (bucket + i)->key) ^ key) & 0xffffffffffff0000ull ) ) {
+		uint64_t old_v = (bucket + i)->v;
+		if( !(((old_v ^ (bucket + i)->key) ^ key) & 0xffffffffffff0000ull ) ) {
+
+			// If overwriting existing entry, copy existing move if we have none.
+			// Otherwise we might end up with truncated pv.
+			if( best_move.empty() ) {
+				v |= old_v & (field_masks::move << field_shifts::move);
+			}
+			else {
+				v |= static_cast<uint64_t>(best_move.d) << field_shifts::move;
+			}
+
+			unsigned long long save_key = ((key ^ v) & 0xffffffffffff0000ull) | static_cast<unsigned short>(full_eval);
 			(bucket + i)->v = v;
 			(bucket + i)->key = save_key;
 			return;
 		}
 	}
+
+	v |= static_cast<uint64_t>(best_move.d) << field_shifts::move;
+	unsigned long long save_key = ((key ^ v) & 0xffffffffffff0000ull) | static_cast<unsigned short>(full_eval);
 
 	unsigned short lowest_depth = 511;
 	entry* pos = 0;
