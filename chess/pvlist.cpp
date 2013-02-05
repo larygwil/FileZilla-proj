@@ -60,8 +60,6 @@ void get_pv_from_tt( move* pv, position p, int max_depth )
 
 void push_pv_to_tt( move const* pv, position p, int clock )
 {
-	// Commented out for now, this code somehow results in 8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - - becoming unsolvable.
-#if 0
 	ASSERT( pv && !pv->empty() );
 
 	apply_move( p, *pv );
@@ -86,5 +84,4 @@ void push_pv_to_tt( move const* pv, position p, int clock )
 		++pv;
 		++ply;
 	}
-#endif
 }
