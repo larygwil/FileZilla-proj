@@ -287,7 +287,10 @@ bool evaluate_endgame( position const& p, short& result )
 	case black_bishop + black_pawn + white_pawn:
 		return evaluate_KBPvKP( p, color::black, result );
 	case white_pawn + black_pawn:
-		if( !evaluate_KPvKP( p, p.self(), result ) ) {
+		if( evaluate_KPvKP( p, p.self(), result ) ) {
+			return true;
+		}
+		else {
 			return evaluate_KPvKP( p, p.other(), result );
 		}
 	default:
