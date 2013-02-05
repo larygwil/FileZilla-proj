@@ -102,11 +102,11 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 	short eval;
 	move tt_move;
 	score_type::type t = transposition_table.lookup( hash, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
+	ASSERT( full_eval == result::win || full_eval == evaluate_full( p ) );
 
 	if ( !pv_node && t != score_type::none ) {
 		return eval;
 	}
-
 
 #if 0
 	full_eval = evaluate_full( p, p.self(), current_evaluation );
@@ -121,13 +121,15 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 	}
 #endif
 
+	short old_alpha = alpha;
+
 	if( !check.check ) {
 		if( full_eval == result::win ) {
 			full_eval = evaluate_full( p );
 		}
 		if( full_eval > alpha ) {
 			if( full_eval >= beta ) {
-				if( !do_abort ) {
+				if( !do_abort && t == score_type::none && tt_move.empty() ) {
 					transposition_table.store( hash, tt_depth, ply, full_eval, alpha, beta, tt_move, ctx.clock, full_eval );
 				}
 				return full_eval;
@@ -144,8 +146,6 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 
 	move best_move;
 	short best_value = check.check ? static_cast<short>(result::loss) : full_eval;
-
-	short old_alpha = alpha;
 
 	move_info const* it;
 	while( (it = gen.next()) ) {
@@ -180,13 +180,15 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		if( value > best_value ) {
 			best_value = value;
 
-			if( value >= beta ) {
+			if( value > alpha ) {
 				best_move = it->m;
-				break;
-			}
-			else if( value > alpha ) {
-				best_move = it->m;
-				alpha = value;
+				
+				if( value >= beta ) {
+					break;
+				}
+				else {
+					alpha = value;
+				}
 			}
 		}
 	}
@@ -195,9 +197,6 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		return result::loss + ply;
 	}
 
-	if( best_move.empty() ) {
-		best_move = tt_move;
-	}
 	if( !do_abort ) {
 		transposition_table.store( hash, tt_depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
 	}
@@ -232,6 +231,9 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		}
 	}
 
+	bool const pv_node = alpha + 1 != beta;
+	short const old_alpha = alpha;
+
 	// Mate distance pruning
 	beta = std::min( static_cast<short>(result::win - ply - 1), beta );
 	alpha = std::max( static_cast<short>(result::loss + ply), alpha );
@@ -239,13 +241,12 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		return alpha;
 	}
 
-	bool pv_node = alpha + 1 != beta;
-
 	// Transposition table lookup and cutoff
 	move tt_move;
+	score_type::type t;
 	{
 		short eval;
-		score_type::type t = transposition_table.lookup( hash, depth, ply, alpha, beta, eval, tt_move, full_eval );
+		t = transposition_table.lookup( hash, depth, ply, alpha, beta, eval, tt_move, full_eval );
 		if( t != score_type::none ) {
 			if( t == score_type::exact ) {
 				return eval;
@@ -260,7 +261,9 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 
 	if( !pv_node && !check.check /*&& plies_remaining < 4*/ && full_eval == result::win ) {
 		full_eval = evaluate_full( p );
-		transposition_table.store( hash, 0, ply, 0, 0, 0, tt_move, ctx.clock, full_eval );
+		if( tt_move.empty() && t == score_type::none ) {
+			transposition_table.store( hash, 0, ply, 0, 0, 0, tt_move, ctx.clock, full_eval );
+		}
 	}
 
 	if( !pv_node && !check.check && plies_remaining < static_cast<int>(sizeof(razor_pruning)/sizeof(short)) && full_eval + razor_pruning[plies_remaining] < beta &&
@@ -301,7 +304,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 				// Helps against zugzwang and some other strange issues
 				short research_value = step( new_depth, ply, ctx, p, hash, check, alpha, beta, true, full_eval, last_ply_was_capture );
 				if( research_value >= beta ) {
-					return research_value;
+					return value;
 				}
 			}
 			else {
@@ -319,7 +322,6 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		transposition_table.lookup( hash, depth, ply, alpha, beta, eval, tt_move, full_eval );
 	}
 
-	short old_alpha = alpha;
 	short best_value = result::loss;
 	move best_move;
 
@@ -406,9 +408,6 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short))) {
 						value = full_eval + futility_pruning[plies_remaining];
 						if( value <= alpha ) {
-							if( value > best_value ) {
-								best_value = value;
-							}
 							++searched_noncaptures;
 							continue;
 						}
@@ -442,16 +441,17 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		}
 		if( value > best_value ) {
 			best_value = value;
-			best_move = it->m;
 
-			if( value >= beta ) {		
-				if( !captured_piece ) {
-					ctx.killers[p.self()][ply].add_killer( it->m );
-					gen.update_history();
+			if( value > alpha ) {
+				best_move = it->m;
+
+				if( value >= beta ) {		
+					if( !captured_piece ) {
+						ctx.killers[p.self()][ply].add_killer( it->m );
+						gen.update_history();
+					}
+					break;
 				}
-				break;
-			}
-			else if( value > alpha ) {
 				alpha = value;
 			}
 		}
@@ -467,15 +467,10 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	}
 
 	if( best_value == result::loss ) {
-
-		int plies_remaining = (depth - cutoff) / depth_factor;
-		best_value = full_eval + futility_pruning[plies_remaining];
+		best_value = old_alpha;
 	}
 
 	if( !do_abort ) {
-		if( best_move.empty() ) {
-			best_move = tt_move; // TODO: Don't store a best move?
-		}
 		transposition_table.store( hash, depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
 	}
 
