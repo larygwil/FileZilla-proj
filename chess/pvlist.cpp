@@ -75,7 +75,6 @@ void push_pv_to_tt( move const* pv, position p, int clock )
 		short full_eval;
 		transposition_table.lookup( hash, 0, 0, result::loss, result::win, ev, best, full_eval );
 		if( best != *pv ) {
-			std::cerr << "Push " << move_to_string(p, *pv) << " " << move_to_string(p, best) << " " << ply << std::endl;
 			transposition_table.store( hash, 0, ply, 0, 0, 0, *pv, clock, result::win );
 		}
 
