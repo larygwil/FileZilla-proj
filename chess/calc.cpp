@@ -278,7 +278,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	}
 
 #if NULL_MOVE_REDUCTION > 0
-	if( !pv_node && !check.check && full_eval >= beta && !last_was_null && depth >= (cutoff + depth_factor) && p.material[0].mg() > 1500 && p.material[1].mg() > 1500 ) {
+	if( !pv_node && !check.check && full_eval >= beta && !last_was_null && depth >= (cutoff + depth_factor) && p.material[p.self()].mg() ) {
 
 		short new_depth = depth - (NULL_MOVE_REDUCTION + 1) * depth_factor;
 		short value;
