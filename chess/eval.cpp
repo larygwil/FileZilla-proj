@@ -514,16 +514,16 @@ void evaluate_passed_pawns( position const& p, color::type c, eval_results& resu
 
 uint64_t base_king_attack[2][8] = {
 	{
-		0, 1, 4, 10, 12, 12, 12, 12
+		0, 5, 12, 25, 25, 25, 25, 25
 	},
 	{
-		12, 12, 12, 12, 10, 4, 1, 0
+		25, 25, 25, 25, 25, 12, 5, 0
 	}
 };
 
 
 template<bool detail>
-static void evaluate_king_attack( position const& p, color::type c, color::type to_move, eval_results& results )
+static void evaluate_king_attack( position const& p, color::type c, eval_results& results )
 {
 	// Consider a lone attacker harmless
 	if( results.count_king_attackers[c] < 2 ) {
@@ -548,15 +548,16 @@ static void evaluate_king_attack( position const& p, color::type c, color::type 
 	attack += popcount( results.attacks[c][pieces::rook] & rook_checks ) * eval_values::king_check_by_piece[pieces::rook];
 	attack += popcount( results.attacks[c][pieces::queen] & (bishop_checks|rook_checks) ) * eval_values::king_check_by_piece[pieces::queen];
 
-	// Rooks and queens that are able to move next to a king without getting captured are extremely dangerous.
+	// Undefended squares around king are bad
 	uint64_t const undefended = possible_king_moves[p.king_pos[1-c]] & ~(results.attacks[1-c][pieces::pawn] | results.attacks[1-c][pieces::knight] | results.attacks[1-c][pieces::bishop] | results.attacks[1-c][pieces::rook] | results.attacks[1-c][pieces::queen]);
+	attack += 5 * popcount( undefended );
+
+	// Rooks and queens that are able to move next to a king without getting captured are extremely dangerous.
 	uint64_t const backed_queen_attacks = results.attacks[c][pieces::queen] & (results.attacks[c][pieces::pawn] | results.attacks[c][pieces::knight] | results.attacks[c][pieces::bishop] | results.attacks[c][pieces::rook]);
 	uint64_t const backed_rook_attacks = results.attacks[c][pieces::rook] & (results.attacks[c][pieces::pawn] | results.attacks[c][pieces::knight] | results.attacks[c][pieces::bishop] | results.attacks[c][pieces::queen]);
-
 	uint64_t const king_melee_attack_by_queen = undefended & backed_queen_attacks & ~p.bitboards[c].b[bb_type::all_pieces];
 	uint64_t const king_melee_attack_by_rook = undefended & backed_rook_attacks & ~p.bitboards[c].b[bb_type::all_pieces] & rook_magic( p.king_pos[1-c], 0 );
-
-	uint64_t const initiative = (to_move == c) ? 2 : 1;
+	uint64_t const initiative = (p.self() == c) ? 2 : 1;
 	attack += popcount( king_melee_attack_by_queen ) * eval_values::king_melee_attack_by_queen * initiative;
 	attack += popcount( king_melee_attack_by_rook ) * eval_values::king_melee_attack_by_rook * initiative;
 
@@ -569,6 +570,11 @@ static void evaluate_king_attack( position const& p, color::type c, color::type 
 	}
 	else if( signed_attack > 199 ) {
 		signed_attack = 199;
+	}
+
+	// 5% bonus if attacker is the one to move
+	if( p.self() == c ) {
+		signed_attack += signed_attack / 95;
 	}
 
 	add_score<detail, eval_detail::king_attack>( results, c, eval_values::king_attack[signed_attack] );
@@ -823,7 +829,7 @@ static void do_evaluate( position const& p, eval_results& results )
 	for( unsigned int c = 0; c < 2; ++c ) {
 
 		evaluate_piece_defense<detail>( p, static_cast<color::type>(c), results );
-		evaluate_king_attack<detail>( p, static_cast<color::type>(c), p.self(), results );
+		evaluate_king_attack<detail>( p, static_cast<color::type>(c), results );
 		//evaluate_drawishness<detail>( p, static_cast<color::type>(c), results );
 		evaluate_center<detail>( p, static_cast<color::type>(c), results );
 	}
