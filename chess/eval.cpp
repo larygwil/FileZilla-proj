@@ -37,7 +37,6 @@ enum type {
 	double_bishop,
 	side_to_move,
 	trapped_rook,
-	trapped_bishop,
 
 	max
 };
@@ -287,16 +286,6 @@ inline static void evaluate_bishop_outpost( position const& p, color::type c, ui
 
 
 template<bool detail>
-inline static void evaluate_trapped_bishop( position const& p, color::type c, uint64_t bishop, eval_results& results )
-{
-	uint64_t mask = trapped_bishop[c][bishop];
-	if( mask && (mask & p.bitboards[1-c].b[bb_type::pawns]) == mask ) {
-		add_score<detail, eval_detail::trapped_bishop>( results, c, eval_values::trapped_bishop );
-	}
-}
-
-
-template<bool detail>
 inline static void evaluate_bishops( position const& p, color::type c, eval_results& results )
 {
 	uint64_t bishops = p.bitboards[c].b[bb_type::bishops];
@@ -309,7 +298,6 @@ inline static void evaluate_bishops( position const& p, color::type c, eval_resu
 		evaluate_bishop_mobility<detail>( p, c, bishop, results );
 		evaluate_bishop_pin<detail>( p, c, bishop, results );
 		evaluate_bishop_outpost<detail>( p, c, bishop, results );
-		evaluate_trapped_bishop<detail>( p, c, bishop, results );
 	}
 }
 
@@ -934,7 +922,6 @@ std::string explain_eval( position const& p )
 		ss << explain( p, "Rooks on open file", eval_detail::rooks_on_open_file );
 		ss << explain( p, "Rooks on 7th rank", eval_detail::rooks_on_7h_rank );
 		ss << explain( p, "Trapped rook", eval_detail::trapped_rook );
-		ss << explain( p, "Trapped bishop", eval_detail::trapped_bishop );
 		ss << explain( p, "Outposts", eval_detail::outposts );
 		ss << explain( p, "Double bishop", eval_detail::double_bishop );
 		ss << explain( p, "Side to move", eval_detail::side_to_move );

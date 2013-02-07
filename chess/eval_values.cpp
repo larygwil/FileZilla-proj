@@ -87,7 +87,6 @@ score knight_outposts[2];
 score bishop_outposts[2];
 
 score trapped_rook[2];
-score trapped_bishop;
 
 // Derived
 score initial_material;
@@ -254,7 +253,6 @@ void init()
 	bishop_outposts[1]              = score( 7, 12 );
 	trapped_rook[0].mg()            = -21;
 	trapped_rook[1].mg()            = -47;
-	trapped_bishop                  = score( -14, -9 );
 
 	update_derived();
 }

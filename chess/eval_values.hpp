@@ -85,7 +85,6 @@ namespace eval_values {
 	extern score bishop_outposts[2];
 
 	extern score trapped_rook[2];
-	extern score trapped_bishop;
 
 	// Derived
 	extern score initial_material;

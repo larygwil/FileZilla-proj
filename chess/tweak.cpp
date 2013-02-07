@@ -363,7 +363,6 @@ void init_genes()
 	MAKE_GENES( bishop_outposts, 0, 100, 2, 0 );
 	MAKE_GENE( trapped_rook[0].mg(), -100, 0 );
 	MAKE_GENE( trapped_rook[1].mg(), -100, 0 );
-	MAKE_GENE( trapped_bishop, -100, 0 );
 }
 
 struct individual
