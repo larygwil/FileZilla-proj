@@ -682,9 +682,9 @@ std::vector<reference_data> load_data()
 {
 	std::vector<reference_data> ret;
 
-	std::ifstream in_fen("test/testpositions.txt");
-	std::ifstream in_scores("test/data.txt");
-	std::ifstream forecasts("test/forecast.txt");
+	std::ifstream in_fen(conf.self_dir + "test/testpositions.txt");
+	std::ifstream in_scores(conf.self_dir + "test/data.txt");
+	std::ifstream forecasts(conf.self_dir + "test/forecast.txt");
 
 	int endgames = 0;
 	int unknown_endgames = 0;
@@ -705,10 +705,14 @@ std::vector<reference_data> load_data()
 		entry.max_eval = result::loss;
 		to_int<short>( forecast_line, entry.forecast );
 
+		if( score_line.empty() ) {
+			++marginal;
+			continue;
+		}
+
 		std::istringstream ss(score_line);
-		double tmp;
-		while( (ss >> tmp) ) {
-			short v = static_cast<short>(tmp * 100);
+		short v;
+		while( (ss >> v) ) {
 			score += v;
 			++count;
 			entry.min_eval = std::min(entry.min_eval, v);
