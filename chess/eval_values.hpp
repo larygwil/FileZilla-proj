@@ -19,8 +19,8 @@ namespace eval_values {
 	extern score candidate_passed_pawn_base[4];
 	extern score backward_pawn_base[2][4];
 
-	extern score pawn_shield[3];
-	extern score pawn_shield_attack[3];
+	extern score pawn_shield[4];
+	extern score pawn_shield_attack[4];
 
 	extern score absolute_pin[7];
 

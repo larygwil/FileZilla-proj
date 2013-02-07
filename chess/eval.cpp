@@ -696,44 +696,46 @@ void evaluate_pawns( position const& p, eval_results& results )
 
 /* Pawn shield for king
  *
- * x x x
- * y y y
- * z z z
- *   K
- * Count number of pawns ahead of king on squares x, y and z, each with own score factor.
- * Idea is that pawns closer to king score more than pawns away from king.
- * A king and his pawns is a somewhat mutual relationship, as a king also protects the pawns
- * in front.
+ * Count number of pawns ahead and beside of king, ranked by distance to home row.
+ * Only consider pawns on relative ranks 2 to 5.
+ * Idea is that pawns closer to king score more than pawns away from king. Also,
+ * for a good score, king needs to be on home rank.
  */
+template<bool detail, color::type c>
+void evaluate_pawn_shield_side( position const& p, eval_results& results )
+{
+	int king_pos = p.king_pos[c];
+	if( c ? king_pos < 24 : king_pos >= 40 ) {
+		return;
+	}
+
+	// If king is at sides, shift it closer to middle.
+	if( !(king_pos % 8) ) {
+		++king_pos;
+	}
+	else if( (king_pos % 8) == 7 ) {
+		--king_pos;
+	}
+
+	uint64_t pawns = (passed_pawns[c][king_pos] | 7ull << (king_pos - 1)) & p.bitboards[c].b[bb_type::pawns];
+	uint64_t enemy_pawns = passed_pawns[c][king_pos] & p.bitboards[1-c].b[bb_type::pawns];
+	uint64_t k = 0xffull << (c ? 48 : 8);//(king_pos & 0x38);
+	score s;
+	for( int i = 0; i < 4; ++i ) {
+		s += eval_values::pawn_shield[i] * static_cast<short>(popcount(pawns & k) );
+		s -= eval_values::pawn_shield_attack[i] * static_cast<short>(popcount(enemy_pawns & k) );
+		k = c ? k >> 8 : k << 8;
+	}
+	add_score<detail, eval_detail::pawn_shield>( results, c, s );
+	results.pawn_shield[c] = s.mg();
+}
+
+
 template<bool detail>
 void evaluate_pawn_shield( position const& p, eval_results& results )
 {
-	if( p.king_pos[color::white] < 40 ) {
-		uint64_t pawns = passed_pawns[color::white][p.king_pos[color::white]] & p.bitboards[color::white].b[bb_type::pawns];
-		uint64_t enemy_pawns = passed_pawns[color::white][p.king_pos[color::white]] & p.bitboards[color::black].b[bb_type::pawns];
-		uint64_t k = 0xffull << (p.king_pos[color::white] & 0x38);
-		score s;
-		for( int i = 0; i < 3; ++i ) {
-			k <<= 8;
-			s += eval_values::pawn_shield[i] * static_cast<short>(popcount(pawns & k) );
-			s -= eval_values::pawn_shield_attack[i] * static_cast<short>(popcount(enemy_pawns & k) );
-		}
-		add_score<detail, eval_detail::pawn_shield>( results, color::white, s );
-		results.pawn_shield[color::white] = s.mg();
-	}
-	if( p.king_pos[color::black] >= 24 ) {
-		uint64_t pawns = passed_pawns[color::black][p.king_pos[color::black]] & p.bitboards[color::black].b[bb_type::pawns];
-		uint64_t enemy_pawns = passed_pawns[color::black][p.king_pos[color::black]] & p.bitboards[color::white].b[bb_type::pawns];
-		uint64_t k = 0xffull << (p.king_pos[color::black] & 0x38);
-		score s;
-		for( int i = 0; i < 3; ++i ) {
-			k >>= 8;
-			s += eval_values::pawn_shield[i] * static_cast<short>(popcount(pawns & k) );
-			s -= eval_values::pawn_shield_attack[i] * static_cast<short>(popcount(enemy_pawns & k) );
-		}
-		add_score<detail, eval_detail::pawn_shield>( results, color::black, s );
-		results.pawn_shield[color::black] = s.mg();
-	}
+	evaluate_pawn_shield_side<detail, color::white>( p, results );
+	evaluate_pawn_shield_side<detail, color::black>( p, results );
 }
 
 
