@@ -848,7 +848,19 @@ namespace {
 static short scale( position const& p, score const& s )
 {
 	short mat = p.material[0].mg() + p.material[1].mg();
-	return s.scale( mat );
+	short ev = s.scale( mat );
+
+	// Check for endgames with opposite colored bishops, those are rather drawish :(
+	if( p.material[0].mg() == eval_values::material_values[pieces::bishop].mg() &&
+		p.material[1].mg() == eval_values::material_values[pieces::bishop].mg() )
+	{
+		uint64_t wb = bitscan( p.bitboards[0].b[bb_type::bishops] );
+		uint64_t bb = bitscan( p.bitboards[1].b[bb_type::bishops] );
+		if( (wb % 2) != (bb % 2) ) {
+			ev /= 2;
+		}
+	}
+	return ev;
 }
 
 
