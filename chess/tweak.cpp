@@ -282,82 +282,82 @@ void init_genes()
 	MAKE_GENE( material_values[pieces::pawn], 45, 110 );
 	MAKE_GENE( material_values[pieces::knight], 260, 460 );
 	MAKE_GENE( material_values[pieces::bishop], 260, 460 );
-	MAKE_GENE( material_values[pieces::rook], 400, 680 );
+	MAKE_GENE( material_values[pieces::rook], 420, 690 );
 	MAKE_GENE( material_values[pieces::queen], 870, 1500 );
-	MAKE_GENE( double_bishop, 0, 100 );
+	MAKE_GENE( double_bishop, 10, 100 );
 
 	MAKE_GENE( passed_pawn_advance_power, 100, 210 );
 	MAKE_GENES( passed_pawn_king_distance, 0, 10, 2, 0 );
 
-	MAKE_GENE( passed_pawn_base[0], 0, 100 );
+	MAKE_GENE( passed_pawn_base[0], 1, 100 );
 	MAKE_GENES( passed_pawn_base, 0, 20, 3, 1 );
 
-	MAKE_GENE( doubled_pawn_base[0][0], 0, 50 );
+	MAKE_GENE( doubled_pawn_base[0][0], 1, 50 );
 	MAKE_GENES( doubled_pawn_base[0], 0, 20, 3, 1 );
-	MAKE_GENE( doubled_pawn_base[1][0], 0, 50 );
+	MAKE_GENE( doubled_pawn_base[1][0], 1, 50 );
 	MAKE_GENES( doubled_pawn_base[1], 0, 20, 3, 1 );
 
 
-	MAKE_GENE( backward_pawn_base[0][0], 0, 50 );
+	MAKE_GENE( backward_pawn_base[0][0], 1, 50 );
 	MAKE_GENES( backward_pawn_base[0], 0, 20, 3, 1 );
-	MAKE_GENE( backward_pawn_base[1][0], 0, 50 );
+	MAKE_GENE( backward_pawn_base[1][0], 1, 50 );
 	MAKE_GENES( backward_pawn_base[1], 0, 20, 3, 1 );
 
-	MAKE_GENE( isolated_pawn_base[0][0], 0, 50 );
+	MAKE_GENE( isolated_pawn_base[0][0], 1, 50 );
 	MAKE_GENES( isolated_pawn_base[0], 0, 20, 3, 1 );
-	MAKE_GENE( isolated_pawn_base[1][0], 0, 50 );
+	MAKE_GENE( isolated_pawn_base[1][0], 1, 50 );
 	MAKE_GENES( isolated_pawn_base[1], 0, 20, 3, 1 );
 
-	MAKE_GENE( connected_pawn_base[0][0], 0, 50 );
+	MAKE_GENE( connected_pawn_base[0][0], 1, 50 );
 	MAKE_GENES( connected_pawn_base[0], 0, 20, 3, 1 );
-	MAKE_GENE( connected_pawn_base[1][0], 0, 50 );
+	MAKE_GENE( connected_pawn_base[1][0], 1, 50 );
 	MAKE_GENES( connected_pawn_base[1], 0, 20, 3, 1 );
 
-	MAKE_GENE( candidate_passed_pawn_base[0], 0, 50 );
+	MAKE_GENE( candidate_passed_pawn_base[0], 1, 50 );
 	MAKE_GENES( candidate_passed_pawn_base, 0, 20, 3, 1 );
 
-	MAKE_GENES( pawn_shield, 0, 100, 3, 0 );
-	MAKE_GENES( pawn_shield_attack, 0, 100, 3, 0 );
-	MAKE_GENES( absolute_pin, 0, 100, 5, 1 );
-	MAKE_GENE( rooks_on_open_file, 0, 100 );
-	MAKE_GENE( rooks_on_half_open_file, 0, 100 );
-	MAKE_GENE( connected_rooks, 0, 500 );
-	MAKE_GENES( tropism, 0, 50, 5, 1 );
+	MAKE_GENES( pawn_shield, 1, 80, 4, 0 );
+	MAKE_GENES( pawn_shield_attack, 1, 80, 4, 0 );
+	MAKE_GENES( absolute_pin, 1, 100, 4, 2 );
+	MAKE_GENE( rooks_on_open_file, 1, 100 );
+	MAKE_GENE( rooks_on_half_open_file, 1, 100 );
+	MAKE_GENE( connected_rooks, 1, 500 );
+	MAKE_GENES( tropism, 1, 50, 5, 1 );
 	MAKE_GENES( king_attack_by_piece, 1, 50, 5, 1 );
 	MAKE_GENES( king_check_by_piece, 1, 50, 4, 2 );
 	MAKE_GENE( king_melee_attack_by_rook, 1, 50 );
 	MAKE_GENE( king_melee_attack_by_queen, 1, 50 );
 	MAKE_GENE( king_attack_pawn_shield, 1, 100 );
-	MAKE_GENE( center_control, 0, 500 );
+	MAKE_GENE( center_control, 1, 400 );
 	//MAKE_GENES( material_imbalance, -500, 500, 2, 0 );
 	MAKE_GENE( rule_of_the_square, 0, 100 );
 	MAKE_GENE( passed_pawn_unhindered, 0, 100 );
 	MAKE_GENES( defended_by_pawn, 0, 100, 5, 1 );
 	MAKE_GENES( attacked_piece, 0, 100, 5, 1 );
-	MAKE_GENES( hanging_piece, 0, 100, 5, 1 );
+	MAKE_GENES( hanging_piece, 1, 100, 5, 1 );
 	MAKE_GENE( mobility_knight_min, -100, 0 );
-	MAKE_GENE( mobility_knight_max, 0, 100 );
+	MAKE_GENE( mobility_knight_max, 1, 100 );
 	MAKE_GENE( mobility_knight_rise, 1, 50 );
 	MAKE_GENE( mobility_knight_offset, 0, 4 );
 	MAKE_GENE( mobility_bishop_min, -100, 0 );
-	MAKE_GENE( mobility_bishop_max, 0, 100 );
+	MAKE_GENE( mobility_bishop_max, 1, 100 );
 	MAKE_GENE( mobility_bishop_rise, 1, 50 );
 	MAKE_GENE( mobility_bishop_offset, 0, 7 );
 	MAKE_GENE( mobility_rook_min, -100, 0 );
-	MAKE_GENE( mobility_rook_max, 0, 100 );
+	MAKE_GENE( mobility_rook_max, 1, 100 );
 	MAKE_GENE( mobility_rook_rise, 1, 50 );
 	MAKE_GENE( mobility_rook_offset, 0, 7 );
 	MAKE_GENE( mobility_queen_min, -100, 0 );
-	MAKE_GENE( mobility_queen_max, 0, 100 );
+	MAKE_GENE( mobility_queen_max, 1, 100 );
 	MAKE_GENE( mobility_queen_rise, 1, 50 );
 	MAKE_GENE( mobility_queen_offset, 0, 14 );
 	MAKE_GENE( side_to_move, 0, 100 );
 	//MAKE_GENE( drawishness, -500, 0 );
-	MAKE_GENE( rooks_on_rank_7, 0, 100 );
-	MAKE_GENES( knight_outposts, 0, 100, 2, 0 );
-	MAKE_GENES( bishop_outposts, 0, 100, 2, 0 );
+	MAKE_GENE( rooks_on_rank_7, 1, 100 );
+	MAKE_GENES( knight_outposts, 1, 100, 2, 0 );
+	MAKE_GENES( bishop_outposts, 1, 100, 2, 0 );
 	MAKE_GENE( trapped_rook[0].mg(), -100, 0 );
-	MAKE_GENE( trapped_rook[1].mg(), -100, 0 );
+	MAKE_GENE( trapped_rook[1].mg(), -120, 0 );
 }
 
 struct individual
