@@ -72,7 +72,7 @@ void position::init_material()
 		color::type c = get_color( pwc );
 		pieces::type b = ::get_piece( pwc );
 
-		if( b != pieces::king ) {
+		if( b != pieces::king && b != pieces::pawn ) {
 			material[c] += eval_values::material_values[b];
 		}
 	}
@@ -81,7 +81,9 @@ void position::init_material()
 
 void position::init_eval()
 {
-	base_eval = material[0] - material[1];
+	base_eval = material[0] - material[1] +
+		eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(bitboards[0].b[bb_type::pawns])) -
+		eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(bitboards[1].b[bb_type::pawns]));
 
 	score side[2];
 	for( unsigned int sq = 0; sq < 64; ++sq ) {

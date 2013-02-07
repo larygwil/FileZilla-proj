@@ -526,7 +526,9 @@ template<bool detail>
 static void evaluate_king_attack( position const& p, color::type c, eval_results& results )
 {
 	// Consider a lone attacker harmless
-	if( results.count_king_attackers[c] < 2 ) {
+	if( results.count_king_attackers[c] < 2 ||
+		!p.bitboards[c].b[bb_type::queens] ||
+		p.material[c].mg() < (eval_values::material_values[pieces::queen] + eval_values::material_values[pieces::rook] ).mg() ) {
 		return;
 	}
 
@@ -754,7 +756,7 @@ static void evaluate_center( position const& p, color::type c, eval_results& res
 {
 	// Not taken by own pawns nor under control by enemy pawns
 	uint64_t potential_center_squares = central_squares[c] & ~(p.bitboards[c].b[bb_type::pawns] | p.bitboards[1-c].b[bb_type::pawn_control]);
-	uint64_t safe_center_squares = potential_center_squares & (results.attacks[c][0] | ~results.attacks[1-c][0]);
+	uint64_t safe_center_squares = potential_center_squares & results.attacks[c][0] & ~results.attacks[1-c][0];
 
 	add_score<detail, eval_detail::center_control>( results, c, eval_values::center_control * static_cast<short>(popcount(safe_center_squares)) );
 }
@@ -912,7 +914,11 @@ std::string explain_eval( position const& p )
 		if( detailed_results[eval_detail::imbalance][0] != score() ) {
 			ss << explain( p, "Imbalance", detailed_results[eval_detail::imbalance][0] );
 		}
-		ss << explain( p, "PST", p.base_eval-p.material[0]+p.material[1] );
+		score pst = p.base_eval-p.material[0]+p.material[1] -
+			eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(p.bitboards[0].b[bb_type::pawns])) +
+			eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(p.bitboards[1].b[bb_type::pawns]));
+
+		ss << explain( p, "PST", pst );
 		ss << explain( p, "Pawn structure", eval_detail::pawn_structure );
 		ss << explain( p, "Pawn shield", eval_detail::pawn_shield );
 		ss << explain( p, "Passed pawns", eval_detail::passed_pawns );

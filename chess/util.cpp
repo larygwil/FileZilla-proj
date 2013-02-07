@@ -652,8 +652,8 @@ void apply_move( position& p, move const& m )
 		}
 		else {
 			delta += pst[p.other()][captured_piece][m.target()] + eval_values::material_values[ captured_piece ];
+			p.material[p.other()] -= eval_values::material_values[ captured_piece ];
 		}
-		p.material[p.other()] -= eval_values::material_values[ captured_piece ];
 
 		p.piece_sum -= 1ull << ((captured_piece - 1 + (p.white() ? 5 : 0) ) * 4);
 	}
@@ -689,7 +689,6 @@ void apply_move( position& p, move const& m )
 
 		p.bitboards[p.self()].b[promotion_piece] ^= target_square;
 
-		p.material[p.self()] -= eval_values::material_values[ pieces::pawn ];
 		p.material[p.self()] += eval_values::material_values[ promotion_piece ];
 
 		delta -= eval_values::material_values[pieces::pawn];

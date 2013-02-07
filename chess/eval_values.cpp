@@ -244,7 +244,6 @@ void init()
 void update_derived()
 {
 	initial_material =
-		material_values[pieces::pawn] * 8 +
 		material_values[pieces::knight] * 2 +
 		material_values[pieces::bishop] * 2 +
 		material_values[pieces::rook] * 2 +
