@@ -278,8 +278,11 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	}
 
 #if NULL_MOVE_REDUCTION > 0
-	if( !pv_node && !check.check && full_eval >= beta && !last_was_null && depth >= (cutoff + depth_factor) && p.material[p.self()].mg() ) {
-
+	if( !pv_node && !check.check &&
+		full_eval >= beta && !last_was_null &&
+		beta > result::loss_threshold && beta < result::win_threshold &&
+		depth >= (cutoff + depth_factor) && p.material[p.self()].mg() )
+	{
 		short new_depth = depth - (NULL_MOVE_REDUCTION + 1) * depth_factor;
 		short value;
 
@@ -402,7 +405,8 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 #if USE_FUTILITY
 				// Futility pruning
 				if( !extended && !pv_node && gen.get_phase() == phases::noncapture && !check.check &&
-					it->m != tt_move && !dangerous_pawn_move )
+					it->m != tt_move && !dangerous_pawn_move &&
+					( best_value == result::loss || best_value < result::loss_threshold ) )
 				{
 					int plies_remaining = (depth - cutoff) / depth_factor;
 					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short))) {
