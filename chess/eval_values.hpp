@@ -36,12 +36,6 @@ namespace eval_values {
 	extern short king_melee_attack_by_rook;
 	extern short king_melee_attack_by_queen;
 
-	extern short king_attack_min[2];
-	extern short king_attack_max[2];
-	extern short king_attack_rise[2];
-	extern short king_attack_exponent[2];
-	extern short king_attack_offset[2];
-
 	extern short king_attack_pawn_shield;
 
 	extern score center_control;

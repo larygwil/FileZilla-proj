@@ -37,12 +37,6 @@ short king_check_by_piece[6];
 short king_melee_attack_by_rook;
 short king_melee_attack_by_queen;
 
-short king_attack_min[2];
-short king_attack_max[2];
-short king_attack_rise[2];
-short king_attack_exponent[2];
-short king_attack_offset[2];
-
 short king_attack_pawn_shield;
 
 score center_control;
@@ -189,28 +183,18 @@ void init()
 	tropism[3]                      = score( 0, 0 );
 	tropism[4]                      = score( 4, 0 );
 	tropism[5]                      = score( 1, 1 );
-	king_attack_by_piece[1]         = 3;
-	king_attack_by_piece[2]         = 17;
-	king_attack_by_piece[3]         = 10;
-	king_attack_by_piece[4]         = 15;
-	king_attack_by_piece[5]         = 22;
-	king_check_by_piece[2]          = 0;
-	king_check_by_piece[3]          = 9;
-	king_check_by_piece[4]          = 16;
-	king_check_by_piece[5]          = 12;
-	king_melee_attack_by_rook       = 3;
-	king_melee_attack_by_queen      = 33;
-	king_attack_min[0]              = 0;
-	king_attack_min[1]              = 0;
-	king_attack_max[0]              = 158;
-	king_attack_max[1]              = 103;
-	king_attack_rise[0]             = 1;
-	king_attack_rise[1]             = 1;
-	king_attack_exponent[0]         = 114;
-	king_attack_exponent[1]         = 100;
-	king_attack_offset[0]           = 20;
-	king_attack_offset[1]           = 96;
-	king_attack_pawn_shield         = 83;
+	king_attack_by_piece[1]         = 1;
+	king_attack_by_piece[2]         = 15;
+	king_attack_by_piece[3]         = 15;
+	king_attack_by_piece[4]         = 21;
+	king_attack_by_piece[5]         = 16;
+	king_check_by_piece[2]          = 1;
+	king_check_by_piece[3]          = 8;
+	king_check_by_piece[4]          = 1;
+	king_check_by_piece[5]          = 2;
+	king_melee_attack_by_rook       = 6;
+	king_melee_attack_by_queen      = 18;
+	king_attack_pawn_shield         = 14;
 	center_control                  = score( 4, 0 );
 	rule_of_the_square              = score( 0, 6 );
 	passed_pawn_unhindered          = score( 3, 6 );
@@ -336,15 +320,13 @@ void update_derived()
 	for( short i = 0; i < 200; ++i ) {
 		short v[2];
 		for( int c = 0; c < 2; ++c ) {
-			if( i > king_attack_offset[c] ) {
-				double factor = i - king_attack_offset[c];
-				factor = std::pow( factor, double(king_attack_exponent[c]) / 100.0 );
-				uint64_t value = static_cast<uint64_t>(king_attack_min[c] + static_cast<uint64_t>(king_attack_rise[c]) * factor);
-				v[c] = static_cast<short>(std::min(value, uint64_t(king_attack_min[c] + king_attack_max[c])));
+			double di = static_cast<double>(i);
+			//double dv = di * 0.6f + std::pow( 1.031f, di );
+			double dv = 0.7 * di + di * di / 35.;
+			if( dv > 500. ) {
+				dv = 500.;
 			}
-			else {
-				v[c] = 0;
-			}
+			v[c] = static_cast<short>(dv);
 		}
 		king_attack[i] = score( v[0], v[1] );
 	}
@@ -396,10 +378,10 @@ void update_derived()
 bool sane()
 {
 	for( int i = 1; i < 5; ++i ) {
-		if( material_values[i].mg() > material_values[i+1].mg() ) {
+		if( material_values[i].mg() >= material_values[i+1].mg() ) {
 			return false;
 		}
-		if( material_values[i].eg() > material_values[i+1].eg() ) {
+		if( material_values[i].eg() >= material_values[i+1].eg() ) {
 			return false;
 		}
 	}
@@ -516,14 +498,6 @@ bool normalize()
 	}
 	if( mobility_queen_max.eg() > mobility_queen[27].eg() ) {
 		mobility_queen_max.eg() = mobility_queen[27].eg();
-		changed = true;
-	}
-	if( king_attack_min[0] + king_attack_max[0] > king_attack[199].mg() ) {
-		king_attack_max[0] = king_attack[199].mg() - king_attack_min[0];
-		changed = true;
-	}
-	if( king_attack_min[1] + king_attack_max[1] > king_attack[199].eg() ) {
-		king_attack_max[1] = king_attack[199].eg() - king_attack_min[1];
 		changed = true;
 	}
 	for( int i = 1; i < 3; ++i ) {
