@@ -782,9 +782,59 @@ void check_condition_wait()
 	pass();
 }
 
+
+void check_kpvk( std::string const& fen, bool evaluated, int expected )
+{
+	position p = test_parse_fen( fen );
+
+	short s;
+	if( evaluate_endgame( p, s ) != evaluated ) {
+		abort();
+	}
+	if( evaluated ) {
+		if( !expected && s != result::draw ) {
+			abort();
+		}
+		else if( expected > 0 && s < result::win_threshold ) {
+			abort();
+		}
+		else if( expected < 0 && s >= result::loss_threshold ) {
+			abort();
+		}
+	}
+
+	position p2 = test_parse_fen( flip_fen( fen ) );
+	expected *= -1;
+
+	if( evaluate_endgame( p2, s ) != evaluated ) {
+		abort();
+	}
+
+	if( evaluated ) {
+		if( !expected && s != result::draw ) {
+			abort();
+		}
+		else if( expected > 0 && s < result::win_threshold ) {
+			abort();
+		}
+		else if( expected < 0 && s >= result::loss_threshold ) {
+			abort();
+		}
+	}
+}
+
+
 void check_endgame_eval()
 {
 	checking("endgame evaluation");
+
+	check_kpvk("k7/8/7p/8/8/8/8/1K6 w - - 1 1", false, 0 );
+	check_kpvk("k7/8/7p/8/8/8/8/1K6 b - - 1 1", true, -1 );
+	check_kpvk("k7/7K/7p/8/8/8/8/8 b - - 1 1", true, -1 );
+	check_kpvk("k7/7K/7p/8/8/8/8/8 w - - 1 1", false, 0 );
+	check_kpvk("k7/8/2K5/7p/8/8/8/8 b - - 1 1", true, -1 );
+	check_kpvk("k7/8/2K5/7p/8/8/8/8 w - - 1 1", false, 0 );
+
 	std::string const fens[] = {
 		"8/3k4/8/8/5K2/8/8/8 w - - 0 1",
 		"8/8/2k5/4n1K1/8/8/8/8 w - - 0 1",

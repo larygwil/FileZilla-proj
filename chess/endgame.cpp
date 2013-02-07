@@ -69,10 +69,10 @@ bool evaluate_KPvK( position const& p, color::type c, short& result )
 	uint64_t unstoppable = p.bitboards[c].b[bb_type::pawns] & ~rule_of_the_square[1-c][p.c][p.king_pos[1-c]];
 	if( unstoppable ) {
 		if( c == color::black ) {
-			result = result::win_threshold + static_cast<short>(pawn / 8);
+			result = result::loss_threshold - 7 + static_cast<short>(pawn / 8);
 		}
 		else {
-			result = result::loss_threshold - 7 + static_cast<short>(pawn / 8);
+			result = result::win_threshold + static_cast<short>(pawn / 8);
 		}
 		return true;
 	}
