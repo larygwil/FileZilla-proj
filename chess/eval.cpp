@@ -343,7 +343,7 @@ inline static void evaluate_rook_trapped( position const& p, color::type c, uint
 template<bool detail>
 inline static void evaluate_rook_mobility( position const& p, color::type c, uint64_t rook, eval_results& results )
 {
-	uint64_t const all_blockers = (p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces]) & ~p.bitboards[c].b[bb_type::rooks];
+	uint64_t const all_blockers = (p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces]) & ~(p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens]);
 
 	uint64_t moves = rook_magic( rook, all_blockers );
 
