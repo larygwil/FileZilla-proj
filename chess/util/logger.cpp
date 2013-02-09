@@ -5,17 +5,17 @@
 
 namespace logger {
 
+namespace {
+std::ofstream logfile;
+bool show_debug_ = true;
+}
+
 class logbuf : public std::streambuf
 {
 public:
 	logbuf( std::streambuf* orig, std::string const& fn )
 		: orig_(orig)
 	{
-		if( !fn.empty() ) {
-			logfile_.open( fn.c_str(), std::ios_base::app );
-			logfile_.setf( std::ios::unitbuf );
-		}
-
 		orig_->pubsetbuf( buffer_, 1024 );
 	}
 
@@ -26,7 +26,9 @@ public:
 
 	virtual std::streamsize xsputn( std::streambuf::char_type const* s, std::streamsize n )
 	{
-		logfile_.write( s, n );
+		if( logfile.is_open() ) {
+			logfile.write( s, n );
+		}
 		return orig_->sputn( s, n );
 	}
 
@@ -36,8 +38,8 @@ public:
 			return !EOF;
 		}
 		else {
-			if( logfile_.is_open() ) {
-				logfile_.put( c );
+			if( logfile.is_open() ) {
+				logfile.put( c );
 			}
 			return orig_->sputc( c ) == EOF;
 		}
@@ -50,10 +52,12 @@ public:
 	}
 
 	std::streambuf* orig_;
-	std::ofstream logfile_;
 
 	char buffer_[1024];
 };
+
+
+
 
 namespace {
 logbuf* new_cerr = 0;
@@ -64,7 +68,17 @@ std::streambuf* original_cout = 0;
 
 
 
-void init( std::string const& fn ) {
+void init( std::string const& fn )
+{
+	if( original_cerr ) {
+		return;
+	}
+
+	if( !fn.empty() ) {
+		logfile.open( fn.c_str(), std::ios_base::app );
+		logfile.setf( std::ios::unitbuf );
+	}
+
 	original_cerr = std::cerr.rdbuf();
 	original_cout = std::cout.rdbuf();
 
@@ -78,8 +92,8 @@ void init( std::string const& fn ) {
 
 void log_input( std::string const& in )
 {
-	if( new_cout && new_cout->logfile_.is_open() ) {
-		new_cout->logfile_ << in.c_str() << std::endl;
+	if( logfile.is_open() ) {
+		logfile << in.c_str() << std::endl;
 	}
 }
 
@@ -88,13 +102,34 @@ void cleanup()
 {
 	if( original_cerr ) {
 		std::cerr.rdbuf( original_cerr );
+		original_cerr = 0;
 	}
 	if( original_cout ) {
 		std::cout.rdbuf( original_cout );
+		original_cout = 0;
 	}
 
 	delete new_cerr;
 	delete new_cout;
+	new_cerr = 0;
+	new_cout = 0;
+
+	logfile.close();
 }
 
+
+void show_debug( bool show )
+{
+	show_debug_ = show;
+}
+}
+
+std::ostream& dlog()
+{
+	if( logger::show_debug_ ) {
+		return std::cerr;
+	}
+	else {
+		return logger::logfile;
+	}
 }

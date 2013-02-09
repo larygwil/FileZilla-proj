@@ -139,7 +139,7 @@ struct xboard_state
 				comm_overhead = duration();
 			}
 
-			std::cerr << "Updating communication overhead from " << communication_overhead.milliseconds() << " ms to " << comm_overhead.milliseconds() << " ms " << std::endl;
+			dlog() << "Updating communication overhead from " << communication_overhead.milliseconds() << " ms to " << comm_overhead.milliseconds() << " ms " << std::endl;
 			communication_overhead = comm_overhead;
 		}
 
@@ -420,7 +420,7 @@ void xboard_thread::onRun()
 
 			{
 				score base_eval = state.p.white() ? state.p.base_eval : -state.p.base_eval;
-				std::cerr << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << result.forecast << std::endl;
+				dlog() << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << result.forecast << std::endl;
 			}
 
 			if( result.forecast > result::win_threshold ) {
@@ -443,7 +443,7 @@ void xboard_thread::onRun()
 		}
 		duration elapsed = timestamp() - state.last_go_time;
 
-		std::cerr << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
+		dlog() << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
 		if( !time_limit.is_infinity() ) {
 			if( time_limit > elapsed ) {
 				state.bonus_time = (time_limit - elapsed) / 2;
@@ -454,7 +454,7 @@ void xboard_thread::onRun()
 				if( time_limit + result.used_extra_time > elapsed ) {
 					duration actual_overhead = elapsed - time_limit - result.used_extra_time;
 					if( actual_overhead > state.internal_overhead ) {
-						std::cerr << "Updating internal overhead from " << state.internal_overhead.milliseconds() << " ms to " << actual_overhead.milliseconds() << " ms " << std::endl;
+						dlog() << "Updating internal overhead from " << state.internal_overhead.milliseconds() << " ms to " << actual_overhead.milliseconds() << " ms " << std::endl;
 						state.internal_overhead = actual_overhead;
 					}
 				}
@@ -467,7 +467,7 @@ void xboard_thread::onRun()
 	}
 
 	if( ponder_ ) {
-		std::cerr << "Pondering..." << std::endl;
+		dlog() << "Pondering..." << std::endl;
 		cmgr_.calc( state.p, -1, duration::infinity(), duration::infinity(), state.clock, state.seen, state.last_mate, *this );
 	}
 }
@@ -510,8 +510,8 @@ void xboard_thread::on_new_best_move( position const& p, int depth, int /*select
 			std::cout.flush();
 		}
 		else {
-			std::cerr << ss.str();
-			std::cerr.flush();
+			dlog() << ss.str();
+			dlog().flush();
 		}
 
 		best_move = *pv;
@@ -533,11 +533,11 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 	if( conf.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
 		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.move_history_, true );
 		if( moves.empty() ) {
-			std::cerr << "Current position not in book" << std::endl;
+			dlog() << "Current position not in book" << std::endl;
 		}
 		else {
-			std::cerr << "Entries from book: " << std::endl;
-			std::cerr << entries_to_string( state.p, moves );
+			dlog() << "Entries from book: " << std::endl;
+			dlog() << entries_to_string( state.p, moves );
 
 			short best = moves.front().forecast;
 			int count_best = 1;
@@ -560,7 +560,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 			timestamp stop;
 			state.time_remaining -= stop - state.last_go_time;
-			std::cerr << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
+			dlog() << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 			return;
 		}
 	}
@@ -581,7 +581,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 		timestamp stop;
 		state.time_remaining -= stop - state.last_go_time;
-		std::cerr << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
+		dlog() << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 		return;
 	}
 
@@ -639,7 +639,7 @@ skip_getline:
 		timestamp cmd_recv_time;
 
 		if( !std::cin ) {
-			std::cerr << "EOF" << std::endl;
+			dlog() << "EOF" << std::endl;
 			break;
 		}
 		if( line.empty() ) {

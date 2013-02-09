@@ -11,6 +11,7 @@
 #include "see.hpp"
 #include "statistics.hpp"
 #include "tables.hpp"
+#include "util/logger.hpp"
 #include "util/mutex.hpp"
 #include "util/thread.hpp"
 #include "util.hpp"
@@ -794,10 +795,10 @@ calc_result calc_manager::calc( position& p, int max_depth, duration const& move
 	bool ponder = false;
 	if( !move_time_limit.is_infinity() ) {
 		if( !deadline.is_infinity() ) {
-			std::cerr << "Time limit is " << move_time_limit.milliseconds() << " ms with deadline of " << deadline.milliseconds() << " ms" << std::endl;
+			dlog() << "Time limit is " << move_time_limit.milliseconds() << " ms with deadline of " << deadline.milliseconds() << " ms" << std::endl;
 		}
 		else {
-			std::cerr << "Time limit is " << move_time_limit.milliseconds() << " ms without deadline" << std::endl;
+			dlog() << "Time limit is " << move_time_limit.milliseconds() << " ms without deadline" << std::endl;
 		}
 	}
 	else {
@@ -817,11 +818,11 @@ calc_result calc_manager::calc( position& p, int max_depth, duration const& move
 	if( moves == pm ) {
 		if( check.check ) {
 			if( p.white() ) {
-				std::cerr << "BLACK WINS" << std::endl;
+				dlog() << "BLACK WINS" << std::endl;
 				result.forecast = result::loss;
 			}
 			else {
-				std::cerr << std::endl << "WHITE WINS" << std::endl;
+				dlog() << std::endl << "WHITE WINS" << std::endl;
 				result.forecast = result::win;
 			}
 			return result;
@@ -830,7 +831,7 @@ calc_result calc_manager::calc( position& p, int max_depth, duration const& move
 			if( !p.white() ) {
 				std::cout << std::endl;
 			}
-			std::cerr << "DRAW" << std::endl;
+			dlog() << "DRAW" << std::endl;
 			result.forecast = result::draw;
 			return result;
 		}
@@ -941,7 +942,7 @@ break2:
 
 				now = timestamp();
 				if( !do_abort && (now - start) > time_limit ) {
-					std::cerr << "Triggering search abort due to time limit at depth " << depth << std::endl;
+					dlog() << "Triggering search abort due to time limit at depth " << depth << std::endl;
 					do_abort = true;
 				}
 			}
@@ -981,7 +982,7 @@ break2:
 									if( extra.milliseconds() > 0 ) {
 										result.used_extra_time += extra;
 										time_limit += extra;
-										std::cerr << "PV changed, adding " << extra.milliseconds() << " ms extra search time." << std::endl;
+										dlog() << "PV changed, adding " << extra.milliseconds() << " ms extra search time." << std::endl;
 									}
 								}
 								result.best_move = mi.m;
@@ -1016,13 +1017,13 @@ break2:
 			}
 		}
 		if( do_abort ) {
-			std::cerr << "Aborted with " << evaluated << " of " << sorted.size() << " moves evaluated at current depth" << std::endl;
+			dlog() << "Aborted with " << evaluated << " of " << sorted.size() << " moves evaluated at current depth" << std::endl;
 		}
 		else {
 			if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
 				if( depth < max_depth ) {
 					if( alpha > last_mate && !ponder ) {
-						std::cerr << "Early break due to mate at " << depth << std::endl;
+						dlog() << "Early break due to mate at " << depth << std::endl;
 						do_abort = true;
 					}
 				}
@@ -1030,7 +1031,7 @@ break2:
 			else {
 				duration elapsed = timestamp() - start;
 				if( !ponder && elapsed > (time_limit * 3) / 5 && depth < max_depth ) {
-					std::cerr << "Not increasing depth due to time limit. Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
+					dlog() << "Not increasing depth due to time limit. Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
 					do_abort = true;
 				}
 			}

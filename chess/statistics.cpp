@@ -1,5 +1,6 @@
 #include "statistics.hpp"
 #include "hash.hpp"
+#include "util/logger.hpp"
 #include "pawn_structure_hash_table.hpp"
 
 #include <iostream>
@@ -104,7 +105,7 @@ void statistics::print( duration const& elapsed )
 	}
 	ss_ << std::endl << std::endl;
 
-	std::cerr << ss_.str();
+	dlog() << ss_.str();
 }
 
 void statistics::print_total()
@@ -126,7 +127,7 @@ void statistics::print_total()
 
 	ss_ << std::endl;
 
-	std::cerr << ss_.str();
+	dlog() << ss_.str();
 }
 
 
@@ -209,7 +210,7 @@ void statistics::print_details()
 		}
 	}
 
-	std::cerr << ss_.str();
+	dlog() << ss_.str();
 }
 
 
