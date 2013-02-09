@@ -248,10 +248,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		short eval;
 		t = transposition_table.lookup( hash, depth, ply, alpha, beta, eval, tt_move, full_eval );
 		if( t != score_type::none ) {
-			if( t == score_type::exact ) {
-				return eval;
-			}
-			else if( !pv_node ) {
+			if( t == score_type::exact || !pv_node ) {
 				return eval;
 			}
 		}
@@ -329,8 +326,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	move best_move;
 
 	unsigned int processed_moves = 0;
-	unsigned int searched_noncaptures = 0;
-
+	
 	move_generator gen( ctx, ctx.killers[p.self()][ply], p, check );
 	gen.hash_move = tt_move;
 	move_info const* it;
@@ -405,14 +401,13 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 #if USE_FUTILITY
 				// Futility pruning
 				if( !extended && !pv_node && gen.get_phase() == phases::noncapture && !check.check &&
-					it->m != tt_move && !dangerous_pawn_move &&
+					!dangerous_pawn_move &&
 					( best_value == result::loss || best_value < result::loss_threshold ) )
 				{
 					int plies_remaining = (depth - cutoff) / depth_factor;
 					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short))) {
 						value = full_eval + futility_pruning[plies_remaining];
 						if( value <= alpha ) {
-							++searched_noncaptures;
 							continue;
 						}
 					}
@@ -437,10 +432,6 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 			}
 			else {
 				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, new_check, -beta, -alpha, false, result::win, new_capture );
-			}
-
-			if( captured_piece == pieces::none ) {
-				++searched_noncaptures;
 			}
 		}
 		if( value > best_value ) {
