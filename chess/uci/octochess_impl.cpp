@@ -275,6 +275,8 @@ void octochess_uci::impl::on_new_best_move( position const& p, int depth, int se
 	i.principal_variation( pv_to_string(pv, p, true) );
 
 	gui_interface_->tell_info( i );
+
+	pv_move_picker_.update_pv( p, pv );
 }
 
 
