@@ -30,9 +30,7 @@ int const pawn_push_extension = 6;
 int const recapture_extension = 6;
 int const cutoff = depth_factor + MAX_QDEPTH + 1;
 
-unsigned int const lmr_searched = 3;
-int const lmr_reduction = depth_factor;
-int const lmr_min_depth = cutoff + depth_factor;
+int const lmr_min_depth = cutoff + depth_factor * 2;
 
 short const razor_pruning[] = { 220, 250, 290 };
 
@@ -416,25 +414,31 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 						continue;
 					}
 				}
+
 #endif
 
-				// Open question: Use this approach or instead do PVS's null-window also when re-searching a >alpha LMR result?
-				// Barring some bugs or some weird search instability issues, it should bring the same results and speed seems similar.
-				if( !extended && !pv_node && processed_moves >= lmr_searched && gen.get_phase() >= phases::noncapture &&
-					!check.check && depth > lmr_min_depth )
+				bool search_full;
+				if( !extended && processed_moves >= (pv_node ? 5u : 3u) && gen.get_phase() >= phases::noncapture &&
+					!check.check && depth >= lmr_min_depth )
 				{
-					int lmr_depth = new_depth - lmr_reduction;
+					int red = pv_node ? (depth_factor) : (depth_factor * 2);
+
+					red += (processed_moves - (pv_node?3:3)) / 5;
+					int lmr_depth = new_depth - red;
 					value = -step(lmr_depth, ply + 1, ctx, new_pos, new_hash, new_check, -alpha-1, -alpha, false );
+				
+					search_full = value > alpha;
 				}
 				else {
-					value = -step(new_depth, ply + 1, ctx, new_pos, new_hash, new_check, -alpha-1, -alpha, false );
+					search_full = true;
 				}
-
-				if( value > alpha ) {
-					value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, new_check, -beta, -alpha, false, result::win, new_capture );
+				
+				if( search_full ) {
+					value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, new_check, -alpha-1, -alpha, false, result::win, new_capture );
 				}
 			}
-			else {
+
+			if( pv_node && (!processed_moves || (value > alpha && value < beta) ) ) {
 				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, new_check, -beta, -alpha, false, result::win, new_capture );
 			}
 		}
