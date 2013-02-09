@@ -411,6 +411,10 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 							continue;
 						}
 					}
+
+					if( new_depth < cutoff + depth_factor && see( p, it->m ) < 0 ) {
+						continue;
+					}
 				}
 #endif
 
