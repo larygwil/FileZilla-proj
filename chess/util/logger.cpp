@@ -13,7 +13,7 @@ bool show_debug_ = true;
 class logbuf : public std::streambuf
 {
 public:
-	logbuf( std::streambuf* orig, std::string const& fn )
+	logbuf( std::streambuf* orig )
 		: orig_(orig)
 	{
 		orig_->pubsetbuf( buffer_, 1024 );
@@ -82,11 +82,11 @@ void init( std::string const& fn )
 	original_cerr = std::cerr.rdbuf();
 	original_cout = std::cout.rdbuf();
 
-	new_cerr = new logbuf( original_cerr, fn );
-	new_cout = new logbuf( original_cout, fn );
+	new_cerr = new logbuf( original_cerr );
+	new_cout = new logbuf( original_cout );
 
 	std::cerr.rdbuf( new_cerr );
-	std::cout.rdbuf( new_cout );	
+	std::cout.rdbuf( new_cout );
 }
 
 
