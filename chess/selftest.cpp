@@ -924,6 +924,33 @@ void check_time()
 	}
 	pass();
 }
+
+void check_scale()
+{
+	checking("checking smoothness of game phase scaling");
+
+	score v(20, 20);
+	score v2(618, 598);
+	for( int i = eval_values::phase_transition_material_begin; i >= eval_values::phase_transition_material_end; --i ) {
+		short scaled = v.scale( i );
+
+		if( scaled != 20 ) {
+			std::cerr << "Scaling did not return correct value" << std::endl;
+			abort();
+		}
+
+		short scaled2 = v2.scale( i );
+		short nscaled2 = (-v2).scale( i );
+		if( scaled2 != -nscaled2 ) {
+			v2.scale(i);
+			(-v2).scale(i);
+			std::cerr << "Scaling of negated score did not return negated value" << std::endl;
+			abort();
+		}
+	}
+
+	pass();
+}
 }
 
 bool selftest()
@@ -938,6 +965,7 @@ bool selftest()
 
 	check_time();
 
+	check_scale();
 	check_eval();
 	check_endgame_eval();
 

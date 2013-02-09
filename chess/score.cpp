@@ -43,8 +43,10 @@ short score::scale( short material ) const
 	}
 	
 	int position = 256 * (eval_values::phase_transition_material_begin - material) / static_cast<int>(eval_values::phase_transition_duration);
-	return ((static_cast<int>(eg_) * position      ) /256) +
-		   ((static_cast<int>(mg_) * (256-position)) /256);
+	int v = ((static_cast<int>(eg_) * position      )) +
+		    ((static_cast<int>(mg_) * (256-position)));
+
+	return static_cast<short>(v / 256);
 }
 
 
