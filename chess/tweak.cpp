@@ -329,7 +329,7 @@ void init_genes()
 	MAKE_GENE( king_melee_attack_by_queen, 1, 50 );
 	MAKE_GENE( king_attack_pawn_shield, 1, 100 );
 	MAKE_GENE( center_control, 1, 400 );
-	//MAKE_GENES( material_imbalance, -500, 500, 2, 0 );
+	MAKE_GENES( material_imbalance, 0, 200, 2, 0 );
 	MAKE_GENE( rule_of_the_square, 0, 100 );
 	MAKE_GENE( passed_pawn_unhindered, 0, 100 );
 	MAKE_GENES( defended_by_pawn, 0, 100, 5, 1 );
@@ -447,7 +447,7 @@ struct individual
 					difference = int(score) - ref.max_eval;
 				}
 			}
-			if( ref.forecast > ref.max_eval && score < ref.min_eval ) {
+			/*if( ref.forecast > ref.max_eval && score < ref.min_eval ) {
 				difference *= 2;
 			}
 			else if( ref.forecast < ref.min_eval && score > ref.max_eval ) {
@@ -458,15 +458,15 @@ struct individual
 			}
 			else if( ref.forecast < ref.min_eval && score < ref.min_eval ) {
 				difference /= 2;
-			}
+			}*/
 #endif
 
-			if( score < 0 && ref.min_eval > 0 ) {
+			/*if( score < 0 && ref.min_eval > 0 ) {
 				difference *= 2;
 			}
 			else if( score > 0 && ref.max_eval < 0 ) {
 				difference *= 2;
-			}
+			}*/
 
 			fitness_ += difference;
 

@@ -719,7 +719,7 @@ void evaluate_pawn_shield_side( position const& p, eval_results& results )
 
 	uint64_t pawns = (passed_pawns[c][king_pos] | 7ull << (king_pos - 1)) & p.bitboards[c].b[bb_type::pawns];
 	uint64_t enemy_pawns = passed_pawns[c][king_pos] & p.bitboards[1-c].b[bb_type::pawns];
-	uint64_t k = 0xffull << (c ? 48 : 8);//(king_pos & 0x38);
+	uint64_t k = 0xffull << (c ? 48 : 8);
 	score s;
 	for( int i = 0; i < 4; ++i ) {
 		s += eval_values::pawn_shield[i] * static_cast<short>(popcount(pawns & k) );
@@ -780,17 +780,45 @@ static void evaluate_piece_defense( position const& p, color::type c, eval_resul
 template<bool detail>
 static void evaluate_imbalance( position const& p, eval_results& results )
 {
-	short pieces[2];
-	pieces[0] = static_cast<short>( popcount( p.bitboards[0].b[bb_type::all_pieces] ^ p.bitboards[0].b[bb_type::pawns] ) );
-	pieces[1] = static_cast<short>( popcount( p.bitboards[1].b[bb_type::all_pieces] ^ p.bitboards[1].b[bb_type::pawns] ) );
-	short pieces_diff = pieces[0] - pieces[1];
-	add_score<detail, eval_detail::imbalance>( results, color::white, eval_values::material_imbalance[0] * pieces_diff );
+	// TODO: Check if it's faster to use p.piece_sum
+	short pawns[2];
+	pawns[0] = static_cast<short>( popcount( p.bitboards[0].b[bb_type::pawns] ) );
+	pawns[1] = static_cast<short>( popcount( p.bitboards[1].b[bb_type::pawns] ) );
+	short pawn_diff = pawns[0] - pawns[1];
 
-	short major_pieces[2];
-	major_pieces[0] = static_cast<short>( popcount( p.bitboards[0].b[bb_type::rooks] ^ p.bitboards[0].b[bb_type::queens] ) );
-	major_pieces[1] = static_cast<short>( popcount( p.bitboards[1].b[bb_type::rooks] ^ p.bitboards[1].b[bb_type::queens] ) );
-	short major_diff = major_pieces[0] - major_pieces[1];
-	add_score<detail, eval_detail::imbalance>( results, color::white, eval_values::material_imbalance[1] * major_diff );
+	short minors[2];
+	minors[0] = static_cast<short>( popcount( p.bitboards[0].b[bb_type::knights] | p.bitboards[0].b[bb_type::bishops] ) );
+	minors[1] = static_cast<short>( popcount( p.bitboards[1].b[bb_type::knights] | p.bitboards[1].b[bb_type::bishops] ) );
+	short minor_diff = minors[0] - minors[1];
+
+	// TODO: Somehow handle queens
+	short majors[2];
+	majors[0] = static_cast<short>( popcount( p.bitboards[0].b[bb_type::rooks] ) );
+	majors[1] = static_cast<short>( popcount( p.bitboards[1].b[bb_type::rooks] )) ;
+	short major_diff = majors[0] - majors[1];
+
+	score v;
+	while( minor_diff > 1 && major_diff < 0 ) {
+		v += eval_values::material_imbalance[1];
+		minor_diff -= 2;
+		++major_diff;
+	}
+	while( minor_diff < -1 && major_diff > 0 ) {
+		v -= eval_values::material_imbalance[1];
+		minor_diff += 2;
+		--major_diff;
+	}
+	while( pawn_diff > 2 && minor_diff < 0 ) {
+		pawn_diff -= 3;
+		++minor_diff;
+	}
+	while( pawn_diff < -2 && minor_diff > 0 ) {
+		pawn_diff += 3;
+		--minor_diff;
+	}
+	v += eval_values::material_imbalance[0] * minor_diff;
+
+	add_score<detail, eval_detail::imbalance>( results, color::white, v );
 }
 
 template<bool detail>
@@ -804,7 +832,7 @@ static void do_evaluate( position const& p, eval_results& results )
 		}
 	}
 
-	//evaluate_imbalance<detail>( p, results );
+	evaluate_imbalance<detail>( p, results );
 
 	evaluate_pawn_shield<detail>( p, results );
 
