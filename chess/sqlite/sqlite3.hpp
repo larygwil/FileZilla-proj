@@ -18,6 +18,8 @@ public:
 	bool open( std::string const& file );
 	void close();
 
+	int user_version();
+
 	sqlite3* handle() { return db_; }
 
 	bool query( std::string const& query, int (*callback)(void*,int,char**,char**), void* data, bool report_errors = true );

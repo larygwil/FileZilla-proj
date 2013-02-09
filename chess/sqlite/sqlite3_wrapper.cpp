@@ -171,6 +171,29 @@ bool database::query_row( std::string const& query, int (*callback)(void*,sqlite
 	return ret;
 }
 
+namespace {
+extern "C" int version_cb( void* p, int, char** data, char** /*names*/ ) {
+	int* v = reinterpret_cast<int*>(p);
+	*v = atoi( *data );
+
+	return 0;
+}
+}
+
+int database::user_version()
+{
+	if( !is_open() ) {
+		return -1;
+	}
+
+	int v;
+	if( !query( "PRAGMA user_version", version_cb, &v ) ) {
+		v = -1;
+	}
+
+	return v;
+}
+
 
 statement::statement( database& db, std::string const& statement, bool report_errors )
 	: db_(db)

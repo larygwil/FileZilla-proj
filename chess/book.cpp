@@ -11,6 +11,7 @@
 #include <iostream>
 #include <sstream>
 
+int const db_version = 1;
 int const eval_version = 8;
 
 namespace {
@@ -143,6 +144,11 @@ public:
 book::book( std::string const& book_dir )
 	: impl_( new impl( book_dir ) )
 {
+	if( is_open() ) {
+		if( impl_->user_version() != db_version ) {
+			impl_->close();
+		}
+	}
 }
 
 
@@ -169,7 +175,15 @@ void book::close()
 bool book::open( std::string const& book_dir )
 {
 	scoped_lock l(impl_->mtx);
-	return impl_->open( book_dir + "opening_book.db" );
+	bool open = impl_->open( book_dir + "opening_book.db" );
+	if( open ) {
+		if( impl_->user_version() != db_version ) {
+			impl_->close();
+			open = false;
+		}
+	}
+
+	return open;
 }
 
 namespace {
