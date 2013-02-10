@@ -26,6 +26,7 @@ OBJECT_FILES = \
 	config.o \
 	detect_check.o \
 	endgame.o \
+	epd.o \
 	eval.o \
 	eval_values.o \
 	fen.o \
