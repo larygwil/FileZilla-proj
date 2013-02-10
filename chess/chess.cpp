@@ -16,6 +16,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include "chess.hpp"
 #include "config.hpp"
 #include "calc.hpp"
+#include "epd.hpp"
 #include "eval.hpp"
 #include "eval_values.hpp"
 #include "fen.hpp"
@@ -179,6 +180,9 @@ int main( int argc, char const* argv[] )
 	}
 	else if( command == "uci" ) {
 		run_uci( from_stdin );
+	}
+	else if( command == "sts" ) {
+		run_sts();
 	}
 	else {
 		xboard( command );

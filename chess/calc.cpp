@@ -779,7 +779,7 @@ calc_manager::~calc_manager()
 }
 
 
-calc_result calc_manager::calc( position& p, int max_depth, duration const& move_time_limit, duration const& deadline, int clock, seen_positions& seen
+calc_result calc_manager::calc( position const& p, int max_depth, duration const& move_time_limit, duration const& deadline, int clock, seen_positions& seen
 		  , short last_mate
 		  , new_best_move_callback_base& new_best_cb )
 {
