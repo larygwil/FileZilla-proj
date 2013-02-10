@@ -56,7 +56,7 @@ std::vector<epd> parse_epd( std::istream& in )
 			abort();
 		}
 
-		for( int i = 4; i < tokens.size(); ++i ) {
+		for( std::size_t i = 4; i < tokens.size(); ++i ) {
 			std::string op = tokens[i++];
 			if( i == tokens.size() ) {
 				abort();
@@ -90,12 +90,12 @@ int run_sts( epd const& e, int& match, int& sum )
 
 		std::map<move, unsigned int> scores;
 
-		for( int i = 0; i < tokens.size(); i += 2 ) {
+		for( std::size_t i = 0; i < tokens.size(); i += 2 ) {
 			unsigned int move_score;
 			if( !to_int( tokens[i+1], move_score ) ) {
 				abort();
 			}
-				
+
 			move m;
 			std::string error;
 			if( !parse_move( e.p, tokens[i], m, error ) ) {
@@ -103,7 +103,7 @@ int run_sts( epd const& e, int& match, int& sum )
 			}
 			scores[m] = move_score;
 		}
-			
+
 		transposition_table.init(conf.memory);
 		pawn_hash_table.init( conf.pawn_hash_table_size() );
 
@@ -127,30 +127,34 @@ void run_sts()
 {
 	logger::show_debug( false );
 
-	std::vector<int> sums;
 	std::vector<int> matches;
-	int sum = 0;
+	std::vector<int> scores;
 	for( int i = 1; i <= 14; ++i ) {
 		std::ostringstream ss;
 		ss << conf.self_dir << "sts/STS" << i << ".epd";
 
 		std::vector<epd> epds = parse_epd( ss.str() );
 
-		int sum = 0;
 		int match = 0;
+		int score = 0;
 
 		for( auto e : epds ) {
-			run_sts( e, match, sum );
+			run_sts( e, match, score );
 		}
 
-		std::cerr << i << " " << match << " " << sum << std::endl;
+		std::cerr << i << " " << match << " " << score << std::endl;
 
 		matches.push_back(match);
-		sums.push_back(sum);
+		scores.push_back(score);
 	}
 
 	std::cerr << "\n\n\n";
-	for( int i = 0; i < matches.size(); ++i ) {
-		std::cerr << matches[i] << " " << sums[i] << std::endl;
+	int match_sum = 0;
+	int score_sum = 0;
+	for( std::size_t i = 0; i < matches.size(); ++i ) {
+		match_sum += matches[i];
+		score_sum += scores[i];
+		std::cerr << i << " " << matches[i] << " " << scores[i] << std::endl;
 	}
+	std::cerr << "Sum " << match_sum << " " << score_sum << std::endl;
 }

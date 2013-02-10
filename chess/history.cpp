@@ -16,7 +16,7 @@ void history::clear()
 			}
 		}
 	}
-};
+}
 
 
 void history::reduce()
