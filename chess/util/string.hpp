@@ -8,7 +8,7 @@
 
 std::string split( std::string const& str, std::string& args, std::string::value_type c = ' ' );
 
-std::vector<std::string> tokenize( std::string const& str );
+std::vector<std::string> tokenize( std::string const& str, std::string const& sep = " ", std::string::value_type quote = 0 );
 
 template< typename T >
 inline std::string to_string( T const& t )
@@ -58,5 +58,8 @@ bool to_bool( std::string const& s, bool& b )
 
 	return ret;
 }
+
+
+void trim( std::string& str, std::string::value_type v = ' ' );
 
 #endif
