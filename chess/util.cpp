@@ -10,6 +10,7 @@
 #include "util.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "tables.hpp"
+#include "util/logger.hpp"
 #include "zobrist.hpp"
 
 #include <iostream>
@@ -268,31 +269,31 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 
 	if( matches.size() > 1 ) {
 		error = "Illegal move (ambigious)";
-		std::cerr << "Candiates:" << std::endl;
+		dlog() << "Candiates:" << std::endl;
 		for( std::list<move_info>::const_iterator it = matches.begin(); it != matches.end(); ++it ) {
-			std::cerr << move_to_string( p, it->m ) << std::endl;
+			dlog() << move_to_string( p, it->m ) << std::endl;
 		}
 		return false;
 	}
 	else if( matches.empty() ) {
 		error = "Illegal move (not valid)";
-		std::cerr << "Parsed:";
+		dlog() << "Parsed:";
 		if( first_col != -1 ) {
-			std::cerr << " source_file=" << static_cast<char>('a' + first_col);
+			dlog() << " source_file=" << static_cast<char>('a' + first_col);
 		}
 		if( first_row != -1 ) {
-			std::cerr << " source_rank=" << first_row;
+			dlog() << " source_rank=" << first_row;
 		}
 		if( second_col != -1 ) {
-			std::cerr << " target_file=" << static_cast<char>('a' + second_col);
+			dlog() << " target_file=" << static_cast<char>('a' + second_col);
 		}
 		if( second_row != -1 ) {
-			std::cerr << " target_rank=" << second_row;
+			dlog() << " target_rank=" << second_row;
 		}
 		if( promotion != pieces::none ) {
-			std::cerr << " promotion=" << static_cast<int>(promotion) << std::endl;
+			dlog() << " promotion=" << static_cast<int>(promotion) << std::endl;
 		}
-		std::cerr << " capture=" << capture << std::endl;
+		dlog() << " capture=" << capture << std::endl;
 		return false;
 	}
 
