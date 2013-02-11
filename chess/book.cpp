@@ -868,25 +868,38 @@ bool book::mark_for_processing( std::vector<move> const& history )
 
 
 namespace {
+struct work_cb_data
+{
+	book::impl* impl_;
+	std::list<work> wl;
+};
 extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 {
-	std::list<work>* wl = reinterpret_cast<std::list<work>*>(p);
+	work_cb_data* d = reinterpret_cast<work_cb_data*>(p);
 
-	std::string pos = *data;
+	std::string const pos = *data;
 	if( pos.length() % 3 ) {
-		return 1;
+		std::cerr << "Deleting position with incorrect length" << std::endl;
+		if( !d->impl_->query("DELETE FROM position WHERE pos = '" + pos + "'", 0, 0) ) {
+			return 1;
+		}
+		return 0;
 	}
 
 	work w;
 	w.seen.reset_root( get_zobrist_hash(w.p) );
 
-	while( !pos.empty() ) {
-		std::string ms = pos.substr( 0, 3 );
-		pos = pos.substr( 3 );
+	int i = 0;
+	while( i < pos.size() ) {
+		std::string ms = pos.substr( i, 3 );
+		i += 3;
 
 		move m;
 		if( !conv_to_move_slow( w.p, m, ms.c_str(), true ) ) {
-			return 1;
+			if( !d->impl_->query("DELETE FROM position WHERE pos = '" + pos + "'", 0, 0) ) {
+				return 1;
+			}
+			return 0;
 		}
 
 		apply_move( w.p, m );
@@ -894,7 +907,7 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 		w.seen.push_root( get_zobrist_hash(w.p) );
 	}
 
-	wl->push_back( w );
+	d->wl.push_back( w );
 
 	return 0;
 }
@@ -903,15 +916,16 @@ extern "C" int work_cb( void* p, int, char** data, char** /*names*/ )
 
 std::list<work> book::get_unprocessed_positions()
 {
-	std::list<work> ret;
+	work_cb_data d;
+	d.impl_ = impl_;
 
 	scoped_lock l(impl_->mtx);
 
 	std::string query = "SELECT pos FROM position WHERE data IS NULL ORDER BY LENGTH(pos) ASC;";
 
-	impl_->query( query, &work_cb, reinterpret_cast<void*>(&ret) );
+	impl_->query( query, &work_cb, reinterpret_cast<void*>(&d) );
 
-	return ret;
+	return d.wl;
 }
 
 
@@ -922,29 +936,33 @@ bool book::redo_hashes()
 		return false;
 	}
 
-	std::list<work> positions;
+	transaction t(*impl_);
+	if( !t.init() ) {
+		return false;
+	}
+
+	work_cb_data d;
+	d.impl_ = impl_;
 
 	{
 		scoped_lock l(impl_->mtx);
 
 		std::string query = "SELECT pos FROM position ORDER BY LENGTH(pos) DESC";
 
-		impl_->query( query, &work_cb, reinterpret_cast<void*>(&positions) );
+		impl_->query( query, &work_cb, reinterpret_cast<void*>(&d) );
 	}
 
 	std::stringstream ss;
 
-	ss << "BEGIN TRANSACTION;";
-	for( std::list<work>::const_iterator it = positions.begin(); it != positions.end(); ++it ) {
+	for( std::list<work>::const_iterator it = d.wl.begin(); it != d.wl.end(); ++it ) {
 		std::string hs = history_to_string( it->move_history );
 		uint64_t hash = get_zobrist_hash( it->p );
 		ss << "UPDATE position SET hash = " << static_cast<sqlite_int64>(hash) << " WHERE pos='" << hs << "';";
 	}
 
-	ss << "COMMIT TRANSACTION;";
 	impl_->query( ss.str(), 0, 0 );
 
-	return true;
+	return t.commit();
 }
 
 
@@ -952,17 +970,18 @@ std::list<book_entry_with_position> book::get_all_entries()
 {
 	std::list<book_entry_with_position> ret;
 
-	std::list<work> positions;
+	work_cb_data d;
+	d.impl_ = impl_;
 
 	{
 		scoped_lock l(impl_->mtx);
 
 		std::string query = "SELECT pos FROM position ORDER BY LENGTH(pos) DESC";
 
-		impl_->query( query, &work_cb, reinterpret_cast<void*>(&positions) );
+		impl_->query( query, &work_cb, reinterpret_cast<void*>(&d) );
 	}
 
-	for( std::list<work>::const_iterator it = positions.begin(); it != positions.end(); ++it ) {
+	for( std::list<work>::const_iterator it = d.wl.begin(); it != d.wl.end(); ++it ) {
 		book_entry_with_position entry;
 		entry.w = *it;
 		entry.entries = get_entries( it->p, it->move_history );
