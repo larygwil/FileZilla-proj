@@ -11,6 +11,7 @@ namespace logger {
 	void log_input( std::string const& in );
 
 	void show_debug( bool show );
+	bool show_debug();
 }
 
 std::ostream& dlog();

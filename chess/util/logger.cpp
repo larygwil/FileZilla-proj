@@ -122,6 +122,11 @@ void show_debug( bool show )
 {
 	show_debug_ = show;
 }
+
+bool show_debug()
+{
+	return show_debug_;
+}
 }
 
 std::ostream& dlog()
