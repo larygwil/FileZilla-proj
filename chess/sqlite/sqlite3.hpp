@@ -5,6 +5,7 @@
 
 #include "../util/platform.hpp"
 #include <string>
+#include <vector>
 
 class database
 {
@@ -22,13 +23,6 @@ public:
 
 	sqlite3* handle() { return db_; }
 
-	bool query( std::string const& query, int (*callback)(void*,int,char**,char**), void* data, bool report_errors = true );
-
-	// Mainly for inserting a single blob
-	bool query_bind( std::string const& query, unsigned char const* data, uint64_t len, bool report_errors = true );
-
-	// Mainly for parsing rows containing a blob
-	bool query_row( std::string const& query, int (*callback)(void*,sqlite3_stmt*), void* data, bool report_errors = true );
 
 	void print_error( int code, std::string const& failed_query, char const* err_msg = 0 );
 private:
@@ -43,7 +37,23 @@ public:
 
 	bool ok() const { return statement_ != 0; }
 
-	bool exec( bool report_errors = true );
+	// Binding values
+	bool bind( int arg, std::string const& );
+	bool bind( int arg, std::vector<unsigned char> const& );
+	bool bind( int arg, uint64_t );
+
+	// Executing query
+	bool exec( bool report_errors = true, bool reset = true );
+	bool exec( int (*callback)(void*,statement&), void* data, bool report_errors = true, bool reset = true );
+	void reset();
+
+	// Getting results
+	int column_count();
+	bool is_null( int col );
+	std::vector<unsigned char> get_blob( int col );
+	uint64_t get_int( int col );
+
+	database& db() { return db_; }
 private:
 	database& db_;
 	std::string query_;

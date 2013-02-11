@@ -1059,9 +1059,6 @@ void run( book& b )
 			}
 			deepen_tree( b, p, seen, move_history, offset );
 		}
-		else if( cmd == "historystring" ) {
-			std::cerr << b.history_to_string( move_history ) << std::endl;
-		}
 		else {
 			move m;
 			std::string error;

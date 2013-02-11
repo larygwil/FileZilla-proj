@@ -109,8 +109,8 @@ public:
 
 	bool redo_hashes();
 
-	std::string history_to_string( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end );
-	std::string history_to_string( std::vector<move> const& history );
+	std::vector<unsigned char> serialize_history( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end );
+	std::vector<unsigned char> serialize_history( std::vector<move> const& history );
 
 private:
 	impl *impl_;

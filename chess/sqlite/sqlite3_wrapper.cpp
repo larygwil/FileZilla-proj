@@ -38,7 +38,8 @@ bool database::open( std::string const& fn )
 	}
 	if( db_ ) {
 		sqlite3_busy_timeout( db_, 5000 );
-		query("PRAGMA foreign_keys = ON", 0, 0 );
+		statement s( *this, "PRAGMA foreign_keys = ON");
+		s.exec();
 	}
 
 	return is_open();
@@ -73,108 +74,10 @@ void database::print_error( int code, std::string const& failed_query, char cons
 	abort();
 }
 
-bool database::query( std::string const& query, int (*callback)(void*,int,char**,char**), void* data, bool report_errors )
-{
-	bool ret = false;
-
-	char* err_msg = 0;
-	int res = sqlite3_exec( handle(), query.c_str(), callback, data, &err_msg );
-
-	if( res == SQLITE_OK || res == SQLITE_DONE ) {
-		ret = true;
-	}
-	else if( report_errors ) {
-		print_error( res, query, err_msg );
-	}
-
-	sqlite3_free( err_msg );
-
-	return ret;
-}
-
-
-bool database::query_bind( std::string const& query, unsigned char const* data, uint64_t len, bool report_errors )
-{
-	sqlite3_stmt *statement = 0;
-	int res = sqlite3_prepare_v2( handle(), query.c_str(), -1, &statement, 0 );
-	if( res != SQLITE_OK ) {
-		if( report_errors ) {
-			print_error( res, query );
-		}
-		return false;
-	}
-
-	res = sqlite3_bind_blob( statement, 1, data, static_cast<int>(len), SQLITE_TRANSIENT );
-	if( res != SQLITE_OK ) {
-		if( report_errors ) {
-			print_error( res, query );
-		}
-		return false;
-	}
-
-	do {
-		res = sqlite3_step( statement );
-	} while( res == SQLITE_BUSY || res == SQLITE_ROW );
-
-	if( res != SQLITE_DONE ) {
-		if( report_errors ) {
-			print_error( res, query );
-		}
-		return false;
-	}
-
-	sqlite3_finalize( statement );
-
-	return true;
-}
-
-
-bool database::query_row( std::string const& query, int (*callback)(void*,sqlite3_stmt*), void* data, bool report_errors )
-{
-	sqlite3_stmt *statement = 0;
-	int res = sqlite3_prepare_v2( handle(), query.c_str(), -1, &statement, 0 );
-	if( res != SQLITE_OK ) {
-		if( report_errors ) {
-			print_error( res, query );
-		}
-		sqlite3_finalize( statement );
-		return false;
-	}
-
-	do {
-		res = sqlite3_step( statement );
-		if( res == SQLITE_ROW ) {
-			if( callback( data, statement ) ) {
-				if( report_errors ) {
-					std::cerr << "Callback requested query abort." << std::endl;
-					std::cerr << "Failed query: " << query << std::endl;
-					abort();
-				}
-				sqlite3_finalize( statement );
-				return false;
-			}
-		}
-	} while( res == SQLITE_BUSY || res == SQLITE_ROW );
-
-	bool ret = false;
-	if( res != SQLITE_DONE && res != SQLITE_OK ) {
-		if( report_errors ) {
-			print_error( res, query );
-		}
-	}
-	else {
-		ret = true;
-	}
-
-	sqlite3_finalize( statement );
-
-	return ret;
-}
-
 namespace {
-extern "C" int version_cb( void* p, int, char** data, char** /*names*/ ) {
+int version_cb( void* p, statement& s ) {
 	int* v = reinterpret_cast<int*>(p);
-	*v = atoi( *data );
+	*v = s.get_int(0);
 
 	return 0;
 }
@@ -187,7 +90,8 @@ int database::user_version()
 	}
 
 	int v;
-	if( !query( "PRAGMA user_version", version_cb, &v ) ) {
+	statement s( *this, "PRAGMA user_version" );
+	if( !s.exec( version_cb, &v ) ) {
 		v = -1;
 	}
 
@@ -220,10 +124,16 @@ statement::statement( database& db, std::string const& statement, bool report_er
 
 statement::~statement()
 {
+	sqlite3_finalize( statement_ );
 }
 
 
-bool statement::exec( bool report_errors ) {
+bool statement::exec( bool report_errors, bool reset ) {
+	return exec( 0, 0, report_errors, reset );
+}
+
+
+bool statement::exec( int (*callback)(void*,statement&), void* data, bool report_errors, bool reset ) {
 	if( !statement_ ) {
 		if( report_errors ) {
 			std::cerr << "Calling exec on an unprepared statement." << std::endl;
@@ -237,6 +147,16 @@ bool statement::exec( bool report_errors ) {
 	int res;
 	do {
 		res = sqlite3_step( statement_ );
+
+		if( res == SQLITE_ROW ) {
+			if( callback && callback( data, *this ) ) {
+				if( report_errors ) {
+					std::cerr << "Callback requested query abort." << std::endl;
+					abort();
+				}
+				return false;
+			}
+		}
 	} while( res == SQLITE_BUSY || res == SQLITE_ROW );
 
 	if( res != SQLITE_OK && res != SQLITE_DONE ) {
@@ -248,7 +168,120 @@ bool statement::exec( bool report_errors ) {
 		ret = true;
 	}
 
-	sqlite3_reset( statement_ );
+	if( reset ) {
+		sqlite3_reset( statement_ );
+	}
+
+	return ret;
+}
+
+
+void statement::reset()
+{
+	if( statement_ ) {
+		sqlite3_reset( statement_ );
+	}
+}
+
+
+bool statement::bind( int arg, std::string const& s)
+{
+	if( !statement_ ) {
+		return false;
+	}
+
+	int res = sqlite3_bind_text( statement_, arg, s.c_str(), s.size(), SQLITE_TRANSIENT );
+	if( res != SQLITE_OK ) {
+		db_.print_error( res, std::string() );
+	}
+
+	return res == SQLITE_OK;
+}
+
+
+bool statement::bind( int arg, std::vector<unsigned char> const& v)
+{
+	if( !statement_ ) {
+		return false;
+	}
+
+	unsigned char const* p;
+	unsigned char dummy;
+	if( v.empty() ) {
+		p = &dummy;
+	}
+	else {
+		p = &v[0];
+	}
+	int res = sqlite3_bind_blob( statement_, arg, p, v.size(), SQLITE_TRANSIENT );
+	if( res != SQLITE_OK ) {
+		db_.print_error( res, std::string() );
+	}
+
+	return res == SQLITE_OK;
+}
+
+
+bool statement::bind( int arg, uint64_t v)
+{
+	if( !statement_ ) {
+		return false;
+	}
+
+	int res = sqlite3_bind_int64( statement_, arg, static_cast<int64_t>(v) );
+	if( res != SQLITE_OK ) {
+		db_.print_error( res, std::string() );
+	}
+
+	return res == SQLITE_OK;
+}
+
+
+int statement::column_count()
+{
+	if( !statement_ ) {
+		return 0;
+	}
+
+	return sqlite3_column_count(statement_);
+}
+
+
+bool statement::is_null( int col )
+{
+	if( !statement_ ) {
+		return true;
+	}
+
+	return sqlite3_column_type( statement_, col ) == SQLITE_NULL;
+}
+
+
+std::vector<unsigned char> statement::get_blob( int col )
+{
+	std::vector<unsigned char> ret;
+
+	if( statement_ ) {
+		const void* b = sqlite3_column_blob( statement_, col );
+		if( b ) {
+			int len = sqlite3_column_bytes( statement_, col );
+			if( len > 0 ) {
+				unsigned char const* p = reinterpret_cast<unsigned char const*>(b);
+				ret = std::vector<unsigned char>( p, p + len );
+			}
+		}
+	}
+
+	return ret;
+}
+
+
+uint64_t statement::get_int( int col )
+{
+	uint64_t ret = 0;
+	if( statement_ ) {
+		ret = static_cast<uint64_t>( sqlite3_column_int64( statement_, col ) );
+	}
 
 	return ret;
 }
