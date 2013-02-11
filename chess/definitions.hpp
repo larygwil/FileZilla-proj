@@ -94,11 +94,11 @@ enum type {
 
 namespace result {
 enum type {
-	win = 31000,
-	win_threshold = win - 1000,
+	win = 32000,
+	win_threshold = win - 1500,
 	draw = 0,
-	loss = -31000,
-	loss_threshold = loss + 1000
+	loss = -32000,
+	loss_threshold = loss + 1500
 };
 }
 
