@@ -69,7 +69,8 @@ bool is_50move_draw( position const& p, check_map const& check, context& ctx, in
 {
 	if( p.halfmoves_since_pawnmove_or_capture >= 100 ) {
 		if( !check.check ) {
-			return result::draw;
+			ret = result::draw;
+			return true;
 		}
 		else {
 			move_info* m = ctx.move_ptr;
