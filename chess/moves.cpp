@@ -32,7 +32,7 @@ void do_add_move( move_info*& moves, uint64_t const& source, uint64_t const& tar
 
 	move_info& mi= *(moves++);
 
-	mi.m = move( source, target, flags );
+	mi.m = move( static_cast<unsigned short>(source), static_cast<unsigned short>(target), flags );
 }
 
 // Adds the move if it does not result in self getting into check

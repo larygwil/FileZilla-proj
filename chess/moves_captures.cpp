@@ -23,7 +23,7 @@ void do_add_move( move_info*& moves, pieces::type const& pi,
 
 	move_info& mi = *(moves++);
 
-	mi.m = move(source, target, flags);
+	mi.m = move( static_cast<unsigned short>(source), static_cast<unsigned short>(target), flags );
 
 	mi.sort = eval_values::material_values[ captured ].mg() * 32 - eval_values::material_values[ pi ].mg();
 }
