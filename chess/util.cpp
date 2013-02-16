@@ -599,7 +599,9 @@ void apply_move( position& p, move const& m )
 
 		std::swap(p.board[m.source()], p.board[m.target()]);
 
-		ASSERT( p.verify() );
+#if VERIFY_POSITION
+		p.verify_abort();
+#endif
 		return;
 	}
 
@@ -731,7 +733,9 @@ void apply_move( position& p, move const& m )
 
 	p.c = p.other();
 
-	ASSERT( p.verify() );
+#if VERIFY_POSITION
+	p.verify_abort();
+#endif
 }
 
 

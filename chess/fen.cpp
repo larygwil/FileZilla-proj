@@ -108,7 +108,7 @@ std::string position_to_fen_noclock( position const& p )
 		ss << '-';
 	}
 
-#if 0
+#if VERIFY_FEN
 	position p2;
 	if( !parse_fen_noclock( ss.str(), p2 ) ) {
 		std::cerr << "FAIL" << std::endl;

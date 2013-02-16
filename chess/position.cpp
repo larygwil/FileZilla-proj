@@ -321,6 +321,15 @@ bool position::verify( std::string& error ) const
 	return true;
 }
 
+
+void position::verify_abort() const
+{
+	if( !verify() ) {
+		abort();
+	}
+}
+
+
 pieces_with_color::type position::get_piece_with_color( uint64_t square ) const
 {
 	return board[square];

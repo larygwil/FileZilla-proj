@@ -72,7 +72,9 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		std::cerr << "FAIL HASH!" << std::endl;
 	}
 #endif
-	ASSERT( p.verify() );
+#if VERIFY_POSITION
+	p.verify_abort();
+#endif
 
 	if( do_abort ) {
 		return result::loss;
@@ -210,7 +212,9 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		std::cerr << "FAIL HASH!" << std::endl;
 	}
 #endif
-	ASSERT( p.verify() );
+#if VERIFY_POSITION
+	p.verify_abort();
+#endif
 
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
 		return quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, check, alpha, beta );

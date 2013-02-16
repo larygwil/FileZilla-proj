@@ -59,6 +59,7 @@ public:
 
 	bool verify() const;
 	bool verify( std::string& error ) const;
+	void verify_abort() const;
 
 	unsigned char do_null_move();
 
