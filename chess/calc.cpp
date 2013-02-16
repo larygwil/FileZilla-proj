@@ -435,7 +435,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 				// Futility pruning
 				if( !extended && !pv_node && gen.get_phase() == phases::noncapture && !check.check &&
 					!dangerous_pawn_move &&
-					( best_value == result::loss || best_value < result::loss_threshold ) )
+					( best_value == result::loss || best_value > result::loss_threshold ) )
 				{
 					int plies_remaining = (depth - cutoff) / depth_factor;
 					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short))) {
