@@ -35,7 +35,7 @@ void init_zobrist_tables()
 	}
 
 	push_rng_state();
-	init_random( 0 );
+	init_random( 42 );
 
 	for( int c = 0; c < 2; ++c ) {
 		for( int i = 0; i < 64; ++i ) {

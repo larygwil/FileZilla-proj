@@ -1,64 +1,51 @@
 #include "util/platform.hpp"
 #include "util/mutex.hpp"
 #include "random.hpp"
-#include "random_data.hpp"
 
 #include <list>
 #include <iostream>
+#include <random>
+#include <time.h>
 
 namespace {
 static mutex m;
-static uint64_t random_unsigned_long_long_pos = 0;
-static uint64_t random_unsigned_char = 0;
-static std::list<uint64_t> stack;
+static std::list<std::mt19937_64> stack;
+std::mt19937_64 engine;
 }
 
 void init_random( uint64_t seed )
 {
-	random_unsigned_char = seed;
-	random_unsigned_long_long_pos = (seed + 0xf00) % sizeof(precomputed_random_data);
+	engine.seed( static_cast<unsigned long>(seed) );
 }
 
 
 unsigned char get_random_unsigned_char()
 {
 	scoped_lock l( m ) ;
-	if( ++random_unsigned_char >= sizeof(precomputed_random_data) ) {
-		random_unsigned_char = 0;
-	}
-	return precomputed_random_data[random_unsigned_char];
+	return static_cast<unsigned char>(engine());
 }
-
+		
 uint64_t get_random_unsigned_long_long()
 {
-	scoped_lock l( m );
-	random_unsigned_long_long_pos += sizeof( uint64_t );
-
-	if( random_unsigned_long_long_pos >= (sizeof(precomputed_random_data) - 8) ) {
-		random_unsigned_long_long_pos = 0;
-	}
-
-	uint64_t ret = *reinterpret_cast<uint64_t*>(precomputed_random_data + random_unsigned_long_long_pos);
+	scoped_lock l( m ) ;
+	uint64_t ret = engine();
 	return ret;
 }
 
 void push_rng_state()
 {
 	scoped_lock l( m ) ;
-	stack.push_back( random_unsigned_char );
-	stack.push_back( random_unsigned_long_long_pos );
+	stack.push_back( engine );
 }
 
 void pop_rng_state()
 {
 	scoped_lock l( m );
-	if( stack.size() < 2 ) {
+	if( stack.empty() ) {
 		std::cerr << "Cannot pop rng state if empty" << std::endl;
-		exit(1);
+		abort();
 	}
 
-	random_unsigned_long_long_pos = stack.back();
-	stack.pop_back();
-	random_unsigned_char = stack.back();
+	engine = stack.back();
 	stack.pop_back();
 }
