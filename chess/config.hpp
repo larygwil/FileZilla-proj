@@ -20,7 +20,6 @@ struct config
 	unsigned int thread_count;
 	unsigned int memory;
 	unsigned int max_moves; // only for auto play
-	unsigned char quiescence_depth;
 
 	duration time_limit;
 

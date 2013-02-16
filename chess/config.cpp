@@ -10,7 +10,6 @@ config::config()
 : thread_count(get_cpu_count()),
   memory(get_system_memory() / 3 ),
   max_moves(0),
-  quiescence_depth(MAX_QDEPTH),
   time_limit( duration::hours(1) ),
   random_seed(-1), //-1 == based on time
   ponder(),
@@ -92,18 +91,6 @@ std::string config::init( int argc,  char const* argv[] )
 				exit(1);
 			}
 			conf.set_max_search_depth( v );
-		}
-		else if( opt == "--quiescence" ) {
-			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << opt << std::endl;
-				exit(1);
-			}
-			int v = atoi(argv[i]);
-			if( v < 1 || v > MAX_QDEPTH ) {
-				std::cerr << "Invalid argument to " << opt << std::endl;
-				exit(1);
-			}
-			conf.quiescence_depth = v;
 		}
 		else if( opt == "--memory" ) {
 			if( ++i >= argc ) {

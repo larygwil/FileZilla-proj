@@ -498,7 +498,16 @@ public:
 	};
 
 	processing_thread( mutex& mtx, condition& cond )
-		: mutex_(mtx), cond_(cond), clock_(), state_(idle)
+		: mutex_(mtx)
+		, cond_(cond)
+		, hash_()
+		, max_depth_()
+		, alpha_at_prev_depth_()
+		, alpha_()
+		, beta_()
+		, result_()
+		, clock_()
+		, state_(idle)
 	{
 		spawn();
 	}
@@ -550,13 +559,12 @@ public:
 		return result_;
 	}
 
-	void process( scoped_lock& l, position const& p, uint64_t hash, move_info const& m, short max_depth, short quiescence_depth, short alpha_at_prev_depth, short alpha, short beta, int clock, seen_positions const& seen )
+	void process( scoped_lock& l, position const& p, uint64_t hash, move_info const& m, short max_depth, short alpha_at_prev_depth, short alpha, short beta, int clock, seen_positions const& seen )
 	{
 		p_ = p;
 		hash_ = hash;
 		m_ = m;
 		max_depth_ = max_depth;
-		quiescence_depth_ = quiescence_depth;
 		alpha_at_prev_depth_ = alpha_at_prev_depth;
 		alpha_ = alpha;
 		beta_ = beta;
@@ -588,7 +596,6 @@ private:
 	uint64_t hash_;
 	move_info m_;
 	short max_depth_;
-	short quiescence_depth_;
 	short alpha_at_prev_depth_;
 	short alpha_;
 	short beta_;
@@ -920,7 +927,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 					}
 
 					it->s = move_data::busy;
-					impl_->threads_[t]->process( l, p, hash, it->m, depth, conf.quiescence_depth, alpha_at_prev_depth, alpha, beta, clock, seen );
+					impl_->threads_[t]->process( l, p, hash, it->m, depth, alpha_at_prev_depth, alpha, beta, clock, seen );
 
 					// First one is run on its own to get a somewhat sane lower bound for others to work with.
 					if( !got_first_result && it == sorted.begin() ) {
