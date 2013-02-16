@@ -110,14 +110,14 @@ std::string position_to_fen_noclock( position const& p )
 
 #if VERIFY_FEN
 	position p2;
-	if( !parse_fen_noclock( ss.str(), p2 ) ) {
+	if( !parse_fen( ss.str(), p2 ) ) {
 		std::cerr << "FAIL" << std::endl;
 	}
 #endif
 	return ss.str();
 }
 
-bool parse_fen_noclock( std::string const& fen, position& p, std::string* error )
+bool parse_fen( std::string const& fen, position& p, std::string* error )
 {
 	std::stringstream in( fen );
 
@@ -319,6 +319,11 @@ bool parse_fen_noclock( std::string const& fen, position& p, std::string* error 
 			*error = tmp;
 		}
 		return false;
+	}
+
+	unsigned int halfmoves_since_pawnmove_or_capture = 0;
+	if( in >> halfmoves_since_pawnmove_or_capture ) {
+		p.halfmoves_since_pawnmove_or_capture = halfmoves_since_pawnmove_or_capture;
 	}
 
 	return true;

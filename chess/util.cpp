@@ -561,6 +561,13 @@ void apply_move( position& p, move const& m )
 	pieces::type piece = get_piece( pwc );
 	pieces::type captured_piece = p.get_captured_piece( m );
 
+	if( piece == pieces::pawn || captured_piece != pieces::none ) {
+		p.halfmoves_since_pawnmove_or_capture = 0;
+	}
+	else {
+		++p.halfmoves_since_pawnmove_or_capture;
+	}
+
 	score delta = -pst[p.self()][piece][m.source()];
 	
 	if( m.castle() ) {

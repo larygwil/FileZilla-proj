@@ -113,7 +113,7 @@ void octochess_uci::set_position( std::string const& fen ) {
 		success = true;
 	}
 	else {
-		if( parse_fen_noclock( fen, impl_->pos_, 0 ) ) {
+		if( parse_fen( fen, impl_->pos_, 0 ) ) {
 			impl_->started_from_root_ = false;
 			success = true;
 		}

@@ -51,7 +51,7 @@ std::vector<epd> parse_epd( std::istream& in )
 		}
 
 		epd e;
-		if( !parse_fen_noclock( fen, e.p ) ) {
+		if( !parse_fen( fen, e.p ) ) {
 			std::cerr << "Could not parse " << fen << std::endl;
 			abort();
 		}

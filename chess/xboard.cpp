@@ -592,7 +592,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 bool parse_setboard( xboard_state& state, xboard_thread& thread, std::string const& args, std::string& error )
 {
 	position new_pos;
-	if( !parse_fen_noclock( args, new_pos, &error ) ) {
+	if( !parse_fen( args, new_pos, &error ) ) {
 		return false;
 	}
 

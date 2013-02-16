@@ -723,7 +723,7 @@ std::vector<reference_data> load_data()
 		if( !in_scores ) {
 			abort();
 		}
-		if( !parse_fen_noclock( fen, entry.p ) ) {
+		if( !parse_fen( fen, entry.p ) ) {
 			abort();
 		}
 

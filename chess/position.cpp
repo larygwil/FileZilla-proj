@@ -21,6 +21,8 @@ void position::reset()
 
 	c = color::white;
 
+	halfmoves_since_pawnmove_or_capture = 0;
+
 	init_bitboards();
 
 	update_derived();

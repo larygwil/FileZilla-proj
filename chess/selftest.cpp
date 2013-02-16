@@ -154,7 +154,7 @@ position test_parse_fen( std::string const& fen )
 {
 	position p;
 	std::string error;
-	if( !parse_fen_noclock( fen, p, &error ) ) {
+	if( !parse_fen( fen, p, &error ) ) {
 		std::cerr << "Could not parse fen: " << error << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
 		abort();
@@ -545,7 +545,7 @@ static void test_incorrect_positions()
 	while( std::getline( in_fen, fen ) ) {
 		position p;
 		std::string error;
-		if( parse_fen_noclock( fen, p, &error ) ) {
+		if( parse_fen( fen, p, &error ) ) {
 			std::cerr << "Fen of invalid position was not rejected." << std::endl;
 			std::cerr << "Fen: " << fen << std::endl;
 			abort();

@@ -77,6 +77,8 @@ public:
 	// Used as key to switch between endgame evaluations
 	uint64_t piece_sum;
 
+	unsigned int halfmoves_since_pawnmove_or_capture;
+
 private:
 	void init_bitboards();
 	void init_board();

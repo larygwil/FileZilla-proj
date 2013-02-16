@@ -65,6 +65,28 @@ void sort_moves( move_info* begin, move_info* end, position const& p )
 }
 
 
+bool is_50move_draw( position const& p, check_map const& check, context& ctx, int ply, short& ret )
+{
+	if( p.halfmoves_since_pawnmove_or_capture >= 100 ) {
+		if( !check.check ) {
+			return result::draw;
+		}
+		else {
+			move_info* m = ctx.move_ptr;
+			calculate_moves( p, m, check );
+			if( m != ctx.move_ptr ) {
+				ret = result::draw;
+			}
+			else {
+				ret = result::loss + ply;
+			}
+			return true;
+		}
+	}
+
+	return false;
+}
+
 short quiescence_search( int ply, int depth, context& ctx, position const& p, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval = result::win )
 {
 #if VERIFY_HASH
@@ -84,6 +106,10 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 	++stats.quiescence_nodes;
 #endif
 
+	short ret;
+	if( is_50move_draw( p, check, ctx, ply, ret ) ) {
+		return ret;
+	}
 	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
 		if( p.material[color::white].eg() + p.material[color::black].eg() <= eval_values::insufficient_material_threshold ) {
 			return result::draw;
@@ -228,6 +254,10 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	stats.node( ply );
 #endif
 
+	short ret;
+	if( is_50move_draw( p, check, ctx, ply, ret ) ) {
+		return ret;
+	}
 	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
 		if( p.material[color::white].eg() + p.material[color::black].eg() <= eval_values::insufficient_material_threshold ) {
 			return result::draw;
