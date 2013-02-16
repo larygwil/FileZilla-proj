@@ -171,7 +171,6 @@
     <ClInclude Include="..\pv_move_picker.hpp" />
     <ClInclude Include="..\pvlist.hpp" />
     <ClInclude Include="..\random.hpp" />
-    <ClInclude Include="..\random_data.hpp" />
     <ClInclude Include="..\score.hpp" />
     <ClInclude Include="..\see.hpp" />
     <ClInclude Include="..\seen_positions.hpp" />
