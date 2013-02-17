@@ -71,7 +71,7 @@ bool deepen_move( book& b, position const& p, seen_positions const& seen, std::v
 
 		check_map check( new_pos );
 
-		value = -step( depth * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, true );
+		value = -ctx.step( depth * depth_factor + MAX_QDEPTH, 1,  new_pos, new_hash, check, result::loss, result::win, true );
 	}
 
 	book_entry e;
@@ -117,7 +117,7 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 
 			check_map check( new_pos );
 
-			value = -step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, true );
+			value = -ctx.step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor + MAX_QDEPTH, 1,  new_pos, new_hash, check, result::loss, result::win, true );
 		}
 
 		book_entry entry;
@@ -166,7 +166,7 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 
 				check_map check( new_pos );
 
-				value = -step( MAX_BOOKSEARCH_DEPTH * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, true );
+				value = -ctx.step( MAX_BOOKSEARCH_DEPTH * depth_factor + MAX_QDEPTH, 1, new_pos, new_hash, check, result::loss, result::win, true );
 			}
 
 			entry.search_depth = MAX_BOOKSEARCH_DEPTH;
@@ -220,7 +220,7 @@ bool update_position( book& b, position const& p, seen_positions const& seen, st
 
 				check_map check( new_pos );
 
-				value = -step( new_depth * depth_factor + MAX_QDEPTH, 1, ctx, new_pos, new_hash, check, result::loss, result::win, true );
+				value = -ctx.step( new_depth * depth_factor + MAX_QDEPTH, 1, new_pos, new_hash, check, result::loss, result::win, true );
 			}
 
 			std::cerr << entry.forecast << " d" << static_cast<int>(entry.search_depth) << " v" << static_cast<int>(entry.eval_version) << " -> " << value << " d" << new_depth << " " << move_history.size() << " " << position_to_fen_noclock( p ) << " " << move_to_san( p, entry.m ) << std::endl;

@@ -88,7 +88,7 @@ bool is_50move_draw( position const& p, check_map const& check, context& ctx, in
 	return false;
 }
 
-short quiescence_search( int ply, int depth, context& ctx, position const& p, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval = result::win )
+short context::quiescence_search( int ply, int depth, position const& p, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval )
 {
 #if VERIFY_HASH
 	if( get_zobrist_hash(p) != hash ) {
@@ -158,7 +158,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		if( full_eval > alpha ) {
 			if( full_eval >= beta ) {
 				if( !do_abort && t == score_type::none && tt_move.empty() ) {
-					transposition_table.store( hash, tt_depth, ply, full_eval, alpha, beta, tt_move, ctx.clock, full_eval );
+					transposition_table.store( hash, tt_depth, ply, full_eval, alpha, beta, tt_move, clock, full_eval );
 				}
 				return full_eval;
 			}
@@ -166,7 +166,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		}
 	}
 
-	qsearch_move_generator gen( ctx, p, check, pv_node, do_checks );
+	qsearch_move_generator gen( *this, p, check, pv_node, do_checks );
 
 	if( check.check || (!tt_move.empty() && p.get_piece( tt_move.target() ) != pieces::none ) ) {
 		gen.hash_move = tt_move;
@@ -203,7 +203,7 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 		short value;
 
 		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
-		value = -quiescence_search( ply + 1, depth - 1, ctx, new_pos, new_hash, new_check, -beta, -alpha );
+		value = -quiescence_search( ply + 1, depth - 1, new_pos, new_hash, new_check, -beta, -alpha );
 
 		if( value > best_value ) {
 			best_value = value;
@@ -226,13 +226,13 @@ short quiescence_search( int ply, int depth, context& ctx, position const& p, ui
 	}
 
 	if( !do_abort ) {
-		transposition_table.store( hash, tt_depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
+		transposition_table.store( hash, tt_depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
 	}
 	return best_value;
 }
 
 
-short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_map const& check, short alpha, short beta, bool last_was_null, short full_eval, unsigned char last_ply_was_capture )
+short context::step( int depth, int ply, position& p, uint64_t hash, check_map const& check, short alpha, short beta, bool last_was_null, short full_eval, unsigned char last_ply_was_capture )
 {
 #if VERIFY_HASH
 	if( get_zobrist_hash(p) != hash ) {
@@ -244,7 +244,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 #endif
 
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
-		return quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, check, alpha, beta );
+		return quiescence_search( ply, MAX_QDEPTH, p, hash, check, alpha, beta );
 	}
 
 	if( do_abort ) {
@@ -293,7 +293,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	if( !pv_node && !check.check /*&& plies_remaining < 4*/ && full_eval == result::win ) {
 		full_eval = evaluate_full( p );
 		if( tt_move.empty() && t == score_type::none ) {
-			transposition_table.store( hash, 0, ply, 0, 0, 0, tt_move, ctx.clock, full_eval );
+			transposition_table.store( hash, 0, ply, 0, 0, 0, tt_move, clock, full_eval );
 		}
 	}
 
@@ -302,7 +302,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		   !(p.bitboards[p.self()].b[bb_type::pawns] & (p.white() ? 0x00ff000000000000ull : 0x000000000000ff00ull)) )
 	{
 		short new_beta = beta - razor_pruning[plies_remaining];
-		short value = quiescence_search( ply, MAX_QDEPTH, ctx, p, hash, check, new_beta - 1, new_beta, full_eval );
+		short value = quiescence_search( ply, MAX_QDEPTH, p, hash, check, new_beta - 1, new_beta, full_eval );
 		if( value < new_beta ) {
 			return value;
 		}
@@ -318,12 +318,12 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		short value;
 
 		{
-			null_move_block seen_block( ctx.seen, ply );
+			null_move_block seen_block( seen, ply );
 
 			unsigned char old_enpassant = p.do_null_move();
 			check_map new_check( p );
 			uint64_t new_hash = ~(hash ^ get_enpassant_hash( old_enpassant ) );
-			value = -step( new_depth, ply + 1, ctx, p, new_hash, new_check, -beta, -beta + 1, true );
+			value = -step( new_depth, ply + 1, p, new_hash, new_check, -beta, -beta + 1, true );
 			p.do_null_move();
 			p.can_en_passant = old_enpassant;
 		}
@@ -336,7 +336,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 			if( depth > NULLMOVE_VERIFICATION_DEPTH ) {
 				// Verification search.
 				// Helps against zugzwang and some other strange issues
-				short research_value = step( new_depth, ply, ctx, p, hash, check, alpha, beta, true, full_eval, last_ply_was_capture );
+				short research_value = step( new_depth, ply, p, hash, check, alpha, beta, true, full_eval, last_ply_was_capture );
 				if( research_value >= beta ) {
 					return value;
 				}
@@ -350,7 +350,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 
 	if( tt_move.empty() && depth > ( depth_factor * 4 + cutoff) ) {
 
-		step( depth - 2 * depth_factor, ply, ctx, p, hash, check, alpha, beta, true, full_eval, last_ply_was_capture );
+		step( depth - 2 * depth_factor, ply, p, hash, check, alpha, beta, true, full_eval, last_ply_was_capture );
 
 		short eval;
 		transposition_table.lookup( hash, depth, ply, alpha, beta, eval, tt_move, full_eval );
@@ -361,7 +361,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 
 	unsigned int processed_moves = 0;
 	
-	move_generator gen( ctx, ctx.killers[p.self()][ply], p, check );
+	move_generator gen( *this, killers[p.self()][ply], p, check );
 	gen.hash_move = tt_move;
 	move_info const* it;
 
@@ -374,14 +374,14 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 		pieces::type piece = p.get_piece( it->m.source() );
 		pieces::type captured_piece = p.get_captured_piece( it->m );
 
-		if( ctx.seen.is_two_fold( new_hash, ply ) ) {
+		if( seen.is_two_fold( new_hash, ply ) ) {
 			value = result::draw;
 		}
 		else {
 			position new_pos(p);
 			apply_move( new_pos, it->m );
 
-			ctx.seen.set( new_hash, ply );
+			seen.set( new_hash, ply );
 
 			check_map new_check( new_pos );
 
@@ -461,7 +461,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 
 					red += (processed_moves - (pv_node?3:3)) / 5;
 					int lmr_depth = new_depth - red;
-					value = -step(lmr_depth, ply + 1, ctx, new_pos, new_hash, new_check, -alpha-1, -alpha, false );
+					value = -step(lmr_depth, ply + 1, new_pos, new_hash, new_check, -alpha-1, -alpha, false );
 				
 					search_full = value > alpha;
 				}
@@ -470,12 +470,12 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 				}
 				
 				if( search_full ) {
-					value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, new_check, -alpha-1, -alpha, false, result::win, new_capture );
+					value = -step( new_depth, ply + 1, new_pos, new_hash, new_check, -alpha-1, -alpha, false, result::win, new_capture );
 				}
 			}
 
 			if( pv_node && (!processed_moves || (value > alpha && value < beta) ) ) {
-				value = -step( new_depth, ply + 1, ctx, new_pos, new_hash, new_check, -beta, -alpha, false, result::win, new_capture );
+				value = -step( new_depth, ply + 1, new_pos, new_hash, new_check, -beta, -alpha, false, result::win, new_capture );
 			}
 		}
 		if( value > best_value ) {
@@ -486,7 +486,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 
 				if( value >= beta ) {		
 					if( !captured_piece ) {
-						ctx.killers[p.self()][ply].add_killer( it->m );
+						killers[p.self()][ply].add_killer( it->m );
 						gen.update_history();
 					}
 					break;
@@ -510,7 +510,7 @@ short step( int depth, int ply, context& ctx, position& p, uint64_t hash, check_
 	}
 
 	if( !do_abort ) {
-		transposition_table.store( hash, depth, ply, best_value, old_alpha, beta, best_move, ctx.clock, full_eval );
+		transposition_table.store( hash, depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
 	}
 
 	return best_value;
@@ -669,7 +669,7 @@ short processing_thread::processWork()
 		short beta = std::min( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
 
 		if( alpha < beta ) {
-			value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, check, -beta, -alpha, false );
+			value = -ctx_.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -beta, -alpha, false );
 			if( value > alpha && value < beta ) {
 				// Aspiration search found something sensible
 				return value;
@@ -678,13 +678,13 @@ short processing_thread::processWork()
 	}
 
 	if( alpha_ != result::loss ) {
-		value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, check, -alpha_-1, -alpha_, false );
+		value = -ctx_.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -alpha_-1, -alpha_, false );
 		if( value > alpha_ ) {
-			value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, check, -beta_, -alpha_, false );
+			value = -ctx_.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -beta_, -alpha_, false );
 		}
 	}
 	else {
-		value = -step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, ctx_, new_pos, hash, check, -beta_, -alpha_, false );
+		value = -ctx_.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -beta_, -alpha_, false );
 	}
 
 	return value;
