@@ -17,8 +17,6 @@
 
 duration const d = duration::milliseconds(1000);
 
-extern volatile bool do_abort;
-
 std::vector<epd> parse_epd( std::string const& fn )
 {
 	std::ifstream in( fn );
@@ -109,7 +107,6 @@ int run_sts( epd const& e, int& match, int& sum )
 
 		calc_manager c;
 		seen_positions seen( get_zobrist_hash( e.p ) );
-		do_abort = false;
 		calc_result r = c.calc( e.p, conf.max_search_depth(), d, d, 0, seen, 0, null_new_best_move_cb );
 		if( scores.find(r.best_move) != scores.end() ) {
 			sum += scores[r.best_move];

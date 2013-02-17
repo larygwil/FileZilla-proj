@@ -44,8 +44,6 @@ int const NULLMOVE_VERIFICATION_DEPTH = cutoff + depth_factor * 5;
 
 int const delta_pruning = 50;
 
-volatile bool do_abort = false;
-
 short const ASPIRATION = 40;
 
 def_new_best_move_callback default_new_best_move_callback;
@@ -99,7 +97,7 @@ short context::quiescence_search( int ply, int depth, position const& p, uint64_
 	p.verify_abort();
 #endif
 
-	if( do_abort ) {
+	if( do_abort_ ) {
 		return result::loss;
 	}
 
@@ -108,7 +106,7 @@ short context::quiescence_search( int ply, int depth, position const& p, uint64_
 #endif
 
 	short ret;
-	if( is_50move_draw( p, check, ctx, ply, ret ) ) {
+	if( is_50move_draw( p, check, *this, ply, ret ) ) {
 		return ret;
 	}
 	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
@@ -157,7 +155,7 @@ short context::quiescence_search( int ply, int depth, position const& p, uint64_
 		}
 		if( full_eval > alpha ) {
 			if( full_eval >= beta ) {
-				if( !do_abort && t == score_type::none && tt_move.empty() ) {
+				if( !do_abort_ && t == score_type::none && tt_move.empty() ) {
 					transposition_table.store( hash, tt_depth, ply, full_eval, alpha, beta, tt_move, clock, full_eval );
 				}
 				return full_eval;
@@ -225,7 +223,7 @@ short context::quiescence_search( int ply, int depth, position const& p, uint64_
 		return result::loss + ply;
 	}
 
-	if( !do_abort ) {
+	if( !do_abort_ ) {
 		transposition_table.store( hash, tt_depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
 	}
 	return best_value;
@@ -247,7 +245,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 		return quiescence_search( ply, MAX_QDEPTH, p, hash, check, alpha, beta );
 	}
 
-	if( do_abort ) {
+	if( do_abort_ ) {
 		return result::loss;
 	}
 
@@ -256,7 +254,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 #endif
 
 	short ret;
-	if( is_50move_draw( p, check, ctx, ply, ret ) ) {
+	if( is_50move_draw( p, check, *this, ply, ret ) ) {
 		return ret;
 	}
 	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
@@ -509,7 +507,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 		best_value = old_alpha;
 	}
 
-	if( !do_abort ) {
+	if( !do_abort_ ) {
 		transposition_table.store( hash, depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
 	}
 
@@ -592,6 +590,7 @@ public:
 
 	void process( scoped_lock& l, position const& p, uint64_t hash, move_info const& m, short max_depth, short alpha_at_prev_depth, short alpha, short beta, int clock, seen_positions const& seen )
 	{
+		ctx_.do_abort_ = false;
 		p_ = p;
 		hash_ = hash;
 		m_ = m;
@@ -612,6 +611,11 @@ public:
 
 	void reduce_history() {
 		ctx_.history_.reduce();
+	}
+
+	void abort()
+	{
+		ctx_.do_abort_ = true;
 	}
 
 	virtual void onRun();
@@ -750,6 +754,7 @@ class calc_manager::impl
 {
 public:
 	impl()
+		: do_abort_()
 	{
 		update_threads();
 	}
@@ -802,9 +807,20 @@ public:
 		}
 	}
 
+
+	void abort()
+	{
+		do_abort_ = true;
+		for( std::vector<processing_thread*>::iterator it = threads_.begin(); it != threads_.end(); ++it ) {
+			(*it)->abort();
+		}
+	}
+
 	mutex mtx_;
 	condition cond_;
 	std::vector<processing_thread*> threads_;
+
+	bool do_abort_;
 };
 
 
@@ -922,7 +938,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		min_depth = max_depth;
 	}
 
-	for( int depth = min_depth; depth <= max_depth && !do_abort; ++depth ) {
+	for( int depth = min_depth; depth <= max_depth && !impl_->do_abort_; ++depth ) {
 		short alpha = result::loss;
 		short beta = result::win;
 
@@ -940,7 +956,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		while( !done ) {
 			scoped_lock l( impl_->mtx_ );
 
-			for( sorted_moves::iterator it = sorted.begin(); it != sorted.end() && !do_abort; ++it ) {
+			for( sorted_moves::iterator it = sorted.begin(); it != sorted.end() && !impl_->do_abort_; ++it ) {
 
 				if( it->s != move_data::waiting ) {
 					continue;
@@ -972,7 +988,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 				}
 			}
 break2:
-			if( do_abort ) {
+			if( impl_->do_abort_ ) {
 				goto label_abort;
 			}
 
@@ -983,9 +999,9 @@ break2:
 				}
 
 				now = timestamp();
-				if( !do_abort && (now - start) > time_limit ) {
+				if( !impl_->do_abort_ && (now - start) > time_limit ) {
 					dlog() << "Triggering search abort due to time limit at depth " << depth << std::endl;
-					do_abort = true;
+					impl_->abort();
 				}
 			}
 			else {
@@ -998,7 +1014,7 @@ break2:
 				if( impl_->threads_[t]->got_results() ) {
 					got_first_result = true;
 					short value = impl_->threads_[t]->result();
-					if( !do_abort ) {
+					if( !impl_->do_abort_ ) {
 						++evaluated;
 
 						move_info mi = impl_->threads_[t]->get_move();
@@ -1053,12 +1069,12 @@ break2:
 				if( evaluated == sorted.size() ) {
 					done = true;
 				}
-				else if( do_abort ) {
+				else if( impl_->do_abort_ ) {
 					done = true;
 				}
 			}
 		}
-		if( do_abort ) {
+		if( impl_->do_abort_ ) {
 			dlog() << "Aborted with " << evaluated << " of " << sorted.size() << " moves evaluated at current depth" << std::endl;
 		}
 		else {
@@ -1066,7 +1082,7 @@ break2:
 				if( depth < max_depth ) {
 					if( alpha > last_mate && !ponder ) {
 						dlog() << "Early break due to mate at " << depth << std::endl;
-						do_abort = true;
+						impl_->abort();
 					}
 				}
 			}
@@ -1074,7 +1090,7 @@ break2:
 				duration elapsed = timestamp() - start;
 				if( !ponder && elapsed > (time_limit * 3) / 5 && depth < max_depth ) {
 					dlog() << "Not increasing depth due to time limit. Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
-					do_abort = true;
+					impl_->abort();
 				}
 			}
 		}
@@ -1110,4 +1126,26 @@ label_abort:
 	}
 
 	return result;
+}
+
+
+void calc_manager::clear_abort()
+{
+	scoped_lock l( impl_->mtx_ );
+
+	impl_->do_abort_ = false;
+}
+
+
+void calc_manager::abort()
+{
+	scoped_lock l( impl_->mtx_ );
+
+	impl_->abort();
+}
+
+bool calc_manager::should_abort() const
+{
+	scoped_lock l( impl_->mtx_ );
+	return impl_->do_abort_;
 }

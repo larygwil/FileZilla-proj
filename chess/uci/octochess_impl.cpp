@@ -22,8 +22,6 @@
 
 #include <sstream>
 
-volatile extern bool do_abort; //magic to kill the calculation
-
 namespace octochess {
 namespace uci {
 
@@ -41,7 +39,7 @@ public:
 	}
 
 	~impl() {
-		do_abort = true;
+		calc_manager_.abort();
 		join();
 	}
 
@@ -92,7 +90,7 @@ octochess_uci::octochess_uci( gui_interface_ptr const& p )
 }
 
 void octochess_uci::new_game() {
-	do_abort = true;
+	impl_->calc_manager_.abort();
 	impl_->join();
 	impl_->pos_.reset();
 	impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) ); impl_->times_ = time_calculation();
@@ -103,7 +101,7 @@ void octochess_uci::new_game() {
 }
 
 void octochess_uci::set_position( std::string const& fen ) {
-	do_abort = true;
+	impl_->calc_manager_.abort();
 	impl_->join();
 	impl_->pos_.reset();
 	impl_->move_history_.clear();
@@ -152,14 +150,14 @@ void octochess_uci::calculate( calculate_mode_type mode, position_time const& t,
 {
 	transposition_table.init_if_needed( conf.memory );
 
-	do_abort = true;
+	impl_->calc_manager_.abort();
 	impl_->join();
 
 	scoped_lock lock(impl_->mutex_);
 
 	impl_->result_.best_move.clear();
 
-	do_abort = false;
+	impl_->calc_manager_.clear_abort();
 
 	if( mode == calculate_mode::ponderhit ) {
 		impl_->ponder_ = false;
@@ -191,7 +189,7 @@ void octochess_uci::calculate( calculate_mode_type mode, position_time const& t,
 
 void octochess_uci::stop()
 {
-	do_abort = true;
+	impl_->calc_manager_.abort();
 	impl_->join();
 
 	scoped_lock lock(impl_->mutex_);
@@ -203,7 +201,7 @@ void octochess_uci::stop()
 }
 
 void octochess_uci::quit() {
-	do_abort = true;
+	impl_->calc_manager_.abort();
 }
 
 void octochess_uci::impl::onRun() {
@@ -227,7 +225,7 @@ void octochess_uci::impl::onRun() {
 
 		if( !result.best_move.empty() ) {
 
-			if( !times_.time_for_this_move().is_infinity() || do_abort ) {
+			if( !times_.time_for_this_move().is_infinity() || calc_manager_.should_abort() ) {
 				gui_interface_->tell_best_move( move_to_long_algebraic( result.best_move ), move_to_long_algebraic( result.ponder_move ) );
 				result_.best_move.clear();
 			}

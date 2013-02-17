@@ -191,8 +191,6 @@ struct xboard_state
 };
 
 
-volatile extern bool do_abort;
-
 class xboard_thread : public thread, public new_best_move_callback_base
 {
 public:
@@ -410,7 +408,7 @@ void xboard_thread::onRun()
 		if( abort ) {
 			return;
 		}
-		do_abort = false;
+		cmgr_.clear_abort();
 
 		if( !result.best_move.empty() ) {
 
@@ -476,7 +474,7 @@ void xboard_thread::onRun()
 void xboard_thread::start( bool just_ponder )
 {
 	join();
-	do_abort = false;
+	cmgr_.clear_abort();
 	abort = false;
 	best_move.clear();
 	ponder_ = just_ponder;
@@ -487,7 +485,7 @@ void xboard_thread::start( bool just_ponder )
 
 move xboard_thread::stop()
 {
-	do_abort = true;
+	cmgr_.abort();
 	abort = true;
 	join();
 	move m = best_move;

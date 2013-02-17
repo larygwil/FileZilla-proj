@@ -65,6 +65,9 @@ public:
 		   seen_positions& seen, short last_mate,
 		   new_best_move_callback_base& new_best_cb = default_new_best_move_callback );
 
+	void clear_abort();
+	void abort();
+	bool should_abort() const;
 private:
 	class impl;
 	impl* impl_;
@@ -96,6 +99,7 @@ public:
 	context()
 		: clock(0)
 		, move_ptr(moves)
+		, do_abort_()
 	{
 	}
 
@@ -114,6 +118,8 @@ public:
 	short step( int depth, int ply, position& p, uint64_t hash, check_map const& check, short alpha, short beta, bool last_was_null, short full_eval = result::win, unsigned char last_ply_was_capture = 64 );
 
 	short quiescence_search( int ply, int depth, position const& p, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval = result::win );
+
+	bool do_abort_;
 };
 
 #endif
