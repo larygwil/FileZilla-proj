@@ -37,7 +37,7 @@ bool hash::init( unsigned int max_size )
 	hash_key max = static_cast<hash_key>(max_size) * 1024 * 1024;
 
 	size_ = 4 * 1024 * 1024;
-	while( size_ * 2 < max ) {
+	while( size_ * 2 <= max ) {
 		size_ *= 2;
 	}
 
