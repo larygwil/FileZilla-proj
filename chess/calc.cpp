@@ -724,7 +724,6 @@ void master_worker_thread::process_root( scoped_lock& l )
 			// Search using aspiration window:
 			value = result::loss;
 			if( root_alpha == result::loss && prev_root_alpha != result::loss ) {
-				// Windows headers unfortunately create some defines called max and min :(
 				short alpha = std::max( root_alpha, static_cast<short>(prev_root_alpha - ASPIRATION) );
 				short beta = std::min( root_beta, static_cast<short>(prev_root_alpha + ASPIRATION) );
 
