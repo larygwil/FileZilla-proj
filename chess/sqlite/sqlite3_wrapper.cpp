@@ -89,7 +89,7 @@ int database::user_version()
 		return -1;
 	}
 
-	int v;
+	int v = -1;
 	statement s( *this, "PRAGMA user_version" );
 	if( !s.exec( version_cb, &v ) ) {
 		v = -1;
