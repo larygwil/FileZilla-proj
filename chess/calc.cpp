@@ -460,7 +460,7 @@ thread_pool::~thread_pool()
 }
 
 
-void thread_pool::abort( scoped_lock& l )
+void thread_pool::abort( scoped_lock& )
 {
 	if( work_ ) {
 		work_->gen_.set_done();
@@ -1300,7 +1300,6 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		return result;
 	}
 
-	int highest_depth = 0;
 	int min_depth = 2;
 	if( max_depth < min_depth ) {
 		min_depth = max_depth;
@@ -1310,9 +1309,9 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 
 	master_worker_thread* master = impl_->pool_.master();
 	master->init( p, hash, sorted, clock, seen, &new_best_cb, start );
-		
+
 	for( int depth = min_depth; depth <= max_depth && !impl_->do_abort_; ++depth ) {
-			
+
 		master->process( l, depth );
 
 		while( !master->idle() ) {
@@ -1355,7 +1354,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		sorted = new_sorted;
 
 		push_pv_to_tt( sorted[0].pv, p, clock );
-		
+
 		duration elapsed = timestamp() - start;
 		if( !ponder && elapsed > (time_limit * 3) / 5 && depth < max_depth && !impl_->do_abort_ ) {
 			dlog() << "Not increasing depth due to time limit. Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
