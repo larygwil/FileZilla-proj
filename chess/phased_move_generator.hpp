@@ -1,9 +1,9 @@
 #ifndef __PHASED_MOVE_GENERATOR_H__
 #define __PHASED_MOVE_GENERATOR_H__
 
-#include "calc.hpp"
-
 #define DELAY_BAD_CAPTURES 1
+
+#include "chess.hpp"
 
 namespace phases {
 enum type {
@@ -21,7 +21,10 @@ enum type {
 };
 }
 
-
+class check_map;
+class context;
+struct move_info;
+class position;
 class phased_move_generator_base
 {
 public:
@@ -32,6 +35,10 @@ public:
 
 	phases::type get_phase() const {
 		return phase;
+	}
+
+	void set_done() {
+		phase = phases::done;
 	}
 
 	move hash_move;
@@ -64,6 +71,7 @@ private:
 };
 
 
+class killer_moves;
 class move_generator : public phased_move_generator_base
 {
 public:

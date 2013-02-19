@@ -22,6 +22,7 @@
 #include <iostream>
 #include <math.h>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -229,6 +230,620 @@ short context::quiescence_search( int ply, int depth, position const& p, uint64_
 	return best_value;
 }
 
+/*
+New multithreading concept
+General idea: At each node, search first move on its own, then search rest of nodes in parallel
+Main constraint: There are far far more nodes and far more moves at each node than there are threads.
+Solution:
+- Have a pool of worker threads
+- If a thread has finished searching the first move at a node and there are idle threads, perform a split:
+  1. push current state onto work list
+  2. wake up threads and let them search moves in parallel
+  3. wait[1] until either 
+     a) a cutoff has been produced or
+     b) all moves searched
+  Otherwise: Don't split, do it single-threaded.
+
+- [1] Idea to avoid idle, waiting threads: If a thread splits, let it participate in processing the work list by nesting the idle loops
+
+Things to consider:
+- Find a good minimum split depth. If it's too low, overhead becomes too large
+- Synchronization overhead. Need to keep things fast. Start with a cheap idle check on a volatile bool and then
+  only do the slow locking if things look promising
+*/
+class thread_pool;
+class worker_thread : public thread
+{
+public:
+	worker_thread( thread_pool& pool, uint64_t thread_index );
+
+	virtual void onRun();
+
+	void process_work( scoped_lock& l );
+
+	condition cond_;
+
+	volatile bool quit_;
+	volatile bool do_abort_;
+
+	enum {
+		max_contexts = 10
+	};
+
+	context contexts_[max_contexts];
+	unsigned int ctx_it_;
+
+	bool waiting_;
+
+	thread_pool& pool_;
+	uint64_t thread_index_;
+};
+
+
+struct move_data {
+	move_data()
+		: depth( 1 )
+	{
+	}
+
+	move_info m;
+	move pv[MAX_DEPTH];
+	unsigned int depth;
+};
+
+typedef std::vector<move_data> sorted_moves;
+
+
+class master_worker_thread : public worker_thread
+{
+public:
+	master_worker_thread( thread_pool& pool, uint64_t thread_index )
+		: worker_thread( pool, thread_index )
+		, idle_(true)
+		, cb_()
+	{
+		ctx_it_ = 1;
+	}
+
+	sorted_moves get_moves() { return moves_; }
+
+	bool idle() const { return idle_; }
+
+	condition calc_cond_;
+
+	void init( position const& p, uint64_t hash, sorted_moves const& moves, int clock, seen_positions const& seen, new_best_move_callback_base* cb, timestamp const& start );
+	void process( scoped_lock& l, unsigned int max_depth );
+
+private:
+	virtual void onRun();
+
+	void process_root( scoped_lock& l );
+
+	bool idle_;
+
+	position p_;
+	uint64_t hash_;
+	sorted_moves moves_;
+	unsigned int max_depth_;
+	int clock_;
+	seen_positions seen_;
+
+	new_best_move_callback_base* cb_;
+
+	timestamp start_;
+};
+
+namespace {
+class work
+{
+public:
+	work( worker_thread* master, int depth, int ply, position const& p
+		, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval
+		, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen
+		, context const& master_ctx );
+
+	int const depth_;
+	int const ply_;
+	position const& p_;
+	uint64_t const hash_;
+	check_map const& check_;
+	short alpha_;
+	short const beta_;
+	short const full_eval_;
+	unsigned char const last_ply_was_capture_;
+	bool const pv_node_;
+	short& best_value_;
+	move& best_move_;
+	phased_move_generator_base& gen_;
+	unsigned int processed_moves_;
+	context const& master_ctx_;
+
+	worker_thread* master_;
+	
+	std::set<context*> active_workers_;
+
+	bool done_;
+};
+
+
+work::work( worker_thread* master, int depth, int ply, position const& p
+		, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval
+		, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen
+		, context const& master_ctx )
+	: depth_(depth)
+	, ply_(ply)
+	, p_(p)
+	, hash_(hash)
+	, check_(check)
+	, alpha_(alpha)
+	, beta_(beta)
+	, full_eval_(full_eval)
+	, last_ply_was_capture_(last_ply_was_capture)
+	, pv_node_(pv_node)
+	, best_value_(best_value)
+	, best_move_(best_move)
+	, gen_(gen)
+	, processed_moves_(1)
+	, master_ctx_(master_ctx)
+	, master_(master)
+	, done_()
+{
+}
+}
+
+
+class thread_pool
+{
+public:
+	thread_pool( mutex& m );
+	~thread_pool();
+
+	void update_threads();
+	void reduce_histories();
+
+	void abort( scoped_lock& l );
+	void clear_abort();
+	void wait_for_idle( scoped_lock& l );
+
+	volatile bool idle_;
+
+	mutex& m_;
+
+	work* work_;
+
+	master_worker_thread* master() { return threads_.empty() ? 0 : reinterpret_cast<master_worker_thread*>(threads_[0]); }
+
+	uint64_t idle_threads_;
+	std::vector<worker_thread*> threads_;
+};
+
+
+thread_pool::thread_pool( mutex& m )
+	: idle_(true)
+	, m_(m)
+	, work_()
+	, idle_threads_()
+{
+	scoped_lock l( m_ );
+
+	for( unsigned int i = 0; i < std::min( 64u, conf.thread_count ); ++i ) {
+		worker_thread* t;
+		if( !i ) {
+			t = new master_worker_thread( *this, i );
+		}
+		else {
+			t = new worker_thread( *this, i );
+		}
+		idle_threads_ |= 1ull << i;
+		threads_.push_back( t );
+		t->spawn();
+	}
+}
+
+
+thread_pool::~thread_pool()
+{
+	{
+		scoped_lock l( m_ );
+		for( auto thread : threads_ ) {
+			thread->do_abort_ = true;
+			thread->quit_ = true;
+			thread->cond_.signal( l );
+		}
+		wait_for_idle( l );
+	}
+
+	for( auto thread : threads_ ) {
+		thread->join();
+		delete thread;
+	}
+}
+
+
+void thread_pool::abort( scoped_lock& l )
+{
+	if( work_ ) {
+		work_->gen_.set_done();
+		work_ = 0;
+	}
+	for( auto thread : threads_ ) {
+		thread->do_abort_ = true;
+		for( unsigned int i = 0; i < thread->max_contexts; ++i ) {
+			thread->contexts_[i].do_abort_ = true;
+		}
+	}
+}
+
+
+void thread_pool::clear_abort()
+{
+	for( auto thread : threads_ ) {
+		thread->do_abort_ = false;
+	}
+}
+
+
+void thread_pool::wait_for_idle( scoped_lock& l )
+{
+	while( !master()->idle() ) {
+		master()->calc_cond_.wait( l );
+	}
+}
+
+
+void thread_pool::update_threads()
+{
+	unsigned int const thread_count = std::min( 64u, conf.thread_count );
+	ASSERT( thread_count > 0 );
+	ASSERT( idle_ );
+
+	while( threads_.size() < thread_count ) {
+		worker_thread* t = new worker_thread( *this, threads_.size() );
+		idle_threads_ |= 1ull << threads_.size();
+		threads_.push_back( t );
+		t->spawn();
+	}
+
+	while( threads_.size() > thread_count ) {
+		std::vector<worker_thread*>::iterator it = --threads_.end();
+		(*it)->quit_ = true;
+
+		{
+			scoped_lock l( m_ );
+			(*it)->cond_.signal( l );
+		}
+
+		(*it)->join();
+		idle_threads_ &= ~(1ull << (*it)->thread_index_);
+		delete *it;
+		threads_.erase( it );
+	}
+
+	ASSERT(threads_.size() == idle_threads_.size() );
+}
+
+void thread_pool::reduce_histories()
+{
+	for( auto thread : threads_ ) {
+		for( unsigned int i = 0; i < thread->max_contexts; ++i ) {
+			thread->contexts_[i].history_.reduce();
+		}
+	}
+}
+
+worker_thread::worker_thread( thread_pool& pool, uint64_t thread_index )
+	: quit_()
+	, do_abort_()
+	, ctx_it_()
+	, waiting_()
+	, pool_(pool)
+	, thread_index_(thread_index)
+{
+	for( unsigned int i = 0; i < max_contexts; ++i ) {
+		contexts_[i].thread_ = this;
+	}
+}
+
+void worker_thread::onRun()
+{
+	scoped_lock l( pool_.m_ );
+	while( !quit_ ) {
+
+		pool_.idle_threads_ |= 1ull << thread_index_;
+		pool_.idle_ = true;
+
+		waiting_ = true;
+		cond_.wait( l );
+		waiting_ = false;
+
+		pool_.idle_threads_ &= ~(1ull << thread_index_);
+		if( !pool_.idle_threads_ ) {
+			pool_.idle_ = false;
+		}
+
+		process_work( l );
+	}
+}
+
+void worker_thread::process_work( scoped_lock& l )
+{
+	work* w;
+	while( (w = pool_.work_) && !quit_ && !do_abort_ ) {
+
+		move_info const* it = w->gen_.next();
+
+		if( it ) {
+			move_info mi = *it;
+
+			ASSERT( ctx_it_ < max_contexts );
+
+			// Create context from work
+			context& ctx = contexts_[ctx_it_++];
+			ctx.do_abort_ = false;
+			ctx.move_ptr = ctx.moves;
+
+			ASSERT( w->active_workers_.find( &ctx ) == w->active_workers_.end() );
+			w->active_workers_.insert( &ctx );
+
+			// Extract non-const data
+			unsigned int processed = ++w->processed_moves_;
+			short alpha = w->alpha_;
+			phases::type phase = w->gen_.get_phase();
+			short best_value = w->best_value_;
+
+			l.unlock();
+
+			ctx.seen = w->master_ctx_.seen;
+			ctx.clock = w->master_ctx_.clock;
+
+			short value = ctx.inner_step( w->depth_, w->ply_, w->p_, w->hash_, w->check_, alpha, w->beta_, w->full_eval_
+				, w->last_ply_was_capture_, w->pv_node_, mi.m, processed, phase, best_value );
+
+			l.lock();
+
+			ASSERT( w->active_workers_.find( &ctx ) != w->active_workers_.end() );
+			w->active_workers_.erase( &ctx );
+
+			ASSERT( ctx_it_ > 0 );
+			--ctx_it_;
+
+			if( !do_abort_ && !ctx.do_abort_ ) {
+				if( value > w->best_value_ ) {
+					w->best_value_ = value;
+
+					if( value > w->alpha_ ) {
+						w->best_move_ = mi.m;
+
+						if( value >= w->beta_ ) {
+
+							/* Killer and history handling, tough one...
+							if( !p.get_captured_piece(mi.m) ) {
+								killers[p.self()][ply].add_killer( mi.m );
+								gen.update_history();
+							}*/
+
+							// We're done, with cutoff
+							if( pool_.work_ == w ) {
+								pool_.work_ = 0;
+							}
+							for( auto active_it : w->active_workers_ ) {
+								active_it->do_abort_ = true;
+							}
+							w->gen_.set_done();
+						}
+						else {
+							w->alpha_ = value;
+						}
+					}
+				}
+			}
+		}
+		else {
+			// Not much more to do with this node
+			pool_.work_ = 0;
+			ASSERT( w->gen_.get_phase() == phases::done );
+		}
+
+		if( w->gen_.get_phase() == phases::done && w->active_workers_.empty() ) {
+			w->done_ = true;
+			if( w->master_ && w->master_->waiting_ ) {
+				w->master_->cond_.signal( l );
+			}
+		}
+	}
+}
+
+
+void master_worker_thread::onRun()
+{
+	scoped_lock l( pool_.m_ );
+	while( !quit_ ) {
+
+		pool_.idle_threads_ |= 1ull << thread_index_;
+		pool_.idle_ = true;
+		ASSERT( pool_.idle_threads_.size() == pool_.threads_.size() );
+
+		waiting_ = true;
+		cond_.wait( l );
+		waiting_ = false;
+
+		pool_.idle_threads_ &= ~(1ull << thread_index_);
+		if( !pool_.idle_threads_ ) {
+			pool_.idle_ = false;
+		}
+
+		process_root( l );
+	}
+}
+
+
+void master_worker_thread::process_root( scoped_lock& l )
+{
+	if( moves_.empty() || do_abort_ ) {
+		if( !idle_ ) {
+			idle_ = true;
+			calc_cond_.signal( l );
+		}
+		return;
+	}
+	ASSERT( !idle_ );
+	
+	context& ctx = contexts_[0];
+	ctx.do_abort_ = false;
+
+	l.unlock();
+
+	short prev_root_alpha = result::loss;
+	if( moves_.front().depth > 1 ) {
+		prev_root_alpha = moves_.front().m.sort;
+	}
+
+	short root_alpha = result::loss;
+	short root_beta = result::win;
+
+	for( std::size_t i = 0; i < moves_.size() && !do_abort_; ++i ) {
+		move_data& d = moves_[i];
+
+		position new_pos = p_;
+		apply_move( new_pos, d.m.m );
+		uint64_t hash = update_zobrist_hash( p_, hash_, d.m.m );
+
+		ctx.clock = clock_ % 256;
+		ctx.seen = seen_;
+		ctx.move_ptr = ctx.moves;
+
+		short value;
+		if( ctx.seen.is_two_fold( hash, 1 ) ) {
+			value = result::draw;
+		}
+		else {
+			ctx.seen.push_root( hash );
+
+			check_map check( new_pos );
+
+			// Search using aspiration window:
+			value = result::loss;
+			if( root_alpha == result::loss && prev_root_alpha != result::loss ) {
+				// Windows headers unfortunately create some defines called max and min :(
+				short alpha = std::max( root_alpha, static_cast<short>(prev_root_alpha - ASPIRATION) );
+				short beta = std::min( root_beta, static_cast<short>(prev_root_alpha + ASPIRATION) );
+
+				if( alpha < beta ) {
+					short aspiration_value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -beta, -alpha, false );
+					if( aspiration_value > alpha && aspiration_value < beta ) {
+						// Aspiration search found something sensible
+						value = aspiration_value;
+					}
+				}
+			}
+
+			if( value == result::loss ) {
+				if( root_alpha != result::loss ) {
+					value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -root_alpha-1, -root_alpha, false );
+					if( value > root_alpha ) {
+						value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -root_beta, -root_alpha, false );
+					}
+				}
+				else {
+					value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -root_beta, -root_alpha, false );
+				}
+			}
+		}
+
+		if( value > root_alpha && !do_abort_ ) {
+			root_alpha = value;
+
+			// Bubble new best to front
+			d.m.sort = value;
+			d.depth = max_depth_;
+			get_pv_from_tt( d.pv, p_, max_depth_ );
+			for( size_t j = i; j > 0; --j ) {
+				std::swap( moves_[j], moves_[j-1] );
+			}
+
+			cb_->on_new_best_move( p_, max_depth_, stats.highest_depth(), value, stats.nodes() + stats.quiescence_nodes, timestamp() - start_, moves_[0].pv );
+		}
+	}
+
+	l.lock();
+	idle_ = true;
+	calc_cond_.signal( l );
+}
+
+
+void master_worker_thread::init( position const& p, uint64_t hash, sorted_moves const& moves, int clock, seen_positions const& seen, new_best_move_callback_base* cb , timestamp const& start )
+{
+	ASSERT( idle_ );
+	ASSERT( waiting_ );
+	p_ = p;
+	hash_ = hash;
+	moves_ = moves;
+	clock_ = clock;
+	seen_ = seen;
+	cb_ = cb;
+	start_ = start;
+}
+
+
+void master_worker_thread::process( scoped_lock& l, unsigned int max_depth )
+{
+	ASSERT( idle_ );
+	ASSERT( waiting_ );
+
+	max_depth_ = max_depth;
+
+	idle_ = false;
+	cond_.signal( l );
+}
+
+
+void context::split( int depth, int ply, position const& p
+		, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen )
+{
+	ASSERT( thread_ );
+	if( !thread_->pool_.idle_ ) {
+		return;
+	}
+
+	scoped_lock l( thread_->pool_.m_ );
+
+	if( do_abort_ || thread_->do_abort_ ) {
+		return;
+	}
+
+	// Recheck idle condition now that we got the lock
+	if( thread_->pool_.work_ || !thread_->pool_.idle_threads_ ) {
+		return;
+	}
+
+	// Queue work
+	work w( thread_, depth, ply, p, hash, check, alpha, beta, full_eval, last_ply_was_capture, pv_node, best_value, best_move, gen, *this );
+	thread_->pool_.work_ = &w;
+
+	// Wake up idle workers
+	uint64_t idle = thread_->pool_.idle_threads_;
+	while( idle ) {
+		uint64_t index = bitscan_unset( idle ); 
+		ASSERT( threads_[index]->waiting_ );
+		thread_->pool_.threads_[index]->cond_.signal( l );
+	}
+
+	// Participate
+	while( !w.done_ ) {
+		if( thread_->ctx_it_ < thread_->max_contexts ) {
+			thread_->process_work( l );
+		}
+
+		if( !w.done_ ) {
+			thread_->waiting_ = true;
+			thread_->cond_.wait( l );
+			thread_->waiting_ = false;
+		}
+	}
+	ASSERT( w.active_workers_.empty() );
+	ASSERT( thread_->pool_.work_ != &w );
+}
+
 
 short context::step( int depth, int ply, position& p, uint64_t hash, check_map const& check, short alpha, short beta, bool last_was_null, short full_eval, unsigned char last_ply_was_capture )
 {
@@ -366,116 +981,10 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 	while( (it = gen.next()) ) {
 		++processed_moves;
 
-		short value;
-		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
+		short value = inner_step( depth, ply, p, hash, check
+			, alpha, beta, full_eval, last_ply_was_capture, pv_node
+			, it->m, processed_moves, gen.get_phase(), best_value );
 
-		pieces::type piece = p.get_piece( it->m.source() );
-		pieces::type captured_piece = p.get_captured_piece( it->m );
-
-		if( seen.is_two_fold( new_hash, ply ) ) {
-			value = result::draw;
-		}
-		else {
-			position new_pos(p);
-			apply_move( new_pos, it->m );
-
-			seen.set( new_hash, ply );
-
-			check_map new_check( new_pos );
-
-			bool extended = false;
-
-			int new_depth = depth - depth_factor;
-
-			// Check extension
-			if( new_check.check ) {
-				new_depth += check_extension;
-				extended = true;
-			}
-
-			bool dangerous_pawn_move = false;
-
-			// Pawn push extension
-			if( piece == pieces::pawn ) {
-				// Pawn promoting or moving to 7th rank
-				if( it->m.target() < 16 || it->m.target() >= 48 ) {
-					dangerous_pawn_move = true;
-					if( !extended && pv_node ) {
-						new_depth += pawn_push_extension;
-						extended = true;
-					}
-				}
-				// Pushing a passed pawn
-				else if( !(passed_pawns[p.self()][it->m.target()] & p.bitboards[p.other()].b[bb_type::pawns] ) ) {
-					dangerous_pawn_move = true;
-					if( !extended && pv_node ) {
-						new_depth += pawn_push_extension;
-						extended = true;
-					}
-				}
-			}
-
-			// Recapture extension
-			if( !extended && pv_node && captured_piece != pieces::none && it->m.target() == last_ply_was_capture && see(p, it->m) >= 0 ) {
-				new_depth += recapture_extension;
-				extended = true;
-			}
-			unsigned char new_capture = 64;
-			if( captured_piece != pieces::none ) {
-				new_capture = it->m.target();
-			}
-
-			// Open question: What's the exact reason for always searching exactly the first move full width?
-			// Why not always use PVS, or at least in those cases where root alpha isn't result::loss?
-			// Why not use full width unless alpha > old_alpha?
-			if( processed_moves || !pv_node ) {
-
-#if USE_FUTILITY
-				// Futility pruning
-				if( !extended && !pv_node && gen.get_phase() == phases::noncapture && !check.check &&
-					!dangerous_pawn_move &&
-					( best_value == result::loss || best_value > result::loss_threshold ) )
-				{
-					int plies_remaining = (depth - cutoff) / depth_factor;
-					if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short))) {
-						value = full_eval + futility_pruning[plies_remaining];
-						if( value <= alpha ) {
-							continue;
-						}
-					}
-
-					if( new_depth < cutoff + depth_factor && see( p, it->m ) < 0 ) {
-						continue;
-					}
-				}
-
-#endif
-
-				bool search_full;
-				if( !extended && processed_moves >= (pv_node ? 5u : 3u) && gen.get_phase() >= phases::noncapture &&
-					!check.check && depth >= lmr_min_depth )
-				{
-					int red = pv_node ? (depth_factor) : (depth_factor * 2);
-
-					red += (processed_moves - (pv_node?3:3)) / 5;
-					int lmr_depth = new_depth - red;
-					value = -step(lmr_depth, ply + 1, new_pos, new_hash, new_check, -alpha-1, -alpha, false );
-				
-					search_full = value > alpha;
-				}
-				else {
-					search_full = true;
-				}
-				
-				if( search_full ) {
-					value = -step( new_depth, ply + 1, new_pos, new_hash, new_check, -alpha-1, -alpha, false, result::win, new_capture );
-				}
-			}
-
-			if( pv_node && (!processed_moves || (value > alpha && value < beta) ) ) {
-				value = -step( new_depth, ply + 1, new_pos, new_hash, new_check, -beta, -alpha, false, result::win, new_capture );
-			}
-		}
 		if( value > best_value ) {
 			best_value = value;
 
@@ -483,7 +992,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 				best_move = it->m;
 
 				if( value >= beta ) {		
-					if( !captured_piece ) {
+					if( !p.get_captured_piece(it->m) ) {
 						killers[p.self()][ply].add_killer( it->m );
 						gen.update_history();
 					}
@@ -491,6 +1000,10 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 				}
 				alpha = value;
 			}
+		}
+
+		if( processed_moves == 1 && plies_remaining > 4 ) {
+			split( depth, ply, p, hash, check, alpha, beta, full_eval, last_ply_was_capture, pv_node, best_value, best_move, gen );
 		}
 	}
 
@@ -514,234 +1027,124 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 	return best_value;
 }
 
-namespace {
-class processing_thread : public thread
+short context::inner_step( int const depth, int const ply, position const& p, uint64_t const hash, check_map const& check, short const alpha, short const beta
+						  , short const full_eval, unsigned char const last_ply_was_capture
+						  , bool const pv_node, move const& m, unsigned int const processed_moves, phases::type const phase, short const best_value )
 {
-public:
-	enum state_type {
-		idle,
-		busy,
-		pending_results,
-		waiting,
-		quitting
-	};
-
-	processing_thread( mutex& mtx, condition& cond )
-		: mutex_(mtx)
-		, cond_(cond)
-		, hash_()
-		, max_depth_()
-		, alpha_at_prev_depth_()
-		, alpha_()
-		, beta_()
-		, result_()
-		, clock_()
-		, state_(idle)
-	{
-		spawn();
-	}
-
-
-	virtual ~processing_thread()
-	{
-		join();
-	}
-
-
-	void quit( scoped_lock& l )
-	{
-		state_ = quitting;
-		waiting_on_work_.signal( l );
-	}
-
-
-	void wait_idle( scoped_lock& l )
-	{
-		if( state_ == idle ) {
-			return;
-		}
-		else if( state_ == pending_results ) {
-			state_ = idle;
-		}
-		else if( state_ == busy ) {
-			state_ = waiting;
-			waiting_on_work_.signal( l );
-		}
-	}
-
-	// Call locked
-	bool got_results() {
-		return state_ == pending_results;
-	}
-
-	bool is_idle() {
-		return state_ == idle;
-	}
-
-	// Call locked
-	short result() {
-		if( state_ != pending_results ) {
-			std::cerr << "Calling result in wrong state." << std::endl;
-			abort();
-		}
-		state_ = idle;
-		return result_;
-	}
-
-	void process( scoped_lock& l, position const& p, uint64_t hash, move_info const& m, short max_depth, short alpha_at_prev_depth, short alpha, short beta, int clock, seen_positions const& seen )
-	{
-		ctx_.do_abort_ = false;
-		p_ = p;
-		hash_ = hash;
-		m_ = m;
-		max_depth_ = max_depth;
-		alpha_at_prev_depth_ = alpha_at_prev_depth;
-		alpha_ = alpha;
-		beta_ = beta;
-		clock_ = clock;
-		
-		seen_ = seen;
-
-		state_ = busy;
-
-		waiting_on_work_.signal( l );
-	}
-
-	move_info get_move() const { return m_; }
-
-	void reduce_history() {
-		ctx_.history_.reduce();
-	}
-
-	void abort()
-	{
-		ctx_.do_abort_ = true;
-	}
-
-	virtual void onRun();
-private:
-	short processWork();
-
-	mutex& mutex_;
-	condition& cond_;
-
-	condition waiting_on_work_;
-
-	position p_;
-	uint64_t hash_;
-	move_info m_;
-	short max_depth_;
-	short alpha_at_prev_depth_;
-	short alpha_;
-	short beta_;
-
-	short result_;
-	int clock_;
-
-	seen_positions seen_;
-
-	context ctx_;
-
-	state_type state_;
-};
-}
-
-
-short processing_thread::processWork()
-{
-	position new_pos = p_;
-	apply_move( new_pos, m_.m );
-	uint64_t hash = update_zobrist_hash( p_, hash_, m_.m );
-
-	ctx_.clock = clock_ % 256;
-	ctx_.seen = seen_;
-	ctx_.move_ptr = ctx_.moves;
-
-	if( ctx_.seen.is_two_fold( hash, 1 ) ) {
-		return result::draw;
-	}
-
-	ctx_.seen.push_root( hash );
-
-	check_map check( new_pos );
-
-	// Search using aspiration window:
 	short value;
-	if( alpha_ == result::loss && alpha_at_prev_depth_ != result::loss ) {
-		// Windows headers unfortunately create some defines called max and min :(
-		short alpha = std::max( alpha_, static_cast<short>(alpha_at_prev_depth_ - ASPIRATION) );
-		short beta = std::min( beta_, static_cast<short>(alpha_at_prev_depth_ + ASPIRATION) );
+	uint64_t new_hash = update_zobrist_hash( p, hash, m );
 
-		if( alpha < beta ) {
-			value = -ctx_.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -beta, -alpha, false );
-			if( value > alpha && value < beta ) {
-				// Aspiration search found something sensible
-				return value;
-			}
-		}
-	}
+	pieces::type piece = p.get_piece( m );
+	pieces::type captured_piece = p.get_captured_piece( m );
 
-	if( alpha_ != result::loss ) {
-		value = -ctx_.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -alpha_-1, -alpha_, false );
-		if( value > alpha_ ) {
-			value = -ctx_.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -beta_, -alpha_, false );
-		}
+	if( seen.is_two_fold( new_hash, ply ) ) {
+		value = result::draw;
 	}
 	else {
-		value = -ctx_.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -beta_, -alpha_, false );
+		position new_pos(p);
+		apply_move( new_pos, m );
+
+		seen.set( new_hash, ply );
+
+		check_map new_check( new_pos );
+
+		bool extended = false;
+
+		int new_depth = depth - depth_factor;
+
+		// Check extension
+		if( new_check.check ) {
+			new_depth += check_extension;
+			extended = true;
+		}
+
+		bool dangerous_pawn_move = false;
+
+		// Pawn push extension
+		if( piece == pieces::pawn ) {
+			// Pawn promoting or moving to 7th rank
+			if( m.target() < 16 || m.target() >= 48 ) {
+				dangerous_pawn_move = true;
+				if( !extended && pv_node ) {
+					new_depth += pawn_push_extension;
+					extended = true;
+				}
+			}
+			// Pushing a passed pawn
+			else if( !(passed_pawns[p.self()][m.target()] & p.bitboards[p.other()].b[bb_type::pawns] ) ) {
+				dangerous_pawn_move = true;
+				if( !extended && pv_node ) {
+					new_depth += pawn_push_extension;
+					extended = true;
+				}
+			}
+		}
+
+		// Recapture extension
+		if( !extended && pv_node && captured_piece != pieces::none && m.target() == last_ply_was_capture && see(p, m) >= 0 ) {
+			new_depth += recapture_extension;
+			extended = true;
+		}
+		unsigned char new_capture = 64;
+		if( captured_piece != pieces::none ) {
+			new_capture = m.target();
+		}
+
+		// Open question: What's the exact reason for always searching exactly the first move full width?
+		// Why not always use PVS, or at least in those cases where root alpha isn't result::loss?
+		// Why not use full width unless alpha > old_alpha?
+		if( processed_moves || !pv_node ) {
+
+#if USE_FUTILITY
+			// Futility pruning
+			if( !extended && !pv_node && phase == phases::noncapture && !check.check &&
+				!dangerous_pawn_move &&
+				( best_value == result::loss || best_value > result::loss_threshold ) )
+			{
+				int plies_remaining = (depth - cutoff) / depth_factor;
+				if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short))) {
+					value = full_eval + futility_pruning[plies_remaining];
+					if( value <= alpha ) {
+						return result::none;
+					}
+				}
+
+				if( new_depth < cutoff + depth_factor && see( p, m ) < 0 ) {
+					return result::none;
+				}
+			}
+
+#endif
+
+			bool search_full;
+			if( !extended && processed_moves >= (pv_node ? 5u : 3u) && phase >= phases::noncapture &&
+				!check.check && depth >= lmr_min_depth )
+			{
+				int red = pv_node ? (depth_factor) : (depth_factor * 2);
+
+				red += (processed_moves - (pv_node?3:3)) / 5;
+				int lmr_depth = new_depth - red;
+				value = -step(lmr_depth, ply + 1, new_pos, new_hash, new_check, -alpha-1, -alpha, false );
+				
+				search_full = value > alpha;
+			}
+			else {
+				search_full = true;
+			}
+				
+			if( search_full ) {
+				value = -step( new_depth, ply + 1, new_pos, new_hash, new_check, -alpha-1, -alpha, false, result::win, new_capture );
+			}
+		}
+
+		if( pv_node && (!processed_moves || (value > alpha && value < beta) ) ) {
+			value = -step( new_depth, ply + 1, new_pos, new_hash, new_check, -beta, -alpha, false, result::win, new_capture );
+		}
 	}
 
 	return value;
 }
 
-
-void processing_thread::onRun()
-{
-	scoped_lock l(mutex_);
-
-	while( true ) {
-
-		while( state_ == idle || state_ == pending_results ) {
-			waiting_on_work_.wait( l );
-		}
-
-		if( state_ == quitting ) {
-			return;
-		}
-
-		if( state_ == busy ) {
-			l.unlock();
-			short result = processWork();
-			l.lock();
-			result_ = result;
-			if( state_ == busy ) {
-				state_ = pending_results;
-			}
-		}
-		
-		if( state_ == waiting ) {
-			state_ = idle;
-		}
-
-		cond_.signal( l );
-	}
-}
-
-struct move_data {
-	enum state {
-		waiting,
-		busy,
-		done
-	};
-
-	move_data() : s(waiting) {}
-
-	state s;
-	move_info m;
-	move pv[MAX_DEPTH];
-};
-
-typedef std::vector<move_data> sorted_moves;
 
 void def_new_best_move_callback::on_new_best_move( position const& p, int depth, int selective_depth , int evaluation, uint64_t nodes, duration const& /*elapsed*/, move const* pv )
 {
@@ -755,46 +1158,11 @@ class calc_manager::impl
 public:
 	impl()
 		: do_abort_()
+		, pool_(mtx_)
 	{
-		update_threads();
 	}
 
 	~impl() {
-		{
-			scoped_lock l( mtx_ );
-
-			for( std::vector<processing_thread*>::iterator it = threads_.begin(); it != threads_.end(); ++it ) {
-				(*it)->quit( l );
-			}
-		}
-
-		for( std::vector<processing_thread*>::iterator it = threads_.begin(); it != threads_.end(); ++it ) {
-			delete *it;
-		}
-	}
-
-	void update_threads() {
-		while( threads_.size() < conf.thread_count ) {
-			threads_.push_back( new processing_thread( mtx_, cond_ ) );
-		}
-		while( threads_.size() > conf.thread_count ) {
-			std::vector<processing_thread*>::iterator it = --threads_.end();
-
-			{
-				scoped_lock l( mtx_ );
-				(*it)->quit( l );
-			}
-
-			delete *it;
-			threads_.erase( it );
-		}
-	}
-
-	void reduce_histories()
-	{
-		for( std::vector<processing_thread*>::iterator it = threads_.begin(); it != threads_.end(); ++it ) {
-			(*it)->reduce_history();
-		}
 	}
 
 	int get_max_depth( int depth ) const
@@ -808,19 +1176,18 @@ public:
 	}
 
 
-	void abort()
+	void abort( scoped_lock& l )
 	{
 		do_abort_ = true;
-		for( std::vector<processing_thread*>::iterator it = threads_.begin(); it != threads_.end(); ++it ) {
-			(*it)->abort();
-		}
+		pool_.abort( l );
 	}
 
 	mutex mtx_;
 	condition cond_;
-	std::vector<processing_thread*> threads_;
-
+	
 	bool do_abort_;
+
+	thread_pool pool_;
 };
 
 
@@ -841,12 +1208,16 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		  , short last_mate
 		  , new_best_move_callback_base& new_best_cb )
 {
+	// Should be as early as possible for most accurate timekeeping
+	timestamp start;
+
+	// TODO: Refactor this to reflect the new threading code
 	ASSERT( move_time_limit <= deadline );
 
 	max_depth = impl_->get_max_depth( max_depth );
 
-	impl_->update_threads();
-	impl_->reduce_histories();
+	impl_->pool_.update_threads();
+	impl_->pool_.reduce_histories();
 
 	calc_result result;
 
@@ -920,8 +1291,6 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		}
 	}
 
-	timestamp start;
-
 	short ev = evaluate_full( p );
 	new_best_cb.on_new_best_move( p, 1, 0, ev, 0, duration(), sorted.front().pv );
 
@@ -931,198 +1300,85 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		return result;
 	}
 
-	short alpha_at_prev_depth = result::loss;
 	int highest_depth = 0;
-	int min_depth = 2 + (max_depth % 2);
+	int min_depth = 2;
 	if( max_depth < min_depth ) {
 		min_depth = max_depth;
 	}
 
+	scoped_lock l( impl_->mtx_ );
+
+	master_worker_thread* master = impl_->pool_.master();
+	master->init( p, hash, sorted, clock, seen, &new_best_cb, start );
+		
 	for( int depth = min_depth; depth <= max_depth && !impl_->do_abort_; ++depth ) {
-		short alpha = result::loss;
-		short beta = result::win;
+			
+		master->process( l, depth );
 
-		std::size_t evaluated = 0;
-
-		bool got_first_result = false;
-
-		for( sorted_moves::iterator it = sorted.begin(); it != sorted.end(); ++it ) {
-			it->s = move_data::waiting;
-		}
-
-		push_pv_to_tt( sorted.begin()->pv, p, clock );
-
-		bool done = false;
-		while( !done ) {
-			scoped_lock l( impl_->mtx_ );
-
-			for( sorted_moves::iterator it = sorted.begin(); it != sorted.end() && !impl_->do_abort_; ++it ) {
-
-				if( it->s != move_data::waiting ) {
-					continue;
-				}
-
-				if( !got_first_result && it != sorted.begin() ) {
-					// Need to wait for first result
-					break;
-				}
-
-				std::size_t t;
-				for( t = 0; t < impl_->threads_.size(); ++t ) {
-					if( !impl_->threads_[t]->is_idle() ) {
-						continue;
-					}
-
-					it->s = move_data::busy;
-					impl_->threads_[t]->process( l, p, hash, it->m, depth, alpha_at_prev_depth, alpha, beta, clock, seen );
-
-					// First one is run on its own to get a somewhat sane lower bound for others to work with.
-					if( !got_first_result && it == sorted.begin() ) {
-						goto break2;
-					}
-					break;
-				}
-
-				if( t == impl_->threads_.size() ) {
-					break;
-				}
-			}
-break2:
-			if( impl_->do_abort_ ) {
-				goto label_abort;
-			}
+		while( !master->idle() ) {
 
 			if( !ponder ) {
 				timestamp now;
 				if( time_limit > now - start ) {
-					impl_->cond_.wait( l, start + time_limit - now );
+					master->calc_cond_.wait( l, start + time_limit - now );
 				}
 
 				now = timestamp();
-				if( !impl_->do_abort_ && (now - start) > time_limit ) {
+				if( !impl_->do_abort_ && (now - start) > time_limit && !master->idle() ) {
 					dlog() << "Triggering search abort due to time limit at depth " << depth << std::endl;
-					impl_->abort();
+					impl_->abort( l );
+					impl_->pool_.wait_for_idle( l );
+					break;
 				}
 			}
 			else {
-				impl_->cond_.wait( l );
-			}
-
-			bool all_idle = true;
-			for( std::size_t t = 0; t < impl_->threads_.size(); ++t ) {
-
-				if( impl_->threads_[t]->got_results() ) {
-					got_first_result = true;
-					short value = impl_->threads_[t]->result();
-					if( !impl_->do_abort_ ) {
-						++evaluated;
-
-						move_info mi = impl_->threads_[t]->get_move();
-
-						sorted_moves::iterator it;
-						for( it = sorted.begin(); it != sorted.end(); ++it ) {
-							if( it->m.m == mi.m ) {
-								it->s = move_data::done;
-								break;
-							}
-						}
-
-						if( value > alpha ) {
-							get_pv_from_tt( it->pv, p, depth );
-
-							alpha = value;
-							if( mi.m != result.best_move ) {
-								if( !ponder && move_time_limit.seconds() >= 1 && depth > 4 && (timestamp() - start) >= (move_time_limit / 10) ) {
-									duration extra = move_time_limit / 3;
-									if( time_limit + extra > deadline ) {
-										extra = deadline - time_limit;
-									}
-									if( extra.milliseconds() > 0 ) {
-										result.used_extra_time += extra;
-										time_limit += extra;
-										dlog() << "PV changed, adding " << extra.milliseconds() << " ms extra search time." << std::endl;
-									}
-								}
-								result.best_move = mi.m;
-								result.ponder_move = it->pv[1];
-							}
-							
-							// Bubble new best to front
-							it->m.sort = value;
-							for( ; it != sorted.begin(); --it ) {
-								std::swap( *(it - 1), *it );
-							}
-
-							highest_depth = depth;
-
-							new_best_cb.on_new_best_move( p, depth, stats.highest_depth(), value, stats.nodes() + stats.quiescence_nodes, timestamp() - start, it->pv );
-						}
-					}
-				}
-
-				if( !impl_->threads_[t]->is_idle() ) {
-					all_idle = false;
-				}
-			}
-
-			if( all_idle ) {
-				if( evaluated == sorted.size() ) {
-					done = true;
-				}
-				else if( impl_->do_abort_ ) {
-					done = true;
-				}
-			}
-		}
-		if( impl_->do_abort_ ) {
-			dlog() << "Aborted with " << evaluated << " of " << sorted.size() << " moves evaluated at current depth" << std::endl;
-		}
-		else {
-			if( alpha < result::loss_threshold || alpha > result::win_threshold ) {
-				if( depth < max_depth ) {
-					if( alpha > last_mate && !ponder ) {
-						dlog() << "Early break due to mate at " << depth << std::endl;
-						impl_->abort();
-					}
-				}
-			}
-			else {
-				duration elapsed = timestamp() - start;
-				if( !ponder && elapsed > (time_limit * 3) / 5 && depth < max_depth ) {
-					dlog() << "Not increasing depth due to time limit. Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
-					impl_->abort();
-				}
+				master->calc_cond_.wait( l );
 			}
 		}
 
+		sorted_moves new_sorted = master->get_moves();
 
-		if( !sorted.empty() ) {
-			alpha_at_prev_depth = alpha;
-			result.forecast = alpha;
+		if( new_sorted.begin()->m.m != sorted.begin()->m.m ) {
+			// PV changed
+			if( !ponder && move_time_limit.seconds() >= 1 && depth > 4 && (timestamp() - start) >= (move_time_limit / 10) ) {
+				duration extra = move_time_limit / 3;
+				if( time_limit + extra > deadline ) {
+					extra = deadline - time_limit;
+				}
+				if( extra.milliseconds() > 0 ) {
+					result.used_extra_time += extra;
+					time_limit += extra;
+					dlog() << "PV changed, adding " << extra.milliseconds() << " ms extra search time." << std::endl;
+				}
+			}
 		}
-		else {
-			result.forecast = alpha_at_prev_depth;
+		sorted = new_sorted;
+
+		push_pv_to_tt( sorted[0].pv, p, clock );
+		
+		duration elapsed = timestamp() - start;
+		if( !ponder && elapsed > (time_limit * 3) / 5 && depth < max_depth && !impl_->do_abort_ ) {
+			dlog() << "Not increasing depth due to time limit. Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
+			break;
 		}
 	}
 
-label_abort:
-	scoped_lock l( impl_->mtx_ );
-
-	for( std::vector<processing_thread*>::iterator it = impl_->threads_.begin(); it != impl_->threads_.end(); ++it ) {
-		(*it)->wait_idle( l );
-	}
+	impl_->pool_.wait_for_idle( l );
 
 	{
 		timestamp stop;
 
-		move const* pv = sorted.begin()->pv;
-		new_best_cb.on_new_best_move( p, highest_depth, stats.highest_depth(), sorted.begin()->m.sort, stats.nodes() + stats.quiescence_nodes, stop - start, pv );
+		move_data const& best = sorted.front();
+		move const* pv = best.pv;
+		new_best_cb.on_new_best_move( p, best.depth, stats.highest_depth(), sorted.begin()->m.sort, stats.nodes() + stats.quiescence_nodes, stop - start, pv );
 
 		stats.print( stop - start );
 		stats.accumulate( stop - start );
 		stats.reset( false );
 
-		push_pv_to_tt( pv, p, clock );
+		result.best_move = best.m.m;
+		result.forecast = best.m.sort;
+		result.ponder_move = pv[1];
 	}
 
 	return result;
@@ -1134,6 +1390,7 @@ void calc_manager::clear_abort()
 	scoped_lock l( impl_->mtx_ );
 
 	impl_->do_abort_ = false;
+	impl_->pool_.clear_abort();
 }
 
 
@@ -1141,7 +1398,7 @@ void calc_manager::abort()
 {
 	scoped_lock l( impl_->mtx_ );
 
-	impl_->abort();
+	impl_->abort( l );
 }
 
 bool calc_manager::should_abort() const

@@ -5,6 +5,7 @@
 #include "chess.hpp"
 #include "detect_check.hpp"
 #include "history.hpp"
+#include "phased_move_generator.hpp"
 #include "pvlist.hpp"
 #include "moves.hpp"
 #include "seen_positions.hpp"
@@ -93,13 +94,16 @@ public:
 	move m2;
 };
 
+class worker_thread;
+
 class context
 {
 public:
-	context()
+	context( worker_thread* thread = 0 )
 		: clock(0)
 		, move_ptr(moves)
 		, do_abort_()
+		, thread_( thread )
 	{
 	}
 
@@ -117,9 +121,18 @@ public:
 	// Depth is number of plies to search multiplied by depth_factor
 	short step( int depth, int ply, position& p, uint64_t hash, check_map const& check, short alpha, short beta, bool last_was_null, short full_eval = result::win, unsigned char last_ply_was_capture = 64 );
 
+	short inner_step( int const depth, int const ply, position const& p, uint64_t const hash, check_map const& check, short const alpha, short const beta
+		, short const full_eval, unsigned char const last_ply_was_capture
+		, bool const pv_node, move const& m, unsigned int const processed_moves, phases::type const phase, short const best_value );
+
+	void split( int depth, int ply, position const& p
+		, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen );
+
 	short quiescence_search( int ply, int depth, position const& p, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval = result::win );
 
 	bool do_abort_;
+
+	worker_thread* thread_;
 };
 
 #endif

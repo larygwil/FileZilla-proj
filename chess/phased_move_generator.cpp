@@ -1,4 +1,5 @@
 #include "phased_move_generator.hpp"
+#include "calc.hpp"
 #include "eval.hpp"
 #include "fen.hpp"
 #include "see.hpp"

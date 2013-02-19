@@ -98,7 +98,8 @@ enum type {
 	win_threshold = win - 1500,
 	draw = 0,
 	loss = -32000,
-	loss_threshold = loss + 1500
+	loss_threshold = loss + 1500,
+	none = loss - 1
 };
 }
 

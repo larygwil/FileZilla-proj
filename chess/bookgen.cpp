@@ -54,7 +54,7 @@ bool deepen_move( book& b, position const& p, seen_positions const& seen, std::v
 		}
 	}
 
-	context ctx;
+	context ctx( 0 );
 	ctx.clock = move_history.size() % 256;
 	ctx.seen = seen;
 
@@ -99,7 +99,7 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 	uint64_t const hash = get_zobrist_hash( p );
 
 	for( move_info const* it = moves; it != pm; ++it ) {
-		context ctx;
+		context ctx( 0 );
 		ctx.clock = move_history.size() % 256;
 		ctx.seen = seen;
 
@@ -148,7 +148,7 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 
 			done = false;
 
-			context ctx;
+			context ctx( 0 );
 			ctx.clock = move_history.size() % 256;
 			ctx.seen = seen;
 
@@ -202,7 +202,7 @@ bool update_position( book& b, position const& p, seen_positions const& seen, st
 				new_depth = MAX_BOOKSEARCH_DEPTH;
 			}
 
-			context ctx;
+			context ctx ( 0 );
 			ctx.clock = move_history.size() % 256;
 			ctx.seen = seen;
 
