@@ -324,7 +324,6 @@ private:
 	uint64_t hash_;
 	sorted_moves moves_;
 	unsigned int max_depth_;
-	int clock_;
 	seen_positions seen_;
 
 	new_best_move_callback_base* cb_;
@@ -596,7 +595,6 @@ void worker_thread::process_work( scoped_lock& l )
 
 			ctx.move_ptr = ctx.moves;
 			ctx.seen = w->master_ctx_.seen;
-			ctx.clock = w->master_ctx_.clock;
 
 			short value = ctx.inner_step( w->depth_, w->ply_, w->p_, w->hash_, w->check_, alpha, w->beta_, w->full_eval_
 				, w->last_ply_was_capture_, w->pv_node_, mi.m, processed, phase, best_value );
@@ -714,7 +712,6 @@ void master_worker_thread::process_root( scoped_lock& l )
 		apply_move( new_pos, d.m.m );
 		uint64_t hash = update_zobrist_hash( p_, hash_, d.m.m );
 
-		ctx.clock = clock_ % 256;
 		ctx.seen = seen_;
 		ctx.move_ptr = ctx.moves;
 
@@ -783,10 +780,16 @@ void master_worker_thread::init( position const& p, uint64_t hash, sorted_moves 
 	p_ = p;
 	hash_ = hash;
 	moves_ = moves;
-	clock_ = clock;
 	seen_ = seen;
 	cb_ = cb;
 	start_ = start;
+
+	clock %= 256;
+	for( auto thread : pool_.threads_ ) {
+		for( unsigned int i = 0; i < max_contexts; ++i ) {
+			thread->contexts_[i].clock = clock;
+		}
+	}
 }
 
 
