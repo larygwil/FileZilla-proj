@@ -22,7 +22,6 @@
 #include <iostream>
 #include <math.h>
 #include <map>
-#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -360,7 +359,8 @@ public:
 
 	worker_thread* master_;
 	
-	std::set<context*> active_workers_;
+	uint64_t active_workers_;
+	unsigned char active_worker_contexts_[64];
 
 	bool done_;
 };
@@ -386,6 +386,7 @@ work::work( worker_thread* master, int depth, int ply, position const& p
 	, processed_moves_(1)
 	, master_ctx_(master_ctx)
 	, master_(master)
+	, active_workers_()
 	, done_()
 {
 }
@@ -578,13 +579,13 @@ void worker_thread::process_work( scoped_lock& l )
 			ASSERT( ctx_it_ < max_contexts );
 
 			// Create context from work
-			context& ctx = contexts_[ctx_it_++];
+			context& ctx = contexts_[ctx_it_];
 			ctx.do_abort_ = false;
-			ctx.move_ptr = ctx.moves;
 
-			ASSERT( w->active_workers_.find( &ctx ) == w->active_workers_.end() );
-			w->active_workers_.insert( &ctx );
-
+			ASSERT( !(w->active_workers_ & (1ull << thread_index_)) );
+			w->active_workers_ |= 1ull << thread_index_;
+			w->active_worker_contexts_[thread_index_] = ctx_it_++;
+			
 			// Extract non-const data
 			unsigned int processed = ++w->processed_moves_;
 			short alpha = w->alpha_;
@@ -593,6 +594,7 @@ void worker_thread::process_work( scoped_lock& l )
 
 			l.unlock();
 
+			ctx.move_ptr = ctx.moves;
 			ctx.seen = w->master_ctx_.seen;
 			ctx.clock = w->master_ctx_.clock;
 
@@ -601,8 +603,8 @@ void worker_thread::process_work( scoped_lock& l )
 
 			l.lock();
 
-			ASSERT( w->active_workers_.find( &ctx ) != w->active_workers_.end() );
-			w->active_workers_.erase( &ctx );
+			ASSERT( w->active_workers_ & (1ull << thread_index_) );
+			w->active_workers_ &= ~(1ull << thread_index_);
 
 			ASSERT( ctx_it_ > 0 );
 			--ctx_it_;
@@ -626,8 +628,12 @@ void worker_thread::process_work( scoped_lock& l )
 							if( pool_.work_ == w ) {
 								pool_.work_ = 0;
 							}
-							for( auto active_it : w->active_workers_ ) {
-								active_it->do_abort_ = true;
+
+							// Abort other workers
+							uint64_t active = w->active_workers_;
+							while( active ) {
+								uint64_t index = bitscan_unset( active );
+								pool_.threads_[index]->contexts_[w->active_worker_contexts_[index]].do_abort_ = true;
 							}
 							w->gen_.set_done();
 						}
@@ -644,7 +650,7 @@ void worker_thread::process_work( scoped_lock& l )
 			ASSERT( w->gen_.get_phase() == phases::done );
 		}
 
-		if( w->gen_.get_phase() == phases::done && w->active_workers_.empty() ) {
+		if( w->gen_.get_phase() == phases::done && !w->active_workers_ ) {
 			w->done_ = true;
 			if( w->master_ && w->master_->waiting_ ) {
 				w->master_->cond_.signal( l );
