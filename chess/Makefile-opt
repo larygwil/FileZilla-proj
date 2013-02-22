@@ -60,6 +60,7 @@ GENERIC_SOURCE_FILES = \
 
 CHESS_SOURCE_FILES = $(UTIL_SOURCE_FILES) $(GENERIC_SOURCE_FILES) \
 	chess.cpp \
+	epd.cpp \
 	tweak.cpp \
 	xboard.cpp \
 	uci/info.cpp \
@@ -73,7 +74,7 @@ BOOKGEN_SOURCE_FILES = $(UTIL_SOURCE_FILES) $(GENERIC_SOURCE_FILES) \
 
 chess-gen: *.cpp *.hpp sqlite/sqlite3.o tables.cpp
 	$(CXX) $(CXXFLAGS) -fprofile-generate -o $@ $(CHESS_SOURCE_FILES)
-	./chess-gen --moves 1 --depth 11 --threads 1 auto
+	./chess-gen --moves 1 --depth 18 auto
 	rm -f *.o uci/*.o
 
 chess-use: chess-gen
