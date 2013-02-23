@@ -56,19 +56,14 @@ void auto_play()
 
 	seen_positions seen( get_zobrist_hash( p ) );
 
-	short last_mate = 0;
-
 	calc_manager cmgr;
 	calc_result result;
-	while( !(result = cmgr.calc( p, -1, TIME_LIMIT, TIME_LIMIT, i, seen, last_mate ) ).best_move.empty() ) {
+	while( !(result = cmgr.calc( p, -1, TIME_LIMIT, TIME_LIMIT, i, seen ) ).best_move.empty() ) {
 		cmgr.clear_abort();
 		if( p.white() ) {
 			std::cout << std::setw(3) << i << ".";
 		}
 
-		if( result.forecast > result::win_threshold ) {
-			last_mate = result.forecast;
-		}
 		std::cout << " " << move_to_string( p, result.best_move ) << std::endl;
 
 		if( !p.white() ) {

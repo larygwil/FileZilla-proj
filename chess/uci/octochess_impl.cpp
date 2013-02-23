@@ -29,7 +29,6 @@ class octochess_uci::impl : public new_best_move_callback_base, public thread {
 public:
 	impl( gui_interface_ptr const& p )
 		: gui_interface_(p)
-		, last_mate_()
 		, half_moves_played_()
 		, started_from_root_()
 		, book_( conf.self_dir )
@@ -61,7 +60,6 @@ public:
 
 	time_calculation times_;
 
-	short last_mate_;
 	int half_moves_played_;
 	bool started_from_root_;
 
@@ -96,7 +94,6 @@ void octochess_uci::new_game() {
 	impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) ); impl_->times_ = time_calculation();
 	impl_->half_moves_played_ = 0;
 	impl_->started_from_root_ = true;
-	impl_->last_mate_ = 0;
 	impl_->move_history_.clear();
 }
 
@@ -123,7 +120,6 @@ void octochess_uci::set_position( std::string const& fen ) {
 	if( success ) {
 		impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) );
 		impl_->half_moves_played_ = 0;
-		impl_->last_mate_ = 0;
 	}
 }
 
@@ -208,7 +204,7 @@ void octochess_uci::impl::onRun() {
 	//the function initiating all the calculating
 	if( ponder_ ) {
 		std::cerr << "Pondering..." << std::endl;
-		calc_result result = calc_manager_.calc( pos_, -1, duration::infinity(), duration::infinity(), half_moves_played_, seen_positions_, last_mate_, *this );
+		calc_result result = calc_manager_.calc( pos_, -1, duration::infinity(), duration::infinity(), half_moves_played_, seen_positions_, *this );
 
 		scoped_lock lock(mutex_);
 
@@ -219,7 +215,7 @@ void octochess_uci::impl::onRun() {
 	else {
 		timestamp start_time;
 
-		calc_result result = calc_manager_.calc( pos_, depth_, times_.time_for_this_move(), times_.total_remaining() -  times_.overhead(), half_moves_played_, seen_positions_, last_mate_, *this );
+		calc_result result = calc_manager_.calc( pos_, depth_, times_.time_for_this_move(), times_.total_remaining() -  times_.overhead(), half_moves_played_, seen_positions_, *this );
 
 		scoped_lock lock(mutex_);
 
@@ -231,10 +227,6 @@ void octochess_uci::impl::onRun() {
 			}
 			else {
 				result_ = result;
-			}
-
-			if( result.forecast > result::win_threshold ) {
-				last_mate_ = result.forecast;
 			}
 
 			timestamp stop;

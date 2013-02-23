@@ -43,7 +43,6 @@ struct xboard_state
 		, time_increment()
 		, history()
 		, post(true)
-		, last_mate()
 		, started_from_root()
 		, internal_overhead( duration::milliseconds(50) )
 		, communication_overhead( duration::milliseconds(10) )
@@ -70,8 +69,6 @@ struct xboard_state
 
 		mode_ = mode::normal;
 		self = color::black;
-
-		last_mate = 0;
 
 		started_from_root = true;
 	}
@@ -165,8 +162,6 @@ struct xboard_state
 	std::vector<move> move_history_;
 
 	bool post;
-
-	short last_mate;
 
 	bool started_from_root;
 
@@ -401,7 +396,7 @@ void xboard_thread::onRun()
 		}
 
 
-		calc_result result = cmgr_.calc( state.p, depth_, time_limit, deadline, state.clock, state.seen, state.last_mate, *this );
+		calc_result result = cmgr_.calc( state.p, depth_, time_limit, deadline, state.clock, state.seen, *this );
 
 		scoped_lock l( mtx );
 
@@ -421,12 +416,7 @@ void xboard_thread::onRun()
 				dlog() << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << result.forecast << std::endl;
 			}
 
-			if( result.forecast > result::win_threshold ) {
-				state.last_mate = result.forecast;
-			}
-			else {
-				ponder_ = conf.ponder;
-			}
+			ponder_ = conf.ponder;
 		}
 		else {
 			if( result.forecast == result::win ) {
@@ -466,7 +456,7 @@ void xboard_thread::onRun()
 
 	if( ponder_ ) {
 		dlog() << "Pondering..." << std::endl;
-		cmgr_.calc( state.p, -1, duration::infinity(), duration::infinity(), state.clock, state.seen, state.last_mate, *this );
+		cmgr_.calc( state.p, -1, duration::infinity(), duration::infinity(), state.clock, state.seen, *this );
 	}
 }
 

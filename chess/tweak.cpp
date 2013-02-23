@@ -30,12 +30,11 @@ int const THRESHOLD = 300;
 namespace {
 
 static calc_result tweak_calc( position& p, duration const& move_time_limit, int clock, seen_positions& seen
-		  , short last_mate
 		  , new_best_move_callback_base& new_best_cb = default_new_best_move_callback )
 {
 	if( clock > 10 ) {
 		calc_manager cmgr;
-		return cmgr.calc( p, -1, move_time_limit, move_time_limit, clock, seen, last_mate, new_best_cb );
+		return cmgr.calc( p, -1, move_time_limit, move_time_limit, clock, seen, new_best_cb );
 	}
 
 	check_map check( p );
@@ -83,14 +82,8 @@ static void generate_test_positions_impl()
 	unsigned int i = 1;
 	seen_positions seen( get_zobrist_hash( p ) );
 
-	short last_mate = 0;
-
 	calc_result result;
-	while( !(result = tweak_calc( p, duration(), i, seen, last_mate ) ).best_move.empty() ) {
-		if( result.forecast > result::win_threshold ) {
-			last_mate = result.forecast;
-		}
-
+	while( !(result = tweak_calc( p, duration(), i, seen ) ).best_move.empty() ) {
 		if( !validate_move( p, result.best_move ) ) {
 			std::cerr << std::endl << "NOT A VALID MOVE" << std::endl;
 			exit(1);
