@@ -1229,9 +1229,14 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 	calc_result result;
 
 	bool ponder = false;
-	if( !move_time_limit.is_infinity() ) {
+	if( !move_time_limit.is_infinity() || !deadline.is_infinity() ) {
 		if( !deadline.is_infinity() ) {
-			dlog() << "Time limit is " << move_time_limit.milliseconds() << " ms with deadline of " << deadline.milliseconds() << " ms" << std::endl;
+			if( move_time_limit.is_infinity() ) {
+				dlog() << "Time limit is unset with a deadline of " << deadline.milliseconds() << " ms" << std::endl;
+			}
+			else {
+				dlog() << "Time limit is " << move_time_limit.milliseconds() << " ms with deadline of " << deadline.milliseconds() << " ms" << std::endl;
+			}
 		}
 		else {
 			dlog() << "Time limit is " << move_time_limit.milliseconds() << " ms without deadline" << std::endl;
@@ -1249,7 +1254,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 	calculate_moves( p, pm, check );
 	sort_moves( moves, pm, p );
 
-	duration time_limit = move_time_limit;
+	duration time_limit = move_time_limit.is_infinity() ? deadline : move_time_limit;
 
 	if( moves == pm ) {
 		if( check.check ) {
@@ -1346,7 +1351,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 
 		if( new_sorted.begin()->m.m != sorted.begin()->m.m ) {
 			// PV changed
-			if( !ponder && move_time_limit.seconds() >= 1 && depth > 4 && (timestamp() - start) >= (move_time_limit / 10) ) {
+			if( !ponder && !move_time_limit.is_infinity() && move_time_limit.seconds() >= 1 && depth > 4 && (timestamp() - start) >= (move_time_limit / 10) ) {
 				duration extra = move_time_limit / 3;
 				if( time_limit + extra > deadline ) {
 					extra = deadline - time_limit;
@@ -1363,7 +1368,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		push_pv_to_tt( sorted[0].pv, p, clock );
 
 		duration elapsed = timestamp() - start;
-		if( !ponder && elapsed > (time_limit * 3) / 5 && depth < max_depth && !impl_->do_abort_ ) {
+		if( !ponder && !move_time_limit.is_infinity() && elapsed > (time_limit * 3) / 5 && depth < max_depth && !impl_->do_abort_ ) {
 			dlog() << "Not increasing depth due to time limit. Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
 			break;
 		}

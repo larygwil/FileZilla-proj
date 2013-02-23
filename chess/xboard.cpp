@@ -348,7 +348,7 @@ void xboard_thread::onRun()
 		duration time_limit;
 		duration deadline;
 		if( !state.fixed_move_time.empty() ) {
-			time_limit = state.fixed_move_time;
+			time_limit = duration::infinity();
 			deadline = state.fixed_move_time;
 		}
 		else {
@@ -373,7 +373,7 @@ void xboard_thread::onRun()
 			deadline = state.time_remaining;
 		}
 
-		duration overhead = state.internal_overhead + state.communication_overhead;
+		duration const overhead = state.internal_overhead + state.communication_overhead;
 		if( time_limit > overhead ) {
 			time_limit -= overhead;
 		}
