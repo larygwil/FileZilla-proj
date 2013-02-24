@@ -20,7 +20,7 @@ cp chess-use octochess-r$REV/octochess-linux-sse4-r$REV
 
 rm -f chess-use
 make clean
-make -f Makefile-opt ARCH=core2 chess-use REVISION="-DREVISION=\\\"$REV\\\""
+make -f Makefile-opt ARCH=core2 chess-use REVISION="-DREVISION=\\\"$REV\\\"" EXTRA_CPPFLAGS="-DUSE_GENERIC_POPCOUNT=1"
 cp chess-use octochess-r$REV/octochess-linux-generic-r$REV
 
 strip octochess-r$REV/*

@@ -55,6 +55,10 @@ inline uint64_t bitscan_reverse( uint64_t mask )
 #endif
 }
 
+#if USE_GENERIC_POPCOUNT
+#define popcount generic_popcount
+#else
 #define popcount __builtin_popcountll
+#endif
 
 #endif

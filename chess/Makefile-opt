@@ -1,7 +1,7 @@
 ARCH="corei7"
 REVISION=
-CXXFLAGS = -O3 -g -pipe -march="$(ARCH)" -std=gnu++0x -Wall -flto -fwhole-program -pthread -static $(REVISION) -m64
-CFLAGS = -O3 -g -pipe -march="$(ARCH)" -Wall -flto -fwhole-program -pthread -static
+CXXFLAGS = -O3 -g -pipe -march="$(ARCH)" -std=gnu++0x -Wall -flto -fwhole-program -pthread -static $(REVISION) -m64 $(EXTRA_CPPFLAGS)
+CFLAGS = -O3 -g -pipe -march="$(ARCH)" -Wall -flto -fwhole-program -pthread -static $(EXTRA_CPPFLAGS)
 #CXXFLAGS = -O0 -g -pipe -std=gnu++0x
 
 CXX = g++
