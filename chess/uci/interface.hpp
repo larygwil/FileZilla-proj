@@ -22,6 +22,7 @@ namespace uci {
 namespace calculate_mode {
 	enum type {
 		forced,
+		infinite,
 		ponderhit
 	};
 }

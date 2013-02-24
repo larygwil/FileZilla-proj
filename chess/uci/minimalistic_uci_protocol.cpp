@@ -174,6 +174,8 @@ namespace {
 
 void minimalistic_uci_protocol::handle_go( std::string const& params )
 {
+	calculate_mode::type mode = calculate_mode::forced;
+
 	position_time t;
 
 	int depth = -1;
@@ -198,10 +200,12 @@ void minimalistic_uci_protocol::handle_go( std::string const& params )
 			depth = extract<int>(in);
 		} else if( cmd == "ponder" ) {
 			ponder = true;
+		} else if( cmd == "infinite" ) {
+			mode = calculate_mode::infinite;
 		}
 	}
 
-	callbacks_->calculate( calculate_mode::forced, t, depth, ponder );
+	callbacks_->calculate( mode, t, depth, ponder );
 }
 
 

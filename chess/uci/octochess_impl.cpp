@@ -33,6 +33,7 @@ public:
 		, started_from_root_()
 		, book_( conf.self_dir )
 		, depth_(-1)
+		, wait_for_stop_(false)
 		, ponder_()
 	{
 	}
@@ -72,7 +73,7 @@ public:
 	std::vector<move> move_history_;
 
 	int depth_;
-
+	bool wait_for_stop_;
 	bool ponder_;
 
 	calc_result result_;
@@ -161,10 +162,11 @@ void octochess_uci::calculate( calculate_mode_type mode, position_time const& t,
 	}
 	else {
 		impl_->depth_ = depth;
+		impl_->wait_for_stop_ = mode == calculate_mode::infinite;
 		impl_->ponder_ = ponder;
 
 		impl_->times_.update( t, impl_->pos_.white(), impl_->half_moves_played_ );
-		if( ponder || impl_->times_.time_for_this_move().is_infinity() ) {
+		if( ponder || impl_->times_.time_for_this_move().is_infinity() || impl_->wait_for_stop_ ) {
 			impl_->spawn();
 		}
 		else {
@@ -215,7 +217,7 @@ void octochess_uci::impl::onRun() {
 
 		if( !result.best_move.empty() ) {
 
-			if( !times_.time_for_this_move().is_infinity() || calc_manager_.should_abort() ) {
+			if( !wait_for_stop_ ) {
 				gui_interface_->tell_best_move( move_to_long_algebraic( result.best_move ), move_to_long_algebraic( result.ponder_move ) );
 				result_.best_move.clear();
 			}
