@@ -1,3 +1,18 @@
+Octochess r4984 (2013-02-24)
+
+- Add support for ARM architecture to run Octochess on Kindle Touch
+- New threading implementation
+- Implement 50-move rule
+- Evaluation improvements
+- Implement pondering in UCI mode
+- Add support for commands to limit search depth
+- Fix rare bug in move generator
+- Implement mate-distance-pruning
+- Fixes to futility pruning
+- Fixes to LMR depth reduction
+- Handle KBPvKP endgame, improve KPvK
+- Various cleanup
+
 Octochess r4741 (2012-08-21):
 - Shiny new logo
 - Fix endgame evaluation of KvNBK with black being the strong side
