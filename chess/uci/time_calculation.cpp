@@ -67,7 +67,10 @@ void time_calculation::update(position_time const& t, bool is_white, int half_mo
 
 void time_calculation::after_move_update( duration const& elapsed, duration const& used_extra_time )
 {
-	if( time_limit_ > elapsed ) {
+	if( time_limit_.is_infinity() ) {
+		bonus_time_.clear();
+	}
+	else if( time_limit_ > elapsed ) {
 		bonus_time_ = (time_limit_ - elapsed) / 2;
 	}
 	else {

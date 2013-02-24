@@ -11,6 +11,8 @@ class position_time {
 public:
 	position_time()
 		: moves_to_go_()
+		, white_left_( duration::infinity() )
+		, black_left_( duration::infinity() )
 	{}
 
 	void set_white_time( duration const& t ) { white_left_ = t; }

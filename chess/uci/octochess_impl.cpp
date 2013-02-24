@@ -163,20 +163,14 @@ void octochess_uci::calculate( calculate_mode_type mode, position_time const& t,
 		impl_->depth_ = depth;
 		impl_->ponder_ = ponder;
 
-		if( mode == calculate_mode::infinite ) {
-			impl_->times_.set_infinite_time();
+		impl_->times_.update( t, impl_->pos_.white(), impl_->half_moves_played_ );
+		if( ponder || impl_->times_.time_for_this_move().is_infinity() ) {
 			impl_->spawn();
 		}
 		else {
-			impl_->times_.update( t, impl_->pos_.white(), impl_->half_moves_played_ );
-			if( ponder ) {
-				impl_->spawn();
-			}
-			else {
-				if( !impl_->do_book_move() ) {
-					if( !impl_->pick_pv_move() ) {
-						impl_->spawn();
-					}
+			if( !impl_->do_book_move() ) {
+				if( !impl_->pick_pv_move() ) {
+					impl_->spawn();
 				}
 			}
 		}
@@ -215,7 +209,7 @@ void octochess_uci::impl::onRun() {
 	else {
 		timestamp start_time;
 
-		calc_result result = calc_manager_.calc( pos_, depth_, times_.time_for_this_move(), times_.total_remaining() -  times_.overhead(), half_moves_played_, seen_positions_, *this );
+		calc_result result = calc_manager_.calc( pos_, depth_, times_.time_for_this_move(), std::max( duration(), times_.total_remaining() -  times_.overhead() ), half_moves_played_, seen_positions_, *this );
 
 		scoped_lock lock(mutex_);
 

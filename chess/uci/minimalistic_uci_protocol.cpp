@@ -172,12 +172,8 @@ namespace {
 	}
 }
 
-void minimalistic_uci_protocol::handle_go( std::string const& params ) {
-	calculate_mode_type mode = calculate_mode::forced;
-
-	if( params.find("infinite") != std::string::npos ) {
-		mode = calculate_mode::infinite;
-	}
+void minimalistic_uci_protocol::handle_go( std::string const& params )
+{
 	position_time t;
 
 	int depth = -1;
@@ -205,7 +201,7 @@ void minimalistic_uci_protocol::handle_go( std::string const& params ) {
 		}
 	}
 
-	callbacks_->calculate( mode, t, depth, ponder );
+	callbacks_->calculate( calculate_mode::forced, t, depth, ponder );
 }
 
 
