@@ -118,7 +118,7 @@ void perft( position const& p, std::size_t max_depth, uint64_t const* perft_resu
 			std::cerr << ss.str();
 		}
 
-		if( ret != perft_results[i] ) {
+		if( perft_results[i] != 0 && ret != perft_results[i] ) {
 			std::cerr << "FAIL! Expected " << perft_results[i] << " moves." << std::endl;
 			abort();
 		}
@@ -232,6 +232,8 @@ static void test_move_generation()
 						"a2-a3 a2-a4 c2-c3 c2-c4 d2-d3 d2-d4 g2-g3 g2-g4 g7-g8=B g7-g8=N g7-g8=Q g7-g8=R g7xf8=B g7xf8=N g7xf8=Q g7xf8=R g7xh8=B g7xh8=N g7xh8=Q g7xh8=R h2-h3 h2-h4 Bc1xb2 Bf1-a6 Bf1-b5 Bf1-c4 Bf1-d3 Bf1-e2 Ke1-e2 Nf3-d4 Nf3-e5 Nf3-g1 Nf3-g5 Nf3-h4 Qd1-e2 Ra1-b1 Rh1-g1");
 	test_move_generation( "8/5Rp1/6r1/4p2p/RPp1k2b/4B3/7P/5K2 b - b3 0 1",
 						"c4-c3 Bh4-d8 Bh4-e1 Bh4-e7 Bh4-f2 Bh4-f6 Bh4-g3 Bh4-g5 Ke4-d3 Ke4-d5 Ke4xe3 Rg6-a6 Rg6-b6 Rg6-c6 Rg6-d6 Rg6-e6 Rg6-f6 Rg6-g1 Rg6-g2 Rg6-g3 Rg6-g4 Rg6-g5 Rg6-h6");
+	test_move_generation( "8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1",
+						"c5-c6 Kb3-a2 Kb3-a3 Kb3-a4 Kb3-b2 Kb3-b4 Kb3-c2 Kb3-c3" );
 
 	pass();
 }
@@ -264,6 +266,7 @@ static void test_move_legality_check()
 	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::a2, square::b2, 0), false );
 	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::a2, square::b5, 0), false );
 	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::a2, square::c3, 0), false );
+	test_move_legality_check( "8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1", move( square::c5, square::d6, move_flags::enpassant), false );
 
 	pass();
 }
@@ -633,6 +636,182 @@ static void test_perft()
 		perft<true>(p, 3, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 		perft<false>(p, 3, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
+	{
+		position p = test_parse_fen("8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1");
+		uint64_t const perft_results[] = {
+			8,
+			104,
+			736,
+			9287,
+			62297,
+			824064
+		};
+
+		perft<true>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("8/8/1k6/2b5/2pP4/8/5K2/8 b - d3 0 1");
+		uint64_t const perft_results[] = {
+			15,
+			126,
+			1928,
+			13931,
+			206379,
+			1440467
+		};
+
+		perft<true>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("5k2/8/8/8/8/8/8/4K2R w K - 0 1");
+		uint64_t const perft_results[] = {
+			15,
+			66,
+			1198,
+			6399,
+			120330,
+			661072
+		};
+
+		perft<true>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("3k4/8/8/8/8/8/8/R3K3 w Q - 0 1");
+		uint64_t const perft_results[] = {
+			16,
+			71,
+			1286,
+			7418,
+			141077,
+			803711 
+		};
+
+		perft<true>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1");
+		uint64_t const perft_results[] = {
+			26,
+			1141,
+			27826,
+			1274206
+		};
+
+		perft<true>(p, 4, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 4, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("r3k2r/8/3Q4/8/8/5q2/8/R3K2R b KQkq - 0 1");
+		uint64_t const perft_results[] = {
+			44,
+			1494,
+			50509,
+			1720476
+		};
+
+		perft<true>(p, 4, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 4, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("2K2r2/4P3/8/8/8/8/8/3k4 w - - 0 1");
+		uint64_t const perft_results[] = {
+			11,
+			133,
+			1442,
+			19174,
+			266199,
+			3821001
+		};
+
+		perft<true>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("8/8/1P2K3/8/2n5/1q6/8/5k2 b - - 0 1");
+		uint64_t const perft_results[] = {
+			29,
+			165,
+			5160,
+			31961,
+			1004658
+		};
+
+		perft<true>(p, 5, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 5, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("4k3/1P6/8/8/8/8/K7/8 w - - 0 1");
+		uint64_t const perft_results[] = {
+			9,
+			40,
+			472,
+			2661,
+			38983,
+			217342
+		};
+
+		perft<true>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("8/P1k5/K7/8/8/8/8/8 w - - 0 1");
+		uint64_t const perft_results[] = {
+			6,
+			27,
+			273,
+			1329,
+			18135,
+			92683
+		};
+
+		perft<true>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("K1k5/8/P7/8/8/8/8/8 w - - 0 1");
+		uint64_t const perft_results[] = {
+			2,
+			6,
+			13,
+			63,
+			382,
+			2217
+		};
+
+		perft<true>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("8/k1P5/8/1K6/8/8/8/8 w - - 0 1");
+		uint64_t const perft_results[] = {
+			10,
+			25,
+			268,
+			926,
+			10857,
+			43261,
+			567584
+		};
+
+		perft<true>(p, 7, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 7, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
+	{
+		position p = test_parse_fen("8/8/2k5/5q2/5n2/8/5K2/8 b - - 0 1");
+		uint64_t const perft_results[] = {
+			37,
+			183,
+			6559,
+			23527 
+		};
+
+		perft<true>(p, 4, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+		perft<false>(p, 4, perft_results, sizeof(perft_results) / sizeof(uint64_t));
+	}
 }
 
 static void do_check_popcount( uint64_t v, uint64_t expected )
@@ -694,26 +873,37 @@ static void check_bitscan()
 	pass();
 }
 
+static void check_see( std::string const& fen, std::string const& ms, int expected )
+{
+	position p = test_parse_fen( fen );
+
+	move m = test_parse_move( p, ms );
+	
+	short v = see( p, m );
+	if( v > 0 && expected <= 0 ) {
+		std::cerr << "See of " << fen << " " << ms << " is " << v << ", expected type " << expected << std::endl;
+		abort();
+	}
+	if( v < 0 && expected >= 0 ) {
+		std::cerr << "See of " << fen << " " << ms << " is " << v << ", expected type " << expected << std::endl;
+		abort();
+	}
+	if( v == 0 && expected != 0 ) {
+		std::cerr << "See of " << fen << " " << ms << " is " << v << ", expected type " << expected << std::endl;
+		abort();
+	}
+}
+
 static void check_see()
 {
 	checking("static exchange evaluation");
-	std::string const fen = "r3r3/p4ppp/4k3/R3n3/1N1KP3/8/6BP/8 w - -";
-	std::string const ms = "Rxe5";
 
-	position p = test_parse_fen( fen );
+	check_see( "r3r3/p4ppp/4k3/R3n3/1N1KP3/8/6BP/8 w - -", "Rxe5", 1 );
+	check_see( "8/1k6/3r4/8/3Pp3/8/6K1/3R4 b - d3 0 1", "exd", 1 );
+	check_see( "8/1k6/3b4/8/3Pp3/8/6K1/3R4 b - d3 0 1", "exd", 0 );
+	check_see( "1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - -", "Rxe5", 1 );
+	check_see( "1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -", "Nxe5", -1 );
 
-	move m;
-	std::string error;
-	if( !parse_move( p, ms, m, error ) ) {
-		std::cerr << error << ": " << ms << std::endl;
-		abort();
-	}
-
-	short v = see( p, m );
-	if( v <= 0 ) {
-		std::cerr << "See of " << fen << " " << ms << " needs to be bigger than 0, but is " << v << std::endl;
-		abort();
-	}
 	pass();
 }
 
