@@ -982,6 +982,14 @@ bool do_is_valid_move( position const& p, move const& m, check_map const& check 
 				}
 			}
 
+			// Special case: Captured pawn uncovers bishop/queen check
+			// While this cannot occur in a regular game, board might have been setup like this.
+			uint64_t occ = (p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces]);
+			occ &= ~(1ull << (new_col + old_row * 8));
+			if( bishop_magic( p.king_pos[p.self()], occ) & (p.bitboards[p.other()].b[bb_type::bishops] | p.bitboards[p.other()].b[bb_type::queens] ) ) {
+				return false;
+			}
+
 			// Special case: Enpassant capture uncovers a check against own king, e.g. in this position:
 			// black queen, black pawn, white pawn, white king from left to right on rank 5
 			unsigned char king_col = static_cast<unsigned char>(p.king_pos[p.self()] % 8);

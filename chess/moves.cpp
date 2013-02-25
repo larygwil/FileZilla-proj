@@ -250,7 +250,7 @@ void calc_moves_pawn_en_passant( position const& p, move_info*& moves, check_map
 			return;
 		}
 		if( cv_new != check.check && check.check != (0x80 + new_col + old_row * 8) ) {
-			// Target position does capture checking piece nor blocks check
+			// Target position does neither capture checking piece nor blocks check
 			return;
 		}
 	}
@@ -258,6 +258,14 @@ void calc_moves_pawn_en_passant( position const& p, move_info*& moves, check_map
 		if( cv_old && cv_old != cv_new ) {
 			return;
 		}
+	}
+
+	// Special case: Captured pawn uncovers bishop/queen check
+	// While this cannot occur in a regular game, board might have been setup like this.
+	uint64_t occ = (p.bitboards[p.self()].b[bb_type::all_pieces] | p.bitboards[p.other()].b[bb_type::all_pieces]);
+	occ &= ~(1ull << (new_col + old_row * 8));
+	if( bishop_magic( p.king_pos[p.self()], occ) & (p.bitboards[p.other()].b[bb_type::bishops] | p.bitboards[p.other()].b[bb_type::queens] ) ) {
+		return;
 	}
 
 	// Special case: Enpassant capture uncovers a check against own king, e.g. in this position:
