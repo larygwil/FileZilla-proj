@@ -39,6 +39,10 @@ int see( position const& p, move const& m )
 	uint64_t all_pieces = p.bitboards[color::white].b[bb_type::all_pieces] | p.bitboards[color::black].b[bb_type::all_pieces];
 	all_pieces ^= 1ull << m.source();
 
+	if( m.enpassant() ) {
+		all_pieces ^= 1ull << ((m.source() & 0x38) + m.target() % 8);
+	}
+
 	uint64_t attackers =
 			(rook_magic( target, all_pieces ) & all_rooks) |
 			(bishop_magic( target, all_pieces ) & all_bishops) |
