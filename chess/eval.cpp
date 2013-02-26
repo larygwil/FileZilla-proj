@@ -874,6 +874,8 @@ score sum_up( position const& p, eval_results const& results ) {
 }
 }
 
+extern uint64_t const light_squared_bishop_mask;
+
 namespace {
 static short scale( position const& p, score const& s )
 {
@@ -884,9 +886,9 @@ static short scale( position const& p, score const& s )
 	if( p.material[0].mg() == eval_values::material_values[pieces::bishop].mg() &&
 		p.material[1].mg() == eval_values::material_values[pieces::bishop].mg() )
 	{
-		uint64_t wb = bitscan( p.bitboards[0].b[bb_type::bishops] );
-		uint64_t bb = bitscan( p.bitboards[1].b[bb_type::bishops] );
-		if( (wb % 2) != (bb % 2) ) {
+		bool white_is_light = (p.bitboards[0].b[bb_type::bishops] & light_squared_bishop_mask) != 0;
+		bool black_is_light = (p.bitboards[1].b[bb_type::bishops] & light_squared_bishop_mask) != 0;
+		if( white_is_light != black_is_light ) {
 			ev /= 2;
 		}
 	}

@@ -17,7 +17,7 @@ enum piece_masks : uint64_t {
 	max         =  0x10000000000ull
 };
 
-uint64_t const light_squared_bishop_mask = 0x55aa55aa55aa55aaull;
+extern uint64_t const light_squared_bishop_mask = 0x55aa55aa55aa55aaull;
 
 short evaluate_KNBvK( position const& p, color::type c )
 {
