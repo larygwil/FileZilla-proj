@@ -665,13 +665,6 @@ skip_getline:
 				std::cout << "Error (unknown command): ." << std::endl;
 				continue;
 			}
-	#ifdef USE_STATISTICS
-			else if( cmd == "~stats" ) {
-				stats.print( duration() );
-				stats.print_details();
-				continue;
-			}
-	#endif
 		}
 
 		move best_move = thread.stop();

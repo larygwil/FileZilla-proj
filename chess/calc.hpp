@@ -52,6 +52,7 @@ public:
 	duration used_extra_time;
 };
 
+class statistics;
 class calc_manager
 {
 public:
@@ -69,6 +70,8 @@ public:
 	void clear_abort();
 	void abort();
 	bool should_abort() const;
+
+	statistics& stats();
 private:
 	class impl;
 	impl* impl_;

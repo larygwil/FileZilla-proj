@@ -9,8 +9,6 @@
 
 #ifdef USE_STATISTICS
 
-statistics stats;
-
 statistics::statistics()
 	: quiescence_nodes()
 	, total_full_width_nodes()
@@ -138,6 +136,15 @@ void statistics::accumulate( duration const& elapsed )
 	}
 	total_quiescence_nodes += quiescence_nodes;
 	total_elapsed += elapsed;
+}
+
+
+void statistics::accumulate( statistics const& stats )
+{
+	for( int i = 0; i < MAX_DEPTH; ++i ) {
+		full_width_nodes[i] += stats.full_width_nodes[i];
+	}
+	quiescence_nodes += stats.quiescence_nodes;
 }
 
 

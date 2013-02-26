@@ -86,149 +86,6 @@ bool is_50move_draw( position const& p, check_map const& check, context& ctx, in
 	return false;
 }
 
-short context::quiescence_search( int ply, int depth, position const& p, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval )
-{
-#if VERIFY_HASH
-	if( get_zobrist_hash(p) != hash ) {
-		std::cerr << "FAIL HASH!" << std::endl;
-	}
-#endif
-#if VERIFY_POSITION
-	p.verify_abort();
-#endif
-
-	if( do_abort_ ) {
-		return result::loss;
-	}
-
-#ifdef USE_STATISTICS
-	++stats.quiescence_nodes;
-#endif
-
-	short ret;
-	if( is_50move_draw( p, check, *this, ply, ret ) ) {
-		return ret;
-	}
-	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
-		if( p.material[color::white].eg() + p.material[color::black].eg() <= eval_values::insufficient_material_threshold ) {
-			return result::draw;
-		}
-	}
-
-	if( !depth ) {
-		return result::draw; //beta;
-	}
-
-	bool pv_node = alpha + 1 != beta;
-
-	bool do_checks = depth >= MAX_QDEPTH;
-
-	int tt_depth = do_checks ? 2 : 1;
-
-	short eval;
-	move tt_move;
-	score_type::type t = transposition_table.lookup( hash, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
-	ASSERT( full_eval == result::win || full_eval == evaluate_full( p ) );
-
-	if ( !pv_node && t != score_type::none ) {
-		return eval;
-	}
-
-#if 0
-	full_eval = evaluate_full( p, p.self(), current_evaluation );
-	short diff = std::abs( full_eval - current_evaluation );
-	if( diff > LAZY_EVAL ) {
-		std::cerr << "Bug in lazy evaluation, full evaluation differs too much from basic evaluation:" << std::endl;
-		std::cerr << "Position:   " << position_to_fen_noclock( p, c ) << std::endl;
-		std::cerr << "Current:    " << current_evaluation << std::endl;
-		std::cerr << "Full:       " << full_eval << std::endl;
-		std::cerr << "Difference: " << full_eval - current_evaluation << std::endl;
-		abort();
-	}
-#endif
-
-	short old_alpha = alpha;
-
-	if( !check.check ) {
-		if( full_eval == result::win ) {
-			full_eval = evaluate_full( p );
-		}
-		if( full_eval > alpha ) {
-			if( full_eval >= beta ) {
-				if( !do_abort_ && t == score_type::none && tt_move.empty() ) {
-					transposition_table.store( hash, tt_depth, ply, full_eval, alpha, beta, tt_move, clock, full_eval );
-				}
-				return full_eval;
-			}
-			alpha = full_eval;
-		}
-	}
-
-	qsearch_move_generator gen( *this, p, check, pv_node, do_checks );
-
-	if( check.check || (!tt_move.empty() && p.get_piece( tt_move.target() ) != pieces::none ) ) {
-		gen.hash_move = tt_move;
-	}
-
-	move best_move;
-	short best_value = check.check ? static_cast<short>(result::loss) : full_eval;
-
-	move_info const* it;
-	while( (it = gen.next()) ) {
-
-		pieces::type piece = p.get_piece( it->m.source() );
-		pieces::type captured_piece = p.get_captured_piece( it->m );
-		
-		position new_pos(p);
-		apply_move( new_pos, it->m );
-		check_map new_check( new_pos );
-		
-		if( captured_piece == pieces::none && !check.check && !new_check.check ) {
-			continue;
-		}
-
-		// Delta pruning
-		if( !pv_node && !check.check && !new_check.check && (piece != pieces::pawn || (it->m.target() >= 16 && it->m.target() < 48 ) ) ) {
-			short new_value = full_eval + eval_values::material_values[captured_piece].mg() + delta_pruning;
-			if( new_value <= alpha ) {
-				if( new_value > best_value ) {
-					best_value = new_value;
-				}
-				continue;
-			}
-		}
-
-		short value;
-
-		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
-		value = -quiescence_search( ply + 1, depth - 1, new_pos, new_hash, new_check, -beta, -alpha );
-
-		if( value > best_value ) {
-			best_value = value;
-
-			if( value > alpha ) {
-				best_move = it->m;
-				
-				if( value >= beta ) {
-					break;
-				}
-				else {
-					alpha = value;
-				}
-			}
-		}
-	}
-
-	if( best_value == result::loss && check.check ) {
-		return result::loss + ply;
-	}
-
-	if( !do_abort_ ) {
-		transposition_table.store( hash, tt_depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
-	}
-	return best_value;
-}
-
 /*
 New multithreading concept
 General idea: At each node, search first move on its own, then search rest of nodes in parallel
@@ -276,6 +133,10 @@ public:
 
 	thread_pool& pool_;
 	uint64_t thread_index_;
+
+#if USE_STATISTICS
+	statistics stats_;
+#endif
 };
 
 
@@ -763,7 +624,12 @@ void master_worker_thread::process_root( scoped_lock& l )
 				std::swap( moves_[j], moves_[j-1] );
 			}
 
-			cb_->on_new_best_move( p_, max_depth_, stats.highest_depth(), value, stats.nodes() + stats.quiescence_nodes, timestamp() - start_, moves_[0].pv );
+			for( std::size_t i = 1; i < pool_.threads_.size(); ++i ) {
+				stats_.accumulate( pool_.threads_[i]->stats_ );
+				pool_.threads_[i]->stats_.reset( false );
+			}
+
+			cb_->on_new_best_move( p_, max_depth_, stats_.highest_depth(), value, stats_.nodes() + stats_.quiescence_nodes, timestamp() - start_, moves_[0].pv );
 		}
 	}
 
@@ -853,6 +719,151 @@ void context::split( int depth, int ply, position const& p
 }
 
 
+
+short context::quiescence_search( int ply, int depth, position const& p, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval )
+{
+#if VERIFY_HASH
+	if( get_zobrist_hash(p) != hash ) {
+		std::cerr << "FAIL HASH!" << std::endl;
+	}
+#endif
+#if VERIFY_POSITION
+	p.verify_abort();
+#endif
+
+	if( do_abort_ ) {
+		return result::loss;
+	}
+
+#ifdef USE_STATISTICS
+	++thread_->stats_.quiescence_nodes;
+#endif
+
+	short ret;
+	if( is_50move_draw( p, check, *this, ply, ret ) ) {
+		return ret;
+	}
+	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
+		if( p.material[color::white].eg() + p.material[color::black].eg() <= eval_values::insufficient_material_threshold ) {
+			return result::draw;
+		}
+	}
+
+	if( !depth ) {
+		return result::draw; //beta;
+	}
+
+	bool pv_node = alpha + 1 != beta;
+
+	bool do_checks = depth >= MAX_QDEPTH;
+
+	int tt_depth = do_checks ? 2 : 1;
+
+	short eval;
+	move tt_move;
+	score_type::type t = transposition_table.lookup( hash, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
+	ASSERT( full_eval == result::win || full_eval == evaluate_full( p ) );
+
+	if ( !pv_node && t != score_type::none ) {
+		return eval;
+	}
+
+#if 0
+	full_eval = evaluate_full( p, p.self(), current_evaluation );
+	short diff = std::abs( full_eval - current_evaluation );
+	if( diff > LAZY_EVAL ) {
+		std::cerr << "Bug in lazy evaluation, full evaluation differs too much from basic evaluation:" << std::endl;
+		std::cerr << "Position:   " << position_to_fen_noclock( p, c ) << std::endl;
+		std::cerr << "Current:    " << current_evaluation << std::endl;
+		std::cerr << "Full:       " << full_eval << std::endl;
+		std::cerr << "Difference: " << full_eval - current_evaluation << std::endl;
+		abort();
+	}
+#endif
+
+	short old_alpha = alpha;
+
+	if( !check.check ) {
+		if( full_eval == result::win ) {
+			full_eval = evaluate_full( p );
+		}
+		if( full_eval > alpha ) {
+			if( full_eval >= beta ) {
+				if( !do_abort_ && t == score_type::none && tt_move.empty() ) {
+					transposition_table.store( hash, tt_depth, ply, full_eval, alpha, beta, tt_move, clock, full_eval );
+				}
+				return full_eval;
+			}
+			alpha = full_eval;
+		}
+	}
+
+	qsearch_move_generator gen( *this, p, check, pv_node, do_checks );
+
+	if( check.check || (!tt_move.empty() && p.get_piece( tt_move.target() ) != pieces::none ) ) {
+		gen.hash_move = tt_move;
+	}
+
+	move best_move;
+	short best_value = check.check ? static_cast<short>(result::loss) : full_eval;
+
+	move_info const* it;
+	while( (it = gen.next()) ) {
+
+		pieces::type piece = p.get_piece( it->m.source() );
+		pieces::type captured_piece = p.get_captured_piece( it->m );
+		
+		position new_pos(p);
+		apply_move( new_pos, it->m );
+		check_map new_check( new_pos );
+		
+		if( captured_piece == pieces::none && !check.check && !new_check.check ) {
+			continue;
+		}
+
+		// Delta pruning
+		if( !pv_node && !check.check && !new_check.check && (piece != pieces::pawn || (it->m.target() >= 16 && it->m.target() < 48 ) ) ) {
+			short new_value = full_eval + eval_values::material_values[captured_piece].mg() + delta_pruning;
+			if( new_value <= alpha ) {
+				if( new_value > best_value ) {
+					best_value = new_value;
+				}
+				continue;
+			}
+		}
+
+		short value;
+
+		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
+		value = -quiescence_search( ply + 1, depth - 1, new_pos, new_hash, new_check, -beta, -alpha );
+
+		if( value > best_value ) {
+			best_value = value;
+
+			if( value > alpha ) {
+				best_move = it->m;
+				
+				if( value >= beta ) {
+					break;
+				}
+				else {
+					alpha = value;
+				}
+			}
+		}
+	}
+
+	if( best_value == result::loss && check.check ) {
+		return result::loss + ply;
+	}
+
+	if( !do_abort_ ) {
+		transposition_table.store( hash, tt_depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
+	}
+	return best_value;
+}
+
+
 short context::step( int depth, int ply, position& p, uint64_t hash, check_map const& check, short alpha, short beta, bool last_was_null, short full_eval, unsigned char last_ply_was_capture )
 {
 #if VERIFY_HASH
@@ -873,7 +884,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 	}
 
 #ifdef USE_STATISTICS
-	stats.node( ply );
+	thread_->stats_.node( ply );
 #endif
 
 	short ret;
@@ -1377,15 +1388,20 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 	impl_->pool_.wait_for_idle( l );
 
 	{
-		timestamp stop;
+		for( std::size_t i = 1; i < impl_->pool_.threads_.size(); ++i ) {
+			master->stats_.accumulate( impl_->pool_.threads_[i]->stats_ );
+			impl_->pool_.threads_[i]->stats_.reset( false );
+		}
 
 		move_data const& best = sorted.front();
 		move const* pv = best.pv;
-		new_best_cb.on_new_best_move( p, best.depth, stats.highest_depth(), sorted.begin()->m.sort, stats.nodes() + stats.quiescence_nodes, stop - start, pv );
 
-		stats.print( stop - start );
-		stats.accumulate( stop - start );
-		stats.reset( false );
+		timestamp stop;
+		new_best_cb.on_new_best_move( p, best.depth, master->stats_.highest_depth(), sorted.begin()->m.sort, master->stats_.nodes() + master->stats_.quiescence_nodes, stop - start, pv );
+
+		master->stats_.print( stop - start );
+		master->stats_.accumulate( stop - start );
+		master->stats_.reset( false );
 
 		result.best_move = best.m.m;
 		result.forecast = best.m.sort;
@@ -1416,4 +1432,9 @@ bool calc_manager::should_abort() const
 {
 	scoped_lock l( impl_->mtx_ );
 	return impl_->do_abort_;
+}
+
+statistics& calc_manager::stats()
+{
+	return impl_->pool_.master()->stats_;
 }

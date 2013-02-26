@@ -24,6 +24,7 @@ public:
 
 	void reset( bool total );
 	void accumulate( duration const& elapsed );
+	void accumulate( statistics const& stats );
 
 	void print_total();
 
@@ -42,8 +43,6 @@ private:
 	// Re-use same stream.
 	std::stringstream ss_;
 };
-
-extern statistics stats;
 
 #endif
 
