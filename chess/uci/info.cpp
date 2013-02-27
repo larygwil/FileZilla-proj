@@ -39,6 +39,10 @@ void info::nodes_per_second( uint v ) {
 	set_value( "nps", v );
 }
 
+void info::multipv( unsigned int mpv ) {
+	set_value( "multipv", mpv );
+}
+
 template<typename T>
 void info::set_value( std::string const& name, T const& v ) {
 	std::ostringstream out;

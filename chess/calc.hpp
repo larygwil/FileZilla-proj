@@ -17,12 +17,12 @@ int const depth_factor = 6;
 
 struct new_best_move_callback_base
 {
-	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) = 0;
+	virtual void on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) = 0;
 };
 
 struct def_new_best_move_callback : public new_best_move_callback_base
 {
-	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv );
+	virtual void on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv );
 
 private:
 	std::stringstream ss_;
@@ -30,7 +30,7 @@ private:
 
 struct null_new_best_move_callback : public new_best_move_callback_base
 {
-	virtual void on_new_best_move( position const&, int, int, int, uint64_t, duration const&, move const* ) {}
+	virtual void on_new_best_move( unsigned int multipv, position const&, int, int, int, uint64_t, duration const&, move const* ) override {}
 };
 
 extern def_new_best_move_callback default_new_best_move_callback;
@@ -70,6 +70,8 @@ public:
 	void clear_abort();
 	void abort();
 	bool should_abort() const;
+
+	void set_multipv( unsigned int multipv );
 
 	statistics& stats();
 private:

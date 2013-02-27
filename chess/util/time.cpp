@@ -142,7 +142,7 @@ duration::duration()
 
 
 duration::duration( timestamp const& lhs, timestamp const& rhs )
-	: d_( lhs.t_ - rhs.t_ )
+	: d_( rhs.t_ - lhs.t_ )
 {
 }
 
@@ -276,7 +276,7 @@ duration duration::operator-() const
 
 duration operator-( timestamp const& lhs, timestamp const& rhs )
 {
-	return duration( lhs, rhs );
+	return duration( rhs, lhs );
 }
 
 

@@ -39,6 +39,8 @@ public:
 
 	const_iterator begin() const { return values_.begin(); };
 	const_iterator end() const { return values_.end(); };
+
+	void multipv( unsigned int mpv );
 private:
 	template<typename T>
 	void set_value( std::string const& name, T const& v );

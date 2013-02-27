@@ -200,10 +200,14 @@ public:
 
 	mutex mtx;
 
-	virtual void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv );
+	virtual void on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) override;
 
 	void set_depth( int depth ) {
 		depth_ = depth;
+	}
+
+	void set_multipv( unsigned int v ) {
+		cmgr_.set_multipv( v );
 	}
 
 private:
@@ -485,7 +489,7 @@ move xboard_thread::stop()
 }
 
 
-void xboard_thread::on_new_best_move( position const& p, int depth, int /*selective_depth*/, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv )
+void xboard_thread::on_new_best_move( unsigned int, position const& p, int depth, int /*selective_depth*/, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv )
 {
 	scoped_lock lock( mtx );
 	if( !abort || best_move.empty() ) {
@@ -695,6 +699,7 @@ skip_getline:
 			std::cout << "feature variants=\"normal\"" << std::endl;
 			std::cout << "feature memory=1" << std::endl;
 			std::cout << "feature smp=1" << std::endl;
+			std::cout << "feature option=\"MultiPV -spin 1 1 99\"" << std::endl;
 
 			//std::cout << "feature option=\"Apply -save\"" << std::endl;
 			//std::cout << "feature option=\"Defaults -reset\"" << std::endl;
@@ -960,6 +965,23 @@ skip_getline:
 			}
 			else {
 				std::cout << error << ": " << line << std::endl;
+			}
+		}
+		else if( cmd == "option" ) {
+			std::string value;
+			std::string name = split( args, value, '=' );
+
+			if( name == "MultiPV" ) {
+				unsigned int v;
+				if( !to_int<unsigned int>( value, v, 1, 99 ) ) {
+					std::cout << "Error (bad command): Not a valid value" << std::endl;
+				}
+				else {
+					thread.set_multipv( v );
+				}
+			}
+			else {
+				std::cout << "Error (bad command): Not a known option" << std::endl;
 			}
 		}
 		else {

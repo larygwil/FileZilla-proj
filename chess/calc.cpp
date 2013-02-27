@@ -143,12 +143,14 @@ public:
 struct move_data {
 	move_data()
 		: depth( 1 )
+		, seldepth( 1 )
 	{
 	}
 
 	move_info m;
 	move pv[MAX_DEPTH];
 	unsigned int depth;
+	unsigned int seldepth;
 };
 
 typedef std::vector<move_data> sorted_moves;
@@ -161,6 +163,7 @@ public:
 		: worker_thread( pool, thread_index )
 		, idle_(true)
 		, cb_()
+		, multipv_(1)
 	{
 		ctx_it_ = 1;
 	}
@@ -174,10 +177,16 @@ public:
 	void init( position const& p, uint64_t hash, sorted_moves const& moves, int clock, seen_positions const& seen, new_best_move_callback_base* cb, timestamp const& start );
 	void process( scoped_lock& l, unsigned int max_depth );
 
+	void set_multipv( std::size_t multipv ) {
+		multipv_ = multipv;
+	}
+
 private:
 	virtual void onRun();
 
 	void process_root( scoped_lock& l );
+
+	void print_best();
 
 	bool idle_;
 
@@ -190,6 +199,8 @@ private:
 	new_best_move_callback_base* cb_;
 
 	timestamp start_;
+
+	std::size_t multipv_;
 };
 
 namespace {
@@ -552,19 +563,16 @@ void master_worker_thread::process_root( scoped_lock& l )
 		return;
 	}
 	ASSERT( !idle_ );
-	
+
 	context& ctx = contexts_[0];
 	ctx.do_abort_ = false;
 
 	l.unlock();
 
-	short prev_root_alpha = result::loss;
-	if( moves_.front().depth > 1 ) {
-		prev_root_alpha = moves_.front().m.sort;
-	}
-
 	short root_alpha = result::loss;
 	short root_beta = result::win;
+
+	std::size_t const multipv = std::min( moves_.size(), multipv_ );
 
 	for( std::size_t i = 0; i < moves_.size() && !do_abort_; ++i ) {
 		move_data& d = moves_[i];
@@ -587,9 +595,9 @@ void master_worker_thread::process_root( scoped_lock& l )
 
 			// Search using aspiration window:
 			value = result::loss;
-			if( root_alpha == result::loss && prev_root_alpha != result::loss ) {
-				short alpha = std::max( root_alpha, static_cast<short>(prev_root_alpha - ASPIRATION) );
-				short beta = std::min( root_beta, static_cast<short>(prev_root_alpha + ASPIRATION) );
+			if( root_alpha == result::loss && d.m.sort != result::loss ) {
+				short alpha = std::max( root_alpha, static_cast<short>(d.m.sort - ASPIRATION) );
+				short beta = std::min( root_beta, static_cast<short>(d.m.sort + ASPIRATION) );
 
 				if( alpha < beta ) {
 					short aspiration_value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -beta, -alpha, false );
@@ -614,22 +622,27 @@ void master_worker_thread::process_root( scoped_lock& l )
 		}
 
 		if( value > root_alpha && !do_abort_ ) {
-			root_alpha = value;
+			for( std::size_t st = 1; st < pool_.threads_.size(); ++st ) {
+				stats_.accumulate( pool_.threads_[st]->stats_ );
+				pool_.threads_[st]->stats_.reset( false );
+			}
 
 			// Bubble new best to front
 			d.m.sort = value;
 			d.depth = max_depth_;
+			d.seldepth = stats_.highest_depth();
 			get_pv_from_tt( d.pv, p_, max_depth_ );
-			for( size_t j = i; j > 0; --j ) {
+			for( std::size_t j = i; j > 0 && (j > multipv || moves_[j-1].m.sort < value); --j ) {
 				std::swap( moves_[j], moves_[j-1] );
 			}
 
-			for( std::size_t i = 1; i < pool_.threads_.size(); ++i ) {
-				stats_.accumulate( pool_.threads_[i]->stats_ );
-				pool_.threads_[i]->stats_.reset( false );
+			// Print new results
+			print_best();
+	
+			if( i + 1 >= multipv ) {
+				// All PVs searched full with. Now we can use null windows.
+				root_alpha = moves_[multipv-1].m.sort;
 			}
-
-			cb_->on_new_best_move( p_, max_depth_, stats_.highest_depth(), value, stats_.nodes() + stats_.quiescence_nodes, timestamp() - start_, moves_[0].pv );
 		}
 	}
 
@@ -638,6 +651,20 @@ void master_worker_thread::process_root( scoped_lock& l )
 	calc_cond_.signal( l );
 }
 
+
+void master_worker_thread::print_best()
+{
+	std::size_t const multipv = std::min( moves_.size(), multipv_ );
+
+	uint64_t nodes = stats_.nodes() + stats_.quiescence_nodes;
+	duration elapsed( start_, timestamp() );
+
+	for( unsigned int pvi = 0; pvi < multipv; ++pvi ) {
+		move_data& d = moves_[pvi];
+
+		cb_->on_new_best_move( pvi + 1, p_, d.depth, d.seldepth, d.m.sort, nodes, elapsed, moves_[pvi].pv );
+	}
+}
 
 void master_worker_thread::init( position const& p, uint64_t hash, sorted_moves const& moves, int clock, seen_positions const& seen, new_best_move_callback_base* cb , timestamp const& start )
 {
@@ -1165,7 +1192,7 @@ short context::inner_step( int const depth, int const ply, position const& p, ui
 }
 
 
-void def_new_best_move_callback::on_new_best_move( position const& p, int depth, int selective_depth , int evaluation, uint64_t nodes, duration const& /*elapsed*/, move const* pv )
+void def_new_best_move_callback::on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth , int evaluation, uint64_t nodes, duration const& /*elapsed*/, move const* pv )
 {
 	ss_.str( std::string() );
 	ss_ << "Best: " << std::setw(2) << depth << " " << std::setw(2) << selective_depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p ) << std::endl;
@@ -1302,7 +1329,6 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		for( move_info* it = moves; it != pm; ++it ) {
 			move_data md;
 			md.m = *it;
-
 			md.pv[0] = md.m.m;
 
 			if( it->m == tt_move ) {
@@ -1315,7 +1341,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 	}
 
 	short ev = evaluate_full( p );
-	new_best_cb.on_new_best_move( p, 1, 0, ev, 0, duration(), sorted.front().pv );
+	new_best_cb.on_new_best_move( 1, p, 1, 0, ev, 0, duration(), sorted.front().pv );
 
 	result.best_move = moves->m;
 	if( moves + 1 == pm && !ponder ) {
@@ -1397,8 +1423,6 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		move const* pv = best.pv;
 
 		timestamp stop;
-		new_best_cb.on_new_best_move( p, best.depth, master->stats_.highest_depth(), sorted.begin()->m.sort, master->stats_.nodes() + master->stats_.quiescence_nodes, stop - start, pv );
-
 		master->stats_.print( stop - start );
 		master->stats_.accumulate( stop - start );
 		master->stats_.reset( false );
@@ -1437,4 +1461,13 @@ bool calc_manager::should_abort() const
 statistics& calc_manager::stats()
 {
 	return impl_->pool_.master()->stats_;
+}
+
+void calc_manager::set_multipv( unsigned int multipv )
+{
+	scoped_lock l( impl_->mtx_ );
+	if( multipv > 99 ) {
+		multipv = 99;
+	}
+	impl_->pool_.master()->set_multipv( static_cast<std::size_t>(multipv) );
 }

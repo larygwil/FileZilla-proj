@@ -44,7 +44,7 @@ public:
 	}
 
 	virtual void onRun();
-	void on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv );
+	void on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) override;
 
 	void apply_move( move const& m );
 
@@ -234,11 +234,12 @@ void octochess_uci::impl::onRun() {
 	}
 }
 
-void octochess_uci::impl::on_new_best_move( position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) {
+void octochess_uci::impl::on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) {
 	info i;
 	i.depth( depth );
 	i.selective_depth( selective_depth );
 	i.node_count( nodes );
+	i.multipv( multipv );
 
 	int mate = 0;
 	if( evaluation > result::win_threshold ) {
@@ -387,6 +388,12 @@ void octochess_uci::use_book( bool use )
 	else {
 		impl_->book_.close();
 	}
+}
+
+
+void octochess_uci::set_multipv( unsigned int multipv )
+{
+	impl_->calc_manager_.set_multipv( multipv );
 }
 
 

@@ -57,6 +57,7 @@ void minimalistic_uci_protocol::send_options()
 	std::cout << "option name Threads type spin default " << callbacks_->get_threads() << " min 1 max " << callbacks_->get_max_threads() << std::endl;
 	std::cout << "option name OwnBook type check default " << (callbacks_->use_book() ? "true" : "false") << std::endl;
 	std::cout << "option name Ponder type check default true" << std::endl;
+	std::cout << "option name MultiPV type spin default 1 min 1 max 99" << std::endl;
 }
 
 
@@ -99,6 +100,15 @@ void minimalistic_uci_protocol::handle_option( std::string const& args )
 		}
 		else {
 			callbacks_->use_book( use_book );
+		}
+	}
+	else if( name == "MultiPV" ) {
+		unsigned int v;
+		if( !to_int<unsigned int>( value, v, 1, 99 ) ) {
+			std::cerr << "malformed setoption: " << args << std::endl;
+		}
+		else {
+			callbacks_->set_multipv( v );
 		}
 	}
 	else {
