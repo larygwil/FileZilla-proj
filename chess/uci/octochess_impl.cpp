@@ -243,7 +243,7 @@ void octochess_uci::impl::on_new_best_move( unsigned int multipv, position const
 
 	int mate = 0;
 	if( evaluation > result::win_threshold ) {
-		mate = (result::win - evaluation) / 2;
+		mate = (result::win - evaluation + 1) / 2;
 	} else if( evaluation < result::loss_threshold ) {
 		mate = (result::loss - evaluation) / 2;
 	}
