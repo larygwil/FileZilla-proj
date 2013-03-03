@@ -1,7 +1,10 @@
 #ifndef __HASH_H__
 #define __HASH_H__
 
+#include "assert.hpp"
 #include "chess.hpp"
+
+#include <atomic>
 
 /*
  * General considerations:
@@ -121,13 +124,15 @@ public:
 			, best_move()
 			, misses()
 			, index_collisions()
-		{}
+		{
+			ASSERT( entries.is_lock_free() );
+		}
 
-		uint64_t entries;
-		uint64_t hits;
-		uint64_t best_move;
-		uint64_t misses;
-		uint64_t index_collisions;
+		std::atomic_ullong entries;
+		std::atomic_ullong hits;
+		std::atomic_ullong best_move;
+		std::atomic_ullong misses;
+		std::atomic_ullong index_collisions;
 	};
 
 	stats get_stats( bool reset );

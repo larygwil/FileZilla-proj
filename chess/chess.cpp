@@ -107,7 +107,7 @@ void auto_play()
 
 	std::cerr << std::endl << "Runtime: " << (stop - start).milliseconds() << " ms " << std::endl;
 
-#ifdef USE_STATISTICS
+#if USE_STATISTICS
 	cmgr.stats().print_total();
 #endif
 }

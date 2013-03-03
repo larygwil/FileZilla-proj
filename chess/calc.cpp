@@ -617,15 +617,18 @@ void master_worker_thread::process_root( scoped_lock& l )
 		}
 
 		if( value > root_alpha && !do_abort_ ) {
+#if USE_STATISTICS
 			for( std::size_t st = 1; st < pool_.threads_.size(); ++st ) {
 				stats_.accumulate( pool_.threads_[st]->stats_ );
 				pool_.threads_[st]->stats_.reset( false );
 			}
-
+#endif
 			// Bubble new best to front
 			d.m.sort = value;
 			d.depth = max_depth_;
+#if USE_STATISTICS
 			d.seldepth = stats_.highest_depth();
+#endif
 			get_pv_from_tt( d.pv, p_, max_depth_ );
 			for( std::size_t j = i; j > 0 && (j > multipv || moves_[j-1].m.sort < value); --j ) {
 				std::swap( moves_[j], moves_[j-1] );
@@ -651,7 +654,12 @@ void master_worker_thread::print_best()
 {
 	std::size_t const multipv = std::min( moves_.size(), multipv_ );
 
+#if USE_STATISTICS
 	uint64_t nodes = stats_.nodes() + stats_.quiescence_nodes;
+#else
+	uint64_t nodes = 0;
+#endif
+
 	duration elapsed( start_, timestamp() );
 
 	for( unsigned int pvi = 0; pvi < multipv; ++pvi ) {
@@ -757,7 +765,7 @@ short context::quiescence_search( int ply, int depth, position const& p, check_m
 		return result::loss;
 	}
 
-#ifdef USE_STATISTICS
+#if USE_STATISTICS
 	++thread_->stats_.quiescence_nodes;
 #endif
 
@@ -905,7 +913,7 @@ short context::step( int depth, int ply, position& p, check_map const& check, sh
 		return result::loss;
 	}
 
-#ifdef USE_STATISTICS
+#if USE_STATISTICS
 	thread_->stats_.node( ply );
 #endif
 
@@ -1405,22 +1413,24 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 	impl_->pool_.wait_for_idle( l );
 
 	{
+		move_data const& best = sorted.front();
+		move const* pv = best.pv;
+
+		result.best_move = best.m.m;
+		result.forecast = best.m.sort;
+		result.ponder_move = pv[1];
+
+#if USE_STATISTICS
 		for( std::size_t i = 1; i < impl_->pool_.threads_.size(); ++i ) {
 			master->stats_.accumulate( impl_->pool_.threads_[i]->stats_ );
 			impl_->pool_.threads_[i]->stats_.reset( false );
 		}
 
-		move_data const& best = sorted.front();
-		move const* pv = best.pv;
-
 		timestamp stop;
 		master->stats_.print( stop - start );
 		master->stats_.accumulate( stop - start );
 		master->stats_.reset( false );
-
-		result.best_move = best.m.m;
-		result.forecast = best.m.sort;
-		result.ponder_move = pv[1];
+#endif
 	}
 
 	return result;
@@ -1449,10 +1459,12 @@ bool calc_manager::should_abort() const
 	return impl_->do_abort_;
 }
 
+#if USE_STATISTICS
 statistics& calc_manager::stats()
 {
 	return impl_->pool_.master()->stats_;
 }
+#endif
 
 void calc_manager::set_multipv( unsigned int multipv )
 {

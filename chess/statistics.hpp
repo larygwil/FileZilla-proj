@@ -8,7 +8,7 @@
 #include "util/time.hpp"
 #include <sstream>
 
-#ifdef USE_STATISTICS
+#if USE_STATISTICS
 class statistics {
 public:
 	statistics();

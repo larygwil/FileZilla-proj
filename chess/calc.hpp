@@ -10,6 +10,7 @@
 #include "moves.hpp"
 #include "seen_positions.hpp"
 #include "util.hpp"
+#include "statistics.hpp"
 
 #include <sstream>
 
@@ -52,7 +53,6 @@ public:
 	duration used_extra_time;
 };
 
-class statistics;
 class calc_manager
 {
 public:
@@ -73,7 +73,9 @@ public:
 
 	void set_multipv( unsigned int multipv );
 
+#if USE_STATISTICS
 	statistics& stats();
+#endif
 private:
 	class impl;
 	impl* impl_;

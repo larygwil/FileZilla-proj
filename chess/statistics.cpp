@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <sstream>
 
-#ifdef USE_STATISTICS
+#if USE_STATISTICS
 
 statistics::statistics()
 	: quiescence_nodes()
@@ -67,6 +67,9 @@ void statistics::print( duration const& elapsed )
 	ss_ << "- Number of entries: " << std::setw(11) << s.entries << " (";
 	uint64_t max_hash_entry_count = transposition_table.max_hash_entry_count();
 	if( max_hash_entry_count ) {
+		if( s.entries > max_hash_entry_count ) {
+			s.entries = max_hash_entry_count;
+		}
 		ss_ << 100 * static_cast<double>(s.entries) / max_hash_entry_count << "%)";
 	}
 	ss_ << std::endl;
