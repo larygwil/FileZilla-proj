@@ -580,7 +580,6 @@ void apply_move( position& p, move const& m )
 
 		p.hash_ ^= get_piece_hash( piece, p.self(), m.target() );
 		p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()]];
-		p.hash_ ^= zobrist::castle[p.self()][0x4];
 
 		unsigned char row = p.white() ? 0 : 56;
 		if( m.target() % 8 == 6 ) {
@@ -607,7 +606,7 @@ void apply_move( position& p, move const& m )
 			p.hash_ ^= zobrist::rooks[p.self()][3 + row];
 		}
 		p.can_en_passant = 0;
-		p.castle[p.self()] = 0x4;
+		p.castle[p.self()] = 0;
 
 		if( p.white() ) {
 			p.base_eval += delta;
@@ -645,18 +644,12 @@ void apply_move( position& p, move const& m )
 
 			if( captured_piece == pieces::rook ) {
 				if( m.target() == queenside_rook_origin[p.other()] ) {
-					if( p.castle[p.other()] & 0x2 ) {
-						p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()]];
-						p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()] & 0x5];
-					}
-					p.castle[p.other()] &= 0x5;
+					p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()] & 0x2];
+					p.castle[p.other()] &= 0x1;
 				}
 				else if( m.target() == kingside_rook_origin[p.other()] ) {
-					if( p.castle[p.other()] & 0x1 ) {
-						p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()]];
-						p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()] & 0x6];
-					}
-					p.castle[p.other()] &= 0x6;
+					p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()] & 0x1];
+					p.castle[p.other()] &= 0x2;
 				}
 			}
 		}
@@ -694,24 +687,17 @@ void apply_move( position& p, move const& m )
 
 	if( piece == pieces::rook ) {
 		if( m.source() == queenside_rook_origin[p.self()] ) {
-			if( p.castle[p.self()] & 0x2 ) {
-				p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()]];
-				p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()] & 0x5];
-			}
-			p.castle[p.self()] &= 0x5;
+			p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()] & 0x2];
+			p.castle[p.self()] &= 0x1;
 		}
 		else if( m.source() == kingside_rook_origin[p.self()] ) {
-			if( p.castle[p.self()] & 0x1 ) {
-				p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()]];
-				p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()] & 0x6];
-			}
-			p.castle[p.self()] &= 0x6;
+			p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()] & 0x1];
+			p.castle[p.self()] &= 0x2;
 		}
 	}
 	else if( piece == pieces::king ) {
 		p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()]];
-		p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()] & 0x4];
-		p.castle[p.self()] &= 0x4;
+		p.castle[p.self()] = 0;
 		p.king_pos[p.self()] = m.target();
 	}
 

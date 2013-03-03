@@ -13,7 +13,7 @@ namespace zobrist {
 
 	uint64_t enpassant[64];
 
-	uint64_t castle[2][5];
+	uint64_t castle[2][4];
 
 	uint64_t pawn_structure[2][64];
 
@@ -49,9 +49,10 @@ void init_zobrist_tables()
 	}
 	
 	for( unsigned int c = 0; c < 2; ++c ) {
-		for( int i = 0; i < 5; ++i ) {
-			zobrist::castle[c][i] = get_random_unsigned_long_long();
-		}
+		zobrist::castle[c][0] = 0;
+		zobrist::castle[c][1] = get_random_unsigned_long_long();
+		zobrist::castle[c][2] = get_random_unsigned_long_long();
+		zobrist::castle[c][3] = zobrist::castle[c][1] ^ zobrist::castle[c][2];
 	}
 
 	zobrist::enpassant[0] = 0;
