@@ -566,16 +566,16 @@ static void evaluate_king_attack( position const& p, color::type c, eval_results
 	int64_t signed_attack = static_cast<int64_t>(attack);
 	signed_attack -= (results.pawn_shield[1-c] * 10) / eval_values::king_attack_pawn_shield;
 
+	// 5% bonus if attacker is the one to move
+	if( p.self() == c ) {
+		signed_attack += signed_attack / 95;
+	}
+
 	if( signed_attack < 0 ) {
 		signed_attack = 0;
 	}
 	else if( signed_attack > 199 ) {
 		signed_attack = 199;
-	}
-
-	// 5% bonus if attacker is the one to move
-	if( p.self() == c ) {
-		signed_attack += signed_attack / 95;
 	}
 
 	add_score<detail, eval_detail::king_attack>( results, c, eval_values::king_attack[signed_attack] );
