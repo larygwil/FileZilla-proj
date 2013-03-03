@@ -4,13 +4,6 @@
 
 #include <iostream>
 
-namespace tr1 {
-}
-namespace std {
-using namespace tr1;
-}
-
-
 uint64_t timer_precision()
 {
 	return 1000000;

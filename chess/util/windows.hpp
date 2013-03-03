@@ -35,12 +35,6 @@ typedef   signed long long  int64_t;
 
 #define NONPACKED(s) s
 
-namespace std {
-namespace tr1 {
-}
-using namespace tr1;
-}
-
 // Precision, not accuracy.
 uint64_t timer_precision();
 
