@@ -1172,13 +1172,13 @@ short context::inner_step( int const depth, int const ply, position const& p, ch
 				red += (processed_moves - (pv_node?3:3)) / 5;
 				int lmr_depth = new_depth - red;
 				value = -step(lmr_depth, ply + 1, new_pos, new_check, -alpha-1, -alpha, false );
-				
+
 				search_full = value > alpha;
 			}
 			else {
 				search_full = true;
 			}
-				
+
 			if( search_full ) {
 				value = -step( new_depth, ply + 1, new_pos, new_check, -alpha-1, -alpha, false, result::win, new_capture );
 			}
@@ -1193,7 +1193,7 @@ short context::inner_step( int const depth, int const ply, position const& p, ch
 }
 
 
-void def_new_best_move_callback::on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth , int evaluation, uint64_t nodes, duration const& /*elapsed*/, move const* pv )
+void def_new_best_move_callback::on_new_best_move( unsigned int, position const& p, int depth, int selective_depth , int evaluation, uint64_t nodes, duration const& /*elapsed*/, move const* pv )
 {
 	ss_.str( std::string() );
 	ss_ << "Best: " << std::setw(2) << depth << " " << std::setw(2) << selective_depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p ) << std::endl;
