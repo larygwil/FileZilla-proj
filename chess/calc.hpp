@@ -31,7 +31,7 @@ private:
 
 struct null_new_best_move_callback : public new_best_move_callback_base
 {
-	virtual void on_new_best_move( unsigned int multipv, position const&, int, int, int, uint64_t, duration const&, move const* ) override {}
+	virtual void on_new_best_move( unsigned int, position const&, int, int, int, uint64_t, duration const&, move const* ) override {}
 };
 
 extern def_new_best_move_callback default_new_best_move_callback;
