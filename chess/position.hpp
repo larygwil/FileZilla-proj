@@ -20,7 +20,6 @@ public:
 
 	// Bit 0: can castle kingside
 	// Bit 1: can castle queenside
-	// Bit 2: has castled
 	short castle[2];
 
 	// 0 if en-passant not possible.
@@ -61,7 +60,7 @@ public:
 	bool verify( std::string& error ) const;
 	void verify_abort() const;
 
-	unsigned char do_null_move();
+	unsigned char do_null_move( unsigned char old_enpassant = 0 );
 
 	pieces::type get_piece( uint64_t square ) const { return ::get_piece(get_piece_with_color(square)); }
 	pieces_with_color::type get_piece_with_color( uint64_t square ) const;
@@ -79,6 +78,9 @@ public:
 
 	unsigned int halfmoves_since_pawnmove_or_capture;
 
+	uint64_t hash_;
+
+	uint64_t init_hash() const;
 private:
 	void init_bitboards();
 	void init_board();

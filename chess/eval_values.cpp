@@ -21,8 +21,6 @@ score backward_pawn_base[2][4];
 score pawn_shield[4];
 score pawn_shield_attack[4];
 
-short castled;
-
 score absolute_pin[7];
 
 score rooks_on_open_file;

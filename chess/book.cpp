@@ -1,7 +1,6 @@
 #include "assert.hpp"
 #include "book.hpp"
 #include "util.hpp"
-#include "zobrist.hpp"
 #include "util/mutex.hpp"
 
 #include "sqlite/sqlite3.hpp"
@@ -321,10 +320,8 @@ std::vector<book_entry> book::get_entries( position const& p )
 	data.entries = &ret;
 	data.by_hash_ = true;
 
-	uint64_t hash = get_zobrist_hash( p );
-	
 	statement s( *impl_, "SELECT data FROM position WHERE hash = :1" );
-	s.bind( 1, hash );
+	s.bind( 1, p.hash_ );
 
 
 	bool success = s.exec( get_cb, reinterpret_cast<void*>(&data) );
@@ -581,7 +578,6 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 
 	position p;
 	get_position( history, p );
-	uint64_t hash = get_zobrist_hash( p );
 
 	scoped_lock l(impl_->mtx);
 
@@ -592,7 +588,7 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 
 	statement s( *impl_, "INSERT OR REPLACE INTO position (pos, hash, data) VALUES (:1, :2, :3)" );
 	s.bind( 1, hs );
-	s.bind( 2, hash );
+	s.bind( 2, p.hash_ );
 
 	std::vector<unsigned char> data;
 	encode_entries( entries, data, true );
@@ -672,11 +668,10 @@ bool book::mark_for_processing( std::vector<move> const& history )
 	statement s( *impl_, "INSERT OR IGNORE INTO position (pos, hash) VALUES (:1, :2)");
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
 		apply_move( p, *it );
-		uint64_t hash = get_zobrist_hash( p );
-
+		
 		std::vector<unsigned char> hs = serialize_history( history.begin(), it + 1 );
 		s.bind( 1, hs );
-		s.bind( 2, hash );
+		s.bind( 2, p.hash_ );
 		if( !s.exec() ) {
 			return false;
 		}
@@ -708,7 +703,7 @@ int work_cb( void* p, statement& s )
 	}
 
 	work w;
-	w.seen.reset_root( get_zobrist_hash(w.p) );
+	w.seen.reset_root( w.p.hash_ );
 
 	std::size_t i = 0;
 	while( i < pos.size() ) {
@@ -728,7 +723,7 @@ int work_cb( void* p, statement& s )
 
 		apply_move( w.p, m );
 		w.move_history.push_back( m );
-		w.seen.push_root( get_zobrist_hash(w.p) );
+		w.seen.push_root( w.p.hash_ );
 	}
 
 	wl->push_back( w );
@@ -780,8 +775,7 @@ bool book::redo_hashes()
 
 	for( std::list<work>::const_iterator it = wl.begin(); it != wl.end(); ++it ) {
 		std::vector<unsigned char> hs = serialize_history( it->move_history );
-		uint64_t hash = get_zobrist_hash( it->p );
-		s.bind( 1, hash );
+		s.bind( 1, it->p.hash_ );
 		s.bind( 2, hs );
 		s.exec();
 	}

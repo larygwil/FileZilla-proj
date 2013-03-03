@@ -15,7 +15,6 @@
 #include "util/mutex.hpp"
 #include "util/thread.hpp"
 #include "util.hpp"
-#include "zobrist.hpp"
 
 #include <algorithm>
 #include <iomanip>
@@ -174,7 +173,7 @@ public:
 
 	condition calc_cond_;
 
-	void init( position const& p, uint64_t hash, sorted_moves const& moves, int clock, seen_positions const& seen, new_best_move_callback_base* cb, timestamp const& start );
+	void init( position const& p, sorted_moves const& moves, int clock, seen_positions const& seen, new_best_move_callback_base* cb, timestamp const& start );
 	void process( scoped_lock& l, unsigned int max_depth );
 
 	void set_multipv( std::size_t multipv ) {
@@ -191,7 +190,6 @@ private:
 	bool idle_;
 
 	position p_;
-	uint64_t hash_;
 	sorted_moves moves_;
 	unsigned int max_depth_;
 	seen_positions seen_;
@@ -208,14 +206,13 @@ class work
 {
 public:
 	work( worker_thread* master, int depth, int ply, position const& p
-		, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval
+		, check_map const& check, short alpha, short beta, short full_eval
 		, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen
 		, context const& master_ctx );
 
 	int const depth_;
 	int const ply_;
 	position const& p_;
-	uint64_t const hash_;
 	check_map const& check_;
 	short alpha_;
 	short const beta_;
@@ -238,13 +235,12 @@ public:
 
 
 work::work( worker_thread* master, int depth, int ply, position const& p
-		, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval
+		, check_map const& check, short alpha, short beta, short full_eval
 		, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen
 		, context const& master_ctx )
 	: depth_(depth)
 	, ply_(ply)
 	, p_(p)
-	, hash_(hash)
 	, check_(check)
 	, alpha_(alpha)
 	, beta_(beta)
@@ -391,7 +387,7 @@ void thread_pool::update_threads()
 		threads_.erase( it );
 	}
 
-	ASSERT(threads_.size() == idle_threads_.size() );
+	ASSERT( threads_.size() == popcount(idle_threads_) );
 }
 
 void thread_pool::reduce_histories()
@@ -468,7 +464,7 @@ void worker_thread::process_work( scoped_lock& l )
 			ctx.move_ptr = ctx.moves;
 			ctx.seen = w->master_ctx_.seen;
 
-			short value = ctx.inner_step( w->depth_, w->ply_, w->p_, w->hash_, w->check_, alpha, w->beta_, w->full_eval_
+			short value = ctx.inner_step( w->depth_, w->ply_, w->p_, w->check_, alpha, w->beta_, w->full_eval_
 				, w->last_ply_was_capture_, w->pv_node_, mi.m, processed, phase, best_value );
 
 			l.lock();
@@ -537,7 +533,7 @@ void master_worker_thread::onRun()
 
 		pool_.idle_threads_ |= 1ull << thread_index_;
 		pool_.idle_ = true;
-		ASSERT( pool_.idle_threads_.size() == pool_.threads_.size() );
+		ASSERT( popcount(pool_.idle_threads_) == pool_.threads_.size() );
 
 		waiting_ = true;
 		cond_.wait( l );
@@ -579,17 +575,16 @@ void master_worker_thread::process_root( scoped_lock& l )
 
 		position new_pos = p_;
 		apply_move( new_pos, d.m.m );
-		uint64_t hash = update_zobrist_hash( p_, hash_, d.m.m );
 
 		ctx.seen = seen_;
 		ctx.move_ptr = ctx.moves;
 
 		short value;
-		if( ctx.seen.is_two_fold( hash, 1 ) ) {
+		if( ctx.seen.is_two_fold( new_pos.hash_, 1 ) ) {
 			value = result::draw;
 		}
 		else {
-			ctx.seen.push_root( hash );
+			ctx.seen.push_root( new_pos.hash_ );
 
 			check_map check( new_pos );
 
@@ -600,7 +595,7 @@ void master_worker_thread::process_root( scoped_lock& l )
 				short beta = std::min( root_beta, static_cast<short>(d.m.sort + ASPIRATION) );
 
 				if( alpha < beta ) {
-					short aspiration_value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -beta, -alpha, false );
+					short aspiration_value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -beta, -alpha, false );
 					if( aspiration_value > alpha && aspiration_value < beta ) {
 						// Aspiration search found something sensible
 						value = aspiration_value;
@@ -610,13 +605,13 @@ void master_worker_thread::process_root( scoped_lock& l )
 
 			if( value == result::loss ) {
 				if( root_alpha != result::loss ) {
-					value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -root_alpha-1, -root_alpha, false );
+					value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_alpha-1, -root_alpha, false );
 					if( value > root_alpha ) {
-						value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -root_beta, -root_alpha, false );
+						value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_beta, -root_alpha, false );
 					}
 				}
 				else {
-					value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, hash, check, -root_beta, -root_alpha, false );
+					value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_beta, -root_alpha, false );
 				}
 			}
 		}
@@ -666,12 +661,11 @@ void master_worker_thread::print_best()
 	}
 }
 
-void master_worker_thread::init( position const& p, uint64_t hash, sorted_moves const& moves, int clock, seen_positions const& seen, new_best_move_callback_base* cb , timestamp const& start )
+void master_worker_thread::init( position const& p, sorted_moves const& moves, int clock, seen_positions const& seen, new_best_move_callback_base* cb , timestamp const& start )
 {
 	ASSERT( idle_ );
 	ASSERT( waiting_ );
 	p_ = p;
-	hash_ = hash;
 	moves_ = moves;
 	seen_ = seen;
 	cb_ = cb;
@@ -699,7 +693,7 @@ void master_worker_thread::process( scoped_lock& l, unsigned int max_depth )
 
 
 void context::split( int depth, int ply, position const& p
-		, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen )
+		, check_map const& check, short alpha, short beta, short full_eval, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen )
 {
 	ASSERT( thread_ );
 	if( !thread_->pool_.idle_ ) {
@@ -718,14 +712,14 @@ void context::split( int depth, int ply, position const& p
 	}
 
 	// Queue work
-	work w( thread_, depth, ply, p, hash, check, alpha, beta, full_eval, last_ply_was_capture, pv_node, best_value, best_move, gen, *this );
+	work w( thread_, depth, ply, p, check, alpha, beta, full_eval, last_ply_was_capture, pv_node, best_value, best_move, gen, *this );
 	thread_->pool_.work_ = &w;
 
 	// Wake up idle workers
 	uint64_t idle = thread_->pool_.idle_threads_;
 	while( idle ) {
 		uint64_t index = bitscan_unset( idle ); 
-		ASSERT( threads_[index]->waiting_ );
+		ASSERT( thread_->pool_.threads_[index]->waiting_ );
 		thread_->pool_.threads_[index]->cond_.signal( l );
 	}
 
@@ -741,17 +735,18 @@ void context::split( int depth, int ply, position const& p
 			thread_->waiting_ = false;
 		}
 	}
-	ASSERT( w.active_workers_.empty() );
+	ASSERT( !w.active_workers_ );
 	ASSERT( thread_->pool_.work_ != &w );
 }
 
 
 
-short context::quiescence_search( int ply, int depth, position const& p, uint64_t hash, check_map const& check, short alpha, short beta, short full_eval )
+short context::quiescence_search( int ply, int depth, position const& p, check_map const& check, short alpha, short beta, short full_eval )
 {
 #if VERIFY_HASH
-	if( get_zobrist_hash(p) != hash ) {
+	if( p.init_hash() != p.hash_ ) {
 		std::cerr << "FAIL HASH!" << std::endl;
+		abort();
 	}
 #endif
 #if VERIFY_POSITION
@@ -788,7 +783,7 @@ short context::quiescence_search( int ply, int depth, position const& p, uint64_
 
 	short eval;
 	move tt_move;
-	score_type::type t = transposition_table.lookup( hash, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
+	score_type::type t = transposition_table.lookup( p.hash_, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
 	ASSERT( full_eval == result::win || full_eval == evaluate_full( p ) );
 
 	if ( !pv_node && t != score_type::none ) {
@@ -817,7 +812,7 @@ short context::quiescence_search( int ply, int depth, position const& p, uint64_
 		if( full_eval > alpha ) {
 			if( full_eval >= beta ) {
 				if( !do_abort_ && t == score_type::none && tt_move.empty() ) {
-					transposition_table.store( hash, tt_depth, ply, full_eval, alpha, beta, tt_move, clock, full_eval );
+					transposition_table.store( p.hash_, tt_depth, ply, full_eval, alpha, beta, tt_move, clock, full_eval );
 				}
 				return full_eval;
 			}
@@ -861,8 +856,7 @@ short context::quiescence_search( int ply, int depth, position const& p, uint64_
 
 		short value;
 
-		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
-		value = -quiescence_search( ply + 1, depth - 1, new_pos, new_hash, new_check, -beta, -alpha );
+		value = -quiescence_search( ply + 1, depth - 1, new_pos, new_check, -beta, -alpha );
 
 		if( value > best_value ) {
 			best_value = value;
@@ -885,17 +879,18 @@ short context::quiescence_search( int ply, int depth, position const& p, uint64_
 	}
 
 	if( !do_abort_ ) {
-		transposition_table.store( hash, tt_depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
+		transposition_table.store( p.hash_, tt_depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
 	}
 	return best_value;
 }
 
 
-short context::step( int depth, int ply, position& p, uint64_t hash, check_map const& check, short alpha, short beta, bool last_was_null, short full_eval, unsigned char last_ply_was_capture )
+short context::step( int depth, int ply, position& p, check_map const& check, short alpha, short beta, bool last_was_null, short full_eval, unsigned char last_ply_was_capture )
 {
 #if VERIFY_HASH
-	if( get_zobrist_hash(p) != hash ) {
+	if( p.init_hash() != p.hash_ ) {
 		std::cerr << "FAIL HASH!" << std::endl;
+		abort();
 	}
 #endif
 #if VERIFY_POSITION
@@ -903,7 +898,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 #endif
 
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
-		return quiescence_search( ply, MAX_QDEPTH, p, hash, check, alpha, beta );
+		return quiescence_search( ply, MAX_QDEPTH, p, check, alpha, beta );
 	}
 
 	if( do_abort_ ) {
@@ -939,7 +934,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 	score_type::type t;
 	{
 		short eval;
-		t = transposition_table.lookup( hash, depth, ply, alpha, beta, eval, tt_move, full_eval );
+		t = transposition_table.lookup( p.hash_, depth, ply, alpha, beta, eval, tt_move, full_eval );
 		if( t != score_type::none ) {
 			if( t == score_type::exact || !pv_node ) {
 				return eval;
@@ -952,7 +947,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 	if( !pv_node && !check.check /*&& plies_remaining < 4*/ && full_eval == result::win ) {
 		full_eval = evaluate_full( p );
 		if( tt_move.empty() && t == score_type::none ) {
-			transposition_table.store( hash, 0, ply, 0, 0, 0, tt_move, clock, full_eval );
+			transposition_table.store( p.hash_, 0, ply, 0, 0, 0, tt_move, clock, full_eval );
 		}
 	}
 
@@ -961,7 +956,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 		   !(p.bitboards[p.self()].b[bb_type::pawns] & (p.white() ? 0x00ff000000000000ull : 0x000000000000ff00ull)) )
 	{
 		short new_beta = beta - razor_pruning[plies_remaining];
-		short value = quiescence_search( ply, MAX_QDEPTH, p, hash, check, new_beta - 1, new_beta, full_eval );
+		short value = quiescence_search( ply, MAX_QDEPTH, p, check, new_beta - 1, new_beta, full_eval );
 		if( value < new_beta ) {
 			return value;
 		}
@@ -981,10 +976,8 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 
 			unsigned char old_enpassant = p.do_null_move();
 			check_map new_check( p );
-			uint64_t new_hash = ~(hash ^ get_enpassant_hash( old_enpassant ) );
-			value = -step( new_depth, ply + 1, p, new_hash, new_check, -beta, -beta + 1, true );
-			p.do_null_move();
-			p.can_en_passant = old_enpassant;
+			value = -step( new_depth, ply + 1, p, new_check, -beta, -beta + 1, true );
+			p.do_null_move( old_enpassant );
 		}
 
 		if( value >= beta ) {
@@ -995,7 +988,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 			if( depth > NULLMOVE_VERIFICATION_DEPTH ) {
 				// Verification search.
 				// Helps against zugzwang and some other strange issues
-				short research_value = step( new_depth, ply, p, hash, check, alpha, beta, true, full_eval, last_ply_was_capture );
+				short research_value = step( new_depth, ply, p, check, alpha, beta, true, full_eval, last_ply_was_capture );
 				if( research_value >= beta ) {
 					return value;
 				}
@@ -1009,10 +1002,10 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 
 	if( tt_move.empty() && depth > ( depth_factor * 4 + cutoff) ) {
 
-		step( depth - 2 * depth_factor, ply, p, hash, check, alpha, beta, true, full_eval, last_ply_was_capture );
+		step( depth - 2 * depth_factor, ply, p, check, alpha, beta, true, full_eval, last_ply_was_capture );
 
 		short eval;
-		transposition_table.lookup( hash, depth, ply, alpha, beta, eval, tt_move, full_eval );
+		transposition_table.lookup( p.hash_, depth, ply, alpha, beta, eval, tt_move, full_eval );
 	}
 
 	short best_value = result::loss;
@@ -1027,7 +1020,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 	while( (it = gen.next()) ) {
 		++processed_moves;
 
-		short value = inner_step( depth, ply, p, hash, check
+		short value = inner_step( depth, ply, p, check
 			, alpha, beta, full_eval, last_ply_was_capture, pv_node
 			, it->m, processed_moves, gen.get_phase(), best_value );
 
@@ -1049,7 +1042,7 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 		}
 
 		if( processed_moves == 1 && plies_remaining > 4 ) {
-			split( depth, ply, p, hash, check, alpha, beta, full_eval, last_ply_was_capture, pv_node, best_value, best_move, gen );
+			split( depth, ply, p, check, alpha, beta, full_eval, last_ply_was_capture, pv_node, best_value, best_move, gen );
 		}
 	}
 
@@ -1067,30 +1060,30 @@ short context::step( int depth, int ply, position& p, uint64_t hash, check_map c
 	}
 
 	if( !do_abort_ ) {
-		transposition_table.store( hash, depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
+		transposition_table.store( p.hash_, depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
 	}
 
 	return best_value;
 }
 
-short context::inner_step( int const depth, int const ply, position const& p, uint64_t const hash, check_map const& check, short const alpha, short const beta
+short context::inner_step( int const depth, int const ply, position const& p, check_map const& check, short const alpha, short const beta
 						  , short const full_eval, unsigned char const last_ply_was_capture
 						  , bool const pv_node, move const& m, unsigned int const processed_moves, phases::type const phase, short const best_value )
 {
 	short value;
-	uint64_t new_hash = update_zobrist_hash( p, hash, m );
 
 	pieces::type piece = p.get_piece( m );
 	pieces::type captured_piece = p.get_captured_piece( m );
 
-	if( seen.is_two_fold( new_hash, ply ) ) {
+	position new_pos(p);
+	apply_move( new_pos, m );
+
+	if( seen.is_two_fold( new_pos.hash_, ply ) ) {
 		value = result::draw;
 	}
 	else {
-		position new_pos(p);
-		apply_move( new_pos, m );
 
-		seen.set( new_hash, ply );
+		seen.set( new_pos.hash_, ply );
 
 		check_map new_check( new_pos );
 
@@ -1170,7 +1163,7 @@ short context::inner_step( int const depth, int const ply, position const& p, ui
 
 				red += (processed_moves - (pv_node?3:3)) / 5;
 				int lmr_depth = new_depth - red;
-				value = -step(lmr_depth, ply + 1, new_pos, new_hash, new_check, -alpha-1, -alpha, false );
+				value = -step(lmr_depth, ply + 1, new_pos, new_check, -alpha-1, -alpha, false );
 				
 				search_full = value > alpha;
 			}
@@ -1179,12 +1172,12 @@ short context::inner_step( int const depth, int const ply, position const& p, ui
 			}
 				
 			if( search_full ) {
-				value = -step( new_depth, ply + 1, new_pos, new_hash, new_check, -alpha-1, -alpha, false, result::win, new_capture );
+				value = -step( new_depth, ply + 1, new_pos, new_check, -alpha-1, -alpha, false, result::win, new_capture );
 			}
 		}
 
 		if( pv_node && (!processed_moves || (value > alpha && value < beta) ) ) {
-			value = -step( new_depth, ply + 1, new_pos, new_hash, new_check, -beta, -alpha, false, result::win, new_capture );
+			value = -step( new_depth, ply + 1, new_pos, new_check, -beta, -alpha, false, result::win, new_capture );
 		}
 	}
 
@@ -1320,12 +1313,10 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 	// we can abort processing at high depths early if needed.
 	sorted_moves sorted;
 
-	uint64_t hash = get_zobrist_hash( p );
-
 	{
 		move tt_move;
 		short tmp = 0;
-		transposition_table.lookup( hash, 0, 0, 0, 0, tmp, tt_move, tmp );
+		transposition_table.lookup( p.hash_, 0, 0, 0, 0, tmp, tt_move, tmp );
 		for( move_info* it = moves; it != pm; ++it ) {
 			move_data md;
 			md.m = *it;
@@ -1357,7 +1348,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 	scoped_lock l( impl_->mtx_ );
 
 	master_worker_thread* master = impl_->pool_.master();
-	master->init( p, hash, sorted, clock, seen, &new_best_cb, start );
+	master->init( p, sorted, clock, seen, &new_best_cb, start );
 
 	for( int depth = min_depth; depth <= max_depth && !impl_->do_abort_; ++depth ) {
 

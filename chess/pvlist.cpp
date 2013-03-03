@@ -3,7 +3,6 @@
 #include "hash.hpp"
 #include "pvlist.hpp"
 #include "util.hpp"
-#include "zobrist.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -32,14 +31,12 @@ void get_pv_from_tt( move* pv, position p, int max_depth )
 
 	++pv;
 
-	uint64_t hash = get_zobrist_hash( p );
-
 	for( int depth = 1; depth < max_depth; ++depth ) {
 
 		move best;
 		short ev;
 		short full_eval;
-		transposition_table.lookup( hash, 0, 0, result::loss, result::win, ev, best, full_eval );
+		transposition_table.lookup( p.hash_, 0, 0, result::loss, result::win, ev, best, full_eval );
 		if( best.empty() ) {
 			break;
 		}
@@ -48,7 +45,6 @@ void get_pv_from_tt( move* pv, position p, int max_depth )
 			break;
 		}
 
-		hash = update_zobrist_hash( p, hash, best );
 		apply_move( p, best );
 
 		*pv = best;
@@ -66,19 +62,16 @@ void push_pv_to_tt( move const* pv, position p, int clock )
 	++pv;
 	int ply = 1;
 
-	uint64_t hash = get_zobrist_hash( p );
-
 	while( !pv->empty() ) {
 
 		move best;
 		short ev;
 		short full_eval;
-		transposition_table.lookup( hash, 0, 0, result::loss, result::win, ev, best, full_eval );
+		transposition_table.lookup( p.hash_, 0, 0, result::loss, result::win, ev, best, full_eval );
 		if( best != *pv ) {
-			transposition_table.store( hash, 0, ply, 0, 0, 0, *pv, clock, result::win );
+			transposition_table.store( p.hash_, 0, ply, 0, 0, 0, *pv, clock, result::win );
 		}
 
-		hash = update_zobrist_hash( p, hash, *pv );
 		apply_move( p, *pv );
 		++pv;
 		++ply;

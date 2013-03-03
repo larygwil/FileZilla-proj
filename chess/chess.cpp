@@ -54,7 +54,7 @@ void auto_play()
 
 	unsigned int i = 1;
 
-	seen_positions seen( get_zobrist_hash( p ) );
+	seen_positions seen( p.hash_ );
 
 	calc_manager cmgr;
 	calc_result result;
@@ -91,10 +91,10 @@ void auto_play()
 		std::cerr << "Base evaluation (for white): " << base_eval << " centipawns" << std::endl;
 
 		if( !reset_seen ) {
-			seen.push_root( get_zobrist_hash( p ) );
+			seen.push_root( p.hash_ );
 		}
 		else {
-			seen.reset_root( get_zobrist_hash( p ) );
+			seen.reset_root( p.hash_ );
 		}
 
 		if( seen.depth() > 110 ) { // Be lenient, 55 move rule is fine for us in case we don't implement this correctly.

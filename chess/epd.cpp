@@ -7,7 +7,6 @@
 #include "util/logger.hpp"
 #include "util/string.hpp"
 #include "util.hpp"
-#include "zobrist.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -106,7 +105,7 @@ int run_sts( epd const& e, int& match, int& sum )
 		pawn_hash_table.init( conf.pawn_hash_table_size() );
 
 		calc_manager c;
-		seen_positions seen( get_zobrist_hash( e.p ) );
+		seen_positions seen( e.p.hash_ );
 		calc_result r = c.calc( e.p, conf.max_search_depth(), duration::infinity(), d, 0, seen, null_new_best_move_cb );
 		if( scores.find(r.best_move) != scores.end() ) {
 			sum += scores[r.best_move];

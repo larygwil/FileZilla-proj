@@ -61,17 +61,16 @@ bool deepen_move( book& b, position const& p, seen_positions const& seen, std::v
 	position new_pos = p;
 	apply_move( new_pos, m );
 
-	uint64_t new_hash = get_zobrist_hash( new_pos );
 	short value;
-	if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
+	if( ctx.seen.is_two_fold( new_pos.hash_, 1 ) ) {
 		value = 0;
 	}
 	else {
-		ctx.seen.push_root( new_hash );
+		ctx.seen.push_root( new_pos.hash_ );
 
 		check_map check( new_pos );
 
-		value = -ctx.step( depth * depth_factor + MAX_QDEPTH, 1,  new_pos, new_hash, check, result::loss, result::win, true );
+		value = -ctx.step( depth * depth_factor + MAX_QDEPTH, 1, new_pos, check, result::loss, result::win, true );
 	}
 
 	book_entry e;
@@ -96,8 +95,6 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 
 	std::vector<book_entry> entries;
 
-	uint64_t const hash = get_zobrist_hash( p );
-
 	for( move_info const* it = moves; it != pm; ++it ) {
 		context ctx( 0 );
 		ctx.clock = move_history.size() % 256;
@@ -106,18 +103,16 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 		position new_pos = p;
 		apply_move( new_pos, it->m );
 
-		uint64_t new_hash = update_zobrist_hash( p, hash, it->m );
-
 		short value;
-		if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
+		if( ctx.seen.is_two_fold( new_pos.hash_, 1 ) ) {
 			value = 0;
 		}
 		else {
-			ctx.seen.push_root( new_hash );
+			ctx.seen.push_root( new_pos.hash_ );
 
 			check_map check( new_pos );
 
-			value = -ctx.step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor + MAX_QDEPTH, 1,  new_pos, new_hash, check, result::loss, result::win, true );
+			value = -ctx.step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor + MAX_QDEPTH, 1,  new_pos, check, result::loss, result::win, true );
 		}
 
 		book_entry entry;
@@ -155,18 +150,16 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 			position new_pos = p;
 			apply_move( new_pos, entry.m );
 
-			uint64_t new_hash = update_zobrist_hash( p, hash, entry.m );
-
 			short value;
-			if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
+			if( ctx.seen.is_two_fold( new_pos.hash_, 1 ) ) {
 				value = 0;
 			}
 			else {
-				ctx.seen.push_root( new_hash );
+				ctx.seen.push_root( new_pos.hash_ );
 
 				check_map check( new_pos );
 
-				value = -ctx.step( MAX_BOOKSEARCH_DEPTH * depth_factor + MAX_QDEPTH, 1, new_pos, new_hash, check, result::loss, result::win, true );
+				value = -ctx.step( MAX_BOOKSEARCH_DEPTH * depth_factor + MAX_QDEPTH, 1, new_pos, check, result::loss, result::win, true );
 			}
 
 			entry.search_depth = MAX_BOOKSEARCH_DEPTH;
@@ -182,8 +175,6 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 
 bool update_position( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, std::vector<book_entry> const& entries )
 {
-	uint64_t hash = get_zobrist_hash( p );
-
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 		book_entry entry = *it;
 
@@ -209,18 +200,16 @@ bool update_position( book& b, position const& p, seen_positions const& seen, st
 			position new_pos = p;
 			apply_move( new_pos, entry.m );
 
-			uint64_t new_hash = update_zobrist_hash( p, hash, entry.m );
-
 			short value;
-			if( ctx.seen.is_two_fold( new_hash, 1 ) ) {
+			if( ctx.seen.is_two_fold( new_pos.hash_, 1 ) ) {
 				value = 0;
 			}
 			else {
-				ctx.seen.push_root( new_hash );
+				ctx.seen.push_root( new_pos.hash_ );
 
 				check_map check( new_pos );
 
-				value = -ctx.step( new_depth * depth_factor + MAX_QDEPTH, 1, new_pos, new_hash, check, result::loss, result::win, true );
+				value = -ctx.step( new_depth * depth_factor + MAX_QDEPTH, 1, new_pos, check, result::loss, result::win, true );
 			}
 
 			std::cerr << entry.forecast << " d" << static_cast<int>(entry.search_depth) << " v" << static_cast<int>(entry.eval_version) << " -> " << value << " d" << new_depth << " " << move_history.size() << " " << position_to_fen_noclock( p ) << " " << move_to_san( p, entry.m ) << std::endl;
@@ -240,7 +229,7 @@ void init_book( book& b )
 {
 	position p;
 
-	seen_positions seen( get_zobrist_hash( p ) );
+	seen_positions seen( p.hash_ );
 
 	std::vector<move> move_history;
 
@@ -289,7 +278,7 @@ void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, see
 		std::vector<book_entry> child_moves = b.get_entries( new_pos, child_history );
 
 		seen_positions child_seen = seen;
-		child_seen.push_root( get_zobrist_hash( new_pos ) );
+		child_seen.push_root( new_pos.hash_ );
 
 		if( child_moves.empty() ) {
 			work w;
@@ -849,7 +838,7 @@ bool do_deepen_tree( book& b, position const& p, seen_positions seen, std::vecto
 		position p2 = p;
 		apply_move( p2, e.m );
 		move_history.push_back( e.m );
-		seen.push_root( get_zobrist_hash( p2 ) );
+		seen.push_root( p2.hash_ );
 
 		int new_offset = std::max( 0, offset - first.forecast + e.forecast );
 		bool res = do_deepen_tree( b, p2, seen, move_history, new_offset );
@@ -912,7 +901,7 @@ void run( book& b )
 	std::vector<move> move_history;
 	std::vector<history_entry> history;
 
-	seen_positions seen( get_zobrist_hash( p ) );
+	seen_positions seen( p.hash_ );
 
 	{
 		std::vector<book_entry> entries = b.get_entries( p, move_history );
@@ -998,7 +987,7 @@ void run( book& b )
 			history.clear();
 			move_history.clear();
 			p.reset();
-			seen.reset_root(get_zobrist_hash(p));
+			seen.reset_root( p.hash_ );
 
 			std::vector<book_entry> moves = b.get_entries( p, move_history );
 			print_pos( history, p,  moves, view );
@@ -1073,7 +1062,7 @@ void run( book& b )
 
 				apply_move( p, m );
 
-				seen.push_root( get_zobrist_hash( p ) );
+				seen.push_root( p.hash_ );
 
 				std::vector<book_entry> entries = b.get_entries( p, move_history );
 				if( entries.empty() ) {

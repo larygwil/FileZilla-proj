@@ -11,7 +11,6 @@
 #include "util/string.hpp"
 #include "tweak.hpp"
 #include "util.hpp"
-#include "zobrist.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -80,7 +79,7 @@ static void generate_test_positions_impl()
 	position p;
 
 	unsigned int i = 1;
-	seen_positions seen( get_zobrist_hash( p ) );
+	seen_positions seen( p.hash_ );
 
 	calc_result result;
 	while( !(result = tweak_calc( p, duration(), i, seen ) ).best_move.empty() ) {
@@ -99,10 +98,10 @@ static void generate_test_positions_impl()
 		apply_move( p, result.best_move );
 
 		if( !reset_seen ) {
-			seen.push_root( get_zobrist_hash( p ) );
+			seen.push_root( p.hash_ );
 		}
 		else {
-			seen.reset_root( get_zobrist_hash( p ) );
+			seen.reset_root( p.hash_ );
 		}
 
 		if( seen.depth() > 110 ) { // Be lenient, 55 move rule is fine for us in case we don't implement this correctly.

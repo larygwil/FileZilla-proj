@@ -1,6 +1,5 @@
 #include "hash.hpp"
 #include "statistics.hpp"
-#include "zobrist.hpp"
 
 #include <string.h>
 #include <iostream>

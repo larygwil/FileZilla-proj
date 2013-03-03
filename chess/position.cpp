@@ -3,6 +3,7 @@
 #include "eval_values.hpp"
 #include "tables.hpp"
 #include "util.hpp"
+#include "zobrist.hpp"
 
 #include <iostream>
 
@@ -49,6 +50,7 @@ void position::update_derived()
 	init_eval();
 	init_pawn_hash();
 	init_piece_sum();
+	hash_ = init_hash();
 }
 
 
@@ -140,12 +142,15 @@ void position::init_board()
 	}
 }
 
-unsigned char position::do_null_move()
+unsigned char position::do_null_move( unsigned char old_enpassant )
 {
 	c = static_cast<color::type>(1-c);
 
 	unsigned char enpassant = can_en_passant;
-	can_en_passant = 0;
+	can_en_passant = old_enpassant;
+
+	hash_ = ~(hash_ ^ get_enpassant_hash( enpassant ) );
+	hash_ ^= get_enpassant_hash( old_enpassant );
 
 	return enpassant;
 }
@@ -320,6 +325,12 @@ bool position::verify( std::string& error ) const
 		return false;
 	}
 
+	uint64_t hash = init_hash();
+	if( hash != hash_ ) {
+		error = "Hash mismatch";
+		return false;
+	}
+
 	return true;
 }
 
@@ -369,4 +380,46 @@ pieces_with_color::type position::get_captured_piece_with_color( move const& m )
 		ret = get_piece_with_color( m.target() );
 	}
 	return ret;
+}
+
+uint64_t position::init_hash() const
+{
+	uint64_t hash = 0;
+
+	for( unsigned int c = 0; c < 2; ++c ) {
+		uint64_t pieces = bitboards[c].b[bb_type::all_pieces];
+		while( pieces ) {
+			uint64_t piece = bitscan_unset( pieces );
+
+			uint64_t bpiece = 1ull << piece;
+			if( bitboards[c].b[bb_type::pawns] & bpiece ) {
+				hash ^= zobrist::pawns[c][piece];
+			}
+			else if( bitboards[c].b[bb_type::knights] & bpiece ) {
+				hash ^= zobrist::knights[c][piece];
+			}
+			else if( bitboards[c].b[bb_type::bishops] & bpiece ) {
+				hash ^= zobrist::bishops[c][piece];
+			}
+			else if( bitboards[c].b[bb_type::rooks] & bpiece ) {
+				hash ^= zobrist::rooks[c][piece];
+			}
+			else if( bitboards[c].b[bb_type::queens] & bpiece ) {
+				hash ^= zobrist::queens[c][piece];
+			}
+			else {//if( bitboards[c].b[bb_type::king] & bpiece ) {
+				hash ^= zobrist::kings[c][piece];
+			}
+		}
+
+		hash ^= zobrist::castle[c][castle[c]];
+	}
+
+	hash ^= zobrist::enpassant[can_en_passant];
+
+	if( !white() ) {
+		hash = ~hash;
+	}
+
+	return hash;
 }

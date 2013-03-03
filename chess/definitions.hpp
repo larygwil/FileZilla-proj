@@ -73,8 +73,7 @@ enum type {
 	none = 0,
 	kingside = 1,
 	queenside = 2,
-	both = 3,
-	has_castled = 4
+	both = 3
 };
 }
 

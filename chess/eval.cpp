@@ -7,7 +7,6 @@
 #include "pawn_structure_hash_table.hpp"
 #include "util.hpp"
 #include "tables.hpp"
-#include "zobrist.hpp"
 
 #include <iomanip>
 #include <iostream>

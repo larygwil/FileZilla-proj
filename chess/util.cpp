@@ -568,11 +568,19 @@ void apply_move( position& p, move const& m )
 		++p.halfmoves_since_pawnmove_or_capture;
 	}
 
+	p.hash_ = ~p.hash_;
+	p.hash_ ^= zobrist::enpassant[p.can_en_passant];
+	p.hash_ ^= get_piece_hash( piece, p.self(), m.source() );
+
 	score delta = -pst[p.self()][piece][m.source()];
 	
 	if( m.castle() ) {
 		p.king_pos[p.self()] = m.target();
 		delta += pst[p.self()][pieces::king][m.target()];
+
+		p.hash_ ^= get_piece_hash( piece, p.self(), m.target() );
+		p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()]];
+		p.hash_ ^= zobrist::castle[p.self()][0x4];
 
 		unsigned char row = p.white() ? 0 : 56;
 		if( m.target() % 8 == 6 ) {
@@ -583,6 +591,9 @@ void apply_move( position& p, move const& m )
 
 			delta += pst[p.self()][pieces::rook][row + 5] - pst[p.self()][pieces::rook][row + 7];
 			std::swap(p.board[m.source() + 1], p.board[m.target() + 1]);
+
+			p.hash_ ^= zobrist::rooks[p.self()][7 + row];
+			p.hash_ ^= zobrist::rooks[p.self()][5 + row];
 		}
 		else {
 			// Queenside
@@ -591,6 +602,9 @@ void apply_move( position& p, move const& m )
 			p.bitboards[p.self()].b[bb_type::rooks] ^= 0x09ull << row;
 			delta += pst[p.self()][pieces::rook][row + 3] - pst[p.self()][pieces::rook][row];
 			std::swap(p.board[m.source() - 1], p.board[m.target() - 2]);
+
+			p.hash_ ^= zobrist::rooks[p.self()][0 + row];
+			p.hash_ ^= zobrist::rooks[p.self()][3 + row];
 		}
 		p.can_en_passant = 0;
 		p.castle[p.self()] = 0x4;
@@ -622,16 +636,26 @@ void apply_move( position& p, move const& m )
 			p.bitboards[p.other()].b[bb_type::pawns] ^= ep_square;
 			p.bitboards[p.other()].b[bb_type::all_pieces] ^= ep_square;
 			p.board[ep] = pieces_with_color::none;
+			p.hash_ ^= zobrist::pawns[p.other()][ep];
 		}
 		else {
+			p.hash_ ^= get_piece_hash( static_cast<pieces::type>(captured_piece), p.other(), m.target() );
 			p.bitboards[p.other()].b[captured_piece] ^= target_square;
 			p.bitboards[p.other()].b[bb_type::all_pieces] ^= target_square;
 
 			if( captured_piece == pieces::rook ) {
 				if( m.target() == queenside_rook_origin[p.other()] ) {
+					if( p.castle[p.other()] & 0x2 ) {
+						p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()]];
+						p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()] & 0x5];
+					}
 					p.castle[p.other()] &= 0x5;
 				}
 				else if( m.target() == kingside_rook_origin[p.other()] ) {
+					if( p.castle[p.other()] & 0x1 ) {
+						p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()]];
+						p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()] & 0x6];
+					}
 					p.castle[p.other()] &= 0x6;
 				}
 			}
@@ -670,13 +694,23 @@ void apply_move( position& p, move const& m )
 
 	if( piece == pieces::rook ) {
 		if( m.source() == queenside_rook_origin[p.self()] ) {
+			if( p.castle[p.self()] & 0x2 ) {
+				p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()]];
+				p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()] & 0x5];
+			}
 			p.castle[p.self()] &= 0x5;
 		}
 		else if( m.source() == kingside_rook_origin[p.self()] ) {
+			if( p.castle[p.self()] & 0x1 ) {
+				p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()]];
+				p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()] & 0x6];
+			}
 			p.castle[p.self()] &= 0x6;
 		}
 	}
 	else if( piece == pieces::king ) {
+		p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()]];
+		p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()] & 0x4];
 		p.castle[p.self()] &= 0x4;
 		p.king_pos[p.self()] = m.target();
 	}
@@ -684,6 +718,7 @@ void apply_move( position& p, move const& m )
 	if( piece == pieces::pawn && (m.source() ^ m.target()) == 16 ) {
 		unsigned char ep_square = (m.target() / 8 + m.source() / 8) * 4 + m.target() % 8;
 		p.can_en_passant = ep_square;
+		p.hash_ ^= zobrist::enpassant[ep_square];
 	}
 	else {
 		p.can_en_passant = 0;
@@ -703,11 +738,14 @@ void apply_move( position& p, move const& m )
 
 		p.piece_sum -= 1ull << (p.black() ? 20 : 0);
 		p.piece_sum += 1ull << ((promotion_piece - 1 + (p.black() ? 5 : 0) ) * 4);
+
+		p.hash_ ^= get_piece_hash( promotion_piece, p.self(), m.target() );
 	}
 	else {
 		p.bitboards[p.self()].b[piece] ^= target_square;
 		delta += pst[p.self()][piece][m.target()];
 		p.board[m.target()] = pwc;
+		p.hash_ ^= get_piece_hash( piece, p.self(), m.target() );
 	}
 	p.bitboards[p.self()].b[bb_type::all_pieces] ^= target_square;
 	p.board[m.source()] = pieces_with_color::none;

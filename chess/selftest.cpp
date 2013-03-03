@@ -13,7 +13,6 @@
 #include "util/time.hpp"
 #include "util/string.hpp"
 #include "util.hpp"
-#include "zobrist.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -275,20 +274,18 @@ static void test_zobrist( std::string const& fen, std::string const& ms )
 {
 	position p = test_parse_fen( fen );
 
-	uint64_t old_hash = get_zobrist_hash( p );
-
 	move m = test_parse_move( p, ms );
-
-	uint64_t new_hash_move = update_zobrist_hash( p, old_hash, m );
 
 	apply_move( p, m );
 
-	uint64_t new_hash_full = get_zobrist_hash( p );
+	uint64_t new_hash_move = p.hash_;
+	p.update_derived();
+	uint64_t new_hash_full = p.hash_;
 
 	if( new_hash_move != new_hash_full ) {
 		std::cerr << "Hash mismatch: " << std::endl;
-		std::cerr << "Fen" << fen << std::endl;
-		std::cerr << "Move" << ms << std::endl;
+		std::cerr << "Fen: " << fen << std::endl;
+		std::cerr << "Move: " << ms << std::endl;
 		std::cerr << "Full: " << new_hash_full << std::endl;
 		std::cerr << "Incremental: " << new_hash_move << std::endl;
 		abort();

@@ -16,7 +16,6 @@
 #include "util/string.hpp"
 #include "util/thread.hpp"
 #include "util.hpp"
-#include "zobrist.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -61,7 +60,7 @@ struct xboard_state
 
 		clock = 1;
 
-		seen.reset_root( get_zobrist_hash( p ) );
+		seen.reset_root( p.hash_ );
 
 		time_remaining = duration::infinity();
 		bonus_time = duration();
@@ -87,10 +86,10 @@ struct xboard_state
 		++clock;
 
 		if( !reset_seen ) {
-			seen.push_root( get_zobrist_hash( p ) );
+			seen.push_root( p.hash_ );
 		}
 		else {
-			seen.reset_root( get_zobrist_hash( p ) );
+			seen.reset_root( p.hash_ );
 		}
 
 		if( seen.depth() >= 110 ) {
@@ -253,7 +252,7 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 		}
 
 		move_history_.clear();
-		seen.reset_root( get_zobrist_hash( p ) );
+		seen.reset_root( p.hash_ );
 		started_from_root = false;
 
 		if( !p.verify() ) {
@@ -592,7 +591,7 @@ bool parse_setboard( xboard_state& state, xboard_thread& thread, std::string con
 
 	state.reset();
 	state.p = new_pos;
-	state.seen.reset_root( get_zobrist_hash( state.p ) );
+	state.seen.reset_root( state.p.hash_ );
 	state.started_from_root = false;
 
 	if( prev_state == mode::analyze ) {
@@ -954,7 +953,7 @@ skip_getline:
 			std::cout << explain_eval( state.p ) << std::endl;
 		}
 		else if( cmd == "hash" ) {
-			std::cout << get_zobrist_hash( state.p ) << std::endl;
+			std::cout << state.p.hash_ << std::endl;
 		}
 		else if( cmd == "see" ) {
 			move m;

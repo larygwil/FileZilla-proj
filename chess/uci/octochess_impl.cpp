@@ -18,7 +18,6 @@
 #include "../util/string.hpp"
 #include "../util/thread.hpp"
 #include "../util.hpp"
-#include "../zobrist.hpp"
 
 #include <sstream>
 
@@ -92,7 +91,8 @@ void octochess_uci::new_game() {
 	impl_->calc_manager_.abort();
 	impl_->join();
 	impl_->pos_.reset();
-	impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) ); impl_->times_ = time_calculation();
+	impl_->seen_positions_.reset_root( impl_->pos_.hash_);
+	impl_->times_ = time_calculation();
 	impl_->half_moves_played_ = 0;
 	impl_->started_from_root_ = true;
 	impl_->move_history_.clear();
@@ -119,7 +119,7 @@ void octochess_uci::set_position( std::string const& fen ) {
 	}
 
 	if( success ) {
-		impl_->seen_positions_.reset_root( get_zobrist_hash( impl_->pos_ ) );
+		impl_->seen_positions_.reset_root( impl_->pos_.hash_ );
 		impl_->half_moves_played_ = 0;
 	}
 }
@@ -279,9 +279,9 @@ void octochess_uci::impl::apply_move( move const& m )
 	++half_moves_played_;
 
 	if( !reset_seen ) {
-		seen_positions_.push_root( get_zobrist_hash( pos_ ) );
+		seen_positions_.push_root( pos_.hash_ );
 	} else {
-		seen_positions_.reset_root( get_zobrist_hash( pos_ ) );
+		seen_positions_.reset_root( pos_.hash_ );
 	}
 
 	move_history_.push_back( m );
