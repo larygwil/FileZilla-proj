@@ -1252,7 +1252,8 @@ calc_manager::~calc_manager()
 
 
 calc_result calc_manager::calc( position const& p, int max_depth, duration const& move_time_limit, duration const& deadline, int clock, seen_positions& seen
-		  , new_best_move_callback_base& new_best_cb )
+		  , new_best_move_callback_base& new_best_cb
+		  , std::set<move> const& searchmoves )
 {
 	// Should be as early as possible for most accurate timekeeping
 	timestamp start;
@@ -1295,7 +1296,33 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 
 	duration time_limit = move_time_limit.is_infinity() ? deadline : move_time_limit;
 
-	if( moves == pm ) {
+	// Go through them sorted by previous evaluation. This way, if on time pressure,
+	// we can abort processing at high depths early if needed.
+	sorted_moves sorted;
+
+	if( searchmoves.find( move() ) == searchmoves.end() ) {
+		move tt_move;
+		short tmp = 0;
+		transposition_table.lookup( p.hash_, 0, 0, 0, 0, tmp, tt_move, tmp );
+		for( move_info* it = moves; it != pm; ++it ) {
+			move_data md;
+			md.m = *it;
+			md.pv[0] = md.m.m;
+
+			if( !searchmoves.empty() && searchmoves.find(it->m) == searchmoves.end() ) {
+				continue;
+			}
+
+			if( it->m == tt_move ) {
+				sorted.insert( sorted.begin(), md );
+			}
+			else {
+				sorted.push_back( md );
+			}
+		}
+	}
+
+	if( sorted.empty() ) {
 		if( check.check ) {
 			if( p.white() ) {
 				dlog() << "BLACK WINS" << std::endl;
@@ -1317,33 +1344,11 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		}
 	}
 
-	// Go through them sorted by previous evaluation. This way, if on time pressure,
-	// we can abort processing at high depths early if needed.
-	sorted_moves sorted;
-
-	{
-		move tt_move;
-		short tmp = 0;
-		transposition_table.lookup( p.hash_, 0, 0, 0, 0, tmp, tt_move, tmp );
-		for( move_info* it = moves; it != pm; ++it ) {
-			move_data md;
-			md.m = *it;
-			md.pv[0] = md.m.m;
-
-			if( it->m == tt_move ) {
-				sorted.insert( sorted.begin(), md );
-			}
-			else {
-				sorted.push_back( md );
-			}
-		}
-	}
-
 	short ev = evaluate_full( p );
 	new_best_cb.on_new_best_move( 1, p, 1, 0, ev, 0, duration(), sorted.front().pv );
 
 	result.best_move = moves->m;
-	if( moves + 1 == pm && !ponder ) {
+	if( moves + 1 >= pm && !ponder ) {
 		result.forecast = ev;
 		return result;
 	}

@@ -20,6 +20,7 @@
 #include "../util.hpp"
 
 #include <sstream>
+#include <set>
 
 namespace octochess {
 namespace uci {
@@ -74,6 +75,8 @@ public:
 	int depth_;
 	bool wait_for_stop_;
 	bool ponder_;
+
+	std::set<move> searchmoves_;
 
 	calc_result result_;
 };
@@ -143,7 +146,7 @@ void octochess_uci::make_moves( std::vector<std::string> const& moves )
 	}
 }
 
-void octochess_uci::calculate( calculate_mode_type mode, position_time const& t, int depth, bool ponder )
+void octochess_uci::calculate( calculate_mode_type mode, position_time const& t, int depth, bool ponder, std::string const& searchmoves )
 {
 	transposition_table.init_if_needed( conf.memory );
 
@@ -164,9 +167,19 @@ void octochess_uci::calculate( calculate_mode_type mode, position_time const& t,
 		impl_->depth_ = depth;
 		impl_->wait_for_stop_ = mode == calculate_mode::infinite;
 		impl_->ponder_ = ponder;
+		impl_->searchmoves_.clear();
+
+		for( auto ms : tokenize(searchmoves) ) {
+			std::string error;
+
+			move m;
+			if( parse_move( impl_->pos_, ms, m, error ) ) {
+				impl_->searchmoves_.insert( m );
+			}
+		}
 
 		impl_->times_.update( t, impl_->pos_.white(), impl_->half_moves_played_ );
-		if( ponder || impl_->times_.time_for_this_move().is_infinity() || impl_->wait_for_stop_ ) {
+		if( ponder || impl_->times_.time_for_this_move().is_infinity() || impl_->wait_for_stop_ || !impl_->searchmoves_.empty() ) {
 			impl_->spawn();
 		}
 		else {
@@ -200,7 +213,8 @@ void octochess_uci::impl::onRun() {
 	//the function initiating all the calculating
 	if( ponder_ ) {
 		std::cerr << "Pondering..." << std::endl;
-		calc_result result = calc_manager_.calc( pos_, -1, duration::infinity(), duration::infinity(), half_moves_played_, seen_positions_, *this );
+		calc_result result = calc_manager_.calc( pos_, -1, duration::infinity(), duration::infinity()
+			, half_moves_played_, seen_positions_, *this, searchmoves_ );
 
 		scoped_lock lock(mutex_);
 
@@ -211,7 +225,8 @@ void octochess_uci::impl::onRun() {
 	else {
 		timestamp start_time;
 
-		calc_result result = calc_manager_.calc( pos_, depth_, times_.time_for_this_move(), std::max( duration(), times_.total_remaining() -  times_.overhead() ), half_moves_played_, seen_positions_, *this );
+		calc_result result = calc_manager_.calc( pos_, depth_, times_.time_for_this_move(), std::max( duration(), times_.total_remaining() - times_.overhead() )
+			, half_moves_played_, seen_positions_, *this, searchmoves_ );
 
 		scoped_lock lock(mutex_);
 
@@ -394,6 +409,20 @@ void octochess_uci::use_book( bool use )
 void octochess_uci::set_multipv( unsigned int multipv )
 {
 	impl_->calc_manager_.set_multipv( multipv );
+}
+
+
+bool octochess_uci::is_move( std::string const& ms )
+{
+	bool ret = false;
+	std::string error;
+
+	move m;
+	if( parse_move( impl_->pos_, ms, m, error ) ) {
+		ret = true;
+	}
+
+	return ret;
 }
 
 

@@ -48,6 +48,7 @@ struct xboard_state
 		, last_go_color()
 		, moves_between_updates()
 		, level_cmd_count()
+		, searchmoves_()
 	{
 		reset();
 	}
@@ -70,6 +71,8 @@ struct xboard_state
 		self = color::black;
 
 		started_from_root = true;
+
+		searchmoves_.clear();
 	}
 
 	void apply( move const& m )
@@ -97,6 +100,8 @@ struct xboard_state
 		}
 
 		move_history_.push_back( m );
+
+		searchmoves_.clear();
 	}
 
 	bool undo( unsigned int count )
@@ -117,6 +122,8 @@ struct xboard_state
 		p = history.back();
 		history.pop_back();
 		move_history_.pop_back();
+
+		searchmoves_.clear();
 
 		return true;
 	}
@@ -182,6 +189,8 @@ struct xboard_state
 	uint64_t level_cmd_count;
 
 	pv_move_picker pv_move_picker_;
+
+	std::set<move> searchmoves_;
 };
 
 
@@ -399,7 +408,7 @@ void xboard_thread::onRun()
 		}
 
 
-		calc_result result = cmgr_.calc( state.p, depth_, time_limit, deadline, state.clock, state.seen, *this );
+		calc_result result = cmgr_.calc( state.p, depth_, time_limit, deadline, state.clock, state.seen, *this, state.searchmoves_ );
 
 		scoped_lock l( mtx );
 
@@ -459,7 +468,7 @@ void xboard_thread::onRun()
 
 	if( ponder_ ) {
 		dlog() << "Pondering..." << std::endl;
-		cmgr_.calc( state.p, -1, duration::infinity(), duration::infinity(), state.clock, state.seen, *this );
+		cmgr_.calc( state.p, -1, duration::infinity(), duration::infinity(), state.clock, state.seen, *this, state.searchmoves_ );
 	}
 }
 
@@ -471,6 +480,7 @@ void xboard_thread::start( bool just_ponder )
 	abort = false;
 	best_move.clear();
 	ponder_ = just_ponder;
+	transposition_table.init_if_needed( conf.memory );
 
 	spawn();
 }
@@ -517,8 +527,6 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 	state.last_go_time = cmd_recv_time;
 	state.last_go_color = state.p.self();
 	++state.moves_between_updates;
-
-	transposition_table.init_if_needed( conf.memory );
 
 	// Do a step
 	if( conf.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
@@ -593,6 +601,7 @@ bool parse_setboard( xboard_state& state, xboard_thread& thread, std::string con
 	state.p = new_pos;
 	state.seen.reset_root( state.p.hash_ );
 	state.started_from_root = false;
+	state.searchmoves_.clear();
 
 	if( prev_state == mode::analyze ) {
 		state.mode_ = mode::analyze;
@@ -642,8 +651,12 @@ skip_getline:
 
 		logger::log_input( line );
 
+		mode::type previous_mode;
+
 		{
 			scoped_lock l( thread.mtx );
+
+			previous_mode = state.mode_;
 
 			if( state.mode_ == mode::edit ) {
 				if( !state.handle_edit_mode( cmd ) ) {
@@ -652,6 +665,7 @@ skip_getline:
 				else {
 					continue;
 				}
+				state.searchmoves_.clear();
 			}
 
 			// The following commands do not stop the thread.
@@ -691,18 +705,15 @@ skip_getline:
 		}
 		else if( cmd == "protover" ) {
 			//std::cout << "feature ping=1" << std::endl;
-			std::cout << "feature analyze=1" << std::endl;
-			std::cout << "feature myname=\"" << conf.program_name() << "\"" << std::endl;
-			std::cout << "feature setboard=1" << std::endl;
-			std::cout << "feature sigint=0" << std::endl;
-			std::cout << "feature variants=\"normal\"" << std::endl;
-			std::cout << "feature memory=1" << std::endl;
-			std::cout << "feature smp=1" << std::endl;
-			std::cout << "feature option=\"MultiPV -spin 1 1 99\"" << std::endl;
-
-			//std::cout << "feature option=\"Apply -save\"" << std::endl;
-			//std::cout << "feature option=\"Defaults -reset\"" << std::endl;
-			//std::cout << "feature option=\"Maximum search depth -spin " << static_cast<int>(conf.depth) << " 1 40\"" << std::endl;
+			std::cout << "feature analyze=1\n";
+			std::cout << "feature myname=\"" << conf.program_name() << "\"\n";
+			std::cout << "feature setboard=1\n";
+			std::cout << "feature sigint=0\n";
+			std::cout << "feature variants=\"normal\"\n";
+			std::cout << "feature memory=1\n";
+			std::cout << "feature smp=1\n";
+			std::cout << "feature option=\"MultiPV -spin 1 1 99\"\n";
+			std::cout << "feature exclude=1\n";
 
 			std::cout << "feature done=1" << std::endl;
 		}
@@ -845,7 +856,6 @@ skip_getline:
 		}
 		else if( cmd == "analyze" ) {
 			state.mode_ = mode::analyze;
-			transposition_table.init_if_needed( conf.memory );
 			thread.start( true );
 		}
 		else if( cmd == "exit" ) {
@@ -981,6 +991,53 @@ skip_getline:
 			}
 			else {
 				std::cout << "Error (bad command): Not a known option" << std::endl;
+			}
+		}
+		else if( cmd == "exclude" || cmd == "include" ) {
+			bool exclude = cmd == "exclude";
+
+			move m;
+			std::string error;
+
+			if( args == "all" ) {
+				state.searchmoves_.clear();
+				if( exclude ) {
+					state.searchmoves_.insert( move() );
+				}
+			}
+			else if( parse_move( state.p, args, m, error ) ) {
+				if( exclude ) {
+					if( state.searchmoves_.empty() ) {
+						check_map check( state.p );
+
+						move_info moves[200];
+						move_info* pm = moves;
+						calculate_moves( state.p, pm, check );
+
+					
+						for( move_info* it = &moves[0]; it != pm; ++it ) {
+							state.searchmoves_.insert(it->m);
+						}
+					}
+					state.searchmoves_.erase( m );
+					if( state.searchmoves_.empty() ) {
+						state.searchmoves_.insert( move() );
+					}
+				}
+				else {
+					state.searchmoves_.insert( m );
+					state.searchmoves_.erase( move() );
+				}
+			}
+			else {
+				std::cout << "Error (bad command): Not a valid move" << std::endl;
+			}
+
+			ASSERT( state.searchmoves_.find( move() ) == state.searchmoves_.end() || state.searchmoves_.size() == 1 );
+
+			if( previous_mode == mode::analyze ) {
+				state.mode_ = mode::analyze;
+				thread.start( true );
 			}
 		}
 		else {

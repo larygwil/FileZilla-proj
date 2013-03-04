@@ -13,6 +13,7 @@
 #include "statistics.hpp"
 
 #include <sstream>
+#include <set>
 
 int const depth_factor = 6;
 
@@ -65,7 +66,8 @@ public:
 	calc_result calc( position const& p, int depth,
 		   duration const& move_time_limit, duration const& deadline, int clock,
 		   seen_positions& seen,
-		   new_best_move_callback_base& new_best_cb = default_new_best_move_callback );
+		   new_best_move_callback_base& new_best_cb = default_new_best_move_callback,
+		   std::set<move> const& searchmoves = std::set<move>() );
 
 	void clear_abort();
 	void abort();

@@ -15,12 +15,13 @@ class octochess_uci : engine_interface {
 public:
 	octochess_uci( gui_interface_ptr const& );
 	//callbacks
-	virtual void new_game();
-	virtual void set_position( std::string const& fen );
-	virtual void make_moves( std::string const& list_of_moves );
-	virtual void calculate( calculate_mode_type, position_time const&, int depth, bool ponder );
-	virtual void stop();
-	virtual void quit();
+	virtual void new_game() override;
+	virtual void set_position( std::string const& fen ) override;
+	virtual void make_moves( std::string const& list_of_moves ) override;
+	virtual void calculate( calculate_mode_type, position_time const&, int depth, bool ponder, std::string const& searchmoves ) override;
+	virtual void stop() override;
+	virtual void quit() override;
+	virtual bool is_move( std::string const& ms ) override;
 
 	//generic info
 	virtual std::string name() const { return conf.program_name(); }

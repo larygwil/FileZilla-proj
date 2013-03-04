@@ -193,7 +193,10 @@ void minimalistic_uci_protocol::handle_go( std::string const& params )
 
 	std::istringstream in( params );
 	std::string cmd;
+	std::string searchmoves;
+
 	while( in >> cmd ) {
+loop:
 		if( cmd == "wtime" ) {
 			t.set_white_time( duration::milliseconds(extract<uint>(in)) );
 		} else if( cmd == "btime" ) {
@@ -213,15 +216,27 @@ void minimalistic_uci_protocol::handle_go( std::string const& params )
 		} else if( cmd == "infinite" ) {
 			mode = calculate_mode::infinite;
 		}
+		else if( cmd == "searchmoves" ) {
+			while( in >> cmd ) {
+				if( !callbacks_->is_move( cmd ) ) {
+					break;
+				}
+				searchmoves += cmd + " ";
+			}
+
+			if( in ) {
+				goto loop;
+			}
+		}
 	}
 
-	callbacks_->calculate( mode, t, depth, ponder );
+	callbacks_->calculate( mode, t, depth, ponder, searchmoves );
 }
 
 
 void minimalistic_uci_protocol::handle_ponderhit()
 {
-	callbacks_->calculate( calculate_mode::ponderhit, position_time(), -1, false );
+	callbacks_->calculate( calculate_mode::ponderhit, position_time(), -1, false, std::string() );
 }
 
 
