@@ -981,6 +981,11 @@ skip_getline:
 				else {
 					thread.set_multipv( v );
 				}
+				
+				if( previous_mode == mode::analyze ) {
+					state.mode_ = mode::analyze;
+					thread.start( true );
+				}
 			}
 			else {
 				std::cout << "Error (bad command): Not a known option" << std::endl;
