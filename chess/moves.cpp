@@ -384,3 +384,21 @@ void calculate_moves( position const& p, move_info*& moves, check_map const& che
 
 	calc_moves_king( p, moves, check );
 }
+
+
+std::vector<move> calculate_moves( position const& p, check_map const& check )
+{
+	std::vector<move> ret;
+
+	move_info moves[200];
+	move_info* pm = moves;
+	calculate_moves( p, pm, check );
+
+	ret.reserve( pm - moves );
+
+	for( move_info* it = &moves[0]; it != pm; ++it ) {
+		ret.push_back( it->m );
+	}
+
+	return ret;
+}

@@ -4,6 +4,8 @@
 #include "chess.hpp"
 #include "detect_check.hpp"
 
+#include <vector>
+
 class killer_moves;
 
 PACKED(struct move_info,
@@ -23,6 +25,14 @@ extern MoveSort moveSort;
 // Calculates all legal moves
 // Returned evaluation is fast_eval
 void calculate_moves( position const& p, move_info*& moves, check_map const& check );
+
+// Calculates all legal moves.
+// Do not call in actual search, this function is too slow.
+std::vector<move> calculate_moves( position const& p, check_map const& check );
+inline std::vector<move> calculate_moves( position const& p ) {
+	return calculate_moves( p, check_map( p ) );
+}
+
 
 // Returns all legal captures
 // Precondition: Own king not in check

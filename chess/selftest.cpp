@@ -178,14 +178,9 @@ static void test_move_generation( std::string const& fen, std::string const& ref
 {
 	position p = test_parse_fen( fen );
 
-	move_info moves[200];
-	move_info* pm = moves;
-	check_map check( p );
-	calculate_moves( p, pm, check );
-
 	std::vector<std::string> ms;
-	for( move_info* it = moves; it != pm; ++it ) {
-		ms.push_back( move_to_string( p, it->m ) );
+	for( auto m : calculate_moves( p ) ) {
+		ms.push_back( move_to_string( p, m ) );
 	}
 	std::sort( ms.begin(), ms.end() );
 

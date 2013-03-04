@@ -936,23 +936,16 @@ skip_getline:
 		}
 		// Octochess-specific commands mainly for testing and debugging
 		else if( cmd == "moves" ) {
-			check_map check( state.p );
-
-			move_info moves[200];
-			move_info* pm = moves;
-			calculate_moves( state.p, pm, check );
-
 			std::cout << "Possible moves:" << std::endl;
-			move_info* it = &moves[0];
-			for( ; it != pm; ++it ) {
+			for( auto m : calculate_moves( state.p ) ) {
 				if( args == "long" ) {
-					std::cout << " " << move_to_long_algebraic( it->m ) << std::endl;
+					std::cout << " " << move_to_long_algebraic( m ) << std::endl;
 				}
 				else if( args == "full" ) {
-					std::cout << " " << move_to_string( state.p, it->m ) << std::endl;
+					std::cout << " " << move_to_string( state.p, m ) << std::endl;
 				}
 				else {
-					std::cout << " " << move_to_san( state.p, it->m ) << std::endl;
+					std::cout << " " << move_to_san( state.p, m ) << std::endl;
 				}
 			}
 		}
@@ -1008,16 +1001,8 @@ skip_getline:
 			else if( parse_move( state.p, args, m, error ) ) {
 				if( exclude ) {
 					if( state.searchmoves_.empty() ) {
-						check_map check( state.p );
-
-						move_info moves[200];
-						move_info* pm = moves;
-						calculate_moves( state.p, pm, check );
-
-					
-						for( move_info* it = &moves[0]; it != pm; ++it ) {
-							state.searchmoves_.insert(it->m);
-						}
+						auto moves = calculate_moves( state.p );
+						state.searchmoves_.insert( moves.begin(), moves.end() );
 					}
 					state.searchmoves_.erase( m );
 					if( state.searchmoves_.empty() ) {
