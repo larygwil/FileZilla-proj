@@ -185,7 +185,7 @@ private:
 
 	void process_root( scoped_lock& l );
 
-	void print_best();
+	void print_best( unsigned int updated );
 
 	bool idle_;
 
@@ -630,12 +630,13 @@ void master_worker_thread::process_root( scoped_lock& l )
 			d.seldepth = stats_.highest_depth();
 #endif
 			get_pv_from_tt( d.pv, p_, max_depth_ );
-			for( std::size_t j = i; j > 0 && (j > multipv || moves_[j-1].m.sort < value); --j ) {
+			std::size_t j;
+			for( j = i; j > 0 && (j > multipv || moves_[j-1].m.sort < value); --j ) {
 				std::swap( moves_[j], moves_[j-1] );
 			}
 
 			// Print new results
-			print_best();
+			print_best( static_cast<unsigned int>(j) );
 	
 			if( i + 1 >= multipv ) {
 				// All PVs searched full with. Now we can use null windows.
@@ -650,7 +651,7 @@ void master_worker_thread::process_root( scoped_lock& l )
 }
 
 
-void master_worker_thread::print_best()
+void master_worker_thread::print_best( unsigned int updated )
 {
 	std::size_t const multipv = std::min( moves_.size(), multipv_ );
 
@@ -662,10 +663,16 @@ void master_worker_thread::print_best()
 
 	duration elapsed( start_, timestamp() );
 
-	for( unsigned int pvi = 0; pvi < multipv; ++pvi ) {
-		move_data& d = moves_[pvi];
+	if( cb_->print_only_updated() ) {
+		move_data& d = moves_[updated];
+		cb_->on_new_best_move( updated + 1, p_, d.depth, d.seldepth, d.m.sort, nodes, elapsed, d.pv );
+	}
+	else {
+		for( unsigned int pvi = 0; pvi < multipv; ++pvi ) {
+			move_data& d = moves_[pvi];
 
-		cb_->on_new_best_move( pvi + 1, p_, d.depth, d.seldepth, d.m.sort, nodes, elapsed, moves_[pvi].pv );
+			cb_->on_new_best_move( pvi + 1, p_, d.depth, d.seldepth, d.m.sort, nodes, elapsed, d.pv );
+		}
 	}
 }
 

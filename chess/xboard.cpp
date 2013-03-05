@@ -209,6 +209,7 @@ public:
 	mutex mtx;
 
 	virtual void on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) override;
+	virtual bool print_only_updated() const override;
 
 	void set_depth( int depth ) {
 		depth_ = depth;
@@ -495,6 +496,12 @@ move xboard_thread::stop()
 	best_move.clear();
 
 	return m;
+}
+
+
+bool xboard_thread::print_only_updated() const
+{
+	return true;
 }
 
 

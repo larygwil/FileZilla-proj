@@ -20,6 +20,8 @@ int const depth_factor = 6;
 struct new_best_move_callback_base
 {
 	virtual void on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) = 0;
+
+	virtual bool print_only_updated() const { return false; };
 };
 
 struct def_new_best_move_callback : public new_best_move_callback_base
