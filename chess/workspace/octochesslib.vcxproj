@@ -93,7 +93,7 @@
     </Midl>
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -119,8 +119,6 @@
     <ClCompile Include="..\history.cpp" />
     <ClCompile Include="..\magic.cpp" />
     <ClCompile Include="..\moves.cpp" />
-    <ClCompile Include="..\moves_captures.cpp" />
-    <ClCompile Include="..\moves_noncaptures.cpp" />
     <ClCompile Include="..\pawn_structure_hash_table.cpp" />
     <ClCompile Include="..\pgn.cpp" />
     <ClCompile Include="..\phased_move_generator.cpp" />

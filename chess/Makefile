@@ -34,8 +34,6 @@ OBJECT_FILES = \
 	history.o \
 	magic.o \
 	moves.o \
-	moves_captures.o \
-	moves_noncaptures.o \
 	pawn_structure_hash_table.o \
 	pgn.o \
 	phased_move_generator.o \

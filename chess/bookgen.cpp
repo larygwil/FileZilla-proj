@@ -88,7 +88,7 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 	move_info moves[200];
 	move_info* pm = moves;
 	check_map check( p );
-	calculate_moves( p, pm, check );
+	calculate_moves<movegen_type::all>( p, pm, check );
 	if( pm == moves ) {
 		return true;
 	}

@@ -38,8 +38,6 @@ GENERIC_SOURCE_FILES = \
 	history.cpp \
 	magic.cpp \
 	moves.cpp \
-	moves_captures.cpp \
-	moves_noncaptures.cpp \
 	pawn_structure_hash_table.cpp \
 	pgn.cpp \
 	phased_move_generator.cpp \

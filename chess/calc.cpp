@@ -71,7 +71,7 @@ bool is_50move_draw( position const& p, check_map const& check, context& ctx, in
 		}
 		else {
 			move_info* m = ctx.move_ptr;
-			calculate_moves( p, m, check );
+			calculate_moves<movegen_type::all>( p, m, check );
 			if( m != ctx.move_ptr ) {
 				ret = result::draw;
 			}
@@ -1297,7 +1297,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 	move_info moves[200];
 	move_info* pm = moves;
 
-	calculate_moves( p, pm, check );
+	calculate_moves<movegen_type::all>( p, pm, check );
 	sort_moves( moves, pm, p );
 
 	duration time_limit = move_time_limit.is_infinity() ? deadline : move_time_limit;

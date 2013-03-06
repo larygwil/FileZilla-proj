@@ -944,7 +944,7 @@ skip_getline:
 		// Octochess-specific commands mainly for testing and debugging
 		else if( cmd == "moves" ) {
 			std::cout << "Possible moves:" << std::endl;
-			for( auto m : calculate_moves( state.p ) ) {
+			for( auto m : calculate_moves<movegen_type::all>( state.p ) ) {
 				if( args == "long" ) {
 					std::cout << " " << move_to_long_algebraic( m ) << std::endl;
 				}
@@ -1013,7 +1013,7 @@ skip_getline:
 			else if( parse_move( state.p, args, m, error ) ) {
 				if( exclude ) {
 					if( state.searchmoves_.empty() ) {
-						auto moves = calculate_moves( state.p );
+						auto moves = calculate_moves<movegen_type::all>( state.p );
 						state.searchmoves_.insert( moves.begin(), moves.end() );
 					}
 					state.searchmoves_.erase( m );

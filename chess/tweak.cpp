@@ -37,7 +37,7 @@ static calc_result tweak_calc( position& p, duration const& move_time_limit, int
 	}
 
 	check_map check( p );
-	auto moves = calculate_moves( p, check );
+	auto moves = calculate_moves<movegen_type::all>( p, check );
 	
 	calc_result result;
 	if( moves.empty() ) {

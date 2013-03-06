@@ -60,11 +60,11 @@ void perft( perft_ctx& ctx, int depth, position const& p, uint64_t& n )
 
 	check_map check( p );
 	if( split_movegen ) {
-		calculate_moves_captures( p, ctx.move_ptr, check );
-		calculate_moves_noncaptures<false>( p, ctx.move_ptr, check );
+		calculate_moves<movegen_type::capture>( p, ctx.move_ptr, check );
+		calculate_moves<movegen_type::noncapture>( p, ctx.move_ptr, check );
 	}
 	else {
-		calculate_moves( p, ctx.move_ptr, check );
+		calculate_moves<movegen_type::all>( p, ctx.move_ptr, check );
 	}
 
 	if( !--depth ) {
@@ -179,7 +179,7 @@ static void test_move_generation( std::string const& fen, std::string const& ref
 	position p = test_parse_fen( fen );
 
 	std::vector<std::string> ms;
-	for( auto m : calculate_moves( p ) ) {
+	for( auto m : calculate_moves<movegen_type::all>( p ) ) {
 		ms.push_back( move_to_string( p, m ) );
 	}
 	std::sort( ms.begin(), ms.end() );
@@ -506,8 +506,8 @@ static void test_moves_noncaptures( std::string const& fen, position const& p )
 	move_info moves_check[200];
 	move_info* move_ptr_check = moves_check;
 
-	calculate_moves_noncaptures<false>( p, move_ptr_full, check );
-	calculate_moves_noncaptures<true>( p, move_ptr_check, check );
+	calculate_moves<movegen_type::noncapture>( p, move_ptr_full, check );
+	calculate_moves<movegen_type::pseudocheck>( p, move_ptr_check, check );
 
 	for( move_info* it = moves_full; it != move_ptr_full; ++it ) {
 		position p2 = p;

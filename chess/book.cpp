@@ -237,7 +237,7 @@ int get_cb( void* p, statement& s )
 	if( !d->pm ) {
 		check_map check( d->p );
 		d->pm = d->moves;
-		calculate_moves( d->p, d->pm, check );
+		calculate_moves<movegen_type::all>( d->p, d->pm, check );
 
 		std::sort( d->moves, d->pm, book_move_sort );
 	}
@@ -449,7 +449,7 @@ int do_fold_position( void* q, statement& s, bool verify )
 			move_info* pm;
 
 			pm = moves;
-			calculate_moves( p, pm, check );
+			calculate_moves<movegen_type::all>( p, pm, check );
 
 			std::sort( moves, pm, book_move_sort );
 
@@ -517,7 +517,7 @@ int do_fold_position( void* q, statement& s, bool verify )
 
 	move_info moves[200];
 	move_info* it = moves;
-	calculate_moves( pp, it, check_map( pp ) );
+	calculate_moves<movegen_type::all>( pp, it, check_map( pp ) );
 	if( static_cast<uint64_t>(it - moves) != parent_data.size() / 4 ) {
 		std::cerr << "Wrong move count in parent position's data: " << (it - moves) << " " << parent_data.size() / 4 << std::endl;
 		return 1;
@@ -845,7 +845,7 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 
 	move_info moves[200];
 	move_info* it = moves;
-	calculate_moves( p, it, check_map( p ) );
+	calculate_moves<movegen_type::all>( p, it, check_map( p ) );
 	if( static_cast<uint64_t>(it - moves) != data.size() / 4 ) {
 		std::cerr << "Wrong move count in position's data: " << (it - moves) << " " << data.size() / 4 << std::endl;
 		return false;
