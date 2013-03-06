@@ -31,7 +31,7 @@ public:
 	phased_move_generator_base( context& cntx, position const& p, check_map const& check );
 	virtual ~phased_move_generator_base();
 
-	virtual move_info const* next() = 0;
+	virtual move next() = 0;
 
 	phases::type get_phase() const {
 		return phase;
@@ -63,7 +63,7 @@ public:
 
 	// Returns the next legal move.
 	// move_info's m, evaluation and pawns are filled out, sort is undefined.
-	virtual move_info const* next();
+	virtual move next() override;
 
 private:
 	bool pv_node_;
@@ -79,7 +79,7 @@ public:
 
 	// Returns the next legal move.
 	// move_info's m, evaluation and pawns are filled out, sort is undefined.
-	virtual move_info const* next();
+	virtual move next() override;
 
 	void update_history();
 private:

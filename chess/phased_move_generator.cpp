@@ -59,7 +59,7 @@ void get_best( move_info* begin, move_info* end ) {
 
 // Returns the next legal move.
 // move_info's m, evaluation and pawns are filled out, sort is undefined.
-move_info const* qsearch_move_generator::next()
+move qsearch_move_generator::next()
 {
 	// The fall-throughs are on purpose
 	switch( phase ) {
@@ -78,7 +78,7 @@ move_info const* qsearch_move_generator::next()
 #endif
 			{
 				moves->m = hash_move;
-				return moves;
+				return moves->m;
 			}
 		}
 	case phases::captures_gen:
@@ -117,14 +117,14 @@ move_info const* qsearch_move_generator::next()
 			}
 #endif
 
-			return it++;
+			return (it++)->m;
 		}
 		if( check_.check || include_noncaptures_ ) {
 			phase = phases::noncaptures_gen;
 		}
 		else {
 			phase = phases::done;
-			return 0;
+			return move();
 		}
 	case phases::noncaptures_gen:
 		ctx.move_ptr = bad_captures_end_;
@@ -153,7 +153,7 @@ move_info const* qsearch_move_generator::next()
 				}
 			}
 
-			return it++;
+			return (it++)->m;
 		}
 #if DELAY_BAD_CAPTURES
 		phase = phases::bad_captures;
@@ -162,7 +162,7 @@ move_info const* qsearch_move_generator::next()
 	case phases::bad_captures:
 		while( it != bad_captures_end_ ) {
 			get_best( it, bad_captures_end_ );
-			return it++;
+			return (it++)->m;
 		}
 #endif
 		phase = phases::done;
@@ -171,7 +171,7 @@ move_info const* qsearch_move_generator::next()
 		break;
 	}
 
-	return 0;
+	return move();
 }
 
 
@@ -184,7 +184,7 @@ move_generator::move_generator( context& cntx, killer_moves const& killers, posi
 
 // Returns the next legal move.
 // move_info's m, evaluation and pawns are filled out, sort is undefined.
-move_info const* move_generator::next() {
+move move_generator::next() {
 	// The fall-throughs are on purpose
 	switch( phase ) {
 	case phases::hash_move:
@@ -202,7 +202,7 @@ move_info const* move_generator::next() {
 #endif
 			{
 				moves->m = hash_move;
-				return moves;
+				return moves->m;
 			}
 		}
 	case phases::captures_gen:
@@ -225,7 +225,7 @@ move_info const* move_generator::next() {
 				else
 #endif
 				{
-					return it++;
+					return (it++)->m;
 				}
 			}
 			else {
@@ -238,13 +238,13 @@ move_info const* move_generator::next() {
 		ctx.move_ptr = bad_captures_end_ + 1;
 		if( !killers_.m1.empty() && killers_.m1 != hash_move && !p_.get_captured_piece(killers_.m1) && is_valid_move( p_, killers_.m1, check_ ) ) {
 			bad_captures_end_->m = killers_.m1;
-			return bad_captures_end_;
+			return bad_captures_end_->m;
 		}
 	case phases::killer2:
 		phase = phases::noncaptures_gen;
 		if( !killers_.m2.empty() && killers_.m2 != hash_move && killers_.m1 != killers_.m2 && !p_.get_captured_piece(killers_.m2) && is_valid_move( p_, killers_.m2, check_ ) ) {
 			bad_captures_end_->m = killers_.m2;
-			return bad_captures_end_;
+			return bad_captures_end_->m;
 		}
 	case phases::noncaptures_gen:
 		ctx.move_ptr = bad_captures_end_;
@@ -256,7 +256,7 @@ move_info const* move_generator::next() {
 		while( it != ctx.move_ptr ) {
 			get_best( it, ctx.move_ptr );
 			if( it->m != hash_move && it->m != killers_.m1 && it->m != killers_.m2 ) {
-				return it++;
+				return (it++)->m;
 			}
 			else {
 				++it;
@@ -269,7 +269,7 @@ move_info const* move_generator::next() {
 	case phases::bad_captures:
 		while( it != bad_captures_end_ ) {
 			get_best( it, bad_captures_end_ );
-			return it++;
+			return (it++)->m;
 		}
 #endif
 		phase = phases::done;
@@ -277,7 +277,7 @@ move_info const* move_generator::next() {
 		break;
 	}
 
-	return 0;
+	return move();
 }
 
 void move_generator::update_history()

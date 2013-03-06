@@ -438,11 +438,9 @@ void worker_thread::process_work( scoped_lock& l )
 	work* w;
 	while( (w = pool_.work_) && !quit_ && !do_abort_ ) {
 
-		move_info const* it = w->gen_.next();
+		move const m = w->gen_.next();
 
-		if( it ) {
-			move_info mi = *it;
-
+		if( !m.empty() ) {
 			ASSERT( ctx_it_ < max_contexts );
 
 			// Create context from work
@@ -465,7 +463,7 @@ void worker_thread::process_work( scoped_lock& l )
 			ctx.seen = w->master_ctx_.seen;
 
 			short value = ctx.inner_step( w->depth_, w->ply_, w->p_, w->check_, alpha, w->beta_, w->full_eval_
-				, w->last_ply_was_capture_, w->pv_node_, mi.m, processed, phase, best_value );
+				, w->last_ply_was_capture_, w->pv_node_, m, processed, phase, best_value );
 
 			l.lock();
 
@@ -480,7 +478,7 @@ void worker_thread::process_work( scoped_lock& l )
 					w->best_value_ = value;
 
 					if( value > w->alpha_ ) {
-						w->best_move_ = mi.m;
+						w->best_move_ = m;
 
 						if( value >= w->beta_ ) {
 
@@ -844,14 +842,15 @@ short context::quiescence_search( int ply, int depth, position const& p, check_m
 	move best_move;
 	short best_value = check.check ? static_cast<short>(result::loss) : full_eval;
 
-	move_info const* it;
-	while( (it = gen.next()) ) {
+	move m;
+	while( !(m = gen.next()).empty() ) {
 
-		pieces::type piece = p.get_piece( it->m.source() );
-		pieces::type captured_piece = p.get_captured_piece( it->m );
+		pieces::type piece = p.get_piece( m.source() );
+		pieces::type captured_piece = p.get_captured_piece( m );
 		
 		position new_pos(p);
-		apply_move( new_pos, it->m );
+		apply_move( new_pos, m );
+
 		check_map new_check( new_pos );
 		
 		if( captured_piece == pieces::none && !check.check && !new_check.check ) {
@@ -859,7 +858,7 @@ short context::quiescence_search( int ply, int depth, position const& p, check_m
 		}
 
 		// Delta pruning
-		if( !pv_node && !check.check && !new_check.check && (piece != pieces::pawn || (it->m.target() >= 16 && it->m.target() < 48 ) ) ) {
+		if( !pv_node && !check.check && !new_check.check && (piece != pieces::pawn || (m.target() >= 16 && m.target() < 48 ) ) ) {
 			short new_value = full_eval + eval_values::material_values[captured_piece].mg() + delta_pruning;
 			if( new_value <= alpha ) {
 				if( new_value > best_value ) {
@@ -877,7 +876,7 @@ short context::quiescence_search( int ply, int depth, position const& p, check_m
 			best_value = value;
 
 			if( value > alpha ) {
-				best_move = it->m;
+				best_move = m;
 				
 				if( value >= beta ) {
 					break;
@@ -1030,24 +1029,24 @@ short context::step( int depth, int ply, position& p, check_map const& check, sh
 	
 	move_generator gen( *this, killers[p.self()][ply], p, check );
 	gen.hash_move = tt_move;
-	move_info const* it;
 
-	while( (it = gen.next()) ) {
+	move m;
+	while( !(m = gen.next()).empty() ) {
 		++processed_moves;
 
 		short value = inner_step( depth, ply, p, check
 			, alpha, beta, full_eval, last_ply_was_capture, pv_node
-			, it->m, processed_moves, gen.get_phase(), best_value );
+			, m, processed_moves, gen.get_phase(), best_value );
 
 		if( value > best_value ) {
 			best_value = value;
 
 			if( value > alpha ) {
-				best_move = it->m;
+				best_move = m;
 
 				if( value >= beta ) {		
-					if( !p.get_captured_piece(it->m) ) {
-						killers[p.self()][ply].add_killer( it->m );
+					if( !p.get_captured_piece(m) ) {
+						killers[p.self()][ply].add_killer( m );
 						gen.update_history();
 					}
 					break;

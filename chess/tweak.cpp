@@ -37,13 +37,10 @@ static calc_result tweak_calc( position& p, duration const& move_time_limit, int
 	}
 
 	check_map check( p );
-
-	move_info moves[200];
-	move_info* pm = moves;
-	calculate_moves( p, pm, check );
-
+	auto moves = calculate_moves( p, check );
+	
 	calc_result result;
-	if( moves == pm ) {
+	if( moves.empty() ) {
 		if( check.check ) {
 			if( p.white() ) {
 				std::cerr << "BLACK WINS" << std::endl;
@@ -53,7 +50,6 @@ static calc_result tweak_calc( position& p, duration const& move_time_limit, int
 				std::cerr << std::endl << "WHITE WINS" << std::endl;
 				result.forecast = result::win;
 			}
-			return result;
 		}
 		else {
 			if( !p.white() ) {
@@ -61,11 +57,11 @@ static calc_result tweak_calc( position& p, duration const& move_time_limit, int
 			}
 			std::cerr << "DRAW" << std::endl;
 			result.forecast = result::draw;
-			return result;
 		}
 	}
-
-	result.best_move = (moves + ((rand() + get_random_unsigned_long_long()) % (pm - moves)))->m;
+	else {
+		result.best_move = moves[(rand() + get_random_unsigned_long_long()) % moves.size()];
+	}
 
 	return result;
 }
