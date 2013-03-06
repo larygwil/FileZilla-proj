@@ -30,7 +30,11 @@ enum class movegen_type {
 	// Returned evaluation is MVV/LVA
 	capture,
 
+	// Calculates legal non-captures
 	noncapture,
+
+	// As above, but only legal noncaptures are returned that
+	// are likely (but not guaranteeded) to give check.
 	pseudocheck
 };
 
@@ -47,13 +51,5 @@ template<movegen_type type>
 inline std::vector<move> calculate_moves( position const& p ) {
 	return calculate_moves<type>( p, check_map( p ) );
 }
-
-// Calculates legal non-captures
-// If only_pseudo_checks is not set,
-// all legal noncaptures are returned.
-// Otherwise, only legal noncaptures are returned that
-// are likely (but not guaranteeded) to give check.
-//template<bool only_pseudo_checks>
-//void calculate_moves_noncaptures( position const& p, move_info*& moves, check_map const& check );
 
 #endif
