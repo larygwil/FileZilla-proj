@@ -164,10 +164,10 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 	pos->v = v;
 #if USE_STATISTICS
 	if( !pos->key ) {
-		++stats_.entries;
+		stats_.entries.fetch_add( 1, std::memory_order_relaxed );
 	}
 	else {
-		++stats_.index_collisions;
+		stats_.index_collisions.fetch_add( 1, std::memory_order_relaxed );
 	}
 #endif
 	pos->key = save_key;
@@ -207,7 +207,7 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 				( type == score_type::upper_bound && alpha >= eval ) )
 			{
 	#if USE_STATISTICS
-				++stats_.hits;
+				stats_.hits.fetch_add( 1, std::memory_order_relaxed );
 	#endif
 				return static_cast<score_type::type>(type);
 			}
@@ -215,10 +215,10 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 
 #if USE_STATISTICS
 		if( !best_move.empty() ) {
-			++stats_.best_move;
+			stats_.best_move.fetch_add( 1, std::memory_order_relaxed );;
 		}
 		else {
-			++stats_.misses;
+			stats_.misses.fetch_add( 1, std::memory_order_relaxed );;
 		}
 #endif
 
@@ -226,7 +226,7 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 	}
 
 #if USE_STATISTICS
-	++stats_.misses;
+	stats_.misses.fetch_add( 1, std::memory_order_relaxed );;
 #endif
 
 	best_move.clear();
