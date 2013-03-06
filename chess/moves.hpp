@@ -35,15 +35,15 @@ enum class movegen_type {
 };
 
 // Calculates all legal moves
-template<enum class movegen_type type>
+template<movegen_type type>
 void calculate_moves( position const& p, move_info*& moves, check_map const& check );
 
 // Calculates all legal moves.
 // Do not call in actual search, this function is too slow.
-template<enum class movegen_type type>
+template<movegen_type type>
 std::vector<move> calculate_moves( position const& p, check_map const& check );
 
-template<enum class movegen_type type>
+template<movegen_type type>
 inline std::vector<move> calculate_moves( position const& p ) {
 	return calculate_moves<type>( p, check_map( p ) );
 }
