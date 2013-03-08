@@ -132,10 +132,6 @@ public:
 
 	thread_pool& pool_;
 	uint64_t thread_index_;
-
-#if USE_STATISTICS
-	statistics stats_;
-#endif
 };
 
 
@@ -283,6 +279,10 @@ public:
 
 	uint64_t idle_threads_;
 	std::vector<worker_thread*> threads_;
+
+#if USE_STATISTICS
+	statistics stats_;
+#endif
 };
 
 
@@ -615,17 +615,11 @@ void master_worker_thread::process_root( scoped_lock& l )
 		}
 
 		if( value > root_alpha && !do_abort_ ) {
-#if USE_STATISTICS
-			for( std::size_t st = 1; st < pool_.threads_.size(); ++st ) {
-				stats_.accumulate( pool_.threads_[st]->stats_ );
-				pool_.threads_[st]->stats_.reset( false );
-			}
-#endif
 			// Bubble new best to front
 			d.m.sort = value;
 			d.depth = max_depth_;
 #if USE_STATISTICS
-			d.seldepth = stats_.highest_depth();
+			d.seldepth = pool_.stats_.highest_depth();
 #endif
 			get_pv_from_tt( d.pv, p_, max_depth_ );
 			std::size_t j;
@@ -654,7 +648,7 @@ void master_worker_thread::print_best( unsigned int updated )
 	std::size_t const multipv = std::min( moves_.size(), multipv_ );
 
 #if USE_STATISTICS
-	uint64_t nodes = stats_.nodes() + stats_.quiescence_nodes;
+	uint64_t nodes = pool_.stats_.nodes() + pool_.stats_.quiescence_nodes;
 #else
 	uint64_t nodes = 0;
 #endif
@@ -771,7 +765,7 @@ short context::quiescence_search( int ply, int depth, position const& p, check_m
 	}
 
 #if USE_STATISTICS
-	++thread_->stats_.quiescence_nodes;
+	thread_->pool_.stats_.quiescence_nodes.fetch_add( 1, std::memory_order_relaxed );
 #endif
 
 	short ret;
@@ -920,7 +914,7 @@ short context::step( int depth, int ply, position& p, check_map const& check, sh
 	}
 
 #if USE_STATISTICS
-	thread_->stats_.node( ply );
+	thread_->pool_.stats_.node( ply );
 #endif
 
 	short ret;
@@ -1432,15 +1426,10 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		result.ponder_move = pv[1];
 
 #if USE_STATISTICS
-		for( std::size_t i = 1; i < impl_->pool_.threads_.size(); ++i ) {
-			master->stats_.accumulate( impl_->pool_.threads_[i]->stats_ );
-			impl_->pool_.threads_[i]->stats_.reset( false );
-		}
-
 		timestamp stop;
-		master->stats_.print( stop - start );
-		master->stats_.accumulate( stop - start );
-		master->stats_.reset( false );
+		impl_->pool_.stats_.print( stop - start );
+		impl_->pool_.stats_.accumulate( stop - start );
+		impl_->pool_.stats_.reset( false );
 #endif
 	}
 
@@ -1473,7 +1462,7 @@ bool calc_manager::should_abort() const
 #if USE_STATISTICS
 statistics& calc_manager::stats()
 {
-	return impl_->pool_.master()->stats_;
+	return impl_->pool_.stats_;
 }
 #endif
 

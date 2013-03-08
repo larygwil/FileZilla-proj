@@ -6,6 +6,7 @@
 #include "chess.hpp"
 #include "config.hpp"
 #include "util/time.hpp"
+#include <atomic>
 #include <sstream>
 
 #if USE_STATISTICS
@@ -28,7 +29,7 @@ public:
 
 	void print_total();
 
-	uint64_t quiescence_nodes;
+	std::atomic_ullong quiescence_nodes;
 
 	uint64_t total_full_width_nodes;
 	uint64_t total_quiescence_nodes;
@@ -36,7 +37,7 @@ public:
 	duration total_elapsed;
 
 private:
-	uint64_t full_width_nodes[MAX_DEPTH];
+	std::atomic_ullong full_width_nodes[MAX_DEPTH];
 
 	// Constructing a new stringstream and imbuing it with
 	// a locale each time calling print is really espensive.

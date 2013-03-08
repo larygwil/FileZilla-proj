@@ -166,7 +166,7 @@ void statistics::reset( bool total )
 
 void statistics::node( int ply )
 {
-	++full_width_nodes[ply];
+	full_width_nodes[ply].fetch_add( 1, std::memory_order_relaxed );
 }
 
 
