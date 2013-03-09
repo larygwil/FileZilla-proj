@@ -283,4 +283,6 @@ hash::stats& hash::stats::operator=( stats const& s )
 		misses.store( s.misses);
 		index_collisions.store( s.index_collisions );
 	}
+
+	return *this;
 }
