@@ -115,43 +115,18 @@ public:
 	hash();
 	~hash();
 
-	class stats_p
+	class stats
 	{
 public:
-		stats_p()
-			: entries()
-			, hits()
-			, best_move()
-			, misses()
-			, index_collisions()
-		{
-			ASSERT( entries.is_lock_free() );
-		}
+		stats();
+		stats( stats const& s );
+		stats& operator=( stats const& s );
 
 		std::atomic_ullong entries;
 		std::atomic_ullong hits;
 		std::atomic_ullong best_move;
 		std::atomic_ullong misses;
 		std::atomic_ullong index_collisions;
-	};
-
-	class stats
-	{
-public:
-		stats( stats_p const& s )
-			: entries(s.entries)
-			, hits(s.hits)
-			, best_move(s.best_move)
-			, misses(s.misses)
-			, index_collisions(s.index_collisions)
-		{
-		}
-
-		uint64_t entries;
-		uint64_t hits;
-		uint64_t best_move;
-		uint64_t misses;
-		uint64_t index_collisions;
 	};
 
 	stats get_stats( bool reset );
@@ -173,7 +148,7 @@ public:
 	uint64_t max_hash_entry_count() const;
 
 private:
-	stats_p stats_;
+	stats stats_;
 
 	hash_key size_;
 	hash_key bucket_count_;

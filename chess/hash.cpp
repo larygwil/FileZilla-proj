@@ -251,3 +251,36 @@ uint64_t hash::max_hash_entry_count() const
 {
 	return bucket_count_ * bucket_entries;
 }
+
+
+hash::stats::stats()
+	: entries()
+	, hits()
+	, best_move()
+	, misses()
+	, index_collisions()
+{
+	ASSERT( entries.is_lock_free() );
+}
+
+
+hash::stats::stats( stats const& s )
+{
+	entries.store( s.entries );
+	hits.store( s.hits );
+	best_move.store( s.best_move);
+	misses.store( s.misses);
+	index_collisions.store( s.index_collisions );
+}
+
+
+hash::stats& hash::stats::operator=( stats const& s )
+{
+	if( this != &s ) {
+		entries.store( s.entries );
+		hits.store( s.hits );
+		best_move.store( s.best_move);
+		misses.store( s.misses);
+		index_collisions.store( s.index_collisions );
+	}
+}
