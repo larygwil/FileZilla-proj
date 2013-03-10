@@ -79,6 +79,8 @@ public:
 	std::set<move> searchmoves_;
 
 	calc_result result_;
+
+	timestamp start_;
 };
 
 octochess_uci::octochess_uci( gui_interface_ptr const& p ) 
@@ -146,7 +148,7 @@ void octochess_uci::make_moves( std::vector<std::string> const& moves )
 	}
 }
 
-void octochess_uci::calculate( calculate_mode_type mode, position_time const& t, int depth, bool ponder, std::string const& searchmoves )
+void octochess_uci::calculate( timestamp const& start, calculate_mode_type mode, position_time const& t, int depth, bool ponder, std::string const& searchmoves )
 {
 	transposition_table.init_if_needed( conf.memory );
 
@@ -156,8 +158,8 @@ void octochess_uci::calculate( calculate_mode_type mode, position_time const& t,
 	scoped_lock lock(impl_->mutex_);
 
 	impl_->result_.best_move.clear();
-
 	impl_->calc_manager_.clear_abort();
+	impl_->start_ = start;
 
 	if( mode == calculate_mode::ponderhit ) {
 		impl_->ponder_ = false;
@@ -223,8 +225,6 @@ void octochess_uci::impl::onRun() {
 		}
 	}
 	else {
-		timestamp start_time;
-
 		calc_result result = calc_manager_.calc( pos_, depth_, times_.time_for_this_move(), std::max( duration(), times_.total_remaining() - times_.overhead() )
 			, half_moves_played_, seen_positions_, *this, searchmoves_ );
 
@@ -241,7 +241,7 @@ void octochess_uci::impl::onRun() {
 			}
 
 			timestamp stop;
-			duration elapsed = stop - start_time;
+			duration elapsed = stop - start_;
 
 			std::cerr << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
 			times_.after_move_update( elapsed, result.used_extra_time );

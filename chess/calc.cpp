@@ -1336,7 +1336,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 		}
 		else {
 			if( !p.white() ) {
-				std::cout << std::endl;
+				dlog() << "\n";
 			}
 			dlog() << "DRAW" << std::endl;
 			result.forecast = result::draw;

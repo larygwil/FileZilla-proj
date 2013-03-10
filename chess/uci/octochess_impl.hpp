@@ -18,7 +18,7 @@ public:
 	virtual void new_game() override;
 	virtual void set_position( std::string const& fen ) override;
 	virtual void make_moves( std::string const& list_of_moves ) override;
-	virtual void calculate( calculate_mode_type, position_time const&, int depth, bool ponder, std::string const& searchmoves ) override;
+	virtual void calculate( timestamp const& start, calculate_mode_type, position_time const&, int depth, bool ponder, std::string const& searchmoves ) override;
 	virtual void stop() override;
 	virtual void quit() override;
 	virtual bool is_move( std::string const& ms ) override;

@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+class timestamp;
+
 namespace octochess {
 namespace uci {
 
@@ -27,7 +29,7 @@ public:
 	virtual void new_game() = 0;
 	virtual void set_position( std::string const& fen ) = 0;
 	virtual void make_moves( std::string const& list_of_moves ) = 0;
-	virtual void calculate( calculate_mode_type, position_time const&, int depth, bool ponder, std::string const& searchmoves ) = 0;
+	virtual void calculate( timestamp const& start, calculate_mode_type, position_time const&, int depth, bool ponder, std::string const& searchmoves ) = 0;
 	virtual void stop() = 0;
 	virtual void quit() = 0;
 	virtual bool is_move( std::string const& ms ) = 0;

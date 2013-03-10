@@ -184,6 +184,9 @@ namespace {
 
 void minimalistic_uci_protocol::handle_go( std::string const& params )
 {
+	// Create at early as possible
+	timestamp start;
+
 	calculate_mode::type mode = calculate_mode::forced;
 
 	position_time t;
@@ -230,13 +233,13 @@ loop:
 		}
 	}
 
-	callbacks_->calculate( mode, t, depth, ponder, searchmoves );
+	callbacks_->calculate( start, mode, t, depth, ponder, searchmoves );
 }
 
 
 void minimalistic_uci_protocol::handle_ponderhit()
 {
-	callbacks_->calculate( calculate_mode::ponderhit, position_time(), -1, false, std::string() );
+	callbacks_->calculate( timestamp(), calculate_mode::ponderhit, position_time(), -1, false, std::string() );
 }
 
 

@@ -73,6 +73,8 @@ struct xboard_state
 		started_from_root = true;
 
 		searchmoves_.clear();
+
+		moves_between_updates = 0;
 	}
 
 	void apply( move const& m )
@@ -125,12 +127,16 @@ struct xboard_state
 
 		searchmoves_.clear();
 
+		moves_between_updates = 0;
+
 		return true;
 	}
 
-	void update_comm_overhead( duration const& new_remaining )
+	void update_comm_overhead( duration const& new_remaining, bool from_level )
 	{
-		if( p.self() == last_go_color && moves_between_updates && time_remaining != duration::infinity() && (time_remaining - new_remaining).absolute() < duration::seconds(2 * moves_between_updates) ) {
+		duration threshold = (from_level ? duration::seconds(2) : duration::milliseconds(500)) * moves_between_updates;
+
+		if( moves_between_updates && time_remaining != duration::infinity() && (time_remaining - new_remaining).absolute() < threshold ) {
 			level_cmd_differences += time_remaining - new_remaining;
 			level_cmd_count += moves_between_updates;
 
@@ -142,8 +148,14 @@ struct xboard_state
 				comm_overhead = duration();
 			}
 
-			dlog() << "Updating communication overhead from " << communication_overhead.milliseconds() << " ms to " << comm_overhead.milliseconds() << " ms " << std::endl;
-			communication_overhead = comm_overhead;
+			if( communication_overhead > duration::milliseconds( 500 ) ) {
+				communication_overhead = duration::milliseconds( 500 );
+			}
+
+			if( comm_overhead != communication_overhead ) {
+				dlog() << "Updating communication overhead from " << communication_overhead.milliseconds() << " ms to " << comm_overhead.milliseconds() << " ms " << std::endl;
+				communication_overhead = comm_overhead;
+			}
 		}
 
 		moves_between_updates = 0;
@@ -387,18 +399,8 @@ void xboard_thread::onRun()
 		}
 
 		duration const overhead = state.internal_overhead + state.communication_overhead;
-		if( time_limit > overhead ) {
-			time_limit -= overhead;
-		}
-		else {
-			time_limit = duration();
-		}
-		if( deadline > overhead ) {
-			deadline -= overhead;
-		}
-		else {
-			deadline = duration();
-		}
+		time_limit -= overhead;
+		deadline -= overhead;
 
 		// Any less time makes no sense.
 		if( time_limit < duration::milliseconds(10) ) {
@@ -445,26 +447,27 @@ void xboard_thread::onRun()
 		duration elapsed = timestamp() - state.last_go_time;
 
 		dlog() << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
-		if( !time_limit.is_infinity() ) {
-			if( time_limit > elapsed ) {
-				state.bonus_time = (time_limit - elapsed) / 2;
-			}
-			else {
-				state.bonus_time.clear();
-
-				if( time_limit + result.used_extra_time > elapsed ) {
-					duration actual_overhead = elapsed - time_limit - result.used_extra_time;
-					if( actual_overhead > state.internal_overhead ) {
-						dlog() << "Updating internal overhead from " << state.internal_overhead.milliseconds() << " ms to " << actual_overhead.milliseconds() << " ms " << std::endl;
-						state.internal_overhead = actual_overhead;
-					}
-				}
-			}
-			state.time_remaining -= elapsed;
+		if( time_limit.is_infinity() || elapsed < duration() ) {
+			state.bonus_time.clear();
+		}
+		else if( time_limit > elapsed ) {
+			state.bonus_time = (time_limit - elapsed) / 2;
 		}
 		else {
 			state.bonus_time.clear();
+
+			if( time_limit + result.used_extra_time < elapsed ) {
+				duration actual_overhead = elapsed - time_limit - result.used_extra_time;
+				if( actual_overhead > state.internal_overhead ) {
+					dlog() << "Updating internal overhead from " << state.internal_overhead.milliseconds() << " ms to " << actual_overhead.milliseconds() << " ms " << std::endl;
+					state.internal_overhead = actual_overhead;
+				}
+			}
 		}
+		if( elapsed > duration() ) {
+			state.time_remaining -= elapsed;
+		}
+		state.time_remaining += state.time_increment;
 	}
 
 	if( ponder_ ) {
@@ -519,7 +522,6 @@ void xboard_thread::on_new_best_move( unsigned int, position const& p, int depth
 		}
 		else {
 			dlog() << ss.str();
-			dlog().flush();
 		}
 
 		best_move = *pv;
@@ -566,6 +568,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 			timestamp stop;
 			state.time_remaining -= stop - state.last_go_time;
+			state.time_remaining += state.time_increment;
 			dlog() << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 			return;
 		}
@@ -587,6 +590,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 		timestamp stop;
 		state.time_remaining -= stop - state.last_go_time;
+		state.time_remaining += state.time_increment;
 		dlog() << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 		return;
 	}
@@ -799,7 +803,9 @@ skip_getline:
 				std::cout << "Error (bad command): Not a valid time command" << std::endl;
 			}
 			else {
-				state.time_remaining = duration::milliseconds( t * 10 );
+				duration new_remaining = duration::milliseconds( t * 10 );
+				state.update_comm_overhead( new_remaining, false );
+				state.time_remaining = new_remaining;
 			}
 		}
 		else if( cmd == "level" ) {
@@ -848,7 +854,7 @@ skip_getline:
 				}
 			}
 
-			state.update_comm_overhead( duration::minutes(minutes) + duration::seconds(seconds) );
+			state.update_comm_overhead( duration::minutes(minutes) + duration::seconds(seconds), true );
 
 			state.time_control = control;
 			state.time_remaining = duration::minutes(minutes) + duration::seconds(seconds);

@@ -52,12 +52,7 @@ void time_calculation::update(position_time const& t, bool is_white, int half_mo
 	}
 
 	duration overhead = internal_overhead_;
-	if( time_limit_ > overhead ) {
-		time_limit_ -= overhead;
-	}
-	else {
-		time_limit_ = duration();
-	}
+	time_limit_ -= overhead;
 
 	// Any less time makes no sense.
 	if( time_limit_ < duration::milliseconds(10) ) {
@@ -67,7 +62,8 @@ void time_calculation::update(position_time const& t, bool is_white, int half_mo
 
 void time_calculation::after_move_update( duration const& elapsed, duration const& used_extra_time )
 {
-	if( time_limit_.is_infinity() ) {
+	// elapsed < 0 can happen if system time changes
+	if( time_limit_.is_infinity() || elapsed < duration() ) {
 		bonus_time_.clear();
 	}
 	else if( time_limit_ > elapsed ) {
@@ -76,7 +72,7 @@ void time_calculation::after_move_update( duration const& elapsed, duration cons
 	else {
 		bonus_time_ = duration();
 
-		if( time_limit_ + used_extra_time > elapsed ) {
+		if( time_limit_ + used_extra_time < elapsed ) {
 			duration actual_overhead = elapsed - time_limit_ - used_extra_time;
 			if( actual_overhead > internal_overhead_ ) {
 				std::cerr << "Updating internal overhead from " << internal_overhead_.milliseconds() << " ms to " << actual_overhead.milliseconds() << " ms " << std::endl;
@@ -84,7 +80,9 @@ void time_calculation::after_move_update( duration const& elapsed, duration cons
 			}
 		}
 	}
-	time_remaining_ -= elapsed;
+	if( elapsed > duration() ) {
+		time_remaining_ -= elapsed;
+	}
 }
 
 }
