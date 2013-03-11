@@ -615,14 +615,12 @@ void resume( xboard_thread& thread, xboard_state& state, timestamp const& cmd_re
 }
 
 
-bool parse_setboard( xboard_state& state, xboard_thread& thread, std::string const& args, std::string& error )
+bool parse_setboard( xboard_state& state, std::string const& args, std::string& error )
 {
 	position new_pos;
 	if( !parse_fen( args, new_pos, &error ) ) {
 		return false;
 	}
-
-	mode::type prev_state = state.mode_;
 
 	state.reset();
 	state.p = new_pos;
@@ -872,7 +870,7 @@ skip_getline:
 		}
 		else if( cmd == "setboard" ) {
 			std::string error;
-			if( !parse_setboard( state, thread, args, error ) ) {
+			if( !parse_setboard( state, args, error ) ) {
 				std::cout << "Error (bad command): Not a valid FEN position: " << error << std::endl;
 			}
 		}
@@ -1030,7 +1028,7 @@ skip_getline:
 			else {
 				// Octochess-specific extension: Raw fen without command is equivalent to setboard.
 				std::string error2;
-				if( !parse_setboard( state, thread, line, error2 ) ) {
+				if( !parse_setboard( state, line, error2 ) ) {
 					std::cout << error << ": " << line << std::endl;
 				}
 			}
