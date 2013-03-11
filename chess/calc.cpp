@@ -1258,8 +1258,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, duration const
 	// Should be as early as possible for most accurate timekeeping
 	timestamp start;
 
-	// TODO: Refactor this to reflect the new threading code
-	ASSERT( move_time_limit <= deadline );
+	ASSERT( move_time_limit.is_infinity() || move_time_limit <= deadline );
 
 	max_depth = impl_->get_max_depth( max_depth );
 
