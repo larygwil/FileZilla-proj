@@ -1251,13 +1251,10 @@ calc_manager::~calc_manager()
 }
 
 
-calc_result calc_manager::calc( position const& p, int max_depth, duration const& move_time_limit, duration const& deadline, int clock, seen_positions& seen
+calc_result calc_manager::calc( position const& p, int max_depth, timestamp const& start, duration const& move_time_limit, duration const& deadline, int clock, seen_positions& seen
 		  , new_best_move_callback_base& new_best_cb
 		  , std::set<move> const& searchmoves )
 {
-	// Should be as early as possible for most accurate timekeeping
-	timestamp start;
-
 	ASSERT( move_time_limit.is_infinity() || move_time_limit <= deadline );
 
 	max_depth = impl_->get_max_depth( max_depth );

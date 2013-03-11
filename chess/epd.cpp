@@ -106,7 +106,7 @@ int run_sts( epd const& e, int& match, int& sum )
 
 		calc_manager c;
 		seen_positions seen( e.p.hash_ );
-		calc_result r = c.calc( e.p, conf.max_search_depth(), duration::infinity(), d, 0, seen, null_new_best_move_cb );
+		calc_result r = c.calc( e.p, conf.max_search_depth(), timestamp(), duration::infinity(), d, 0, seen, null_new_best_move_cb );
 		if( scores.find(r.best_move) != scores.end() ) {
 			sum += scores[r.best_move];
 		}

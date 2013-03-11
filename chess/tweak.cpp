@@ -33,7 +33,7 @@ static calc_result tweak_calc( position& p, duration const& move_time_limit, int
 {
 	if( clock > 10 ) {
 		calc_manager cmgr;
-		return cmgr.calc( p, -1, move_time_limit, move_time_limit, clock, seen, new_best_cb );
+		return cmgr.calc( p, -1, timestamp(), move_time_limit, move_time_limit, clock, seen, new_best_cb );
 	}
 
 	check_map check( p );

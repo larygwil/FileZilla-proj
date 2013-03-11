@@ -215,7 +215,7 @@ void octochess_uci::impl::onRun() {
 	//the function initiating all the calculating
 	if( ponder_ ) {
 		std::cerr << "Pondering..." << std::endl;
-		calc_result result = calc_manager_.calc( pos_, -1, duration::infinity(), duration::infinity()
+		calc_result result = calc_manager_.calc( pos_, -1, start_, duration::infinity(), duration::infinity()
 			, half_moves_played_, seen_positions_, *this, searchmoves_ );
 
 		scoped_lock lock(mutex_);
@@ -225,7 +225,7 @@ void octochess_uci::impl::onRun() {
 		}
 	}
 	else {
-		calc_result result = calc_manager_.calc( pos_, depth_, times_.time_for_this_move(), std::max( duration(), times_.total_remaining() - times_.overhead() )
+		calc_result result = calc_manager_.calc( pos_, depth_, start_, times_.time_for_this_move(), std::max( duration(), times_.total_remaining() - times_.overhead() )
 			, half_moves_played_, seen_positions_, *this, searchmoves_ );
 
 		scoped_lock lock(mutex_);

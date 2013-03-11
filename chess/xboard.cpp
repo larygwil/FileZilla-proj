@@ -411,7 +411,7 @@ void xboard_thread::onRun()
 		}
 
 
-		calc_result result = cmgr_.calc( state.p, depth_, time_limit, deadline, state.clock, state.seen, *this, state.searchmoves_ );
+		calc_result result = cmgr_.calc( state.p, depth_, state.last_go_time, time_limit, deadline, state.clock, state.seen, *this, state.searchmoves_ );
 
 		scoped_lock l( mtx );
 
@@ -472,7 +472,7 @@ void xboard_thread::onRun()
 
 	if( ponder_ ) {
 		dlog() << "Pondering..." << std::endl;
-		cmgr_.calc( state.p, -1, duration::infinity(), duration::infinity(), state.clock, state.seen, *this, state.searchmoves_ );
+		cmgr_.calc( state.p, -1, state.last_go_time, duration::infinity(), duration::infinity(), state.clock, state.seen, *this, state.searchmoves_ );
 	}
 }
 

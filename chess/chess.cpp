@@ -58,7 +58,7 @@ void auto_play()
 
 	calc_manager cmgr;
 	calc_result result;
-	while( !(result = cmgr.calc( p, -1, TIME_LIMIT, TIME_LIMIT, i, seen ) ).best_move.empty() ) {
+	while( !(result = cmgr.calc( p, -1, timestamp(), TIME_LIMIT, TIME_LIMIT, i, seen ) ).best_move.empty() ) {
 		cmgr.clear_abort();
 		if( p.white() ) {
 			std::cout << std::setw(3) << i << ".";
