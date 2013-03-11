@@ -67,7 +67,9 @@ struct xboard_state
 		bonus_time = duration();
 		fixed_move_time = duration();
 
-		mode_ = mode::normal;
+		if( mode_ != mode::analyze ) {
+			mode_ = mode::normal;
+		}
 		self = color::black;
 
 		started_from_root = true;
@@ -112,6 +114,7 @@ struct xboard_state
 			return false;
 		}
 
+		ASSERT( history.size() == move_history.size() );
 		clock -= count;
 
 		// This isn't exactly correct, if popping past root we would need to restore old seen state prior to a reset.
@@ -468,6 +471,7 @@ void xboard_thread::onRun()
 			state.time_remaining -= elapsed;
 		}
 		state.time_remaining += state.time_increment;
+		++state.moves_between_updates;
 	}
 
 	if( ponder_ ) {
@@ -535,8 +539,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 {
 	state.last_go_time = cmd_recv_time;
 	state.last_go_color = state.p.self();
-	++state.moves_between_updates;
-
+	
 	// Do a step
 	if( conf.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
 		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.move_history_, true );
@@ -569,6 +572,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 			timestamp stop;
 			state.time_remaining -= stop - state.last_go_time;
 			state.time_remaining += state.time_increment;
+			++state.moves_between_updates;
 			dlog() << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 			return;
 		}
@@ -591,11 +595,23 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 		timestamp stop;
 		state.time_remaining -= stop - state.last_go_time;
 		state.time_remaining += state.time_increment;
+		++state.moves_between_updates;
 		dlog() << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 		return;
 	}
 
 	thread.start();
+}
+
+
+void resume( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_time )
+{
+	if( state.mode_ == mode::analyze ) {
+		thread.start( true );
+	}
+	else if( state.mode_ == mode::normal && state.p.self() == state.self ) {
+		go( thread, state, cmd_recv_time );
+	}
 }
 
 
@@ -613,14 +629,6 @@ bool parse_setboard( xboard_state& state, xboard_thread& thread, std::string con
 	state.seen.reset_root( state.p.hash_ );
 	state.started_from_root = false;
 	state.searchmoves_.clear();
-
-	if( prev_state == mode::analyze ) {
-		state.mode_ = mode::analyze;
-		thread.start( true );
-	}
-	else if( prev_state == mode::force ) {
-		state.mode_ = mode::force;
-	}
 
 	return true;
 }
@@ -662,12 +670,8 @@ skip_getline:
 
 		logger::log_input( line );
 
-		mode::type previous_mode;
-
 		{
 			scoped_lock l( thread.mtx );
-
-			previous_mode = state.mode_;
 
 			if( state.mode_ == mode::edit ) {
 				if( !state.handle_edit_mode( cmd ) ) {
@@ -691,6 +695,15 @@ skip_getline:
 			else if( cmd == "." ) {
 				// TODO: Implement
 				std::cout << "Error (unknown command): ." << std::endl;
+				continue;
+			}
+			else if( cmd == "hint" ) {
+				short tmp;
+				move m;
+				transposition_table.lookup( state.p.hash_, 0, 0, result::loss, result::win, tmp, m, tmp );
+				if( !m.empty() ) {
+					std::cout << "Hint: " << move_to_long_algebraic( m ) << std::endl;
+				}
 				continue;
 			}
 		}
@@ -732,13 +745,8 @@ skip_getline:
 			// Ignore
 		}
 		else if( cmd == "new" ) {
-			bool analyze = state.mode_ == mode::analyze;
 			state.reset();
 			thread.set_depth( -1 );
-			if( analyze ) {
-				state.mode_ = mode::analyze;
-				thread.start( true );
-			}
 		}
 		else if( cmd == "force" ) {
 			state.mode_ = mode::force;
@@ -773,20 +781,10 @@ skip_getline:
 			if( !state.undo(1) ) {
 				std::cout << "Error (command not legal now): undo" << std::endl;
 			}
-			else {
-				if( state.mode_ == mode::analyze ) {
-					thread.start( true );
-				}
-			}
 		}
 		else if( cmd == "remove" ) {
 			if( !state.undo(2) ) {
 				std::cout << "Error (command not legal now): remove" << std::endl;
-			}
-			else {
-				if( state.mode_ == mode::analyze ) {
-					thread.start( true );
-				}
 			}
 		}
 		else if( cmd == "otim" ) {
@@ -864,12 +862,9 @@ skip_getline:
 		else if( cmd == "go" ) {
 			state.mode_ = mode::normal;
 			state.self = state.p.self();
-			// TODO: clocks...
-			go( thread, state, cmd_recv_time );
 		}
 		else if( cmd == "analyze" ) {
 			state.mode_ = mode::analyze;
-			thread.start( true );
 		}
 		else if( cmd == "exit" ) {
 			state.mode_ = mode::normal;
@@ -927,14 +922,7 @@ skip_getline:
 			move m;
 			std::string error;
 			if( parse_move( state.p, args, m, error ) ) {
-
 				state.apply( m );
-				if( state.mode_ == mode::normal && state.p.self() == state.self ) {
-					go( thread, state, cmd_recv_time );
-				}
-				else if( state.mode_ == mode::analyze ) {
-					thread.start( true );
-				}
 			}
 			else {
 				std::cout << "Error (bad command): Not a valid move: " << error << std::endl;
@@ -994,11 +982,6 @@ skip_getline:
 				else {
 					thread.set_multipv( v );
 				}
-				
-				if( previous_mode == mode::analyze ) {
-					state.mode_ = mode::analyze;
-					thread.start( true );
-				}
 			}
 			else {
 				std::cout << "Error (bad command): Not a known option" << std::endl;
@@ -1037,24 +1020,12 @@ skip_getline:
 			}
 
 			ASSERT( state.searchmoves_.find( move() ) == state.searchmoves_.end() || state.searchmoves_.size() == 1 );
-
-			if( previous_mode == mode::analyze ) {
-				state.mode_ = mode::analyze;
-				thread.start( true );
-			}
 		}
 		else {
 			move m;
 			std::string error;
 			if( parse_move( state.p, line, m, error ) ) {
-
 				state.apply( m );
-				if( state.mode_ == mode::normal && state.p.self() == state.self ) {
-					go( thread, state, cmd_recv_time );
-				}
-				else if( state.mode_ == mode::analyze ) {
-					thread.start( true );
-				}
 			}
 			else {
 				// Octochess-specific extension: Raw fen without command is equivalent to setboard.
@@ -1064,5 +1035,7 @@ skip_getline:
 				}
 			}
 		}
+
+		resume( thread, state, cmd_recv_time );
 	}
 }
