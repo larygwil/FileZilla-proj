@@ -11,9 +11,8 @@
 #include "pgn.hpp"
 #include "pvlist.hpp"
 #include "random.hpp"
-#include "util/mutex.hpp"
+#include "util/logger.hpp"
 #include "util/string.hpp"
-#include "util/thread.hpp"
 #include "util.hpp"
 #include "zobrist.hpp"
 
@@ -29,7 +28,7 @@
 
 #include <ctype.h>
 
-int const MAX_BOOKSEARCH_DEPTH = 17;
+int const MAX_BOOKSEARCH_DEPTH = 20;
 
 unsigned int const MAX_BOOK_DEPTH = 10;
 
@@ -54,23 +53,22 @@ bool deepen_move( book& b, position const& p, seen_positions const& seen, std::v
 		}
 	}
 
-	context ctx( 0 );
-	ctx.clock = move_history.size() % 256;
-	ctx.seen = seen;
-
 	position new_pos = p;
 	apply_move( new_pos, m );
 
 	short value;
-	if( ctx.seen.is_two_fold( new_pos.hash_, 1 ) ) {
+	if( seen.is_two_fold( new_pos.hash_, 1 ) ) {
 		value = 0;
 	}
 	else {
-		ctx.seen.push_root( new_pos.hash_ );
+		seen_positions seen2 = seen;
+		seen2.push_root( new_pos.hash_ );
 
-		check_map check( new_pos );
+		calc_manager cmgr;
+		calc_result res = cmgr.calc( new_pos, MAX_BOOKSEARCH_DEPTH - 2, timestamp(), duration::infinity(),
+				duration::infinity(), move_history.size() % 256, seen2, null_new_best_move_cb );
 
-		value = -ctx.step( depth * depth_factor + MAX_QDEPTH, 1, new_pos, check, result::loss, result::win, true );
+		value = -res.forecast;
 	}
 
 	book_entry e;
@@ -95,24 +93,24 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 
 	std::vector<book_entry> entries;
 
+	calc_manager cmgr;
 	for( move_info const* it = moves; it != pm; ++it ) {
-		context ctx( 0 );
-		ctx.clock = move_history.size() % 256;
-		ctx.seen = seen;
-
+		
 		position new_pos = p;
 		apply_move( new_pos, it->m );
 
 		short value;
-		if( ctx.seen.is_two_fold( new_pos.hash_, 1 ) ) {
+		if( seen.is_two_fold( new_pos.hash_, 1 ) ) {
 			value = 0;
 		}
 		else {
-			ctx.seen.push_root( new_pos.hash_ );
+			seen_positions seen2 = seen;
+			seen2.push_root( new_pos.hash_ );
 
-			check_map check( new_pos );
+			calc_result res = cmgr.calc( new_pos, MAX_BOOKSEARCH_DEPTH - 2, timestamp(), duration::infinity(),
+				duration::infinity(), move_history.size() % 256, seen2, null_new_best_move_cb );
 
-			value = -ctx.step( (MAX_BOOKSEARCH_DEPTH - 2) * depth_factor + MAX_QDEPTH, 1,  new_pos, check, result::loss, result::win, true );
+			value = -res.forecast;
 		}
 
 		book_entry entry;
@@ -143,23 +141,21 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 
 			done = false;
 
-			context ctx( 0 );
-			ctx.clock = move_history.size() % 256;
-			ctx.seen = seen;
-
 			position new_pos = p;
 			apply_move( new_pos, entry.m );
 
 			short value;
-			if( ctx.seen.is_two_fold( new_pos.hash_, 1 ) ) {
+			if( seen.is_two_fold( new_pos.hash_, 1 ) ) {
 				value = 0;
 			}
 			else {
-				ctx.seen.push_root( new_pos.hash_ );
+				seen_positions seen2 = seen;
+				seen2.push_root( new_pos.hash_ );
 
-				check_map check( new_pos );
+				calc_result res = cmgr.calc( new_pos, MAX_BOOKSEARCH_DEPTH, timestamp(), duration::infinity(),
+					duration::infinity(), move_history.size() % 256, seen2, null_new_best_move_cb );
 
-				value = -ctx.step( MAX_BOOKSEARCH_DEPTH * depth_factor + MAX_QDEPTH, 1, new_pos, check, result::loss, result::win, true );
+				value = -res.forecast;
 			}
 
 			entry.search_depth = MAX_BOOKSEARCH_DEPTH;
@@ -175,6 +171,8 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 
 bool update_position( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, std::vector<book_entry> const& entries )
 {
+	calc_manager cmgr;
+
 	for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 		book_entry entry = *it;
 
@@ -193,23 +191,21 @@ bool update_position( book& b, position const& p, seen_positions const& seen, st
 				new_depth = MAX_BOOKSEARCH_DEPTH;
 			}
 
-			context ctx ( 0 );
-			ctx.clock = move_history.size() % 256;
-			ctx.seen = seen;
-
 			position new_pos = p;
 			apply_move( new_pos, entry.m );
 
 			short value;
-			if( ctx.seen.is_two_fold( new_pos.hash_, 1 ) ) {
+			if( seen.is_two_fold( new_pos.hash_, 1 ) ) {
 				value = 0;
 			}
 			else {
-				ctx.seen.push_root( new_pos.hash_ );
+				seen_positions seen2 = seen;
+				seen2.push_root( new_pos.hash_ );
 
-				check_map check( new_pos );
+				calc_result res = cmgr.calc( new_pos, new_depth, timestamp(), duration::infinity(),
+					duration::infinity(), move_history.size() % 256, seen2, null_new_best_move_cb );
 
-				value = -ctx.step( new_depth * depth_factor + MAX_QDEPTH, 1, new_pos, check, result::loss, result::win, true );
+				value = -res.forecast;
 			}
 
 			std::cerr << entry.forecast << " d" << static_cast<int>(entry.search_depth) << " v" << static_cast<int>(entry.eval_version) << " -> " << value << " d" << new_depth << " " << move_history.size() << " " << position_to_fen_noclock( p ) << " " << move_to_san( p, entry.m ) << std::endl;
@@ -327,86 +323,9 @@ bool get_next( worklist& wl, work& w )
 	return false;
 }
 
-volatile bool stop = false;
-
-
-extern "C" void on_signal(int)
-{
-	stop = true;
-}
-
-namespace {
-class processing_thread : public thread
-{
-public:
-	processing_thread( book& b, mutex& mtx, condition& cond )
-		: b_(b), mutex_(mtx), cond_(cond), finished_()
-	{
-	}
-
-	// Call locked
-	bool finished() {
-		return finished_;
-	}
-
-	void process( work const& w )
-	{
-		w_ = w;
-		entries_.clear();
-
-		finished_ = false;
-
-		spawn();
-	}
-
-	void process( book_entry_with_position const& w )
-	{
-		w_ = w.w;
-		entries_ = w.entries;
-
-		finished_ = false;
-
-		spawn();
-	}
-
-	virtual void onRun();
-private:
-	book& b_;
-	mutex& mutex_;
-	condition& cond_;
-
-	work w_;
-	std::vector<book_entry> entries_;
-	bool finished_;
-};
-
-void processing_thread::onRun()
-{
-	if( entries_.empty() ) {
-		calculate_position( b_, w_.p, w_.seen, w_.move_history );
-	}
-	else {
-		update_position( b_, w_.p, w_.seen, w_.move_history, entries_ );
-	}
-
-	scoped_lock l(mutex_);
-	finished_ = true;
-	cond_.signal(l);
-}
-}
-
 
 void go( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, unsigned int max_depth, unsigned int max_width )
 {
-	mutex mtx;
-	condition cond;
-
-	std::vector<processing_thread*> threads;
-	int thread_count = conf.thread_count;
-	for( int t = 0; t < thread_count; ++t ) {
-		threads.push_back( new processing_thread( b, mtx, cond ) );
-	}
-
 	max_depth += static_cast<unsigned int>(move_history.size());
 	if( max_depth > MAX_BOOK_DEPTH ) {
 		max_depth = MAX_BOOK_DEPTH;
@@ -414,90 +333,41 @@ void go( book& b, position const& p, seen_positions const& seen, std::vector<mov
 
 	worklist wl;
 
-	scoped_lock l(mtx);
-
-	bool all_idle = true;
-
 	timestamp start;
 	uint64_t calculated = 0;
 
 	while( true ) {
 
-		while( !stop ) {
-
-			if( wl.empty() && !all_idle ) {
-				break;
-			}
-
-			while( wl.empty() ) {
-				get_work( b, wl, max_depth, max_width, seen, move_history, p );
-				if( wl.empty() ) {
-					if( max_depth < MAX_BOOK_DEPTH ) {
-						++max_depth;
-					}
-					else {
-						break;
-					}
-				}
-				else {
-					std::cerr << std::endl << "Created worklist with " << wl.count << " positions to evaluate" << std::endl;
-				}
-			}
-
-			int t;
-			for( t = 0; t < thread_count; ++t ) {
-				if( threads[t]->spawned() ) {
-					all_idle = false;
-					continue;
-				}
-
-				work w;
-				if( get_next( wl, w ) ) {
-					threads[t]->process( w );
-					all_idle = false;
+		while( wl.empty() ) {
+			get_work( b, wl, max_depth, max_width, seen, move_history, p );
+			if( wl.empty() ) {
+				if( max_depth < MAX_BOOK_DEPTH ) {
+					++max_depth;
 				}
 				else {
 					break;
 				}
 			}
-			if( t == thread_count ) {
-				break;
-			}
 		}
-		if( all_idle ) {
+		if( wl.empty() ) {
 			break;
 		}
 
-		cond.wait( l );
+		std::cerr << std::endl << "Created worklist with " << wl.count << " positions to evaluate" << std::endl;
 
-		all_idle = true;
-		for( int t = 0; t < thread_count; ++t ) {
-			if( !threads[t]->spawned() ) {
-				continue;
-			}
-
-			if( !threads[t]->finished() ) {
-				all_idle = false;
-				continue;
-			}
-
-			threads[t]->join();
-
+		work w;
+		while( get_next( wl, w ) ) {
+			calculate_position( b, w.p, w.seen, w.move_history );
+		
 			++calculated;
 			timestamp now;
 			int64_t seconds = (now - start).seconds();
 			if( seconds ) {
-				std::cerr << std::endl << "Remaining work " << wl.count << " being processed with " << (calculated * 3600) / seconds << " moves/hour" << std::endl;
+				std::cerr << std::endl << "Remaining work " << wl.count << " being processed with " << (calculated * 3600) / seconds << " moves/hour.";
+				uint64_t eta = seconds / calculated * wl.count;
+				std::cerr << " Estimated completion in " << eta / 60 << " minutes" << std::endl; 
 			}
 		}
-
-		if( all_idle && stop ) {
-			break;
-		}
-	}
-
-	if( !stop ) {
-		std::cerr << "All done" << std::endl;
 	}
 }
 
@@ -511,78 +381,24 @@ void process( book& b )
 
 	std::cerr << "Got " << wl.size() << " positions to calculate" << std::endl;
 
-	mutex mtx;
-	condition cond;
-
-	std::vector<processing_thread*> threads;
-	int thread_count = conf.thread_count;
-	for( int t = 0; t < thread_count; ++t ) {
-		threads.push_back( new processing_thread( b, mtx, cond ) );
-	}
-
-	scoped_lock l(mtx);
-
-	bool all_idle = true;
-
 	timestamp start;
 	uint64_t calculated = 0;
 
-	while( true ) {
+	while( !wl.empty() ) {
 
-		while( !wl.empty() ) {
+		work w = wl.front();
+		wl.pop_front();
 
-			int t;
-			for( t = 0; t < thread_count; ++t ) {
-				if( threads[t]->spawned() ) {
-					continue;
-				}
+		calculate_position( b, w.p, w.seen, w.move_history );
 
-				work w = wl.front();
-				wl.pop_front();
-				threads[t]->process( w );
-				all_idle = false;
-				if( wl.empty() ) {
-					break;
-				}
-			}
-			if( t == thread_count ) {
-				break;
-			}
+		++calculated;
+		timestamp now;
+		int64_t seconds = (now - start).seconds();
+		if( seconds ) {
+			std::cerr << std::endl << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour.";
+			uint64_t eta = seconds / calculated * wl.size();
+			std::cerr << " Estimated completion in " << eta / 60 << " minutes" << std::endl; 
 		}
-		if( all_idle ) {
-			break;
-		}
-
-		cond.wait( l );
-
-		all_idle = true;
-		for( int t = 0; t < thread_count; ++t ) {
-			if( !threads[t]->spawned() ) {
-				continue;
-			}
-
-			if( !threads[t]->finished() ) {
-				all_idle = false;
-				continue;
-			}
-
-			threads[t]->join();
-
-			++calculated;
-			timestamp now;
-			int64_t seconds = (now - start).seconds();
-			if( seconds ) {
-				std::cerr << std::endl << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour" << std::endl;
-			}
-		}
-
-		if( all_idle && stop ) {
-			break;
-		}
-	}
-
-	if( !stop ) {
-		std::cerr << "All done" << std::endl;
 	}
 }
 
@@ -632,78 +448,23 @@ void update( book& b, int entries_per_pos = 5 )
 	std::cerr << "Got " << wl.size() << " positions to calculate" << std::endl;
 	std::cerr << "Pruned " << removed_moves << " moves and " << removed_positions << " positions which do not need updating" << std::endl;
 
-	mutex mtx;
-	condition cond;
-
-	std::vector<processing_thread*> threads;
-	int thread_count = conf.thread_count;
-	for( int t = 0; t < thread_count; ++t ) {
-		threads.push_back( new processing_thread( b, mtx, cond ) );
-	}
-
-	scoped_lock l(mtx);
-
-	bool all_idle = true;
-
 	timestamp start;
 	uint64_t calculated = 0;
 
-	while( true ) {
+	while( !wl.empty() ) {
 
-		while( !wl.empty() ) {
+		book_entry_with_position w = wl.front();
+		wl.pop_front();
+		update_position( b, w.w.p, w.w.seen, w.w.move_history, w.entries );
 
-			int t;
-			for( t = 0; t < thread_count; ++t ) {
-				if( threads[t]->spawned() ) {
-					continue;
-				}
-
-				book_entry_with_position w = wl.front();
-				wl.pop_front();
-				threads[t]->process( w );
-				all_idle = false;
-				if( wl.empty() ) {
-					break;
-				}
-			}
-			if( t == thread_count ) {
-				break;
-			}
+		++calculated;
+		timestamp now;
+		int64_t seconds = (now - start).seconds();
+		if( seconds ) {
+			std::cerr << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour.";
+			uint64_t eta = seconds / calculated * wl.size();
+			std::cerr << " Estimated completion in " << eta / 60 << " minutes" << std::endl; 
 		}
-		if( all_idle ) {
-			break;
-		}
-
-		cond.wait( l );
-
-		all_idle = true;
-		for( int t = 0; t < thread_count; ++t ) {
-			if( !threads[t]->spawned() ) {
-				continue;
-			}
-
-			if( !threads[t]->finished() ) {
-				all_idle = false;
-				continue;
-			}
-
-			threads[t]->join();
-
-			++calculated;
-			timestamp now;
-			int64_t seconds = (now - start).seconds();
-			if( seconds ) {
-				std::cerr << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour" << std::endl;
-			}
-		}
-
-		if( all_idle && stop ) {
-			break;
-		}
-	}
-
-	if( !stop ) {
-		std::cerr << "All done" << std::endl;
 	}
 }
 
@@ -805,7 +566,7 @@ bool do_deepen_tree( book& b, position const& p, seen_positions seen, std::vecto
 		std::stringstream ss;
 		ss << "Calculating " << position_to_fen_noclock( p ) << std::endl;
 
-		position p2 = p;
+		position p2;
 		for( unsigned int i = 0; i < move_history.size(); ++i ) {
 			if( i ) {
 				ss << " ";
@@ -1111,9 +872,8 @@ int main( int argc, char const* argv[] )
 		book_dir = self.substr( 0, self.rfind('/') + 1 );
 	}
 
-	//signal( SIGINT, &on_signal );
-
 	console_init();
+	logger::show_debug( false );
 
 	init_magic();
 	init_pst();

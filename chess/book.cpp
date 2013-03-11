@@ -11,8 +11,8 @@
 #include <iostream>
 #include <sstream>
 
-int const db_version = 1;
-int const eval_version = 8;
+int const db_version = 2;
+int const eval_version = 9;
 
 namespace {
 void append_move_to_history( std::vector<unsigned char>& h, move const& m ) {
