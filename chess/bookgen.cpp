@@ -95,7 +95,7 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 
 	calc_manager cmgr;
 	for( move_info const* it = moves; it != pm; ++it ) {
-		
+
 		position new_pos = p;
 		apply_move( new_pos, it->m );
 
@@ -358,7 +358,7 @@ void go( book& b, position const& p, seen_positions const& seen, std::vector<mov
 		work w;
 		while( get_next( wl, w ) ) {
 			calculate_position( b, w.p, w.seen, w.move_history );
-		
+
 			++calculated;
 			timestamp now;
 			int64_t seconds = (now - start).seconds();
@@ -654,6 +654,20 @@ void print_stats( book& b )
 }
 
 
+bool parse_move_bg( book& b, std::vector<move> const& move_history, position const& p, std::string const& line, move& m, std::string& error )
+{
+	std::size_t i;
+
+	std::vector<book_entry> moves = b.get_entries( p, move_history );
+	if( to_int<std::size_t>( line, i, 1, moves.size() ) ) {
+		m = moves[i-1].m;
+		return true;
+	}
+
+	return parse_move( p, line, m, error );
+}
+
+
 void run( book& b )
 {
 	position p;
@@ -780,7 +794,7 @@ void run( book& b )
 		else if( cmd == "deepen" ) {
 			move m;
 			std::string error;
-			if( parse_move( p, args, m, error ) ) {
+			if( parse_move_bg( b, move_history, p, args, m, error ) ) {
 				if( deepen_move( b, p, seen, move_history, m ) ) {
 					std::vector<book_entry> entries = b.get_entries( p, move_history );
 					print_pos( history, p, entries, view );
@@ -812,7 +826,7 @@ void run( book& b )
 		else {
 			move m;
 			std::string error;
-			if( parse_move( p, line, m, error ) ) {
+			if( parse_move_bg( b, move_history, p, line, m, error ) ) {
 
 				history_entry h;
 				h.p = p;
