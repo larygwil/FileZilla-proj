@@ -851,15 +851,23 @@ static std::string board_square_to_string( position const& p, int pi )
 }
 
 
-std::string row_to_string( position const& p, int row )
+std::string row_to_string( position const& p, int row, color::type view )
 {
 	std::string ret;
 
 	ret += '1' + row;
 	ret += "| ";
-	for( int col = 0; col < 8; ++col ) {
-		ret += board_square_to_string( p, row * 8 + col );
-		ret += ' ';
+	if( view == color::white ) {
+		for( int col = 0; col < 8; ++col ) {
+			ret += board_square_to_string( p, row * 8 + col );
+			ret += ' ';
+		}
+	}
+	else {
+		for( int col = 7; col >= 0; --col ) {
+			ret += board_square_to_string( p, row * 8 + col );
+			ret += ' ';
+		}
 	}
 	ret += "|\n";
 
@@ -875,12 +883,12 @@ std::string board_to_string( position const& p, color::type view )
 	ret += " +-----------------+\n";
 	if( view == color::white ) {
 		for( int row = 7; row >= 0; --row ) {
-			ret += row_to_string( p, row );
+			ret += row_to_string( p, row, view );
 		}
 	}
 	else {
 		for( int row = 0; row <= 7; ++row ) {
-			ret += row_to_string( p, row );
+			ret += row_to_string( p, row, view );
 		}
 	}
 	ret += " +-----------------+\n";
