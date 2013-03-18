@@ -69,7 +69,7 @@ class book
 public:
 	class impl;
 	book( std::string const& book_dir );
-	~book();
+	virtual ~book();
 
 	bool open( std::string const& book_dir );
 	void close();
@@ -111,6 +111,8 @@ public:
 
 	std::vector<unsigned char> serialize_history( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end );
 	std::vector<unsigned char> serialize_history( std::vector<move> const& history );
+
+	bool export_book( std::string const& fn );
 
 private:
 	impl *impl_;

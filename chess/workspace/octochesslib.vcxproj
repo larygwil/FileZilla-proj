@@ -107,7 +107,6 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\book.cpp" />
     <ClCompile Include="..\calc.cpp" />
     <ClCompile Include="..\config.cpp" />
     <ClCompile Include="..\detect_check.cpp" />
@@ -130,8 +129,7 @@
     <ClCompile Include="..\see.cpp" />
     <ClCompile Include="..\seen_positions.cpp" />
     <ClCompile Include="..\selftest.cpp" />
-    <ClCompile Include="..\sqlite\sqlite3.c" />
-    <ClCompile Include="..\sqlite\sqlite3_wrapper.cpp" />
+    <ClCompile Include="..\simple_book.cpp" />
     <ClCompile Include="..\statistics.cpp" />
     <ClCompile Include="..\util\logger.cpp" />
     <ClCompile Include="..\util\mutex_win.cpp" />
@@ -145,7 +143,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\assert.hpp" />
-    <ClInclude Include="..\book.hpp" />
     <ClInclude Include="..\calc.hpp" />
     <ClInclude Include="..\chess.hpp" />
     <ClInclude Include="..\config.hpp" />
@@ -162,6 +159,7 @@
     <ClInclude Include="..\pawn_structure_hash_table.hpp" />
     <ClInclude Include="..\pgn.hpp" />
     <ClInclude Include="..\phased_move_generator.hpp" />
+    <ClInclude Include="..\simple_book.hpp" />
     <ClInclude Include="..\util\logger.hpp" />
     <ClInclude Include="..\util\mutex.hpp" />
     <ClInclude Include="..\util\platform.hpp" />
@@ -174,7 +172,6 @@
     <ClInclude Include="..\seen_positions.hpp" />
     <ClInclude Include="..\selftest.hpp" />
     <ClInclude Include="..\sliding_piece_attacks.hpp" />
-    <ClInclude Include="..\sqlite\sqlite3.hpp" />
     <ClInclude Include="..\statistics.hpp" />
     <ClInclude Include="..\util\string.hpp" />
     <ClInclude Include="..\util\thread.hpp" />

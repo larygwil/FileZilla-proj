@@ -21,7 +21,6 @@ UTIL_FILES = \
 	util/time.o \
 
 OBJECT_FILES = \
-	book.o \
 	calc.o \
 	config.o \
 	detect_check.o \
@@ -45,8 +44,7 @@ OBJECT_FILES = \
 	see.o \
 	seen_positions.o \
 	selftest.o \
-	sqlite/sqlite3.o \
-	sqlite/sqlite3_wrapper.o \
+	simple_book.o \
 	statistics.o \
 	tables.o \
 	tweak.o \
@@ -62,6 +60,11 @@ CHESS_FILES = \
 	uci/runner.o \
 	uci/time_calculation.o
 
+BOOKGEN_FILES = \
+	book.o \
+	bookgen.o \
+	sqlite/sqlite3.o \
+	sqlite/sqlite3_wrapper.o
 
 %.o: %.cpp *.hpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -74,7 +77,7 @@ octochess: $(UTIL_FILES) $(OBJECT_FILES) $(CHESS_FILES)
 	$(CXX) $(CXXFLAGS) -pthread -o $@ $^
 
 
-bookgen: $(UTIL_FILES) $(OBJECT_FILES) bookgen.o
+bookgen: $(UTIL_FILES) $(OBJECT_FILES) $(BOOKGEN_FILES)
 	$(CXX) $(CXXFLAGS) -pthread -o $@ $^
 
 clean:

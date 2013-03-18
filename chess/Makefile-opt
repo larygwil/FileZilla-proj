@@ -26,7 +26,6 @@ UTIL_SOURCE_FILES = \
 	util/time.cpp
 
 GENERIC_SOURCE_FILES = \
-	book.cpp \
 	calc.cpp \
 	config.cpp \
 	detect_check.cpp \
@@ -50,11 +49,10 @@ GENERIC_SOURCE_FILES = \
 	see.cpp \
 	seen_positions.cpp \
 	selftest.cpp \
+	simple_book.cpp \
 	statistics.cpp \
 	tables.cpp \
 	zobrist.cpp \
-	sqlite/sqlite3.o \
-	sqlite/sqlite3_wrapper.cpp
 
 CHESS_SOURCE_FILES = $(UTIL_SOURCE_FILES) $(GENERIC_SOURCE_FILES) \
 	chess.cpp \
@@ -65,10 +63,13 @@ CHESS_SOURCE_FILES = $(UTIL_SOURCE_FILES) $(GENERIC_SOURCE_FILES) \
 	uci/minimalistic_uci_protocol.cpp \
 	uci/octochess_impl.cpp \
 	uci/runner.cpp \
-	uci/time_calculation.cpp
+	uci/time_calculation.cpp \
 
 BOOKGEN_SOURCE_FILES = $(UTIL_SOURCE_FILES) $(GENERIC_SOURCE_FILES) \
+	book.cpp \
 	bookgen.cpp
+	sqlite/sqlite3.o \
+	sqlite/sqlite3_wrapper.cpp
 
 chess-gen: *.cpp *.hpp sqlite/sqlite3.o tables.cpp
 	$(CXX) $(CXXFLAGS) -fprofile-generate -o $@ $(CHESS_SOURCE_FILES)

@@ -1,7 +1,7 @@
 #include "assert.hpp"
 #include "chess.hpp"
 #include "xboard.hpp"
-#include "book.hpp"
+#include "simple_book.hpp"
 #include "calc.hpp"
 #include "eval.hpp"
 #include "fen.hpp"
@@ -17,6 +17,7 @@
 #include "util/thread.hpp"
 #include "util.hpp"
 
+#include <list>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -170,7 +171,7 @@ struct xboard_state
 	position p;
 	int clock;
 	seen_positions seen;
-	book book_;
+	simple_book book_;
 	duration time_remaining;
 	duration bonus_time;
 	mode::type mode_;
@@ -542,23 +543,17 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 	
 	// Do a step
 	if( conf.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
-		std::vector<book_entry> moves = state.book_.get_entries( state.p, state.move_history_, true );
-		if( moves.empty() ) {
-			dlog() << "Current position not in book" << std::endl;
-		}
-		else {
-			dlog() << "Entries from book: " << std::endl;
-			dlog() << entries_to_string( state.p, moves );
-
+		std::vector<simple_book_entry> moves = state.book_.get_entries( state.p );
+		if( !moves.empty() ) {
 			short best = moves.front().forecast;
 			int count_best = 1;
-			for( std::vector<book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
+			for( std::vector<simple_book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
 				if( it->forecast > -30 && it->forecast + 15 >= best ) {
 					++count_best;
 				}
 			}
 
-			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
+			simple_book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
 			ASSERT( !best_move.m.empty() );
 
 			std::cout << "move " << move_to_long_algebraic( best_move.m ) << std::endl;
@@ -576,10 +571,6 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 			dlog() << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 			return;
 		}
-	}
-
-	if( state.clock < 22 && state.started_from_root ) {
-		state.book_.mark_for_processing( state.move_history_ );
 	}
 
 	std::pair<move,move> pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p );

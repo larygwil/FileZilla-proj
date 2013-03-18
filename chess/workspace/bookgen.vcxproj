@@ -127,13 +127,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\book.cpp" />
     <ClCompile Include="..\bookgen.cpp" />
+    <ClCompile Include="..\sqlite\sqlite3.c" />
+    <ClCompile Include="..\sqlite\sqlite3_wrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="octochesslib.vcxproj">
       <Project>{8b05dc85-6f69-4097-9837-d893bdf3aef3}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\book.hpp" />
+    <ClInclude Include="..\sqlite\sqlite3.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

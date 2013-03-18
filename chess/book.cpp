@@ -2,6 +2,7 @@
 #include "book.hpp"
 #include "util.hpp"
 #include "util/mutex.hpp"
+#include "simple_book.hpp"
 
 #include "sqlite/sqlite3.hpp"
 
@@ -896,6 +897,176 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 	}
 
 	return t.commit();
+}
+
+struct export_entry
+{
+	export_entry()
+		: forecast()
+	{}
+
+	move m;
+	short forecast;
+};
+
+struct export_data
+{
+	book::impl* impl_;
+	std::map<uint64_t, std::vector<export_entry>> output;
+};
+
+int export_book( void* q, statement& s )
+{
+	export_data& ed = *reinterpret_cast<export_data*>(q); 
+	
+	if( s.column_count() != 3 ) {
+		std::cerr << "Wrong column count" << std::endl;
+		return 1;
+	}
+
+	if( s.is_null( 0 ) ) {
+		std::cerr << "No move history returned" << std::endl;
+		return 1;
+	}
+	std::vector<unsigned char> const history = s.get_blob(0);
+	if( history.size() % 2 ) {
+		std::cerr << "Move history malformed" << std::endl;
+		return 1;
+	}
+	
+	if( s.is_null( 1 ) ) {
+		std::cerr << "NULL hash in position to fold." << std::endl;
+		return 1;
+	}
+	uint64_t hash = s.get_int( 1 );
+	if( ed.output.find( hash ) != ed.output.end() ) {
+		return 0;
+	}
+
+	if( s.is_null( 1 ) ) {
+		std::cerr << "NULL data in position to fold." << std::endl;
+		return 0;
+	}
+
+	std::vector<unsigned char> data = s.get_blob( 2 );
+	if( data.size() % 4 ) {
+		std::cerr << "Data has wrong size" << std::endl;
+		return 1;
+	}
+	if( data.size() < 8 ) {
+		return 0;
+	}
+
+	position p;
+	if( !get_position( history, p ) ) {
+		std::cerr << "Could not get position from move history" << std::endl;
+		return 1;
+	}
+	if( hash != p.hash_ ) {
+		std::cerr << "Hash mismatch" << std::endl;
+		return 1;
+	}
+
+	std::vector<book_entry> entries;
+	if( !decode_entries( &data[0], data.size(), entries ) ) {
+		std::cerr << "Could not decode entries of position" << std::endl;
+		return 1;
+	}
+
+	auto moves = calculate_moves<movegen_type::all>( p );
+	std::sort( moves.begin(), moves.end(), book_move_sort );
+	if( moves.size() != entries.size() ) {
+		std::cerr << "Move count mismatch" << std::endl;
+		return 1;
+	}
+	for( unsigned int i = 0; i < entries.size(); ++i ) {
+		entries[i].m = moves[i];
+	}
+
+	std::sort( entries.begin(), entries.end() );
+
+	std::vector<export_entry> output;
+	for( std::size_t i = 0; i < 5 && i < entries.size(); ++i ) {
+		export_entry e;
+		e.m = entries[i].m;
+		e.forecast = entries[i].forecast;
+		output.push_back( e );
+	}
+	ed.output[ hash ] = output;
+
+	return 0;
+}
+
+
+bool book::export_book( std::string const& fn )
+{
+	if( !impl_->is_writable() ) {
+		std::cerr << "Error: Cannot fold read-only opening book\n" << std::endl;
+		return false;
+	}
+
+	scoped_lock l(impl_->mtx);
+
+	transaction t( *impl_ );
+	if( !t.init() ) {
+		return false;
+	}
+
+	statement s( *impl_, "SELECT pos, hash, data FROM position WHERE data IS NOT NULL ORDER BY LENGTH(pos) ASC" );
+	if( !s.ok() ) {
+		return false;
+	}
+
+	export_data ed;
+	if( !s.exec( ::export_book, &ed ) ) {
+		return false;
+	}
+
+	char null_entry[4] = {0};
+
+	std::ofstream out( fn, std::ofstream::trunc | std::ofstream::binary );
+
+	char header[5] = {0};
+	// Header length
+	header[0] = 5;
+	header[1] = 0;
+
+	// Version
+	header[2] = simple_book_version % 256;
+	header[3] = simple_book_version / 256;
+
+	// Moves per entry
+	header[4] = 5;
+
+	out.write( header, 5 );
+
+	// Data
+	for( auto it : ed.output ) {
+		uint64_t hash = it.first;
+		for( unsigned int i = 0; i < 8; ++i ) {
+			out << static_cast<unsigned char>(hash % 256);
+			hash >>= 8;
+		}
+
+		auto entries = it.second;
+
+		for( std::size_t i = 0; i < entries.size(); ++i ) {
+			out << static_cast<unsigned char>( entries[i].m.d % 256 );
+			out << static_cast<unsigned char>( entries[i].m.d / 256 );
+
+			unsigned short f = static_cast<unsigned short>( entries[i].forecast );
+			out << static_cast<unsigned char>( f % 256 );
+			out << static_cast<unsigned char>( f / 256 );
+		}
+
+		for( std::size_t i = entries.size(); i < 5; ++i ) {
+			out.write( null_entry, 4 );
+		}
+	}
+
+	std::cerr << " done" << std::endl;
+
+	return true;
 }
 
 bool book::fold( bool verify )

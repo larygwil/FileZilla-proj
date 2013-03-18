@@ -543,10 +543,12 @@ void print_pos( std::vector<history_entry> const& history, position const& p, st
 }
 
 
-void learnpgn( book& b, std::string const& file )
+bool learnpgn( book& b, std::string const& file )
 {
 	pgn_reader reader;
-	reader.open( file );
+	if( !reader.open( file ) ) {
+		return false;
+	}
 
 	game g;
 	while( reader.next( g ) ) {
@@ -556,6 +558,8 @@ void learnpgn( book& b, std::string const& file )
 		}
 		b.mark_for_processing( std::vector<move>(g.moves_.begin(), g.moves_.end()) );
 	}
+
+	return true;
 }
 
 
@@ -788,7 +792,9 @@ void run( book& b )
 				std::cerr << "Need to pass .pgn file as argument" << std::endl;
 			}
 			else {
-				learnpgn( b, args );
+				if( !learnpgn( b, args ) ) {
+					std::cerr << "Failed to learn from .pgn" << std::endl;
+				}
 			}
 		}
 		else if( cmd == "deepen" ) {
@@ -822,6 +828,9 @@ void run( book& b )
 				to_int( args, offset, 0, 1000 );
 			}
 			deepen_tree( b, p, seen, move_history, offset );
+		}
+		else if( cmd == "export" ) {
+			b.export_book( args );
 		}
 		else {
 			move m;

@@ -5,7 +5,7 @@
 
 #include "../chess.hpp"
 #include "../seen_positions.hpp"
-#include "../book.hpp"
+#include "../simple_book.hpp"
 #include "../calc.hpp"
 #include "../eval.hpp"
 #include "../fen.hpp"
@@ -66,7 +66,7 @@ public:
 
 	mutex mutex_;
 
-	book book_;
+	simple_book book_;
 
 	pv_move_picker pv_move_picker_;
 
@@ -307,23 +307,20 @@ bool octochess_uci::impl::do_book_move() {
 	bool ret = false;
 
 	if( conf.use_book && book_.is_open() && half_moves_played_ < 30 && started_from_root_ ) {
-		std::vector<book_entry> moves = book_.get_entries( pos_ );
+		std::vector<simple_book_entry> moves = book_.get_entries( pos_ );
 		if( !moves.empty() ) {
 			ret = true;
 
 			short best = moves.front().forecast;
 			int count_best = 1;
-			for( std::vector<book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
+			for( std::vector<simple_book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
 				if( it->forecast > -30 && it->forecast + 15 >= best ) {
 					++count_best;
 				}
 			}
 
-			book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
+			simple_book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
 			gui_interface_->tell_best_move( move_to_long_algebraic( best_move.m ), "" );
-		}
-		else if( half_moves_played_ <= 20 ) {
-			book_.mark_for_processing( move_history_ );
 		}
 	}
 
