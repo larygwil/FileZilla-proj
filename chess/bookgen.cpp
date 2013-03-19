@@ -512,13 +512,11 @@ std::string print_moves( position const& p, std::vector<book_entry> const& moves
 	return ret;
 }
 
-struct history_entry {
-	position p;
-	move m;
-};
 
-void print_pos( std::vector<history_entry> const& history, position const& p, std::vector<book_entry> const& moves, color::type view )
+void print_pos( std::vector<move> const& history, std::vector<book_entry> const& moves, color::type view )
 {
+	position p;
+
 	std::stringstream ss;
 	for( unsigned int i = 0; i < history.size(); ++i ) {
 		if( i ) {
@@ -527,7 +525,8 @@ void print_pos( std::vector<history_entry> const& history, position const& p, st
 		if( !(i%2) ) {
 			ss << i / 2 + 1<< ". ";
 		}
-		ss << move_to_san( history[i].p, history[i].m );
+		ss << move_to_san( p, history[i] );
+		apply_move( p, history[i] );
 	}
 	std::string line = ss.str();
 	if( !line.empty() ) {
@@ -678,13 +677,12 @@ void run( book& b )
 
 	color::type view = color::white;
 	std::vector<move> move_history;
-	std::vector<history_entry> history;
-
+	
 	seen_positions seen( p.hash_ );
 
 	{
 		std::vector<book_entry> entries = b.get_entries( p, move_history );
-		print_pos( history, p, entries, view );
+		print_pos( move_history, entries, view );
 	}
 
 	unsigned int max_depth = std::min(4u, MAX_BOOK_DEPTH);
@@ -741,41 +739,41 @@ void run( book& b )
 			}
 		}
 		else if( cmd == "back" ) {
-			if( history.empty() ) {
+			if( move_history.empty() ) {
 				std::cerr << "Already at top" << std::endl;
 			}
 			else {
 				int count = 1;
 				if( !args.empty() ) {
-					to_int( args, count, 1, static_cast<int>(history.size()) );
+					to_int( args, count, 1, static_cast<int>(move_history.size()) );
 				}
 				for( int i = 0; i < count; ++i ) {
-					history_entry h = history.back();
 					move_history.pop_back();
 					seen.pop_root();
-					history.pop_back();
-					p = h.p;
+					p.reset();
+					for( auto m : move_history ) {
+						apply_move( p, m );
+					}
 				}
 
 				std::vector<book_entry> moves = b.get_entries( p, move_history );
-				print_pos( history, p,  moves, view );
+				print_pos( move_history, moves, view );
 			}
 		}
 		else if( cmd == "new" || cmd == "reset" ) {
 			view = color::white;
-			history.clear();
 			move_history.clear();
 			p.reset();
 			seen.reset_root( p.hash_ );
 
 			std::vector<book_entry> moves = b.get_entries( p, move_history );
-			print_pos( history, p,  moves, view );
+			print_pos( move_history, moves, view );
 		}
 		else if( cmd == "flip" ) {
 			view = static_cast<color::type>(1 - view);
 
 			std::vector<book_entry> moves = b.get_entries( p, move_history );
-			print_pos( history, p,  moves, view );
+			print_pos( move_history, moves, view );
 		}
 		else if( cmd == "update" ) {
 			int v = 5;
@@ -803,7 +801,7 @@ void run( book& b )
 			if( parse_move_bg( b, move_history, p, args, m, error ) ) {
 				if( deepen_move( b, p, seen, move_history, m ) ) {
 					std::vector<book_entry> entries = b.get_entries( p, move_history );
-					print_pos( history, p, entries, view );
+					print_pos( move_history, entries, view );
 				}
 			}
 			else {
@@ -837,15 +835,9 @@ void run( book& b )
 			std::string error;
 			if( parse_move_bg( b, move_history, p, line, m, error ) ) {
 
-				history_entry h;
-				h.p = p;
-				h.m = m;
-				history.push_back( h );
-
 				move_history.push_back( m );
 
 				apply_move( p, m );
-
 				seen.push_root( p.hash_ );
 
 				std::vector<book_entry> entries = b.get_entries( p, move_history );
@@ -862,8 +854,11 @@ void run( book& b )
 						std::cerr << "Position not in book and book is read-only." << std::endl;
 						move_history.pop_back();
 						seen.pop_root();
-						p = h.p;
-						history.pop_back();
+						
+						p.reset();
+						for( auto m : move_history ) {
+							apply_move( p, m );
+						}
 					}
 
 					entries = b.get_entries( p, move_history );
@@ -874,7 +869,7 @@ void run( book& b )
 					exit(1);
 				}
 
-				print_pos( history, p, entries, view );
+				print_pos( move_history, entries, view );
 			}
 			else {
 				std::cerr << error << std::endl;
