@@ -23,14 +23,14 @@ make ${MAKEOPTS} bookgen
 
 make clean
 make ${MAKEOPTS} -f Makefile-opt chess-use REVISION="-DREVISION=\\\"$REV\\\""
+strip chess-use
 cp chess-use octochess-r$REV/octochess-linux-sse4-r$REV
 
 rm -f chess-use
 make clean
 make ${MAKEOPTS} -f Makefile-opt ARCH=core2 chess-use REVISION="-DREVISION=\\\"$REV\\\"" EXTRA_CPPFLAGS="-DUSE_GENERIC_POPCOUNT=1"
+strip chess-use
 cp chess-use octochess-r$REV/octochess-linux-generic-r$REV
-
-strip octochess-r$REV/*
 
 cp AUTHORS octochess-r$REV/authors.txt
 cp COPYING octochess-r$REV/copying.txt
