@@ -32,7 +32,7 @@ int const MAX_BOOKSEARCH_DEPTH = 20;
 
 unsigned int const MAX_BOOK_DEPTH = 10;
 
-bool deepen_move( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, move const& m )
+bool deepen_move( book& b, position const& p, seen_positions const& seen, std::vector<move> const& history, move const& m )
 {
 	if( !b.is_writable() ) {
 		std::cerr << "Cannot deepen move in read-only book." << std::endl;
@@ -42,7 +42,7 @@ bool deepen_move( book& b, position const& p, seen_positions const& seen, std::v
 	int depth = MAX_BOOKSEARCH_DEPTH;
 
 	{
-		std::vector<book_entry> entries = b.get_entries( p, move_history );
+		std::vector<book_entry> entries = b.get_entries( p, history );
 		for( std::vector<book_entry>::const_iterator it = entries.begin(); it != entries.end(); ++it ) {
 			if( it->m != m ) {
 				continue;
@@ -66,7 +66,7 @@ bool deepen_move( book& b, position const& p, seen_positions const& seen, std::v
 
 		calc_manager cmgr;
 		calc_result res = cmgr.calc( new_pos, MAX_BOOKSEARCH_DEPTH - 2, timestamp(), duration::infinity(),
-				duration::infinity(), move_history.size() % 256, seen2, null_new_best_move_cb );
+				duration::infinity(), history.size() % 256, seen2, null_new_best_move_cb );
 
 		value = -res.forecast;
 	}
@@ -75,13 +75,13 @@ bool deepen_move( book& b, position const& p, seen_positions const& seen, std::v
 	e.forecast = value;
 	e.m = m;
 	e.search_depth = depth;
-	b.update_entry( move_history, e );
+	b.update_entry( history, e );
 
 	return true;
 }
 
 
-bool calculate_position( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history )
+bool calculate_position( book& b, position const& p, seen_positions const& seen, std::vector<move> const& history )
 {
 	move_info moves[200];
 	move_info* pm = moves;
@@ -108,7 +108,7 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 			seen2.push_root( new_pos.hash_ );
 
 			calc_result res = cmgr.calc( new_pos, MAX_BOOKSEARCH_DEPTH - 2, timestamp(), duration::infinity(),
-				duration::infinity(), move_history.size() % 256, seen2, null_new_best_move_cb );
+				duration::infinity(), history.size() % 256, seen2, null_new_best_move_cb );
 
 			value = -res.forecast;
 		}
@@ -153,7 +153,7 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 				seen2.push_root( new_pos.hash_ );
 
 				calc_result res = cmgr.calc( new_pos, MAX_BOOKSEARCH_DEPTH, timestamp(), duration::infinity(),
-					duration::infinity(), move_history.size() % 256, seen2, null_new_best_move_cb );
+					duration::infinity(), history.size() % 256, seen2, null_new_best_move_cb );
 
 				value = -res.forecast;
 			}
@@ -165,11 +165,11 @@ bool calculate_position( book& b, position const& p, seen_positions const& seen,
 		}
 	}
 
-	return b.add_entries( move_history, entries );
+	return b.add_entries( history, entries );
 }
 
 
-bool update_position( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, std::vector<book_entry> const& entries )
+bool update_position( book& b, position const& p, seen_positions const& seen, std::vector<move> const& history, std::vector<book_entry> const& entries )
 {
 	calc_manager cmgr;
 
@@ -203,17 +203,17 @@ bool update_position( book& b, position const& p, seen_positions const& seen, st
 				seen2.push_root( new_pos.hash_ );
 
 				calc_result res = cmgr.calc( new_pos, new_depth, timestamp(), duration::infinity(),
-					duration::infinity(), move_history.size() % 256, seen2, null_new_best_move_cb );
+					duration::infinity(), history.size() % 256, seen2, null_new_best_move_cb );
 
 				value = -res.forecast;
 			}
 
-			std::cerr << entry.forecast << " d" << static_cast<int>(entry.search_depth) << " v" << static_cast<int>(entry.eval_version) << " -> " << value << " d" << new_depth << " " << move_history.size() << " " << position_to_fen_noclock( p ) << " " << move_to_san( p, entry.m ) << std::endl;
+			std::cerr << entry.forecast << " d" << static_cast<int>(entry.search_depth) << " v" << static_cast<int>(entry.eval_version) << " -> " << value << " d" << new_depth << " " << history.size() << " " << position_to_fen_noclock( p ) << " " << move_to_san( p, entry.m ) << std::endl;
 
 			entry.forecast = value;
 			entry.search_depth = new_depth;
 
-			b.update_entry( move_history, entry );
+			b.update_entry( history, entry );
 		}
 	}
 
@@ -227,9 +227,9 @@ void init_book( book& b )
 
 	seen_positions seen( p.hash_ );
 
-	std::vector<move> move_history;
+	std::vector<move> history;
 
-	if( !calculate_position( b, p, seen, move_history ) ) {
+	if( !calculate_position( b, p, seen, history ) ) {
 		std::cerr << "Could not save position" << std::endl;
 		exit(1);
 	}
@@ -256,9 +256,9 @@ struct worklist {
 };
 
 
-void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, seen_positions const& seen, std::vector<move> const& move_history, position const& p )
+void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, seen_positions const& seen, std::vector<move> const& history, position const& p )
 {
-	std::vector<book_entry> moves = b.get_entries( p, move_history );
+	std::vector<book_entry> moves = b.get_entries( p, history );
 
 	unsigned int i = 0;
 	for( std::vector<book_entry>::const_iterator it = moves.begin(); it != moves.end(); ++it, ++i ) {
@@ -269,7 +269,7 @@ void get_work( book& b, worklist& wl, int max_depth, unsigned int max_width, see
 		position new_pos = p;
 		apply_move( new_pos, it->m );
 
-		std::vector<move> child_history = move_history;
+		std::vector<move> child_history = history;
 		child_history.push_back( it->m );
 		std::vector<book_entry> child_moves = b.get_entries( new_pos, child_history );
 
@@ -324,9 +324,9 @@ bool get_next( worklist& wl, work& w )
 }
 
 
-void go( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, unsigned int max_depth, unsigned int max_width )
+void go( book& b, position const& p, seen_positions const& seen, std::vector<move> const& history, unsigned int max_depth, unsigned int max_width )
 {
-	max_depth += static_cast<unsigned int>(move_history.size());
+	max_depth += static_cast<unsigned int>(history.size());
 	if( max_depth > MAX_BOOK_DEPTH ) {
 		max_depth = MAX_BOOK_DEPTH;
 	}
@@ -339,7 +339,7 @@ void go( book& b, position const& p, seen_positions const& seen, std::vector<mov
 	while( true ) {
 
 		while( wl.empty() ) {
-			get_work( b, wl, max_depth, max_width, seen, move_history, p );
+			get_work( b, wl, max_depth, max_width, seen, history, p );
 			if( wl.empty() ) {
 				if( max_depth < MAX_BOOK_DEPTH ) {
 					++max_depth;
@@ -562,34 +562,34 @@ bool learnpgn( book& b, std::string const& file )
 }
 
 
-bool do_deepen_tree( book& b, position const& p, seen_positions seen, std::vector<move> move_history, int offset )
+bool do_deepen_tree( book& b, position const& p, seen_positions seen, std::vector<move> history, int offset )
 {
-	std::vector<book_entry> entries = b.get_entries( p, move_history );
+	std::vector<book_entry> entries = b.get_entries( p, history );
 	if( entries.empty() ) {
 		std::stringstream ss;
 		ss << "Calculating " << position_to_fen_noclock( p ) << std::endl;
 
 		position p2;
-		for( unsigned int i = 0; i < move_history.size(); ++i ) {
+		for( unsigned int i = 0; i < history.size(); ++i ) {
 			if( i ) {
 				ss << " ";
 			}
 			if( !(i%2) ) {
 				ss << i / 2 + 1<< ". ";
 			}
-			ss << move_to_san( p2, move_history[i] );
-			apply_move( p2, move_history[i] );
+			ss << move_to_san( p2, history[i] );
+			apply_move( p2, history[i] );
 		}
 		ss << std::endl;
 		std::cerr << ss.str();
 
-		calculate_position( b, p, seen, move_history );
+		calculate_position( b, p, seen, history );
 		std::cerr << std::endl;
 
 		return true;
 	}
 
-	if( move_history.size() == 20 ) {
+	if( history.size() == 20 ) {
 		return false;
 	}
 
@@ -601,12 +601,12 @@ bool do_deepen_tree( book& b, position const& p, seen_positions seen, std::vecto
 
 		position p2 = p;
 		apply_move( p2, e.m );
-		move_history.push_back( e.m );
+		history.push_back( e.m );
 		seen.push_root( p2.hash_ );
 
 		int new_offset = std::max( 0, offset - first.forecast + e.forecast );
-		bool res = do_deepen_tree( b, p2, seen, move_history, new_offset );
-		move_history.pop_back();
+		bool res = do_deepen_tree( b, p2, seen, history, new_offset );
+		history.pop_back();
 		seen.pop_root();
 		if( res ) {
 			return true;
@@ -617,7 +617,7 @@ bool do_deepen_tree( book& b, position const& p, seen_positions seen, std::vecto
 }
 
 
-bool deepen_tree( book& b, position const& p, seen_positions const& seen, std::vector<move> const& move_history, int offset )
+bool deepen_tree( book& b, position const& p, seen_positions const& seen, std::vector<move> const& history, int offset )
 {
 	if( !b.is_writable() ) {
 		std::cerr << "Cannot deepen tree if book is read-only." << std::endl;
@@ -626,7 +626,7 @@ bool deepen_tree( book& b, position const& p, seen_positions const& seen, std::v
 	bool run = true;
 	while( run ) {
 		run = false;
-		while( do_deepen_tree( b, p, seen, move_history, offset ) ) {
+		while( do_deepen_tree( b, p, seen, history, offset ) ) {
 			run = true;
 		}
 	}
@@ -657,11 +657,11 @@ void print_stats( book& b )
 }
 
 
-bool parse_move_bg( book& b, std::vector<move> const& move_history, position const& p, std::string const& line, move& m, std::string& error )
+bool parse_move_bg( book& b, std::vector<move> const& history, position const& p, std::string const& line, move& m, std::string& error )
 {
 	std::size_t i;
 
-	std::vector<book_entry> moves = b.get_entries( p, move_history );
+	std::vector<book_entry> moves = b.get_entries( p, history );
 	if( to_int<std::size_t>( line, i, 1, moves.size() ) ) {
 		m = moves[i-1].m;
 		return true;
@@ -671,23 +671,222 @@ bool parse_move_bg( book& b, std::vector<move> const& move_history, position con
 }
 
 
-void run( book& b )
+struct bookgen_state
 {
-	position p;
-
-	color::type view = color::white;
-	std::vector<move> move_history;
-	
-	seen_positions seen( p.hash_ );
-
+	bookgen_state()
+		: seen( p.hash_ )
+		, view( color::white )
+		, max_depth( std::min(4u, MAX_BOOK_DEPTH) )
+		, max_width( 2 )
 	{
-		std::vector<book_entry> entries = b.get_entries( p, move_history );
-		print_pos( move_history, entries, view );
 	}
 
-	unsigned int max_depth = std::min(4u, MAX_BOOK_DEPTH);
-	unsigned int max_width = 2;
+	position p;
+	std::vector<move> history;
+	seen_positions seen;
+	color::type view;
 
+	unsigned int max_depth;
+	unsigned int max_width;
+};
+
+
+bool process_command( book& b, std::string const& cmd, std::string const& args, bookgen_state& state )
+{
+	if( cmd.empty() ) {
+		return true;
+	}
+	else if( cmd == "quit" || cmd == "exit" ) {
+		exit( 0 );
+	}
+	else if( cmd == "go" ) {
+		go( b, state.p, state.seen, state.history, state.max_depth, state.max_width );
+		std::vector<book_entry> moves = b.get_entries( state.p, state.history );
+		print_pos( state.history, moves, state.view );
+	}
+	else if( cmd == "process" ) {
+		process( b );
+	}
+	else if( cmd == "size" || cmd == "stats" ) {
+		print_stats( b );
+	}
+	else if( cmd == "book_depth" ) {
+		int v = atoi( args.c_str() );
+		if( v <= 0 || v > static_cast<int>(MAX_BOOK_DEPTH) ) {
+			std::cerr << "Invalid depth: " << v << std::endl;
+			return false;
+		}
+		else {
+			state.max_depth = v;
+			std::cout << "Book depth set to " << v << std::endl;
+		}
+	}
+	else if( cmd == "book_width" ) {
+		int v = atoi( args.c_str() );
+		if( v <= 0 ) {
+			std::cerr << "Invalid width: " << v << std::endl;
+			return false;
+		}
+		else {
+			state.max_width = v;
+			std::cout << "Book width set to " << v << std::endl;
+		}
+	}
+	else if( cmd == "back" ) {
+		if( state.history.empty() ) {
+			std::cerr << "Already at top" << std::endl;
+			return false;
+		}
+		else {
+			int count = 1;
+			if( !args.empty() ) {
+				to_int( args, count, 1, static_cast<int>(state.history.size()) );
+			}
+			for( int i = 0; i < count; ++i ) {
+				state.history.pop_back();
+				state.seen.pop_root();
+				state.p.reset();
+				for( auto m : state.history ) {
+					apply_move( state.p, m );
+				}
+			}
+
+			std::vector<book_entry> moves = b.get_entries( state.p, state.history );
+			print_pos( state.history, moves, state.view );
+		}
+	}
+	else if( cmd == "new" || cmd == "reset" ) {
+		state.view = color::white;
+		state.history.clear();
+		state.p.reset();
+		state.seen.reset_root( state.p.hash_ );
+
+		std::vector<book_entry> moves = b.get_entries( state.p, state.history );
+		print_pos( state.history, moves, state.view );
+	}
+	else if( cmd == "flip" ) {
+		state.view = static_cast<color::type>(1 - state.view);
+
+		std::vector<book_entry> moves = b.get_entries( state.p, state.history );
+		print_pos( state.history, moves, state.view );
+	}
+	else if( cmd == "update" ) {
+		int v = 5;
+		if( !args.empty() ) {
+			v = atoi( args.c_str() );
+		}
+		if( v <= 0 ) {
+			v = 5;
+		}
+		update( b, v );
+	}
+	else if( cmd == "learnpgn" ) {
+		if( args.empty() ) {
+			std::cerr << "Need to pass .pgn file as argument" << std::endl;
+			return false;
+		}
+		else {
+			if( !learnpgn( b, args ) ) {
+				std::cerr << "Failed to learn from .pgn" << std::endl;
+				return false;
+			}
+		}
+	}
+	else if( cmd == "deepen" ) {
+		move m;
+		std::string error;
+		if( parse_move_bg( b, state.history, state.p, args, m, error ) ) {
+			if( deepen_move( b, state.p, state.seen, state.history, m ) ) {
+				std::vector<book_entry> entries = b.get_entries( state.p, state.history );
+				print_pos( state.history, entries, state.view );
+			}
+		}
+		else {
+			std::cerr << error << std::endl;
+			return false;
+		}
+	}
+	else if( cmd == "fold" ) {
+		b.fold();
+	}
+	else if( cmd == "verify" ) {
+		b.fold( true );
+	}
+	else if( cmd == "insert_log" ) {
+		b.set_insert_logfile( args );
+	}
+	else if( cmd == "redo_hashes" ) {
+		b.redo_hashes();
+	}
+	else if( cmd == "treedeepen" ) {
+		int offset = 0;
+		if( !args.empty() ) {
+			to_int( args, offset, 0, 1000 );
+		}
+		deepen_tree( b, state.p, state.seen, state.history, offset );
+	}
+	else if( cmd == "export" ) {
+		b.export_book( args );
+	}
+	else {
+		move m;
+		std::string error;
+		if( parse_move_bg( b, state.history, state.p, cmd, m, error ) ) {
+
+			state.history.push_back( m );
+
+			apply_move( state.p, m );
+			state.seen.push_root( state.p.hash_ );
+
+			std::vector<book_entry> entries = b.get_entries( state.p, state.history );
+			if( entries.empty() ) {
+				if( b.is_writable() ) {
+					std::cout << "Position not in book, calculating..." << std::endl;
+
+					if( !calculate_position( b, state.p, state.seen, state.history ) ) {
+						std::cerr << "Failed to calculate position" << std::endl;
+						exit(1);
+					}
+				}
+				else {
+					std::cerr << "Position not in book and book is read-only." << std::endl;
+					state.history.pop_back();
+					state.seen.pop_root();
+						
+					state.p.reset();
+					for( auto m : state.history ) {
+						apply_move( state.p, m );
+					}
+				}
+
+				entries = b.get_entries( state.p, state.history );
+			}
+
+			if( entries.empty() ) {
+				std::cout << "Aborting, cannot add final states to book." << std::endl;
+				exit(1);
+			}
+
+			print_pos( state.history, entries, state.view );
+		}
+		else {
+			std::cerr << error << std::endl;
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
+void run( book& b )
+{
+	bookgen_state state;
+
+	{
+		std::vector<book_entry> entries = b.get_entries( state.p, state.history );
+		print_pos( state.history, entries, state.view );
+	}
 
 	while( true ) {
 		std::string line;
@@ -699,182 +898,8 @@ void run( book& b )
 		}
 		std::string args;
 		std::string cmd = split( line, args );
-		if( cmd.empty() ) {
-			continue;
-		}
-		else if( cmd == "quit" ) {
-			 break;
-		}
-		else if( cmd == "exit") {
-			break;
-		}
-		else if( cmd == "go" ) {
-			go( b, p, seen, move_history, max_depth, max_width );
-			return;
-		}
-		else if( cmd == "process" ) {
-			process( b );
-		}
-		else if( cmd == "size" || cmd == "stats" ) {
-			print_stats( b );
-		}
-		else if( cmd == "book_depth" ) {
-			int v = atoi( args.c_str() );
-			if( v <= 0 || v > static_cast<int>(MAX_BOOK_DEPTH) ) {
-				std::cerr << "Invalid depth: " << v << std::endl;
-			}
-			else {
-				max_depth = v;
-				std::cout << "Book depth set to " << v << std::endl;
-			}
-		}
-		else if( cmd == "book_width" ) {
-			int v = atoi( args.c_str() );
-			if( v <= 0 ) {
-				std::cerr << "Invalid width: " << v << std::endl;
-			}
-			else {
-				max_width = v;
-				std::cout << "Book width set to " << v << std::endl;
-			}
-		}
-		else if( cmd == "back" ) {
-			if( move_history.empty() ) {
-				std::cerr << "Already at top" << std::endl;
-			}
-			else {
-				int count = 1;
-				if( !args.empty() ) {
-					to_int( args, count, 1, static_cast<int>(move_history.size()) );
-				}
-				for( int i = 0; i < count; ++i ) {
-					move_history.pop_back();
-					seen.pop_root();
-					p.reset();
-					for( auto m : move_history ) {
-						apply_move( p, m );
-					}
-				}
 
-				std::vector<book_entry> moves = b.get_entries( p, move_history );
-				print_pos( move_history, moves, view );
-			}
-		}
-		else if( cmd == "new" || cmd == "reset" ) {
-			view = color::white;
-			move_history.clear();
-			p.reset();
-			seen.reset_root( p.hash_ );
-
-			std::vector<book_entry> moves = b.get_entries( p, move_history );
-			print_pos( move_history, moves, view );
-		}
-		else if( cmd == "flip" ) {
-			view = static_cast<color::type>(1 - view);
-
-			std::vector<book_entry> moves = b.get_entries( p, move_history );
-			print_pos( move_history, moves, view );
-		}
-		else if( cmd == "update" ) {
-			int v = 5;
-			if( !args.empty() ) {
-				v = atoi( args.c_str() );
-			}
-			if( v <= 0 ) {
-				v = 5;
-			}
-			update( b, v );
-		}
-		else if( cmd == "learnpgn" ) {
-			if( args.empty() ) {
-				std::cerr << "Need to pass .pgn file as argument" << std::endl;
-			}
-			else {
-				if( !learnpgn( b, args ) ) {
-					std::cerr << "Failed to learn from .pgn" << std::endl;
-				}
-			}
-		}
-		else if( cmd == "deepen" ) {
-			move m;
-			std::string error;
-			if( parse_move_bg( b, move_history, p, args, m, error ) ) {
-				if( deepen_move( b, p, seen, move_history, m ) ) {
-					std::vector<book_entry> entries = b.get_entries( p, move_history );
-					print_pos( move_history, entries, view );
-				}
-			}
-			else {
-				std::cerr << error << std::endl;
-			}
-		}
-		else if( cmd == "fold" ) {
-			b.fold();
-		}
-		else if( cmd == "verify" ) {
-			b.fold( true );
-		}
-		else if( cmd == "insert_log" ) {
-			b.set_insert_logfile( args );
-		}
-		else if( cmd == "redo_hashes" ) {
-			b.redo_hashes();
-		}
-		else if( cmd == "treedeepen" ) {
-			int offset = 0;
-			if( !args.empty() ) {
-				to_int( args, offset, 0, 1000 );
-			}
-			deepen_tree( b, p, seen, move_history, offset );
-		}
-		else if( cmd == "export" ) {
-			b.export_book( args );
-		}
-		else {
-			move m;
-			std::string error;
-			if( parse_move_bg( b, move_history, p, line, m, error ) ) {
-
-				move_history.push_back( m );
-
-				apply_move( p, m );
-				seen.push_root( p.hash_ );
-
-				std::vector<book_entry> entries = b.get_entries( p, move_history );
-				if( entries.empty() ) {
-					if( b.is_writable() ) {
-						std::cout << "Position not in book, calculating..." << std::endl;
-
-						if( !calculate_position( b, p, seen, move_history ) ) {
-							std::cerr << "Failed to calculate position" << std::endl;
-							exit(1);
-						}
-					}
-					else {
-						std::cerr << "Position not in book and book is read-only." << std::endl;
-						move_history.pop_back();
-						seen.pop_root();
-						
-						p.reset();
-						for( auto m : move_history ) {
-							apply_move( p, m );
-						}
-					}
-
-					entries = b.get_entries( p, move_history );
-				}
-
-				if( entries.empty() ) {
-					std::cout << "Aborting, cannot add final states to book." << std::endl;
-					exit(1);
-				}
-
-				print_pos( move_history, entries, view );
-			}
-			else {
-				std::cerr << error << std::endl;
-			}
-		}
+		process_command( b, cmd, args, state );
 	}
 }
 
@@ -882,7 +907,7 @@ int main( int argc, char const* argv[] )
 {
 	std::cout << "Initializing" << std::endl;
 
-	conf.init( argc, argv );
+	std::string command = conf.init( argc, argv );
 
 	std::string book_dir;
 	std::string self = argv[0];
@@ -914,9 +939,20 @@ int main( int argc, char const* argv[] )
 	if( !b.size() ) {
 		init_book( b );
 	}
-	std::cout << "Ready" << std::endl;
 
-	run( b );
+	if( command.empty() ) {
+		std::cout << "Ready" << std::endl;
+		run( b );
+	}
+	else {
+		std::string args;
+		command = split( command, args );
+
+		bookgen_state s;
+		if( !process_command( b, command, args, s ) ) {
+			return 1;
+		}
+	}
 
 	return 0;
 }
