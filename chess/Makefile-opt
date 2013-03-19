@@ -67,7 +67,7 @@ CHESS_SOURCE_FILES = $(UTIL_SOURCE_FILES) $(GENERIC_SOURCE_FILES) \
 
 BOOKGEN_SOURCE_FILES = $(UTIL_SOURCE_FILES) $(GENERIC_SOURCE_FILES) \
 	book.cpp \
-	bookgen.cpp
+	bookgen.cpp \
 	sqlite/sqlite3.o \
 	sqlite/sqlite3_wrapper.cpp
 
