@@ -924,41 +924,6 @@ skip_getline:
 				std::cout << "Error (bad command): Not a valid variant" << std::endl;
 			}
 		}
-		// Octochess-specific commands mainly for testing and debugging
-		else if( cmd == "moves" ) {
-			std::cout << "Possible moves:" << std::endl;
-			for( auto m : calculate_moves<movegen_type::all>( state.p ) ) {
-				if( args == "long" ) {
-					std::cout << " " << move_to_long_algebraic( m ) << std::endl;
-				}
-				else if( args == "full" ) {
-					std::cout << " " << move_to_string( state.p, m ) << std::endl;
-				}
-				else {
-					std::cout << " " << move_to_san( state.p, m ) << std::endl;
-				}
-			}
-		}
-		else if( cmd == "fen" ) {
-			std::cout << position_to_fen_noclock( state.p ) << std::endl;
-		}
-		else if( cmd == "score" || cmd == "eval" ) {
-			std::cout << explain_eval( state.p ) << std::endl;
-		}
-		else if( cmd == "hash" ) {
-			std::cout << state.p.hash_ << std::endl;
-		}
-		else if( cmd == "see" ) {
-			move m;
-			std::string error;
-			if( parse_move( state.p, args, m, error ) ) {
-				int see_score = see( state.p, m );
-				std::cout << "See score: " << see_score << std::endl;
-			}
-			else {
-				std::cout << error << ": " << line << std::endl;
-			}
-		}
 		else if( cmd == "option" ) {
 			std::string value;
 			std::string name = split( args, value, '=' );
@@ -1009,6 +974,44 @@ skip_getline:
 			}
 
 			ASSERT( state.searchmoves_.find( move() ) == state.searchmoves_.end() || state.searchmoves_.size() == 1 );
+		}
+		// Octochess-specific commands mainly for testing and debugging
+		else if( cmd == "moves" ) {
+			std::cout << "Possible moves:" << std::endl;
+			for( auto m : calculate_moves<movegen_type::all>( state.p ) ) {
+				if( args == "long" ) {
+					std::cout << " " << move_to_long_algebraic( m ) << std::endl;
+				}
+				else if( args == "full" ) {
+					std::cout << " " << move_to_string( state.p, m ) << std::endl;
+				}
+				else {
+					std::cout << " " << move_to_san( state.p, m ) << std::endl;
+				}
+			}
+		}
+		else if( cmd == "fen" ) {
+			std::cout << position_to_fen_noclock( state.p ) << std::endl;
+		}
+		else if( cmd == "score" || cmd == "eval" ) {
+			std::cout << explain_eval( state.p ) << std::endl;
+		}
+		else if( cmd == "hash" ) {
+			std::cout << state.p.hash_ << std::endl;
+		}
+		else if( cmd == "see" ) {
+			move m;
+			std::string error;
+			if( parse_move( state.p, args, m, error ) ) {
+				int see_score = see( state.p, m );
+				std::cout << "See score: " << see_score << std::endl;
+			}
+			else {
+				std::cout << error << ": " << line << std::endl;
+			}
+		}
+		else if( cmd == "board" ) {
+			std::cout << board_to_string( state.p, color::white );
 		}
 		else {
 			move m;
