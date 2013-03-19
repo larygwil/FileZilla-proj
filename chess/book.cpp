@@ -918,7 +918,7 @@ struct export_data
 int export_book( void* q, statement& s )
 {
 	export_data& ed = *reinterpret_cast<export_data*>(q); 
-	
+
 	if( s.column_count() != 3 ) {
 		std::cerr << "Wrong column count" << std::endl;
 		return 1;
@@ -933,7 +933,7 @@ int export_book( void* q, statement& s )
 		std::cerr << "Move history malformed" << std::endl;
 		return 1;
 	}
-	
+
 	if( s.is_null( 1 ) ) {
 		std::cerr << "NULL hash in position to fold." << std::endl;
 		return 1;
@@ -987,12 +987,17 @@ int export_book( void* q, statement& s )
 
 	std::vector<export_entry> output;
 	for( std::size_t i = 0; i < 5 && i < entries.size(); ++i ) {
+		if( entries[i].forecast > 250 || entries[i].forecast < -250 ) {
+			break;
+		}
 		export_entry e;
 		e.m = entries[i].m;
 		e.forecast = entries[i].forecast;
 		output.push_back( e );
 	}
-	ed.output[ hash ] = output;
+	if( !output.empty() ) {
+		ed.output[ hash ] = output;
+	}
 
 	return 0;
 }
