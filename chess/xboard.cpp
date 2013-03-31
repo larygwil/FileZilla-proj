@@ -340,7 +340,7 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 			default:
 				break;
 			}
-		
+
 			if( piece != -1 && rank != -1 && file != -1 ) {
 				int sq = static_cast<uint64_t>(file + rank * 8);
 				for( int pi = bb_type::pawns; pi <= bb_type::king; ++pi ) {
@@ -540,7 +540,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 {
 	state.last_go_time = cmd_recv_time;
 	state.last_go_color = state.p.self();
-	
+
 	// Do a step
 	if( conf.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
 		std::vector<simple_book_entry> moves = state.book_.get_entries( state.p );
