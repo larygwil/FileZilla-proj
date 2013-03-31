@@ -4,11 +4,12 @@ CXXFLAGS = $(CFLAGS) -std=gnu++0x
 
 CC = gcc
 CXX = g++
+NATIVE_CXX = g++
 
 all: octochess bookgen
 
 tables.cpp: tables_gen.cpp
-	$(CXX) -m64 -static tables_gen.cpp -o tables_gen
+	$(NATIVE_CXX) -m64 -static tables_gen.cpp -o tables_gen
 	./tables_gen > tables.cpp
 	rm tables_gen
 
