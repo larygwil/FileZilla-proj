@@ -669,7 +669,7 @@ bool book::mark_for_processing( std::vector<move> const& history )
 	statement s( *impl_, "INSERT OR IGNORE INTO position (pos, hash) VALUES (:1, :2)");
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
 		apply_move( p, *it );
-		
+
 		std::vector<unsigned char> hs = serialize_history( history.begin(), it + 1 );
 		s.bind( 1, hs );
 		s.bind( 2, p.hash_ );
@@ -902,10 +902,11 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 struct export_entry
 {
 	export_entry()
-		: forecast()
+		: mi_()
+		, forecast()
 	{}
 
-	move m;
+	unsigned char mi_;
 	short forecast;
 };
 
@@ -917,7 +918,7 @@ struct export_data
 
 int export_book( void* q, statement& s )
 {
-	export_data& ed = *reinterpret_cast<export_data*>(q); 
+	export_data& ed = *reinterpret_cast<export_data*>(q);
 
 	if( s.column_count() != 3 ) {
 		std::cerr << "Wrong column count" << std::endl;
@@ -974,24 +975,31 @@ int export_book( void* q, statement& s )
 	}
 
 	auto moves = calculate_moves<movegen_type::all>( p );
-	std::sort( moves.begin(), moves.end(), book_move_sort );
+
 	if( moves.size() != entries.size() ) {
 		std::cerr << "Move count mismatch" << std::endl;
 		return 1;
 	}
+
+	auto book_sorted_moves = moves;
+	std::sort( book_sorted_moves.begin(), book_sorted_moves.end(), book_move_sort );
 	for( unsigned int i = 0; i < entries.size(); ++i ) {
-		entries[i].m = moves[i];
+		entries[i].m = book_sorted_moves[i];
 	}
 
 	std::sort( entries.begin(), entries.end() );
+	std::sort( moves.begin(), moves.end() );
 
 	std::vector<export_entry> output;
 	for( std::size_t i = 0; i < 5 && i < entries.size(); ++i ) {
 		if( entries[i].forecast > 250 || entries[i].forecast < -250 ) {
 			break;
 		}
+		if( i && entries[i].forecast + 25 < entries[0].forecast ) {
+			break;
+		}
 		export_entry e;
-		e.m = entries[i].m;
+		e.mi_ = std::find( moves.begin(), moves.end(), entries[i].m ) - moves.begin() + 1;
 		e.forecast = entries[i].forecast;
 		output.push_back( e );
 	}
@@ -1027,7 +1035,7 @@ bool book::export_book( std::string const& fn )
 		return false;
 	}
 
-	char null_entry[4] = {0};
+	char null_entry[3] = {0};
 
 	std::ofstream out( fn, std::ofstream::trunc | std::ofstream::binary );
 
@@ -1056,8 +1064,7 @@ bool book::export_book( std::string const& fn )
 		auto entries = it.second;
 
 		for( std::size_t i = 0; i < entries.size(); ++i ) {
-			out << static_cast<unsigned char>( entries[i].m.d % 256 );
-			out << static_cast<unsigned char>( entries[i].m.d / 256 );
+			out << entries[i].mi_;
 
 			unsigned short f = static_cast<unsigned short>( entries[i].forecast );
 			out << static_cast<unsigned char>( f % 256 );
@@ -1065,7 +1072,7 @@ bool book::export_book( std::string const& fn )
 		}
 
 		for( std::size_t i = entries.size(); i < 5; ++i ) {
-			out.write( null_entry, 4 );
+			out.write( null_entry, 3 );
 		}
 	}
 

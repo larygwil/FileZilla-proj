@@ -852,7 +852,7 @@ bool process_command( book& b, std::string const& cmd, std::string const& args, 
 					std::cerr << "Position not in book and book is read-only." << std::endl;
 					state.history.pop_back();
 					state.seen.pop_root();
-						
+
 					state.p.reset();
 					for( auto m : state.history ) {
 						apply_move( state.p, m );

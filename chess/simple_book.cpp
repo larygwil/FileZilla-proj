@@ -1,8 +1,10 @@
 #include "simple_book.hpp"
+#include "moves.hpp"
 
 #include <fstream>
+#include <algorithm>
 
-unsigned short const simple_book_version = 0;
+unsigned short const simple_book_version = 1;
 
 class simple_book::impl
 {
@@ -46,10 +48,10 @@ bool simple_book::open( std::string const& book_dir )
 		close();
 		return false;
 	}
-	
+
 	impl_->in.seekg( 0, impl_->in.end );
 	uint64_t length = impl_->in.tellg();
-    impl_->in.seekg( 0, impl_->in.beg );
+	impl_->in.seekg( 0, impl_->in.beg );
 
 	if( length < 5 ) {
 		close();
@@ -72,7 +74,7 @@ bool simple_book::open( std::string const& book_dir )
 	}
 
 	impl_->moves_per_entry = tmp[4];
-	impl_->entry_size = 8 + impl_->moves_per_entry * 4;
+	impl_->entry_size = 8 + impl_->moves_per_entry * 3;
 	if( !impl_->moves_per_entry || (length - impl_->header_size) % impl_->entry_size ) {
 		close();
 		return false;
@@ -128,14 +130,27 @@ std::vector<simple_book_entry> simple_book::get_entries( position const& p )
 			max = mid;
 		}
 		else {
+			auto moves = calculate_moves<movegen_type::all>( p );
+			std::stable_sort( moves.begin(), moves.end() );
+
 			for( uint64_t i = 0; i < impl_->moves_per_entry; ++i ) {
-				impl_->in.read( reinterpret_cast<char*>(tmp), 4 );
+				impl_->in.read( reinterpret_cast<char*>(tmp), 3 );
 				simple_book_entry e;
-				e.m.d = tmp[0] + static_cast<unsigned short>(tmp[1]) * 256;
-				e.forecast = static_cast<short>(tmp[2] + static_cast<unsigned short>(tmp[3]) * 256);
-				if( !e.m.empty() ) {
-					ret.push_back( e );
+
+				unsigned char mi = tmp[0];
+				if( !mi ) {
+					continue;
 				}
+				--mi;
+
+				if( mi >= moves.size() ) {
+					// Huh, book broken?
+					continue;
+				}
+				e.m = moves[mi];
+
+				e.forecast = static_cast<short>(tmp[1] + static_cast<unsigned short>(tmp[2]) * 256);
+				ret.push_back( e );
 			}
 			return ret;
 		}
