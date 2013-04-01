@@ -618,6 +618,7 @@ bool parse_setboard( xboard_state& state, std::string const& args, std::string& 
 	state.seen.reset_root( state.p.hash_ );
 	state.started_from_root = false;
 	state.searchmoves_.clear();
+	state.self = state.p.other();
 
 	return true;
 }
