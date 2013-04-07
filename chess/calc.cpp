@@ -829,7 +829,7 @@ short context::quiescence_search( int ply, int depth, position const& p, check_m
 
 	qsearch_move_generator gen( *this, p, check, pv_node, do_checks );
 
-	if( check.check || (!tt_move.empty() && p.get_piece( tt_move.target() ) != pieces::none ) ) {
+	if( check.check || do_checks || (!tt_move.empty() && p.get_captured_piece( tt_move ) != pieces::none ) ) {
 		gen.hash_move = tt_move;
 	}
 
@@ -862,9 +862,7 @@ short context::quiescence_search( int ply, int depth, position const& p, check_m
 			}
 		}
 
-		short value;
-
-		value = -quiescence_search( ply + 1, depth - 1, new_pos, new_check, -beta, -alpha );
+		short value = -quiescence_search( ply + 1, depth - 1, new_pos, new_check, -beta, -alpha );
 
 		if( value > best_value ) {
 			best_value = value;
