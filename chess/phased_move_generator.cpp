@@ -43,17 +43,16 @@ qsearch_move_generator::qsearch_move_generator( context& cntx, position const& p
 {
 }
 
-void get_best( move_info* begin, move_info* end ) {
-	move_info* best = begin;
-	for( move_info* it = begin + 1; it != end; ++it ) {
-		if( it->sort > best->sort ) {
-			best = it;
+void sort( move_info* begin, move_info* end ) {
+	// Insertion sort
+	for( move_info* it = begin + 1; it < end; ++it ) {
+		move_info tmp = *it;
+		move_info* it2 = it;
+		while( it2 != begin && (it2-1)->sort < tmp.sort ) {
+			*it2 = *(it2-1);
+			--it2;
 		}
-	}
-
-	// Bubble best to front
-	for( ; best != begin; --best ) {
-		std::swap( *(best-1), *best );
+		*it2 = tmp;
 	}
 }
 
@@ -85,9 +84,9 @@ move qsearch_move_generator::next()
 		ctx.move_ptr = moves;
 		calculate_moves<movegen_type::capture>( p_, ctx.move_ptr, check_ );
 		phase = phases::captures;
+		sort( it, ctx.move_ptr );
 	case phases::captures:
 		while( it != ctx.move_ptr ) {
-			get_best( it, ctx.move_ptr );
 			if( it->m == hash_move ) {
 				++it;
 				continue;
@@ -137,9 +136,9 @@ move qsearch_move_generator::next()
 		}
 		evaluate_noncaptures( ctx, bad_captures_end_, ctx.move_ptr, p_ );
 		phase = phases::noncapture;
+		sort( it, ctx.move_ptr );
 	case phases::noncapture:
 		while( it != ctx.move_ptr ) {
-			get_best( it, ctx.move_ptr );
 			if( it->m == hash_move ) {
 				++it;
 				continue;
@@ -159,9 +158,9 @@ move qsearch_move_generator::next()
 		phase = phases::bad_captures;
 		it = moves;
 		ctx.move_ptr = bad_captures_end_;
+		sort( it, bad_captures_end_ );
 	case phases::bad_captures:
 		while( it != bad_captures_end_ ) {
-			get_best( it, bad_captures_end_ );
 			return (it++)->m;
 		}
 #endif
@@ -209,9 +208,9 @@ move move_generator::next() {
 		ctx.move_ptr = moves;
 		calculate_moves<movegen_type::capture>( p_, ctx.move_ptr, check_ );
 		phase = phases::captures;
+		sort( it, ctx.move_ptr );
 	case phases::captures:
 		while( it != ctx.move_ptr ) {
-			get_best( it, ctx.move_ptr );
 			if( it->m != hash_move ) {
 
 #if DELAY_BAD_CAPTURES
@@ -252,9 +251,9 @@ move move_generator::next() {
 		calculate_moves<movegen_type::noncapture>( p_, ctx.move_ptr, check_ );
 		evaluate_noncaptures( ctx, bad_captures_end_, ctx.move_ptr, p_ );
 		phase = phases::noncapture;
+		sort( it, ctx.move_ptr );
 	case phases::noncapture:
 		while( it != ctx.move_ptr ) {
-			get_best( it, ctx.move_ptr );
 			if( it->m != hash_move && it->m != killers_.m1 && it->m != killers_.m2 ) {
 				return (it++)->m;
 			}
@@ -266,9 +265,9 @@ move move_generator::next() {
 		phase = phases::bad_captures;
 		it = moves;
 		ctx.move_ptr = bad_captures_end_;
+		sort( it, bad_captures_end_ );
 	case phases::bad_captures:
 		while( it != bad_captures_end_ ) {
-			get_best( it, bad_captures_end_ );
 			return (it++)->m;
 		}
 #endif
