@@ -690,6 +690,7 @@ skip_getline:
 			else if( cmd == "hint" ) {
 				short tmp;
 				move m;
+				transposition_table.init_if_needed( conf.memory );
 				transposition_table.lookup( state.p.hash_, 0, 0, result::loss, result::win, tmp, m, tmp );
 				if( !m.empty() ) {
 					std::cout << "Hint: " << move_to_long_algebraic( m ) << std::endl;
