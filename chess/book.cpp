@@ -904,10 +904,12 @@ struct export_entry
 	export_entry()
 		: mi_()
 		, forecast()
+		, depth_()
 	{}
 
 	unsigned char mi_;
 	short forecast;
+	unsigned char depth_;
 };
 
 struct export_data
@@ -940,9 +942,6 @@ int export_book( void* q, statement& s )
 		return 1;
 	}
 	uint64_t hash = s.get_int( 1 );
-	if( ed.output.find( hash ) != ed.output.end() ) {
-		return 0;
-	}
 
 	if( s.is_null( 1 ) ) {
 		std::cerr << "NULL data in position to fold." << std::endl;
@@ -992,16 +991,28 @@ int export_book( void* q, statement& s )
 	std::sort( moves.begin(), moves.end() );
 
 	std::vector<export_entry> output;
+	auto existing = ed.output.find( hash );
+	if( existing != ed.output.end() ) {
+		output = existing->second;
+	}
+
 	for( std::size_t i = 0; i < 5 && i < entries.size(); ++i ) {
-		if( entries[i].forecast > 250 || entries[i].forecast < -250 ) {
-			break;
-		}
-		if( i && entries[i].forecast + 25 < entries[0].forecast ) {
-			break;
-		}
 		export_entry e;
 		e.mi_ = static_cast<unsigned char>(std::find( moves.begin(), moves.end(), entries[i].m ) - moves.begin() + 1);
 		e.forecast = entries[i].forecast;
+		e.depth_ = entries[i].search_depth;
+
+		// Merge with existing item
+		for( auto it = output.begin(); it != output.end(); ++it ) {
+			if( it->mi_ == e.mi_ ) {
+				if( it->depth_ >= e.depth_ ) {
+					e = *it;
+				}
+				output.erase( it );
+				break;
+			}
+		}
+
 		output.push_back( e );
 	}
 	if( !output.empty() ) {
@@ -1063,16 +1074,42 @@ bool book::export_book( std::string const& fn )
 		}
 
 		auto entries = it.second;
+		
+		// Sort entries
+		std::stable_sort( entries.begin(), entries.end(), 
+				[]( export_entry const& lhs, export_entry const& rhs ) { 
+					if( lhs.forecast > rhs.forecast ) {
+						return true;
+					}
+					
+					if( lhs.forecast == rhs.forecast ) {
+						return lhs.depth_ > rhs.depth_;
+					}
 
-		for( std::size_t i = 0; i < entries.size(); ++i ) {
-			out << entries[i].mi_;
+					return false;
+				}
+			);
 
-			unsigned short f = static_cast<unsigned short>( entries[i].forecast );
+		std::size_t i;
+		for( i = 0; i < entries.size() && i < 5; ++i ) {
+
+			auto const& e = entries[i];
+
+			if( e.forecast > 250 || e.forecast < -250 ) {
+				break;
+			}
+			if( i && e.forecast + 25 < entries[0].forecast ) {
+				break;
+			}
+
+			out << e.mi_;
+
+			unsigned short f = static_cast<unsigned short>( e.forecast );
 			out << static_cast<unsigned char>( f % 256 );
 			out << static_cast<unsigned char>( f / 256 );
 		}
 
-		for( std::size_t i = entries.size(); i < 5; ++i ) {
+		for( ; i < 5; ++i ) {
 			out.write( null_entry, 3 );
 		}
 	}
