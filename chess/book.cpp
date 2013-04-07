@@ -980,6 +980,7 @@ int export_book( void* q, statement& s )
 		std::cerr << "Move count mismatch" << std::endl;
 		return 1;
 	}
+	ASSERT( moves.size() < 255 );
 
 	auto book_sorted_moves = moves;
 	std::sort( book_sorted_moves.begin(), book_sorted_moves.end(), book_move_sort );
@@ -999,7 +1000,7 @@ int export_book( void* q, statement& s )
 			break;
 		}
 		export_entry e;
-		e.mi_ = std::find( moves.begin(), moves.end(), entries[i].m ) - moves.begin() + 1;
+		e.mi_ = static_cast<unsigned char>(std::find( moves.begin(), moves.end(), entries[i].m ) - moves.begin() + 1);
 		e.forecast = entries[i].forecast;
 		output.push_back( e );
 	}
