@@ -207,6 +207,68 @@ bool evaluate_KPvKP( position const& p, color::type c, short& result )
 	return true;
 }
 
+
+bool do_evaluate_KRPvKR( uint64_t wk, uint64_t bk, uint64_t wr, uint64_t br, uint64_t wp, color::type c, short& result )
+{
+	// Promotion square
+	uint64_t ps = 56 + wp % 8;
+	uint64_t pr = wp / 8;
+	uint64_t wkr = wk / 8;
+	uint64_t bkr = bk / 8;
+	uint64_t brr = br / 8;
+
+	// Philidor position (with sides reversed)
+	// - Black king on promotion square or next to it
+	// - White king not farther than 5th rank
+	// - White pawn not farther than 5th rank
+	// - Black rook on 6th rank
+	if( (ps == bk || possible_king_moves[ps] & (1ull << bk)) && wk <= square::h5 && pr < 5 && brr == 5 ) {
+		result = 0;
+		return true;
+	}
+
+	// If pawn is pushed, defender moves rook to first rank and checks kind from behind
+	// - White to move: White King still on 5th or behind, otherwise 6th rank or behind
+	// - White to move: Black rook on first rank, otherwise now on pawn or adjacent file
+	if( (ps == bk || possible_king_moves[ps] & (1ull << bk)) && pr == 5 && 
+			wkr <= (c ? 5 : 4 ) &&
+			(!brr || (c && king_distance[ps % 8][br%8] > 2) ) )
+	{
+		result = 0;
+		return true;
+	}
+
+	// If white pawn is pushed a second time, black king needs to move onto the promotion square,
+	// black rook needs to keep checking from first rank. If white is to move
+	// and not checked, its king must be some distance from the pawn.
+	if( ps == bk && pr == 6 &&
+			(c || ((wk % 8) == (br % 8) || !(possible_king_moves[wk] & (1ull << wp))) ) &&
+			!brr )
+	{
+		result = 0;
+		return true;
+	}
+	return false;
+}
+
+template<color::type c>
+bool evaluate_KRPvKR( position const& p, short& result )
+{
+	// Flip if necessary
+	if( c == color::white ) {
+		return do_evaluate_KRPvKR( p.king_pos[c], p.king_pos[1-c]
+					, bitscan(p.bitboards[c].b[bb_type::rooks]), bitscan(p.bitboards[1-c].b[bb_type::rooks])
+					, bitscan(p.bitboards[c].b[bb_type::pawns])
+					, p.c, result );
+	}
+	else {
+		return do_evaluate_KRPvKR( 63-p.king_pos[c], 63-p.king_pos[1-c]
+					, 63-bitscan(p.bitboards[c].b[bb_type::rooks]), 63-bitscan(p.bitboards[1-c].b[bb_type::rooks])
+					, 63-bitscan(p.bitboards[c].b[bb_type::pawns])
+					, static_cast<color::type>(1-p.c), result );
+	}
+}
+
 bool evaluate_endgame( position const& p, short& result )
 {
 	switch( p.piece_sum ) {
@@ -330,6 +392,10 @@ bool evaluate_endgame( position const& p, short& result )
 		else {
 			return evaluate_KPvKP( p, p.other(), result );
 		}
+	case white_rook + black_rook + white_pawn:
+		return evaluate_KRPvKR<color::white>( p, result );
+	case white_rook + black_rook + black_pawn:
+		return evaluate_KRPvKR<color::black>( p, result );
 	default:
 		break;
 	}
