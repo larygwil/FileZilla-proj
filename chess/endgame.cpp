@@ -208,13 +208,12 @@ bool evaluate_KPvKP( position const& p, color::type c, short& result )
 }
 
 
-bool do_evaluate_KRPvKR( uint64_t wk, uint64_t bk, uint64_t wr, uint64_t br, uint64_t wp, color::type c, short& result )
+bool do_evaluate_KRPvKR( uint64_t wk, uint64_t bk, uint64_t br, uint64_t wp, color::type c, short& result )
 {
 	// Promotion square
 	uint64_t ps = 56 + wp % 8;
 	uint64_t pr = wp / 8;
 	uint64_t wkr = wk / 8;
-	uint64_t bkr = bk / 8;
 	uint64_t brr = br / 8;
 
 	// Philidor position (with sides reversed)
@@ -257,13 +256,13 @@ bool evaluate_KRPvKR( position const& p, short& result )
 	// Flip if necessary
 	if( c == color::white ) {
 		return do_evaluate_KRPvKR( p.king_pos[c], p.king_pos[1-c]
-					, bitscan(p.bitboards[c].b[bb_type::rooks]), bitscan(p.bitboards[1-c].b[bb_type::rooks])
+					, bitscan(p.bitboards[1-c].b[bb_type::rooks])
 					, bitscan(p.bitboards[c].b[bb_type::pawns])
 					, p.c, result );
 	}
 	else {
 		return do_evaluate_KRPvKR( 63-p.king_pos[c], 63-p.king_pos[1-c]
-					, 63-bitscan(p.bitboards[c].b[bb_type::rooks]), 63-bitscan(p.bitboards[1-c].b[bb_type::rooks])
+					, 63-bitscan(p.bitboards[1-c].b[bb_type::rooks])
 					, 63-bitscan(p.bitboards[c].b[bb_type::pawns])
 					, static_cast<color::type>(1-p.c), result );
 	}
