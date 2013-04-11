@@ -876,11 +876,8 @@ score sum_up( position const& p, eval_results const& results ) {
 extern uint64_t const light_squared_bishop_mask;
 
 namespace {
-static short scale( position const& p, score const& s )
+static void scale_by_material( position const& p, short& ev )
 {
-	short mat = p.material[0].mg() + p.material[1].mg();
-	short ev = s.scale( mat );
-
 	// Check for endgames with opposite colored bishops, those are rather drawish :(
 	if( p.material[0].mg() == eval_values::material_values[pieces::bishop].mg() &&
 		p.material[1].mg() == eval_values::material_values[pieces::bishop].mg() )
@@ -891,6 +888,33 @@ static short scale( position const& p, score const& s )
 			ev /= 2;
 		}
 	}
+
+	// If we're pawnless, an advantage of a single bishop or less is usually not enough to force a win.
+	//
+	// "You can tune Pawn values until doomsday, but you will never get anything that is remotely as good
+	//  as just dividing the score by (a completely guessed) two if the leading side has no Pawns." (H.G. Muller)
+	color::type c = (ev > 0) ? color::white : color::black;
+	if( !p.bitboards[c].b[bb_type::pawns] ) {
+		// Check material difference, assume that weaker side would just exchange material
+		if( (p.material[c].mg() - p.material[1-c].mg()) <= eval_values::material_values[pieces::bishop].mg() ) {
+			if( p.material[c].mg() <= eval_values::material_values[pieces::bishop].mg() ) {
+				// We don't even have enough material to force a win if opponent has nothing. Draw at best.
+				ev = 0;
+			}
+			else {
+				ev /= 2;
+			}
+		}
+	}
+}
+
+static short scale( position const& p, score const& s )
+{
+	short mat = p.material[0].mg() + p.material[1].mg();
+	short ev = s.scale( mat );
+
+	scale_by_material( p, ev );
+
 	return ev;
 }
 
@@ -1004,7 +1028,7 @@ short evaluate_full( position const& p )
 	do_evaluate<false>( p, results );
 
 	score full = sum_up( p, results );
-	
+
 	eval = scale( p, full );
 	if( !p.white() ) {
 		eval = -eval;
