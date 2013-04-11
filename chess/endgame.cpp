@@ -54,6 +54,38 @@ short evaluate_KNBvK( position const& p, color::type c )
 }
 
 
+bool evaluate_KPvK_infront( uint64_t wk, uint64_t bk, uint64_t wp, color::type c, short& result )
+{
+	if( wp >= 48 ) {
+		return false;
+	}
+
+	if( wp + 8 != bk && wp + 16 != bk ) {
+		return false;
+	}
+
+	// From here on we know black king is in front of pawn one or two squares
+
+	// This is drawn, except when black is to move, pawn is on 6th rank and white king next to the pawn.
+	if( wp / 8 != 5 || c || wp + 16 != bk ) {
+		result = 0;
+		return true;
+	}
+
+	if( wp / 8 != wk / 8 ) {
+		result = 0;
+		return true;
+	}
+
+	if( wp != wk + 1 && wp != wk - 1 ) {
+		result = 0;
+		return true;
+	}
+
+	return false;
+}
+
+
 bool evaluate_KPvK( position const& p, color::type c, short& result )
 {
 	// Drawn if pawn on a or h file, enemy king in front
@@ -76,15 +108,21 @@ bool evaluate_KPvK( position const& p, color::type c, short& result )
 		}
 		return true;
 	}
-	return false;
+
+	if( !c ) {
+		return evaluate_KPvK_infront( p.king_pos[c], p.king_pos[1-c], bitscan( p.bitboards[c].b[bb_type::pawns] ), p.c, result );
+	}
+	else {
+		return evaluate_KPvK_infront( 63-p.king_pos[c], 63-p.king_pos[1-c], 63-bitscan( p.bitboards[c].b[bb_type::pawns] ), static_cast<color::type>(1-p.c), result );
+	}
 }
 
 bool evaluate_KBPvKP( position const& p, color::type c, short& result )
 {
-	// This endgame is drawn if pawn on home rank on a, b, g or h with kind behind it or in adjacent corner and enemy pawn ahead of it.
+	// This endgame is drawn if pawn on home rank on a, b, g or h with king behind it or in adjacent corner and enemy pawn ahead of it.
 	// As in: 8/8/8/b7/8/3k2p1/6P1/7K w - -
 	// Color of bishop does not matter.
-	
+
 	// Special exception: 8/8/8/3b4/8/5k1p/7P/7K b - - 0 1
 	// We rely on search finding it.
 
@@ -128,10 +166,9 @@ bool evaluate_KBPvKP( position const& p, color::type c, short& result )
 
 bool evaluate_KPvKP( position const& p, color::type c, short& result )
 {
-	// This endgame is drawn if pawn on home rank on a, b, g or h with kind behind it or in adjacent corner and enemy pawn ahead of it.
+	// This endgame is drawn if pawn on home rank on a, b, g or h with king behind it or in adjacent corner and enemy pawn ahead of it.
 	// As in: 8/8/8/8/8/3k2p1/6P1/7K w - -
 	// Color of bishop does not matter.
-
 	if( !((p.bitboards[c].b[bb_type::pawns]) & (c ? 0x0000000000C30000ull : 0x0000C30000000000ull)) ) {
 		return false;
 	}
