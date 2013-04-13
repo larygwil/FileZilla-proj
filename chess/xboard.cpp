@@ -596,8 +596,8 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 void resume( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_time )
 {
-	state.last_go_time = cmd_recv_time;
 	if( state.mode_ == mode::analyze ) {
+		state.last_go_time = cmd_recv_time;
 		thread.start( true );
 	}
 	else if( state.mode_ == mode::normal && state.p.self() == state.self ) {
