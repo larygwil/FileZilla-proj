@@ -181,7 +181,6 @@ move move_generator::next() {
 	case phases::hash_move:
 		phase = phases::captures_gen;
 		if( !hash_move.empty() ) {
-			ctx.move_ptr = moves + 1;
 #if CHECK_TYPE_1_COLLISION
 			if( !is_valid_move( p_, hash_move, check_ ) ) {
 				std::cerr << "Possible type-1 hash collision:" << std::endl;
@@ -192,12 +191,10 @@ move move_generator::next() {
 			else
 #endif
 			{
-				moves->m = hash_move;
-				return moves->m;
+				return hash_move;
 			}
 		}
 	case phases::captures_gen:
-		ctx.move_ptr = moves;
 		calculate_moves<movegen_type::capture>( p_, ctx.move_ptr, check_ );
 		phase = phases::captures;
 		sort( it, ctx.move_ptr );
@@ -223,22 +220,19 @@ move move_generator::next() {
 				++it;
 			}
 		}
+		ctx.move_ptr = bad_captures_end_;
 		phase = phases::killer1;
 	case phases::killer1:
 		phase = phases::killer2;
-		ctx.move_ptr = bad_captures_end_ + 1;
 		if( !killers_.m1.empty() && killers_.m1 != hash_move && !p_.get_captured_piece(killers_.m1) && is_valid_move( p_, killers_.m1, check_ ) ) {
-			bad_captures_end_->m = killers_.m1;
-			return bad_captures_end_->m;
+			return killers_.m1;
 		}
 	case phases::killer2:
 		phase = phases::noncaptures_gen;
 		if( !killers_.m2.empty() && killers_.m2 != hash_move && killers_.m1 != killers_.m2 && !p_.get_captured_piece(killers_.m2) && is_valid_move( p_, killers_.m2, check_ ) ) {
-			bad_captures_end_->m = killers_.m2;
-			return bad_captures_end_->m;
+			return killers_.m2;
 		}
 	case phases::noncaptures_gen:
-		ctx.move_ptr = bad_captures_end_;
 		it = bad_captures_end_;
 		calculate_moves<movegen_type::noncapture>( p_, ctx.move_ptr, check_ );
 		evaluate_noncaptures( ctx, bad_captures_end_, ctx.move_ptr, p_ );
