@@ -65,7 +65,6 @@ move qsearch_move_generator::next()
 	case phases::hash_move:
 		phase = phases::captures_gen;
 		if( !hash_move.empty() ) {
-			ctx.move_ptr = moves + 1;
 #if CHECK_TYPE_1_COLLISION
 			if( !is_valid_move( p_, hash_move, check_ ) ) {
 				std::cerr << "Possible type-1 hash collision:" << std::endl;
@@ -76,12 +75,10 @@ move qsearch_move_generator::next()
 			else
 #endif
 			{
-				moves->m = hash_move;
-				return moves->m;
+				return hash_move;
 			}
 		}
 	case phases::captures_gen:
-		ctx.move_ptr = moves;
 		calculate_moves<movegen_type::capture>( p_, ctx.move_ptr, check_ );
 		phase = phases::captures;
 		sort( it, ctx.move_ptr );
@@ -115,28 +112,23 @@ move qsearch_move_generator::next()
 				}
 			}
 #endif
-
 			return (it++)->m;
 		}
+
 		if( check_.check || include_noncaptures_ ) {
-			phase = phases::noncaptures_gen;
+			ctx.move_ptr = bad_captures_end_;
+			it = bad_captures_end_;
+			if( check_.check ) {
+				calculate_moves<movegen_type::noncapture>( p_, ctx.move_ptr, check_ );
+			}
+			else {
+				calculate_moves<movegen_type::pseudocheck>( p_, ctx.move_ptr, check_ );
+			}
+			evaluate_noncaptures( ctx, bad_captures_end_, ctx.move_ptr, p_ );
+			sort( it, ctx.move_ptr );
+			phase = phases::noncapture;
 		}
-		else {
-			phase = phases::done;
-			return move();
-		}
-	case phases::noncaptures_gen:
-		ctx.move_ptr = bad_captures_end_;
-		it = bad_captures_end_;
-		if( check_.check ) {
-			calculate_moves<movegen_type::noncapture>( p_, ctx.move_ptr, check_ );
-		}
-		else {
-			calculate_moves<movegen_type::pseudocheck>( p_, ctx.move_ptr, check_ );
-		}
-		evaluate_noncaptures( ctx, bad_captures_end_, ctx.move_ptr, p_ );
-		phase = phases::noncapture;
-		sort( it, ctx.move_ptr );
+		//Fall-through
 	case phases::noncapture:
 		while( it != ctx.move_ptr ) {
 			if( it->m == hash_move ) {
