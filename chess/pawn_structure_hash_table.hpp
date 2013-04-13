@@ -43,7 +43,7 @@ public:
 	pawn_structure_hash_table();
 	~pawn_structure_hash_table();
 
-	bool init( uint64_t size_in_mib );
+	bool init( uint64_t size_in_mib, bool reset = false );
 
 	// Pass array of two shorts
 	bool lookup( uint64_t key, score* eval, uint64_t& passed ) const;
@@ -60,6 +60,7 @@ private:
 
 	entry* data_;
 	uint64_t size_;
+	uint64_t init_size_;
 };
 
 

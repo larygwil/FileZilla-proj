@@ -101,8 +101,8 @@ int run_sts( epd const& e, int& match, int& sum )
 			scores[m] = move_score;
 		}
 
-		transposition_table.init(conf.memory);
-		pawn_hash_table.init( conf.pawn_hash_table_size() );
+		transposition_table.init( conf.memory, true );
+		pawn_hash_table.init( conf.pawn_hash_table_size(), true );
 
 		calc_manager c;
 		seen_positions seen( e.p.hash_ );

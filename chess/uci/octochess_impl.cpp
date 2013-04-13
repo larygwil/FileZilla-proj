@@ -150,7 +150,7 @@ void octochess_uci::make_moves( std::vector<std::string> const& moves )
 
 void octochess_uci::calculate( timestamp const& start, calculate_mode_type mode, position_time const& t, int depth, bool ponder, std::string const& searchmoves )
 {
-	transposition_table.init_if_needed( conf.memory );
+	transposition_table.init( conf.memory );
 
 	impl_->calc_manager_.abort();
 	impl_->join();

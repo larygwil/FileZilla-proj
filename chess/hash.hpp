@@ -132,8 +132,7 @@ public:
 	stats get_stats( bool reset );
 
 	// max_size is in megabytes
-	bool init( unsigned int max_size );
-	bool init_if_needed( unsigned int max_size );
+	bool init( unsigned int max_size, bool reinit = false );
 
 	// Returns true on hit, caller should return eval.
 	// If it returns false and best_move.other==1, there is a best move.

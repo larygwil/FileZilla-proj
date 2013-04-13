@@ -34,7 +34,7 @@ unsigned int const MAX_BOOK_DEPTH = 10;
 
 bool deepen_move( book& b, position const& p, seen_positions const& seen, std::vector<move> const& history, move const& m )
 {
-	transposition_table.init_if_needed( conf.memory );
+	transposition_table.init( conf.memory );
 
 	if( !b.is_writable() ) {
 		std::cerr << "Cannot deepen move in read-only book." << std::endl;
@@ -85,7 +85,7 @@ bool deepen_move( book& b, position const& p, seen_positions const& seen, std::v
 
 bool calculate_position( book& b, position const& p, seen_positions const& seen, std::vector<move> const& history )
 {
-	transposition_table.init_if_needed( conf.memory );
+	transposition_table.init( conf.memory );
 
 	move_info moves[200];
 	move_info* pm = moves;
@@ -330,7 +330,7 @@ bool get_next( worklist& wl, work& w )
 
 void go( book& b, position const& p, seen_positions const& seen, std::vector<move> const& history, unsigned int max_depth, unsigned int max_width )
 {
-	transposition_table.init_if_needed( conf.memory );
+	transposition_table.init( conf.memory );
 
 	max_depth += static_cast<unsigned int>(history.size());
 	if( max_depth > MAX_BOOK_DEPTH ) {
@@ -380,7 +380,7 @@ void go( book& b, position const& p, seen_positions const& seen, std::vector<mov
 
 void process( book& b )
 {
-	transposition_table.init_if_needed( conf.memory );
+	transposition_table.init( conf.memory );
 
 	std::list<work> wl = b.get_unprocessed_positions();
 	if( wl.empty() ) {
@@ -413,7 +413,7 @@ void process( book& b )
 
 void update( book& b, int entries_per_pos = 5 )
 {
-	transposition_table.init_if_needed( conf.memory );
+	transposition_table.init( conf.memory );
 
 	if( !b.is_writable() ) {
 		std::cerr << "Book is read-only" << std::endl;
@@ -629,7 +629,7 @@ bool do_deepen_tree( book& b, position const& p, seen_positions seen, std::vecto
 
 bool deepen_tree( book& b, position const& p, seen_positions const& seen, std::vector<move> const& history, int offset )
 {
-	transposition_table.init_if_needed( conf.memory );
+	transposition_table.init( conf.memory );
 
 	if( !b.is_writable() ) {
 		std::cerr << "Cannot deepen tree if book is read-only." << std::endl;

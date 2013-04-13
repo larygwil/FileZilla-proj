@@ -19,7 +19,7 @@
  * integer multiple of the system's memory page size.
  * Needs to be freed using aligned_free.
  */
-void* page_aligned_malloc( uint64_t alignment );
+void* page_aligned_malloc( uint64_t size );
 
 void aligned_free( void* p );
 

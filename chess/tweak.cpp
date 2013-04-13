@@ -750,7 +750,7 @@ void add_random( population & pop, std::set<individual>& seen, std::vector<refer
 
 void tweak_evaluation()
 {
-	pawn_hash_table.init( conf.pawn_hash_table_size() );
+	pawn_hash_table.init( conf.pawn_hash_table_size(), true );
 	std::vector<reference_data> data = load_data();
 
 	init_genes();

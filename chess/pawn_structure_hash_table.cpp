@@ -18,27 +18,32 @@ struct pawn_structure_hash_table::entry
 pawn_structure_hash_table::pawn_structure_hash_table()
 	: data_()
 	, size_()
+	, init_size_()
 {
 }
 
 
 pawn_structure_hash_table::~pawn_structure_hash_table()
 {
-	delete [] data_;
+	aligned_free( data_ );
 }
 
 
-bool pawn_structure_hash_table::init( uint64_t size_in_mib )
+bool pawn_structure_hash_table::init( uint64_t size_in_mib, bool reset )
 {
-	delete [] data_;
+	if( !data_ || size_in_mib != init_size_ || reset ) {
+		init_size_ = size_in_mib;
+		aligned_free( data_ );
 
-	uint64_t size = size_in_mib * 1024 * 1024 / sizeof(entry);
-	size_ = size;
-	data_ = new entry[size_];
+		uint64_t size = size_in_mib * 1024 * 1024 / sizeof(entry);
+		size_ = size;
+		data_ = reinterpret_cast<entry*>(page_aligned_malloc( size_ * sizeof(entry) ) );
+		if( data_ ) {
+			memset(data_, 0, sizeof(entry) * size_);
+		}
+	}
 
-	memset(data_, 0, sizeof(entry) * size_);
-
-	return true;
+	return data_ != 0;
 }
 
 

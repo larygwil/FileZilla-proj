@@ -29,34 +29,26 @@ hash::~hash()
 }
 
 
-bool hash::init( unsigned int max_size )
+bool hash::init( unsigned int max_size, bool reset )
 {
-	init_size_ = max_size;
+	if( !data_ || reset || init_size_ != max_size ) {
 
-	hash_key max = static_cast<hash_key>(max_size) * 1024 * 1024;
+		init_size_ = max_size;
 
-	size_ = 4 * 1024 * 1024;
-	while( size_ * 2 <= max ) {
-		size_ *= 2;
+		hash_key max = static_cast<hash_key>(max_size) * 1024 * 1024;
+
+		size_ = 4 * 1024 * 1024;
+		while( size_ * 2 <= max ) {
+			size_ *= 2;
+		}
+
+		// Make sure size is a multiple of block size
+		bucket_count_ = size_ / bucket_size;
+		aligned_free( data_ );
+		data_ = reinterpret_cast<entry*>(page_aligned_malloc( bucket_count_ * bucket_size ));
 	}
 
-	// Make sure size is a multiple of block size
-	bucket_count_ = size_ / bucket_size;
-	aligned_free( data_ );
-	data_ = reinterpret_cast<entry*>(page_aligned_malloc( bucket_count_ * bucket_size ));
 	return data_ != 0;
-}
-
-
-bool hash::init_if_needed( unsigned int max_size )
-{
-	bool ret = true;
-
-	if( !data_ || init_size_ != max_size ) {
-		ret = init( max_size );
-	}
-
-	return ret;
 }
 
 
