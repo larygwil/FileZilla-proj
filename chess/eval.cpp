@@ -31,7 +31,6 @@ enum type {
 	connected_rooks,
 	rooks_on_open_file,
 	rooks_on_7h_rank,
-	drawishness,
 	outposts,
 	double_bishop,
 	side_to_move,
@@ -739,20 +738,6 @@ void evaluate_pawn_shield( position const& p, eval_results& results )
 
 
 template<bool detail>
-static void evaluate_drawishness( position const& p, color::type c, eval_results& results )
-{
-	if( p.bitboards[c].b[bb_type::pawns] ) {
-		return;
-	}
-
-	short material_difference = p.material[c].eg() - p.material[1-c].eg();
-	if( material_difference > 0 && material_difference <= eval_values::insufficient_material_threshold ) {
-		add_score<detail, eval_detail::drawishness>( results, c, score( 0, eval_values::drawishness ) );
-	}
-}
-
-
-template<bool detail>
 static void evaluate_center( position const& p, color::type c, eval_results& results )
 {
 	// Not taken by own pawns nor under control by enemy pawns
@@ -861,7 +846,6 @@ static void do_evaluate( position const& p, eval_results& results )
 
 		evaluate_piece_defense<detail>( p, static_cast<color::type>(c), results );
 		evaluate_king_attack<detail>( p, static_cast<color::type>(c), results );
-		//evaluate_drawishness<detail>( p, static_cast<color::type>(c), results );
 		evaluate_center<detail>( p, static_cast<color::type>(c), results );
 	}
 
@@ -1004,8 +988,7 @@ std::string explain_eval( position const& p )
 		ss << explain( p, "Outposts", eval_detail::outposts );
 		ss << explain( p, "Double bishop", eval_detail::double_bishop );
 		ss << explain( p, "Side to move", eval_detail::side_to_move );
-		ss << explain( p, "Drawishness", eval_detail::drawishness );
-
+		
 		ss << "===================================================================" << std::endl;
 		ss << explain( p, "Total", full );
 	}
