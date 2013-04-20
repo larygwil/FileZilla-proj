@@ -126,6 +126,7 @@ void octochess_uci::set_position( std::string const& fen ) {
 	if( success ) {
 		impl_->seen_positions_.reset_root( impl_->pos_.hash_ );
 		impl_->half_moves_played_ = 0;
+		transposition_table.init( conf.memory );
 	}
 }
 
