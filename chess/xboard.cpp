@@ -889,6 +889,8 @@ skip_getline:
 			unsigned int mem;
 			if( to_int<unsigned int>( args, mem, 4 ) ) {
 				conf.memory = mem;
+				transposition_table.init(conf.memory);
+				pawn_hash_table.init( conf.pawn_hash_table_size() );
 			}
 			else {
 				std::cout << "Error (bad command): Not a valid st command" << std::endl;
