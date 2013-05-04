@@ -150,7 +150,7 @@ void calc_moves_castles( position const& p, move_info*& moves, check_map const& 
 template<movegen_type type>
 void calc_moves_king( position const& p, move_info*& moves, check_map const& check )
 {
-	if( type != movegen_type::capture ) {//|| type == movegen_type::pseudocheck ) {
+	if( type != movegen_type::capture ) {
 		calc_moves_castles<type>( p, moves, check );
 	}
 
@@ -519,7 +519,6 @@ void calc_moves_pawns( position const& p, move_info*& moves, check_map const& ch
 template<movegen_type type>
 void calculate_moves( position const& p, move_info*& moves, check_map const& check )
 {
-	ASSERT( type != movegen_type::capture || !check.check );
 	if( !check.check || !check.multiple() )
 	{
 		calc_moves_pawns<type>( p, moves, check );
