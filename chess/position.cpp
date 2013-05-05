@@ -105,7 +105,7 @@ void position::init_eval()
 
 void position::clear_bitboards()
 {
-	memset( bitboards, 0, sizeof(bitboard) * 2 );
+	memset( bitboards, 0, sizeof(bitboards) );
 }
 
 
