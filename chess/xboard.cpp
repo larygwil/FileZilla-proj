@@ -115,7 +115,7 @@ struct xboard_state
 			return false;
 		}
 
-		ASSERT( history.size() == move_history.size() );
+		ASSERT( history.size() == move_history_.size() );
 		clock -= count;
 
 		// This isn't exactly correct, if popping past root we would need to restore old seen state prior to a reset.

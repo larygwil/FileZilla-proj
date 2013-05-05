@@ -1156,7 +1156,7 @@ bool is_valid_move( position const& p, move const& m, check_map const& check )
 	move_info moves[200];
 	move_info* it = moves;
 	move_info* end = moves;
-	calculate_moves( p, end, check );
+	calculate_moves<movegen_type::all>( p, end, check );
 	for( ; it != end; ++it ) {
 		if( it->m == m ) {
 			if( ret ) {
