@@ -718,7 +718,7 @@ std::vector<reference_data> load_data()
 			continue;
 		}
 
-		if( popcount( entry.p.bitboards[0].b[bb_type::all_pieces] | entry.p.bitboards[1].b[bb_type::all_pieces] ) <= 7 ) {
+		if( popcount( entry.p.bitboards[0][bb_type::all_pieces] | entry.p.bitboards[1][bb_type::all_pieces] ) <= 7 ) {
 			++unknown_endgames;
 			continue;
 		}

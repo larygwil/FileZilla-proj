@@ -33,16 +33,16 @@ void position::reset()
 void position::update_derived()
 {
 	for( int i = 0; i < 2; ++i ) {
-		bitboards[i].b[bb_type::all_pieces] = bitboards[i].b[bb_type::pawns] | bitboards[i].b[bb_type::knights] | bitboards[i].b[bb_type::bishops] | bitboards[i].b[bb_type::rooks] | bitboards[i].b[bb_type::queens] | bitboards[i].b[bb_type::king];
+		bitboards[i][bb_type::all_pieces] = bitboards[i][bb_type::pawns] | bitboards[i][bb_type::knights] | bitboards[i][bb_type::bishops] | bitboards[i][bb_type::rooks] | bitboards[i][bb_type::queens] | bitboards[i][bb_type::king];
 
-		bitboards[i].b[bb_type::pawn_control] = 0;
-		uint64_t pawns = bitboards[i].b[bb_type::pawns];
+		bitboards[i][bb_type::pawn_control] = 0;
+		uint64_t pawns = bitboards[i][bb_type::pawns];
 		while( pawns ) {
 			uint64_t pawn = bitscan_unset( pawns );
-			bitboards[i].b[bb_type::pawn_control] |= pawn_control[i][pawn];
+			bitboards[i][bb_type::pawn_control] |= pawn_control[i][pawn];
 		}
 
-		king_pos[i] = static_cast<int>(bitscan( bitboards[i].b[bb_type::king] ));
+		king_pos[i] = static_cast<int>(bitscan( bitboards[i][bb_type::king] ));
 	}
 
 	init_board();
@@ -59,7 +59,7 @@ void position::init_piece_sum()
 	piece_sum = 0;
 	for( int c = 0; c < 2; ++c ) {
 		for( int piece = pieces::pawn; piece < pieces::king; ++piece ) {
-			uint64_t count = popcount( bitboards[c].b[piece] );
+			uint64_t count = popcount( bitboards[c][piece] );
 			piece_sum |= count << ((piece - 1 + (c ? 5 : 0)) * 4);
 		}
 	}
@@ -86,8 +86,8 @@ void position::init_material()
 void position::init_eval()
 {
 	base_eval = material[0] - material[1] +
-		eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(bitboards[0].b[bb_type::pawns])) -
-		eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(bitboards[1].b[bb_type::pawns]));
+		eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(bitboards[0][bb_type::pawns])) -
+		eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(bitboards[1][bb_type::pawns]));
 
 	score side[2];
 	for( unsigned int sq = 0; sq < 64; ++sq ) {
@@ -113,19 +113,19 @@ void position::init_bitboards()
 {
 	clear_bitboards();
 
-	bitboards[color::white].b[bb_type::pawns]   = 0xff00ull;
-	bitboards[color::white].b[bb_type::knights] = (1ull << 1) + (1ull << 6);
-	bitboards[color::white].b[bb_type::bishops] = (1ull << 2) + (1ull << 5);
-	bitboards[color::white].b[bb_type::rooks]   = 1ull + (1ull << 7);
-	bitboards[color::white].b[bb_type::queens]  = 1ull << 3;
-	bitboards[color::white].b[bb_type::king]    = 1ull << 4;
+	bitboards[color::white][bb_type::pawns]   = 0xff00ull;
+	bitboards[color::white][bb_type::knights] = (1ull << 1) + (1ull << 6);
+	bitboards[color::white][bb_type::bishops] = (1ull << 2) + (1ull << 5);
+	bitboards[color::white][bb_type::rooks]   = 1ull + (1ull << 7);
+	bitboards[color::white][bb_type::queens]  = 1ull << 3;
+	bitboards[color::white][bb_type::king]    = 1ull << 4;
 
-	bitboards[color::black].b[bb_type::pawns]   = 0xff000000000000ull;
-	bitboards[color::black].b[bb_type::knights] = ((1ull << 1) + (1ull << 6)) << (7*8);
-	bitboards[color::black].b[bb_type::bishops] = ((1ull << 2) + (1ull << 5)) << (7*8);
-	bitboards[color::black].b[bb_type::rooks]   = (1ull + (1ull << 7)) << (7*8);
-	bitboards[color::black].b[bb_type::queens]  = (1ull << 3) << (7*8);
-	bitboards[color::black].b[bb_type::king]    = (1ull << 4) << (7*8);
+	bitboards[color::black][bb_type::pawns]   = 0xff000000000000ull;
+	bitboards[color::black][bb_type::knights] = ((1ull << 1) + (1ull << 6)) << (7*8);
+	bitboards[color::black][bb_type::bishops] = ((1ull << 2) + (1ull << 5)) << (7*8);
+	bitboards[color::black][bb_type::rooks]   = (1ull + (1ull << 7)) << (7*8);
+	bitboards[color::black][bb_type::queens]  = (1ull << 3) << (7*8);
+	bitboards[color::black][bb_type::king]    = (1ull << 4) << (7*8);
 }
 
 void position::init_board()
@@ -134,7 +134,7 @@ void position::init_board()
 		board[sq] = pieces_with_color::none;
 		for( int c = 0; c < 2; ++c ) {
 			for( int type = bb_type::pawns; type <= bb_type::king; ++type) {
-				if( bitboards[c].b[type] & (1ull << sq)) {
+				if( bitboards[c][type] & (1ull << sq)) {
 					board[sq] = static_cast<pieces_with_color::type>(c * 8 + type);
 				}
 			}
@@ -172,23 +172,23 @@ bool position::verify( std::string& error ) const
 	position p2 = *this;
 	p2.update_derived();
 
-	if( popcount(bitboards[color::white].b[bb_type::king]) != 1 ) {
+	if( popcount(bitboards[color::white][bb_type::king]) != 1 ) {
 		error = "White king count is not exactly one";
 		return false;
 	}
-	if( popcount(bitboards[color::black].b[bb_type::king]) != 1 ) {
+	if( popcount(bitboards[color::black][bb_type::king]) != 1 ) {
 		error = "Black king count is not exactly one";
 		return false;
 	}
-	if( static_cast<int>(bitscan( bitboards[color::white].b[bb_type::king])) != king_pos[color::white] ) {
+	if( static_cast<int>(bitscan( bitboards[color::white][bb_type::king])) != king_pos[color::white] ) {
 		error = "Internal error: White king position does not match king bitboard";
 		return false;
 	}
-	if( static_cast<int>(bitscan( bitboards[color::black].b[bb_type::king])) != king_pos[color::black] ) {
+	if( static_cast<int>(bitscan( bitboards[color::black][bb_type::king])) != king_pos[color::black] ) {
 		error = "Internal error: Black king position does not match king bitboard";
 		return false;
 	}
-	if( possible_king_moves[king_pos[color::white]] & bitboards[color::black].b[bb_type::king] ) {
+	if( possible_king_moves[king_pos[color::white]] & bitboards[color::black][bb_type::king] ) {
 		error = "Kings next to each other are not allowed";
 		return false;
 	}
@@ -205,39 +205,39 @@ bool position::verify( std::string& error ) const
 		return false;
 	}
 	for( int c = 0; c < 1; ++c ) {
-		if( bitboards[c].b[bb_type::all_pieces] != p2.bitboards[c].b[bb_type::all_pieces] ) {
+		if( bitboards[c][bb_type::all_pieces] != p2.bitboards[c][bb_type::all_pieces] ) {
 			error = "Internal error: Bitboard error: Wrong all pieces";
 			return false;
 		}
-		if( bitboards[c].b[bb_type::pawn_control] != p2.bitboards[c].b[bb_type::pawn_control] ) {
+		if( bitboards[c][bb_type::pawn_control] != p2.bitboards[c][bb_type::pawn_control] ) {
 			error = "Internal error: Pawn control bitboard incorrect";
 			return false;
 		}
 	}
-	if( bitboards[color::white].b[bb_type::all_pieces] & bitboards[color::black].b[bb_type::all_pieces] ) {
+	if( bitboards[color::white][bb_type::all_pieces] & bitboards[color::black][bb_type::all_pieces] ) {
 		error = "White and black pieces not disjunct";
 		return false;
 	}
 	if( castle[color::white] & castles::kingside ) {
-		if( king_pos[color::white] != 4 || !(bitboards[color::white].b[bb_type::rooks] & (1ull << 7)) ) {
+		if( king_pos[color::white] != 4 || !(bitboards[color::white][bb_type::rooks] & (1ull << 7)) ) {
 			error = "White's kingside castling right is not correct";
 			return false;
 		}
 	}
 	if( castle[color::white] & castles::queenside ) {
-		if( king_pos[color::white] != 4 || !(bitboards[color::white].b[bb_type::rooks] & 1ull) ) {
+		if( king_pos[color::white] != 4 || !(bitboards[color::white][bb_type::rooks] & 1ull) ) {
 			error = "White's queenside castling right is not correct";
 			return false;
 		}
 	}
 	if( castle[color::black] & castles::kingside ) {
-		if( king_pos[color::black] != 60 || !(bitboards[color::black].b[bb_type::rooks] & (1ull << 63)) ) {
+		if( king_pos[color::black] != 60 || !(bitboards[color::black][bb_type::rooks] & (1ull << 63)) ) {
 			error = "Black's kingside castling right is not correct";
 			return false;
 		}
 	}
 	if( castle[color::black] & castles::queenside ) {
-		if( king_pos[color::black] != 60 || !(bitboards[color::black].b[bb_type::rooks] & (1ull << 56)) ) {
+		if( king_pos[color::black] != 60 || !(bitboards[color::black][bb_type::rooks] & (1ull << 56)) ) {
 			error = "Black's queenside castling right is not correct";
 			return false;
 		}
@@ -246,9 +246,9 @@ bool position::verify( std::string& error ) const
 	for( int i = 0; i < 2; ++i ) {
 		uint64_t all = 0;
 		for( int pi = bb_type::pawns; pi <= bb_type::king; ++pi ) {
-			all += popcount(bitboards[i].b[pi]);
+			all += popcount(bitboards[i][pi]);
 		}
-		if( all != popcount(bitboards[i].b[bb_type::all_pieces]) ) {
+		if( all != popcount(bitboards[i][bb_type::all_pieces]) ) {
 			error = "Internal error: Bitboards for difference pieces not disjunct";
 			return false;
 		}
@@ -263,11 +263,11 @@ bool position::verify( std::string& error ) const
 			uint64_t occ = 1ull << (can_en_passant + 8);
 			uint64_t free = (1ull << can_en_passant) | (1ull << (can_en_passant - 8));
 
-			if( (bitboards[color::white].b[bb_type::all_pieces] | bitboards[color::black].b[bb_type::all_pieces]) & free ) {
+			if( (bitboards[color::white][bb_type::all_pieces] | bitboards[color::black][bb_type::all_pieces]) & free ) {
 				error = "Incorrect enpassant square, pawn could not have made double-move.";
 				return false;
 			}
-			if( !(bitboards[other()].b[bb_type::pawns] & occ) ) {
+			if( !(bitboards[other()][bb_type::pawns] & occ) ) {
 				error = "Incorrect enpassant square, there is no corresponding pawn.";
 				return false;
 			}
@@ -280,11 +280,11 @@ bool position::verify( std::string& error ) const
 			uint64_t occ = 1ull << (can_en_passant - 8);
 			uint64_t free = (1ull << can_en_passant) | (1ull << (can_en_passant + 8));
 
-			if( (bitboards[color::white].b[bb_type::all_pieces] | bitboards[color::black].b[bb_type::all_pieces]) & free ) {
+			if( (bitboards[color::white][bb_type::all_pieces] | bitboards[color::black][bb_type::all_pieces]) & free ) {
 				error = "Incorrect enpassant square, pawn could not have made double-move.";
 				return false;
 			}
-			if( !(bitboards[other()].b[bb_type::pawns] & occ) ) {
+			if( !(bitboards[other()][bb_type::pawns] & occ) ) {
 				error = "Incorrect enpassant square, there is no corresponding pawn.";
 				return false;
 			}
@@ -301,12 +301,12 @@ bool position::verify( std::string& error ) const
 		color::type c = get_color(pwc);
 		pieces::type pi = ::get_piece(pwc);
 		if( pi == pieces::none ) {
-			if( bitboards[c].b[bb_type::all_pieces] & (1ull << sq) ) {
+			if( bitboards[c][bb_type::all_pieces] & (1ull << sq) ) {
 				error = "Board contains non-empty square where it should be empty.";
 				return false;
 			}
 		}
-		else if( !(bitboards[c].b[pi] & (1ull << sq) ) ) {
+		else if( !(bitboards[c][pi] & (1ull << sq) ) ) {
 			error = "Board contains wrong data.";
 			return false;
 		}
@@ -316,7 +316,7 @@ bool position::verify( std::string& error ) const
 	uint64_t ver_piece_sum = 0;
 	for( int c = 0; c < 2; ++c ) {
 		for( int piece = pieces::pawn; piece < pieces::king; ++piece ) {
-			uint64_t count = popcount( bitboards[c].b[piece] );
+			uint64_t count = popcount( bitboards[c][piece] );
 			ver_piece_sum |= count << ((piece - 1 + (c ? 5 : 0)) * 4);
 		}
 	}
@@ -387,27 +387,27 @@ uint64_t position::init_hash() const
 	uint64_t hash = 0;
 
 	for( unsigned int c = 0; c < 2; ++c ) {
-		uint64_t pieces = bitboards[c].b[bb_type::all_pieces];
+		uint64_t pieces = bitboards[c][bb_type::all_pieces];
 		while( pieces ) {
 			uint64_t piece = bitscan_unset( pieces );
 
 			uint64_t bpiece = 1ull << piece;
-			if( bitboards[c].b[bb_type::pawns] & bpiece ) {
+			if( bitboards[c][bb_type::pawns] & bpiece ) {
 				hash ^= zobrist::pawns[c][piece];
 			}
-			else if( bitboards[c].b[bb_type::knights] & bpiece ) {
+			else if( bitboards[c][bb_type::knights] & bpiece ) {
 				hash ^= zobrist::knights[c][piece];
 			}
-			else if( bitboards[c].b[bb_type::bishops] & bpiece ) {
+			else if( bitboards[c][bb_type::bishops] & bpiece ) {
 				hash ^= zobrist::bishops[c][piece];
 			}
-			else if( bitboards[c].b[bb_type::rooks] & bpiece ) {
+			else if( bitboards[c][bb_type::rooks] & bpiece ) {
 				hash ^= zobrist::rooks[c][piece];
 			}
-			else if( bitboards[c].b[bb_type::queens] & bpiece ) {
+			else if( bitboards[c][bb_type::queens] & bpiece ) {
 				hash ^= zobrist::queens[c][piece];
 			}
-			else {//if( bitboards[c].b[bb_type::king] & bpiece ) {
+			else {//if( bitboards[c][bb_type::king] & bpiece ) {
 				hash ^= zobrist::kings[c][piece];
 			}
 		}

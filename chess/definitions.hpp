@@ -62,11 +62,7 @@ enum type {
 };
 }
 
-struct bitboard
-{
-	mutable uint64_t b[bb_type::value_max];
-};
-
+typedef uint64_t bitboard;
 
 namespace castles {
 enum type {

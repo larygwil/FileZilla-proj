@@ -153,7 +153,7 @@ namespace {
 template<bool detail>
 inline static void evaluate_pawns_mobility( position const& p, color::type c, eval_results& results )
 {
-	uint64_t pawns = p.bitboards[c].b[bb_type::pawns];
+	uint64_t pawns = p.bitboards[c][bb_type::pawns];
 
 	while( pawns ) {
 		uint64_t pawn = bitscan_unset( pawns );
@@ -162,7 +162,7 @@ inline static void evaluate_pawns_mobility( position const& p, color::type c, ev
 
 		uint64_t pc = pawn_control[c][pawn];
 
-		pc &= ~p.bitboards[c].b[bb_type::all_pieces];
+		pc &= ~p.bitboards[c][bb_type::all_pieces];
 
 		if( pc & king_attack_zone[1-c][p.king_pos[1-c]] ) {
 			++results.count_king_attackers[c];
@@ -183,7 +183,7 @@ inline static void evaluate_knight_mobility( position const& p, color::type c, u
 		results.king_attacker_sum[c] += eval_values::king_attack_by_piece[pieces::knight];
 	}
 
-	moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawn_control]);
+	moves &= ~(p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::pawn_control]);
 	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility_knight[popcount(moves)] );
 }
 
@@ -203,9 +203,9 @@ short outpost_squares[64] = {
 template<bool detail>
 inline static void evaluate_knight_outpost( position const& p, color::type c, uint64_t knight, eval_results& results )
 {
-	if( outpost_squares[knight] && !(p.bitboards[1-c].b[bb_type::pawns] & forward_pawn_attack[c][knight] ) ) {
+	if( outpost_squares[knight] && !(p.bitboards[1-c][bb_type::pawns] & forward_pawn_attack[c][knight] ) ) {
 		// We're in a sunny outpost. Check whether theres a pawn to cover us
-		if( (1ull << knight) & p.bitboards[c].b[bb_type::pawn_control] ) {
+		if( (1ull << knight) & p.bitboards[c][bb_type::pawn_control] ) {
 			add_score<detail, eval_detail::outposts>( results, c, eval_values::knight_outposts[1] );
 		}
 		else {
@@ -218,7 +218,7 @@ inline static void evaluate_knight_outpost( position const& p, color::type c, ui
 template<bool detail>
 inline static void evaluate_knights( position const& p, color::type c, eval_results& results )
 {
-	uint64_t knights = p.bitboards[c].b[bb_type::knights];
+	uint64_t knights = p.bitboards[c][bb_type::knights];
 
 	while( knights ) {
 		uint64_t knight = bitscan_unset( knights );
@@ -235,7 +235,7 @@ inline static void evaluate_knights( position const& p, color::type c, eval_resu
 template<bool detail>
 inline static void evaluate_bishop_mobility( position const& p, color::type c, uint64_t bishop, eval_results& results )
 {
-	uint64_t const all_blockers = (p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces]) & ~p.bitboards[c].b[bb_type::queens];
+	uint64_t const all_blockers = (p.bitboards[1-c][bb_type::all_pieces] | p.bitboards[c][bb_type::all_pieces]) & ~p.bitboards[c][bb_type::queens];
 
 	uint64_t moves = bishop_magic( bishop, all_blockers );
 
@@ -246,7 +246,7 @@ inline static void evaluate_bishop_mobility( position const& p, color::type c, u
 
 	results.attacks[c][pieces::bishop] |= moves;
 
-	moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawn_control]);
+	moves &= ~(p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::pawn_control]);
 	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility_bishop[popcount(moves)] );
 }
 
@@ -254,12 +254,12 @@ inline static void evaluate_bishop_mobility( position const& p, color::type c, u
 template<bool detail>
 inline static void evaluate_bishop_pin( position const& p, color::type c, uint64_t bishop, eval_results& results )
 {
-	uint64_t own_blockers = p.bitboards[c].b[bb_type::all_pieces];
+	uint64_t own_blockers = p.bitboards[c][bb_type::all_pieces];
 	uint64_t unblocked_moves = bishop_magic( bishop, own_blockers );
 
-	if( unblocked_moves & p.bitboards[1-c].b[bb_type::king] ) {
+	if( unblocked_moves & p.bitboards[1-c][bb_type::king] ) {
 
-		uint64_t between = between_squares[bishop][p.king_pos[1-c]] & p.bitboards[1-c].b[bb_type::all_pieces];
+		uint64_t between = between_squares[bishop][p.king_pos[1-c]] & p.bitboards[1-c][bb_type::all_pieces];
 		if( popcount( between ) == 1 ) {
 			pieces::type piece = p.get_piece( bitscan( between ) );
 			add_score<detail, eval_detail::absolute_pins>( results, c, eval_values::absolute_pin[ piece ] );
@@ -271,9 +271,9 @@ inline static void evaluate_bishop_pin( position const& p, color::type c, uint64
 template<bool detail>
 inline static void evaluate_bishop_outpost( position const& p, color::type c, uint64_t bishop, eval_results& results )
 {
-	if( outpost_squares[bishop] && !(p.bitboards[1-c].b[bb_type::pawns] & forward_pawn_attack[c][bishop] ) ) {
+	if( outpost_squares[bishop] && !(p.bitboards[1-c][bb_type::pawns] & forward_pawn_attack[c][bishop] ) ) {
 		// We're in a sunny outpost. Check whether theres a pawn to cover us
-		if( (1ull << bishop) & p.bitboards[c].b[bb_type::pawn_control] ) {
+		if( (1ull << bishop) & p.bitboards[c][bb_type::pawn_control] ) {
 			add_score<detail, eval_detail::outposts>( results, c, eval_values::bishop_outposts[1] );
 		}
 		else {
@@ -286,7 +286,7 @@ inline static void evaluate_bishop_outpost( position const& p, color::type c, ui
 template<bool detail>
 inline static void evaluate_bishops( position const& p, color::type c, eval_results& results )
 {
-	uint64_t bishops = p.bitboards[c].b[bb_type::bishops];
+	uint64_t bishops = p.bitboards[c][bb_type::bishops];
 
 	while( bishops ) {
 		uint64_t bishop = bitscan_unset( bishops );
@@ -317,7 +317,7 @@ inline static void evaluate_rook_trapped( position const& p, color::type c, uint
 		if( king_file >= 4 && rook_file > king_file ) {
 			// Check for open file to the right of the king
 			for( int f = static_cast<int>(king_file) + 1; f < 8; ++f ) {
-				if( !((0x0101010101010101ull << f) & p.bitboards[c].b[bb_type::pawns]) ) {
+				if( !((0x0101010101010101ull << f) & p.bitboards[c][bb_type::pawns]) ) {
 					return;
 				}
 			}
@@ -327,7 +327,7 @@ inline static void evaluate_rook_trapped( position const& p, color::type c, uint
 		else if( king_file < 4 && rook_file < king_file ) {
 			// Check for open file to the left of the king
 			for( int f = static_cast<int>(king_file) - 1; f >= 0; --f ) {
-				if( !((0x0101010101010101ull << f) & p.bitboards[c].b[bb_type::pawns]) ) {
+				if( !((0x0101010101010101ull << f) & p.bitboards[c][bb_type::pawns]) ) {
 					return;
 				}
 			}
@@ -341,7 +341,7 @@ inline static void evaluate_rook_trapped( position const& p, color::type c, uint
 template<bool detail>
 inline static void evaluate_rook_mobility( position const& p, color::type c, uint64_t rook, eval_results& results )
 {
-	uint64_t const all_blockers = (p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces]) & ~(p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens]);
+	uint64_t const all_blockers = (p.bitboards[1-c][bb_type::all_pieces] | p.bitboards[c][bb_type::all_pieces]) & ~(p.bitboards[c][bb_type::rooks] | p.bitboards[c][bb_type::queens]);
 
 	uint64_t moves = rook_magic( rook, all_blockers );
 
@@ -352,13 +352,13 @@ inline static void evaluate_rook_mobility( position const& p, color::type c, uin
 
 	results.attacks[c][pieces::rook] |= moves;
 
-	if( moves & p.bitboards[c].b[bb_type::rooks] ) {
+	if( moves & p.bitboards[c][bb_type::rooks] ) {
 		// Is it bad that queen might be inbetween due to the X-RAY?
 		add_score<detail, eval_detail::connected_rooks>( results, c, eval_values::connected_rooks );
 	}
 
 
-	moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawn_control]);
+	moves &= ~(p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::pawn_control]);
 	uint64_t const move_count = popcount(moves);
 	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility_rook[move_count] );
 
@@ -371,12 +371,12 @@ inline static void evaluate_rook_mobility( position const& p, color::type c, uin
 template<bool detail>
 inline static void evaluate_rook_pin( position const& p, color::type c, uint64_t rook, eval_results& results )
 {
-	uint64_t own_blockers = p.bitboards[c].b[bb_type::all_pieces];
+	uint64_t own_blockers = p.bitboards[c][bb_type::all_pieces];
 	uint64_t unblocked_moves = rook_magic( rook, own_blockers );
 
-	if( unblocked_moves & p.bitboards[1-c].b[bb_type::king] ) {
+	if( unblocked_moves & p.bitboards[1-c][bb_type::king] ) {
 
-		uint64_t between = between_squares[rook][p.king_pos[1-c]] & p.bitboards[1-c].b[bb_type::all_pieces];
+		uint64_t between = between_squares[rook][p.king_pos[1-c]] & p.bitboards[1-c][bb_type::all_pieces];
 		if( popcount( between ) == 1 ) {
 			pieces::type piece = p.get_piece( bitscan( between ) );
 			add_score<detail, eval_detail::absolute_pins>( results, c, eval_values::absolute_pin[ piece ] );
@@ -389,8 +389,8 @@ template<bool detail>
 inline static void evaluate_rook_on_open_file( position const& p, color::type c, uint64_t rook, eval_results& results )
 {
 	uint64_t file = 0x0101010101010101ull << (rook % 8);
-	if( !(p.bitboards[c].b[bb_type::pawns] & file) ) {
-		if( p.bitboards[1-c].b[bb_type::pawns] & file ) {
+	if( !(p.bitboards[c][bb_type::pawns] & file) ) {
+		if( p.bitboards[1-c][bb_type::pawns] & file ) {
 			add_score<detail, eval_detail::rooks_on_open_file>( results, c, eval_values::rooks_on_half_open_file );
 		}
 		else {
@@ -406,7 +406,7 @@ uint64_t const trapping_piece[2] = { 0x00ff000000000000ull, 0x000000000000ff00ul
 template<bool detail>
 inline static void evaluate_rooks( position const& p, color::type c, eval_results& results )
 {
-	uint64_t rooks = p.bitboards[c].b[bb_type::rooks];
+	uint64_t rooks = p.bitboards[c][bb_type::rooks];
 
 	while( rooks ) {
 		uint64_t rook = bitscan_unset( rooks );
@@ -419,7 +419,7 @@ inline static void evaluate_rooks( position const& p, color::type c, eval_result
 	}
 
 	// At least in endgame, enemy king trapped on its home rank is quite useful.
-	if( (p.bitboards[c].b[bb_type::rooks] | p.bitboards[c].b[bb_type::queens]) & trapping_piece[c] && p.bitboards[1-c].b[bb_type::king] & trapped_king[1-c] ) {
+	if( (p.bitboards[c][bb_type::rooks] | p.bitboards[c][bb_type::queens]) & trapping_piece[c] && p.bitboards[1-c][bb_type::king] & trapped_king[1-c] ) {
 		add_score<detail, eval_detail::rooks_on_7h_rank>( results, c, eval_values::rooks_on_rank_7 );
 	}
 }
@@ -428,7 +428,7 @@ inline static void evaluate_rooks( position const& p, color::type c, eval_result
 template<bool detail>
 inline static void evaluate_queen_mobility( position const& p, color::type c, uint64_t queen, eval_results& results )
 {
-	uint64_t const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[1-c][bb_type::all_pieces] | p.bitboards[c][bb_type::all_pieces];
 
 	uint64_t moves = bishop_magic( queen, all_blockers ) | rook_magic( queen, all_blockers );
 
@@ -439,7 +439,7 @@ inline static void evaluate_queen_mobility( position const& p, color::type c, ui
 
 	results.attacks[c][pieces::queen] |= moves;
 
-	moves &= ~(p.bitboards[c].b[bb_type::all_pieces] | p.bitboards[1-c].b[bb_type::pawn_control]);
+	moves &= ~(p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::pawn_control]);
 	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility_queen[popcount(moves)] );
 }
 
@@ -447,12 +447,12 @@ inline static void evaluate_queen_mobility( position const& p, color::type c, ui
 template<bool detail>
 inline static void evaluate_queen_pin( position const& p, color::type c, uint64_t queen, eval_results& results )
 {
-	uint64_t own_blockers = p.bitboards[c].b[bb_type::all_pieces];
+	uint64_t own_blockers = p.bitboards[c][bb_type::all_pieces];
 	uint64_t unblocked_moves = bishop_magic( queen, own_blockers ) | rook_magic( queen, own_blockers );
 
-	if( unblocked_moves & p.bitboards[1-c].b[bb_type::king] ) {
+	if( unblocked_moves & p.bitboards[1-c][bb_type::king] ) {
 
-		uint64_t between = between_squares[queen][p.king_pos[1-c]] & p.bitboards[1-c].b[bb_type::all_pieces];
+		uint64_t between = between_squares[queen][p.king_pos[1-c]] & p.bitboards[1-c][bb_type::all_pieces];
 		if( popcount( between ) == 1 ) {
 			pieces::type piece = p.get_piece( bitscan( between ) );
 			add_score<detail, eval_detail::absolute_pins>( results, c, eval_values::absolute_pin[ piece ] );
@@ -464,7 +464,7 @@ inline static void evaluate_queen_pin( position const& p, color::type c, uint64_
 template<bool detail>
 inline static void evaluate_queens( position const& p, color::type c, eval_results& results )
 {
-	uint64_t queens = p.bitboards[c].b[bb_type::queens];
+	uint64_t queens = p.bitboards[c][bb_type::queens];
 
 	while( queens ) {
 		uint64_t queen = bitscan_unset( queens );
@@ -483,7 +483,7 @@ template<bool detail>
 void evaluate_passed_pawns( position const& p, color::type c, eval_results& results )
 {
 	for( int i = 0; i < 2; ++i ) {
-		uint64_t passed = (p.bitboards[i].b[bb_type::pawns] & results.passed_pawns );
+		uint64_t passed = (p.bitboards[i][bb_type::pawns] & results.passed_pawns );
 		uint64_t unstoppable = passed & ~rule_of_the_square[1-i][c][p.king_pos[1-i]];
 
 		while( passed ) {
@@ -502,7 +502,7 @@ void evaluate_passed_pawns( position const& p, color::type c, eval_results& resu
 			if( (1ull << pawn) & unstoppable ) {
 				add_score<detail, eval_detail::passed_pawns>( results, static_cast<color::type>(i), eval_values::rule_of_the_square * advance_bonus[advance] );
 			}
-			uint64_t hinderers = (results.attacks[1-i][0] & ~results.attacks[i][0]) | p.bitboards[1-i].b[bb_type::all_pieces];
+			uint64_t hinderers = (results.attacks[1-i][0] & ~results.attacks[i][0]) | p.bitboards[1-i][bb_type::all_pieces];
 			if( !(forward_squares & hinderers) ) {
 				add_score<detail, eval_detail::passed_pawns>( results, static_cast<color::type>(i), eval_values::passed_pawn_unhindered * advance_bonus[advance] );
 			}
@@ -525,7 +525,7 @@ static void evaluate_king_attack( position const& p, color::type c, eval_results
 {
 	// Consider a lone attacker harmless
 	if( results.count_king_attackers[c] < 2 ||
-		!p.bitboards[c].b[bb_type::queens] ||
+		!p.bitboards[c][bb_type::queens] ||
 		p.material[c].mg() < (eval_values::material_values[pieces::queen] + eval_values::material_values[pieces::rook] ).mg() ) {
 		return;
 	}
@@ -536,10 +536,10 @@ static void evaluate_king_attack( position const& p, color::type c, eval_results
 	attack += results.king_attacker_sum[c];
 
 	// Add all positions where a piece can safely give check
-	uint64_t secure_squares = ~(results.attacks[1-c][0] | p.bitboards[c].b[bb_type::all_pieces]); // Don't remove enemy pieces, those we would just capture
+	uint64_t secure_squares = ~(results.attacks[1-c][0] | p.bitboards[c][bb_type::all_pieces]); // Don't remove enemy pieces, those we would just capture
 
 	uint64_t knight_checks = possible_knight_moves[ p.king_pos[1-c] ] & secure_squares;
-	uint64_t const all_blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
+	uint64_t const all_blockers = p.bitboards[1-c][bb_type::all_pieces] | p.bitboards[c][bb_type::all_pieces];
 	uint64_t bishop_checks = bishop_magic( p.king_pos[1-c], all_blockers ) & secure_squares;
 	uint64_t rook_checks = rook_magic( p.king_pos[1-c], all_blockers ) & secure_squares;
 
@@ -555,8 +555,8 @@ static void evaluate_king_attack( position const& p, color::type c, eval_results
 	// Rooks and queens that are able to move next to a king without getting captured are extremely dangerous.
 	uint64_t const backed_queen_attacks = results.attacks[c][pieces::queen] & (results.attacks[c][pieces::pawn] | results.attacks[c][pieces::knight] | results.attacks[c][pieces::bishop] | results.attacks[c][pieces::rook]);
 	uint64_t const backed_rook_attacks = results.attacks[c][pieces::rook] & (results.attacks[c][pieces::pawn] | results.attacks[c][pieces::knight] | results.attacks[c][pieces::bishop] | results.attacks[c][pieces::queen]);
-	uint64_t const king_melee_attack_by_queen = undefended & backed_queen_attacks & ~p.bitboards[c].b[bb_type::all_pieces];
-	uint64_t const king_melee_attack_by_rook = undefended & backed_rook_attacks & ~p.bitboards[c].b[bb_type::all_pieces] & rook_magic( p.king_pos[1-c], 0 );
+	uint64_t const king_melee_attack_by_queen = undefended & backed_queen_attacks & ~p.bitboards[c][bb_type::all_pieces];
+	uint64_t const king_melee_attack_by_rook = undefended & backed_rook_attacks & ~p.bitboards[c][bb_type::all_pieces] & rook_magic( p.king_pos[1-c], 0 );
 	uint64_t const initiative = (p.self() == c) ? 2 : 1;
 	attack += popcount( king_melee_attack_by_queen ) * eval_values::king_melee_attack_by_queen * initiative;
 	attack += popcount( king_melee_attack_by_rook ) * eval_values::king_melee_attack_by_rook * initiative;
@@ -676,8 +676,8 @@ void evaluate_pawns( position const& p, eval_results& results )
 	}
 
 	for( int c = 0; c < 2; ++c ) {
-		uint64_t own_pawns = p.bitboards[c].b[bb_type::pawns];
-		uint64_t foreign_pawns = p.bitboards[1-c].b[bb_type::pawns];
+		uint64_t own_pawns = p.bitboards[c][bb_type::pawns];
+		uint64_t foreign_pawns = p.bitboards[1-c][bb_type::pawns];
 
 		uint64_t pawns = own_pawns;
 		while( pawns ) {
@@ -715,8 +715,8 @@ void evaluate_pawn_shield_side( position const& p, eval_results& results )
 		--king_pos;
 	}
 
-	uint64_t pawns = (passed_pawns[c][king_pos] | 7ull << (king_pos - 1)) & p.bitboards[c].b[bb_type::pawns];
-	uint64_t enemy_pawns = passed_pawns[c][king_pos] & p.bitboards[1-c].b[bb_type::pawns];
+	uint64_t pawns = (passed_pawns[c][king_pos] | 7ull << (king_pos - 1)) & p.bitboards[c][bb_type::pawns];
+	uint64_t enemy_pawns = passed_pawns[c][king_pos] & p.bitboards[1-c][bb_type::pawns];
 	uint64_t k = 0xffull << (c ? 48 : 8);
 	score s;
 	for( int i = 0; i < 4; ++i ) {
@@ -741,7 +741,7 @@ template<bool detail>
 static void evaluate_center( position const& p, color::type c, eval_results& results )
 {
 	// Not taken by own pawns nor under control by enemy pawns
-	uint64_t potential_center_squares = central_squares[c] & ~(p.bitboards[c].b[bb_type::pawns] | p.bitboards[1-c].b[bb_type::pawn_control]);
+	uint64_t potential_center_squares = central_squares[c] & ~(p.bitboards[c][bb_type::pawns] | p.bitboards[1-c][bb_type::pawn_control]);
 	uint64_t safe_center_squares = potential_center_squares & results.attacks[c][0] & ~results.attacks[1-c][0];
 
 	add_score<detail, eval_detail::center_control>( results, c, eval_values::center_control * static_cast<short>(popcount(safe_center_squares)) );
@@ -755,9 +755,9 @@ static void evaluate_piece_defense( position const& p, color::type c, eval_resul
 	uint64_t undefended = results.attacks[c][pieces::none] & ~results.attacks[1-c][pieces::none];
 	uint64_t defended = results.attacks[c][pieces::none] & results.attacks[1-c][pieces::none];
 	for( unsigned int piece = 1; piece < 6; ++piece ) {
-		add_score<detail, eval_detail::hanging_pieces>( results, static_cast<color::type>(c), eval_values::hanging_piece[piece] * static_cast<short>(popcount( p.bitboards[1-c].b[piece] & undefended) ) );
-		add_score<detail, eval_detail::attacked_pieces>( results, static_cast<color::type>(c), eval_values::attacked_piece[piece] * static_cast<short>(popcount( p.bitboards[1-c].b[piece] & defended) ) );
-		add_score<detail, eval_detail::defended_by_pawn>( results, static_cast<color::type>(c), eval_values::defended_by_pawn[piece] * static_cast<short>(popcount( p.bitboards[c].b[piece] & p.bitboards[c].b[bb_type::pawn_control]) ) );
+		add_score<detail, eval_detail::hanging_pieces>( results, static_cast<color::type>(c), eval_values::hanging_piece[piece] * static_cast<short>(popcount( p.bitboards[1-c][piece] & undefended) ) );
+		add_score<detail, eval_detail::attacked_pieces>( results, static_cast<color::type>(c), eval_values::attacked_piece[piece] * static_cast<short>(popcount( p.bitboards[1-c][piece] & defended) ) );
+		add_score<detail, eval_detail::defended_by_pawn>( results, static_cast<color::type>(c), eval_values::defended_by_pawn[piece] * static_cast<short>(popcount( p.bitboards[c][piece] & p.bitboards[c][bb_type::pawn_control]) ) );
 	}
 }
 
@@ -766,19 +766,19 @@ static void evaluate_imbalance( position const& p, eval_results& results )
 {
 	// TODO: Check if it's faster to use p.piece_sum
 	short pawns[2];
-	pawns[0] = static_cast<short>( popcount( p.bitboards[0].b[bb_type::pawns] ) );
-	pawns[1] = static_cast<short>( popcount( p.bitboards[1].b[bb_type::pawns] ) );
+	pawns[0] = static_cast<short>( popcount( p.bitboards[0][bb_type::pawns] ) );
+	pawns[1] = static_cast<short>( popcount( p.bitboards[1][bb_type::pawns] ) );
 	short pawn_diff = pawns[0] - pawns[1];
 
 	short minors[2];
-	minors[0] = static_cast<short>( popcount( p.bitboards[0].b[bb_type::knights] | p.bitboards[0].b[bb_type::bishops] ) );
-	minors[1] = static_cast<short>( popcount( p.bitboards[1].b[bb_type::knights] | p.bitboards[1].b[bb_type::bishops] ) );
+	minors[0] = static_cast<short>( popcount( p.bitboards[0][bb_type::knights] | p.bitboards[0][bb_type::bishops] ) );
+	minors[1] = static_cast<short>( popcount( p.bitboards[1][bb_type::knights] | p.bitboards[1][bb_type::bishops] ) );
 	short minor_diff = minors[0] - minors[1];
 
 	// TODO: Somehow handle queens
 	short majors[2];
-	majors[0] = static_cast<short>( popcount( p.bitboards[0].b[bb_type::rooks] ) );
-	majors[1] = static_cast<short>( popcount( p.bitboards[1].b[bb_type::rooks] )) ;
+	majors[0] = static_cast<short>( popcount( p.bitboards[0][bb_type::rooks] ) );
+	majors[1] = static_cast<short>( popcount( p.bitboards[1][bb_type::rooks] )) ;
 	short major_diff = majors[0] - majors[1];
 
 	score v;
@@ -811,7 +811,7 @@ static void do_evaluate( position const& p, eval_results& results )
 	evaluate_pawns<detail>( p, results );
 
 	for( unsigned int c = 0; c < 2; ++c ) {
-		if( popcount( p.bitboards[c].b[bb_type::bishops] ) > 1 ) {
+		if( popcount( p.bitboards[c][bb_type::bishops] ) > 1 ) {
 			add_score<detail, eval_detail::double_bishop>( results, static_cast<color::type>(c), eval_values::double_bishop );
 		}
 	}
@@ -823,7 +823,7 @@ static void do_evaluate( position const& p, eval_results& results )
 	add_score<detail, eval_detail::side_to_move>( results, p.self(), eval_values::side_to_move );
 
 	for( unsigned int c = 0; c < 2; ++c ) {
-		results.attacks[c][pieces::pawn] = p.bitboards[c].b[bb_type::pawn_control];
+		results.attacks[c][pieces::pawn] = p.bitboards[c][bb_type::pawn_control];
 		evaluate_pawns_mobility<detail>( p, static_cast<color::type>(c), results );
 		evaluate_knights<detail>( p, static_cast<color::type>(c), results );
 		evaluate_bishops<detail>( p, static_cast<color::type>(c), results );
@@ -831,7 +831,7 @@ static void do_evaluate( position const& p, eval_results& results )
 		evaluate_queens<detail>( p, static_cast<color::type>(c), results );
 
 		//Piece-square tables already contain this
-		//results.center_control += static_cast<short>(popcount(p.bitboards[c].b[bb_type::all_pieces] & center_squares));
+		//results.center_control += static_cast<short>(popcount(p.bitboards[c][bb_type::all_pieces] & center_squares));
 
 		results.attacks[c][pieces::none] =
 				results.attacks[c][pieces::pawn] |
@@ -866,8 +866,8 @@ static void scale_by_material( position const& p, short& ev )
 	if( p.material[0].mg() == eval_values::material_values[pieces::bishop].mg() &&
 		p.material[1].mg() == eval_values::material_values[pieces::bishop].mg() )
 	{
-		bool white_is_light = (p.bitboards[0].b[bb_type::bishops] & light_squared_bishop_mask) != 0;
-		bool black_is_light = (p.bitboards[1].b[bb_type::bishops] & light_squared_bishop_mask) != 0;
+		bool white_is_light = (p.bitboards[0][bb_type::bishops] & light_squared_bishop_mask) != 0;
+		bool black_is_light = (p.bitboards[1][bb_type::bishops] & light_squared_bishop_mask) != 0;
 		if( white_is_light != black_is_light ) {
 			ev /= 2;
 		}
@@ -878,7 +878,7 @@ static void scale_by_material( position const& p, short& ev )
 	// "You can tune Pawn values until doomsday, but you will never get anything that is remotely as good
 	//  as just dividing the score by (a completely guessed) two if the leading side has no Pawns." (H.G. Muller)
 	color::type c = (ev > 0) ? color::white : color::black;
-	if( !p.bitboards[c].b[bb_type::pawns] ) {
+	if( !p.bitboards[c][bb_type::pawns] ) {
 		// Check material difference, assume that weaker side would just exchange material
 		if( (p.material[c].mg() - p.material[1-c].mg()) <= eval_values::material_values[pieces::bishop].mg() ) {
 			if( p.material[c].mg() <= eval_values::material_values[pieces::bishop].mg() ) {
@@ -966,8 +966,8 @@ std::string explain_eval( position const& p )
 			ss << explain( p, "Imbalance", detailed_results[eval_detail::imbalance][0] );
 		}
 		score pst = p.base_eval-p.material[0]+p.material[1] -
-			eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(p.bitboards[0].b[bb_type::pawns])) +
-			eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(p.bitboards[1].b[bb_type::pawns]));
+			eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(p.bitboards[0][bb_type::pawns])) +
+			eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(p.bitboards[1][bb_type::pawns]));
 
 		ss << explain( p, "PST", pst );
 		ss << explain( p, "Pawn structure", eval_detail::pawn_structure );

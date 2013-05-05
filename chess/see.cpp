@@ -14,7 +14,7 @@ static uint64_t least_valuable_attacker( position const& p, color::type c, uint6
 	uint64_t match;
 
 	int piece = pieces::pawn;
-	while( !(match = p.bitboards[c].b[piece] & attackers) ) {
+	while( !(match = p.bitboards[c][piece] & attackers) ) {
 		++piece;
 	}
 
@@ -33,10 +33,10 @@ int see( position const& p, move const& m )
 
 	int score[32];
 
-	uint64_t const all_rooks = p.bitboards[color::white].b[bb_type::rooks] | p.bitboards[color::white].b[bb_type::queens] | p.bitboards[color::black].b[bb_type::rooks] | p.bitboards[color::black].b[bb_type::queens];
-	uint64_t const all_bishops = p.bitboards[color::white].b[bb_type::bishops] | p.bitboards[color::white].b[bb_type::queens] | p.bitboards[color::black].b[bb_type::bishops] | p.bitboards[color::black].b[bb_type::queens];
+	uint64_t const all_rooks = p.bitboards[color::white][bb_type::rooks] | p.bitboards[color::white][bb_type::queens] | p.bitboards[color::black][bb_type::rooks] | p.bitboards[color::black][bb_type::queens];
+	uint64_t const all_bishops = p.bitboards[color::white][bb_type::bishops] | p.bitboards[color::white][bb_type::queens] | p.bitboards[color::black][bb_type::bishops] | p.bitboards[color::black][bb_type::queens];
 
-	uint64_t all_pieces = p.bitboards[color::white].b[bb_type::all_pieces] | p.bitboards[color::black].b[bb_type::all_pieces];
+	uint64_t all_pieces = p.bitboards[color::white][bb_type::all_pieces] | p.bitboards[color::black][bb_type::all_pieces];
 	all_pieces ^= 1ull << m.source();
 
 	if( m.enpassant() ) {
@@ -46,17 +46,17 @@ int see( position const& p, move const& m )
 	uint64_t attackers =
 			(rook_magic( target, all_pieces ) & all_rooks) |
 			(bishop_magic( target, all_pieces ) & all_bishops) |
-			(possible_knight_moves[target] & (p.bitboards[color::white].b[bb_type::knights] | p.bitboards[color::black].b[bb_type::knights])) |
-			(possible_king_moves[target] & (p.bitboards[color::white].b[bb_type::king] | p.bitboards[color::black].b[bb_type::king])) |
-			(pawn_control[color::black][target] & p.bitboards[color::white].b[bb_type::pawns]) |
-			(pawn_control[color::white][target] & p.bitboards[color::black].b[bb_type::pawns]);
+			(possible_knight_moves[target] & (p.bitboards[color::white][bb_type::knights] | p.bitboards[color::black][bb_type::knights])) |
+			(possible_king_moves[target] & (p.bitboards[color::white][bb_type::king] | p.bitboards[color::black][bb_type::king])) |
+			(pawn_control[color::black][target] & p.bitboards[color::white][bb_type::pawns]) |
+			(pawn_control[color::white][target] & p.bitboards[color::black][bb_type::pawns]);
 	// Don't have to remove source piece here, done implicitly in the loop.
 
 	pieces::type captured_piece = p.get_captured_piece( m );
 	score[0] = eval_values::material_values[ captured_piece ].mg();
 
 	// Get new attacker
-	if( !(attackers & p.bitboards[p.other()].b[bb_type::all_pieces]) ) {
+	if( !(attackers & p.bitboards[p.other()][bb_type::all_pieces]) ) {
 		return score[0];
 	}
 
@@ -83,7 +83,7 @@ int see( position const& p, move const& m )
 						((bishop_magic( target, all_pieces )) & all_bishops);
 		attackers &= all_pieces;
 
-		if( !(attackers & p.bitboards[p.self() ^ (depth & 1)].b[bb_type::all_pieces]) ) {
+		if( !(attackers & p.bitboards[p.self() ^ (depth & 1)][bb_type::all_pieces]) ) {
 			break;
 		}
 

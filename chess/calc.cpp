@@ -772,7 +772,7 @@ short context::quiescence_search( int ply, int depth, position const& p, check_m
 	if( is_50move_draw( p, check, *this, ply, ret ) ) {
 		return ret;
 	}
-	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
+	if( !p.bitboards[color::white][bb_type::pawns] && !p.bitboards[color::black][bb_type::pawns] ) {
 		if( p.material[color::white].eg() + p.material[color::black].eg() <= eval_values::insufficient_material_threshold ) {
 			return result::draw;
 		}
@@ -919,7 +919,7 @@ short context::step( int depth, int ply, position& p, check_map const& check, sh
 	if( is_50move_draw( p, check, *this, ply, ret ) ) {
 		return ret;
 	}
-	if( !p.bitboards[color::white].b[bb_type::pawns] && !p.bitboards[color::black].b[bb_type::pawns] ) {
+	if( !p.bitboards[color::white][bb_type::pawns] && !p.bitboards[color::black][bb_type::pawns] ) {
 		if( p.material[color::white].eg() + p.material[color::black].eg() <= eval_values::insufficient_material_threshold ) {
 			return result::draw;
 		}
@@ -959,7 +959,7 @@ short context::step( int depth, int ply, position& p, check_map const& check, sh
 
 	if( !pv_node && !check.check && plies_remaining < static_cast<int>(sizeof(razor_pruning)/sizeof(short)) && full_eval + razor_pruning[plies_remaining] < beta &&
 		   tt_move.empty() && beta < result::win_threshold && beta > result::loss_threshold &&
-		   !(p.bitboards[p.self()].b[bb_type::pawns] & (p.white() ? 0x00ff000000000000ull : 0x000000000000ff00ull)) )
+		   !(p.bitboards[p.self()][bb_type::pawns] & (p.white() ? 0x00ff000000000000ull : 0x000000000000ff00ull)) )
 	{
 		short new_beta = beta - razor_pruning[plies_remaining];
 		short value = quiescence_search( ply, MAX_QDEPTH, p, check, new_beta - 1, new_beta, full_eval );
@@ -1116,7 +1116,7 @@ short context::inner_step( int const depth, int const ply, position const& p, ch
 				}
 			}
 			// Pushing a passed pawn
-			else if( !(passed_pawns[p.self()][m.target()] & p.bitboards[p.other()].b[bb_type::pawns] ) ) {
+			else if( !(passed_pawns[p.self()][m.target()] & p.bitboards[p.other()][bb_type::pawns] ) ) {
 				dangerous_pawn_move = true;
 				if( !extended && pv_node ) {
 					new_depth += pawn_push_extension;

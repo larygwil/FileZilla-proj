@@ -261,18 +261,18 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 		p.castle[color::white] = 0;
 		p.castle[color::black] = 0;
 		if( p.king_pos[color::white] == 4 ) {
-			if( p.bitboards[color::white].b[bb_type::rooks] & (1ull << 7) ) {
+			if( p.bitboards[color::white][bb_type::rooks] & (1ull << 7) ) {
 				p.castle[color::white] |= castles::kingside;
 			}
-			if( p.bitboards[color::white].b[bb_type::rooks] & 1ull ) {
+			if( p.bitboards[color::white][bb_type::rooks] & 1ull ) {
 				p.castle[color::white] |= castles::queenside;
 			}
 		}
 		if( p.king_pos[color::black] == 60 ) {
-			if( p.bitboards[color::black].b[bb_type::rooks] & (1ull << 63) ) {
+			if( p.bitboards[color::black][bb_type::rooks] & (1ull << 63) ) {
 				p.castle[color::black] |= castles::kingside;
 			}
-			if( p.bitboards[color::black].b[bb_type::rooks] & (1ull << 56) ) {
+			if( p.bitboards[color::black][bb_type::rooks] & (1ull << 56) ) {
 				p.castle[color::black] |= castles::queenside;
 			}
 		}
@@ -344,9 +344,9 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 			if( piece != -1 && rank != -1 && file != -1 ) {
 				int sq = static_cast<uint64_t>(file + rank * 8);
 				for( int pi = bb_type::pawns; pi <= bb_type::king; ++pi ) {
-					p.bitboards[p.self()].b[pi] &= ~(1ull << sq);
+					p.bitboards[p.self()][pi] &= ~(1ull << sq);
 				}
-				p.bitboards[p.self()].b[piece] |= 1ull << sq;
+				p.bitboards[p.self()][piece] |= 1ull << sq;
 				return true;
 			}
 		}

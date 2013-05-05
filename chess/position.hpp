@@ -44,7 +44,7 @@ public:
 	// Material and pst, nothing else.
 	score base_eval;
 
-	bitboard bitboards[2];
+	bitboard bitboards[2][bb_type::value_max];
 
 	int king_pos[2];
 

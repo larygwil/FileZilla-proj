@@ -6,19 +6,19 @@
 bool detect_check_knights( position const& p, color::type c, uint64_t king )
 {
 	uint64_t knights = possible_knight_moves[ king ];
-	knights &= p.bitboards[1-c].b[bb_type::knights];
+	knights &= p.bitboards[1-c][bb_type::knights];
 
 	return knights != 0;
 }
 
 bool detect_check( position const& p, color::type c, uint64_t king,uint64_t ignore )
 {
-	uint64_t blockers = p.bitboards[1-c].b[bb_type::all_pieces] | p.bitboards[c].b[bb_type::all_pieces];
+	uint64_t blockers = p.bitboards[1-c][bb_type::all_pieces] | p.bitboards[c][bb_type::all_pieces];
 	blockers &= ~(1ull << ignore);
 
-	uint64_t rooks_and_queens = p.bitboards[1-c].b[bb_type::rooks] | p.bitboards[1-c].b[bb_type::queens];
-	uint64_t bishops_and_queens = p.bitboards[1-c].b[bb_type::bishops] | p.bitboards[1-c].b[bb_type::queens];
-	bishops_and_queens |= pawn_control[c][king] & p.bitboards[1-c].b[bb_type::pawns];
+	uint64_t rooks_and_queens = p.bitboards[1-c][bb_type::rooks] | p.bitboards[1-c][bb_type::queens];
+	uint64_t bishops_and_queens = p.bitboards[1-c][bb_type::bishops] | p.bitboards[1-c][bb_type::queens];
+	bishops_and_queens |= pawn_control[c][king] & p.bitboards[1-c][bb_type::pawns];
 
 	uint64_t rooks_and_queens_check = rook_magic( king, blockers ) & rooks_and_queens;
 	uint64_t bishops_and_queens_check = bishop_magic( king, blockers ) & bishops_and_queens;
@@ -50,7 +50,7 @@ static void process_piece( position const& p, check_map& map, uint64_t piece )
 {
 	uint64_t between = between_squares[piece][p.king_pos[p.self()]];
 
-	uint64_t block_count = popcount( between & p.bitboards[p.self()].b[bb_type::all_pieces] );
+	uint64_t block_count = popcount( between & p.bitboards[p.self()][bb_type::all_pieces] );
 	if( block_count < 2 ) {
 		unsigned char cpi = static_cast<unsigned char>(piece) | 0x80;
 
@@ -77,19 +77,19 @@ check_map::check_map( position const& p )
 {
 	memset( board, 0, sizeof(board) );
 
-	uint64_t potential_rook_checks = rook_magic( p.king_pos[p.self()], p.bitboards[p.other()].b[bb_type::all_pieces] ) & (p.bitboards[p.other()].b[bb_type::rooks] | p.bitboards[p.other()].b[bb_type::queens]);
+	uint64_t potential_rook_checks = rook_magic( p.king_pos[p.self()], p.bitboards[p.other()][bb_type::all_pieces] ) & (p.bitboards[p.other()][bb_type::rooks] | p.bitboards[p.other()][bb_type::queens]);
 	while( potential_rook_checks ) {
 		uint64_t rook = bitscan_unset( potential_rook_checks );
 		process_piece( p, *this, rook );
 	}
-	uint64_t potential_bishop_checks = bishop_magic( p.king_pos[p.self()], p.bitboards[p.other()].b[bb_type::all_pieces] ) & (p.bitboards[p.other()].b[bb_type::bishops] | p.bitboards[p.other()].b[bb_type::queens]);
-	potential_bishop_checks |= pawn_control[p.self()][p.king_pos[p.self()]] & p.bitboards[p.other()].b[bb_type::pawns];
+	uint64_t potential_bishop_checks = bishop_magic( p.king_pos[p.self()], p.bitboards[p.other()][bb_type::all_pieces] ) & (p.bitboards[p.other()][bb_type::bishops] | p.bitboards[p.other()][bb_type::queens]);
+	potential_bishop_checks |= pawn_control[p.self()][p.king_pos[p.self()]] & p.bitboards[p.other()][bb_type::pawns];
 	while( potential_bishop_checks ) {
 		uint64_t bishop = bitscan_unset( potential_bishop_checks );
 		process_piece( p, *this, bishop );
 	}
 
-	uint64_t knights = possible_knight_moves[p.king_pos[p.self()]] & p.bitboards[p.other()].b[bb_type::knights];
+	uint64_t knights = possible_knight_moves[p.king_pos[p.self()]] & p.bitboards[p.other()][bb_type::knights];
 	while( knights ) {
 		uint64_t knight = bitscan_unset( knights );
 		calc_check_map_knight( *this, p.king_pos[p.self()], knight );

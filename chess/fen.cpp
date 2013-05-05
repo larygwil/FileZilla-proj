@@ -303,7 +303,7 @@ bool parse_fen( std::string const& fen, position& p, std::string* error )
 				piece = pieces::king;
 				break;
 			}
-			p.bitboards[c].b[piece] |= 1ull << pi;
+			p.bitboards[c][piece] |= 1ull << pi;
 			++col;
 		}
 

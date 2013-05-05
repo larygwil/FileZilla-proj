@@ -26,7 +26,7 @@ short evaluate_KNBvK( position const& p, color::type c )
 
 	// This drives enemy king first to the edge of the board, then into the right corner
 	int corner_distance;
-	if( p.bitboards[c].b[bb_type::bishops] & light_squared_bishop_mask ) {
+	if( p.bitboards[c][bb_type::bishops] & light_squared_bishop_mask ) {
 		corner_distance = std::min( king_distance[p.king_pos[1-c]][7], king_distance[p.king_pos[1-c]][56] );
 	}
 	else {
@@ -48,7 +48,7 @@ short evaluate_KNBvK( position const& p, color::type c )
 
 	// Reward closeness of own king and knight to enemy king
 	eval += 5 * (7 - king_distance[p.king_pos[c]][p.king_pos[1-c]]);
-	eval += 7 - king_distance[bitscan(p.bitboards[c].b[bb_type::knights])][p.king_pos[1-c]];
+	eval += 7 - king_distance[bitscan(p.bitboards[c][bb_type::knights])][p.king_pos[1-c]];
 
 	return eval;
 }
@@ -89,16 +89,16 @@ bool evaluate_KPvK_infront( uint64_t wk, uint64_t bk, uint64_t wp, color::type c
 bool evaluate_KPvK( position const& p, color::type c, short& result )
 {
 	// Drawn if pawn on a or h file, enemy king in front
-	uint64_t pawn = bitscan(p.bitboards[c].b[bb_type::pawns]);
-	if( p.bitboards[c].b[bb_type::pawns] & 0x8181818181818181ull ) {
-		if( passed_pawns[c][pawn] & p.bitboards[1-c].b[bb_type::king] ) {
+	uint64_t pawn = bitscan(p.bitboards[c][bb_type::pawns]);
+	if( p.bitboards[c][bb_type::pawns] & 0x8181818181818181ull ) {
+		if( passed_pawns[c][pawn] & p.bitboards[1-c][bb_type::king] ) {
 			result = result::draw;
 			return true;
 		}
 	}
 
 	// Won if enemy king cannot catch pawn
-	uint64_t unstoppable = p.bitboards[c].b[bb_type::pawns] & ~rule_of_the_square[1-c][p.c][p.king_pos[1-c]];
+	uint64_t unstoppable = p.bitboards[c][bb_type::pawns] & ~rule_of_the_square[1-c][p.c][p.king_pos[1-c]];
 	if( unstoppable ) {
 		if( c == color::black ) {
 			result = result::loss_threshold - 7 + static_cast<short>(pawn / 8);
@@ -110,10 +110,10 @@ bool evaluate_KPvK( position const& p, color::type c, short& result )
 	}
 
 	if( !c ) {
-		return evaluate_KPvK_infront( p.king_pos[c], p.king_pos[1-c], bitscan( p.bitboards[c].b[bb_type::pawns] ), p.c, result );
+		return evaluate_KPvK_infront( p.king_pos[c], p.king_pos[1-c], bitscan( p.bitboards[c][bb_type::pawns] ), p.c, result );
 	}
 	else {
-		return evaluate_KPvK_infront( 63-p.king_pos[c], 63-p.king_pos[1-c], 63-bitscan( p.bitboards[c].b[bb_type::pawns] ), static_cast<color::type>(1-p.c), result );
+		return evaluate_KPvK_infront( 63-p.king_pos[c], 63-p.king_pos[1-c], 63-bitscan( p.bitboards[c][bb_type::pawns] ), static_cast<color::type>(1-p.c), result );
 	}
 }
 
@@ -126,11 +126,11 @@ bool evaluate_KBPvKP( position const& p, color::type c, short& result )
 	// Special exception: 8/8/8/3b4/8/5k1p/7P/7K b - - 0 1
 	// We rely on search finding it.
 
-	if( !((p.bitboards[c].b[bb_type::pawns]) & (c ? 0x0000000000C30000ull : 0x0000C30000000000ull)) ) {
+	if( !((p.bitboards[c][bb_type::pawns]) & (c ? 0x0000000000C30000ull : 0x0000C30000000000ull)) ) {
 		return false;
 	}
 
-	uint64_t own_pawn = bitscan( p.bitboards[c].b[bb_type::pawns] );
+	uint64_t own_pawn = bitscan( p.bitboards[c][bb_type::pawns] );
 
 	uint64_t other_pawn = own_pawn;
 	if( c ) {
@@ -139,7 +139,7 @@ bool evaluate_KBPvKP( position const& p, color::type c, short& result )
 	else {
 		other_pawn += 8;
 	}
-	if( p.bitboards[1-c].b[bb_type::pawns] != (1ull << other_pawn) ) {
+	if( p.bitboards[1-c][bb_type::pawns] != (1ull << other_pawn) ) {
 		return false;
 	}
 
@@ -169,11 +169,11 @@ bool evaluate_KPvKP( position const& p, color::type c, short& result )
 	// This endgame is drawn if pawn on home rank on a, b, g or h with king behind it or in adjacent corner and enemy pawn ahead of it.
 	// As in: 8/8/8/8/8/3k2p1/6P1/7K w - -
 	// Color of bishop does not matter.
-	if( !((p.bitboards[c].b[bb_type::pawns]) & (c ? 0x0000000000C30000ull : 0x0000C30000000000ull)) ) {
+	if( !((p.bitboards[c][bb_type::pawns]) & (c ? 0x0000000000C30000ull : 0x0000C30000000000ull)) ) {
 		return false;
 	}
 
-	uint64_t own_pawn = bitscan( p.bitboards[c].b[bb_type::pawns] );
+	uint64_t own_pawn = bitscan( p.bitboards[c][bb_type::pawns] );
 
 	uint64_t other_pawn = own_pawn;
 	if( c ) {
@@ -182,7 +182,7 @@ bool evaluate_KPvKP( position const& p, color::type c, short& result )
 	else {
 		other_pawn += 8;
 	}
-	if( p.bitboards[1-c].b[bb_type::pawns] != (1ull << other_pawn) ) {
+	if( p.bitboards[1-c][bb_type::pawns] != (1ull << other_pawn) ) {
 		return false;
 	}
 
@@ -256,14 +256,14 @@ bool evaluate_KRPvKR( position const& p, short& result )
 	// Flip if necessary
 	if( c == color::white ) {
 		return do_evaluate_KRPvKR( p.king_pos[c], p.king_pos[1-c]
-					, bitscan(p.bitboards[1-c].b[bb_type::rooks])
-					, bitscan(p.bitboards[c].b[bb_type::pawns])
+					, bitscan(p.bitboards[1-c][bb_type::rooks])
+					, bitscan(p.bitboards[c][bb_type::pawns])
 					, p.c, result );
 	}
 	else {
 		return do_evaluate_KRPvKR( 63-p.king_pos[c], 63-p.king_pos[1-c]
-					, 63-bitscan(p.bitboards[1-c].b[bb_type::rooks])
-					, 63-bitscan(p.bitboards[c].b[bb_type::pawns])
+					, 63-bitscan(p.bitboards[1-c][bb_type::rooks])
+					, 63-bitscan(p.bitboards[c][bb_type::pawns])
 					, static_cast<color::type>(1-p.c), result );
 	}
 }
@@ -334,12 +334,12 @@ bool evaluate_endgame( position const& p, short& result )
 		return evaluate_KPvK(p, color::black, result);
 	// Drawn if bishop doesn't control the promotion square and enemy king is on promotion square or next to it
 	case white_bishop + white_pawn:
-		if( p.bitboards[color::white].b[bb_type::pawns] & 0x8181818181818181ull ) {
-			uint64_t pawn = bitscan(p.bitboards[color::white].b[bb_type::pawns]);
+		if( p.bitboards[color::white][bb_type::pawns] & 0x8181818181818181ull ) {
+			uint64_t pawn = bitscan(p.bitboards[color::white][bb_type::pawns]);
 			uint64_t enemy_king_mask = (pawn % 8) ? 0xc0c0000000000000ull : 0x0303000000000000ull;
-			if( enemy_king_mask & p.bitboards[color::black].b[bb_type::king] ) {
+			if( enemy_king_mask & p.bitboards[color::black][bb_type::king] ) {
 				bool promotion_square_is_light = (pawn % 8) == 0;
-				bool is_light_squared_bishop = (p.bitboards[color::white].b[bb_type::bishops] & light_squared_bishop_mask) != 0;
+				bool is_light_squared_bishop = (p.bitboards[color::white][bb_type::bishops] & light_squared_bishop_mask) != 0;
 				if( promotion_square_is_light != is_light_squared_bishop ) {
 					result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
 					return true;
@@ -348,12 +348,12 @@ bool evaluate_endgame( position const& p, short& result )
 		}
 		break;
 	case black_bishop + black_pawn:
-		if( p.bitboards[color::black].b[bb_type::pawns] & 0x8181818181818181ull ) {
-			uint64_t pawn = bitscan(p.bitboards[color::black].b[bb_type::pawns]);
+		if( p.bitboards[color::black][bb_type::pawns] & 0x8181818181818181ull ) {
+			uint64_t pawn = bitscan(p.bitboards[color::black][bb_type::pawns]);
 			uint64_t enemy_king_mask = (pawn % 8) ? 0xc0c0ull : 0x0303ull;
-			if( enemy_king_mask & p.bitboards[color::white].b[bb_type::king] ) {
+			if( enemy_king_mask & p.bitboards[color::white][bb_type::king] ) {
 				bool promotion_square_is_light = (pawn % 8) == 7;
-				bool is_light_squared_bishop = (p.bitboards[color::black].b[bb_type::bishops] & light_squared_bishop_mask) != 0;
+				bool is_light_squared_bishop = (p.bitboards[color::black][bb_type::bishops] & light_squared_bishop_mask) != 0;
 				if( promotion_square_is_light != is_light_squared_bishop ) {
 					result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
 					return true;
@@ -366,8 +366,8 @@ bool evaluate_endgame( position const& p, short& result )
 	case white_bishop + black_bishop + white_pawn:
 	case white_bishop + black_bishop + black_pawn:
 		{
-			bool is_light_squared_white_bishop = ((p.bitboards[color::white].b[bb_type::bishops] & light_squared_bishop_mask) != 0);
-			bool is_light_squared_black_bishop = ((p.bitboards[color::black].b[bb_type::bishops] & light_squared_bishop_mask) != 0);
+			bool is_light_squared_white_bishop = ((p.bitboards[color::white][bb_type::bishops] & light_squared_bishop_mask) != 0);
+			bool is_light_squared_black_bishop = ((p.bitboards[color::black][bb_type::bishops] & light_squared_bishop_mask) != 0);
 			if( is_light_squared_white_bishop != is_light_squared_black_bishop ) {
 				result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
 				return true;
