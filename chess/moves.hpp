@@ -47,6 +47,9 @@ void calculate_moves( position const& p, move_info*& moves, check_map const& che
 template<movegen_type type>
 std::vector<move> calculate_moves( position const& p, check_map const& check );
 
+// Returns all moves by piece type
+void calculate_moves_by_piece( position const& p, move_info*& moves, check_map const& check, pieces::type );
+
 template<movegen_type type>
 inline std::vector<move> calculate_moves( position const& p ) {
 	return calculate_moves<type>( p, check_map( p ) );

@@ -552,7 +552,7 @@ void print_pos( std::vector<move> const& history, std::vector<book_entry> const&
 }
 
 
-bool learnpgn( book& b, std::string const& file )
+bool learnpgn( book& b, std::string const& file, bool defer )
 {
 	pgn_reader reader;
 	if( !reader.open( file ) ) {
@@ -561,11 +561,30 @@ bool learnpgn( book& b, std::string const& file )
 
 	game g;
 	while( reader.next( g ) ) {
-		std::cerr << ".";
+		std::cerr << "P";
 		while( g.moves_.size() > 20 ) {
 			g.moves_.pop_back();
 		}
-		b.mark_for_processing( std::vector<move>(g.moves_.begin(), g.moves_.end()) );
+		if( defer ) {
+			b.mark_for_processing( std::vector<move>(g.moves_.begin(), g.moves_.end()) );
+		}
+		else {
+			position p;
+			std::vector<move> h;
+			seen_positions seen( p.hash_ );
+
+			for( auto m : g.moves_ ) {
+				apply_move( p, m );
+				seen.push_root( p.hash_ );
+				h.push_back( m );
+
+				std::vector<book_entry> entries = b.get_entries( p, h );
+				if( entries.empty() ) {
+					calculate_position( b, p, seen, h );
+				}
+			}
+
+		}
 	}
 
 	return true;
@@ -793,12 +812,30 @@ bool process_command( book& b, std::string const& cmd, std::string const& args, 
 		update( b, v );
 	}
 	else if( cmd == "learnpgn" ) {
-		if( args.empty() ) {
+		auto tokens = tokenize( args );
+		std::string file;
+		if( !tokens.empty() ) {
+			file = tokens.back();
+			tokens.pop_back();
+		}
+
+		bool defer = false;
+		for( auto tok : tokens ) {
+			if( tok == "--defer" ) {
+				defer = true;
+			}
+			else {
+				std::cerr << "Invalid option: " << tok;
+			}
+
+		}
+
+		if( file.empty() ) {
 			std::cerr << "Need to pass .pgn file as argument" << std::endl;
 			return false;
 		}
 		else {
-			if( !learnpgn( b, args ) ) {
+			if( !learnpgn( b, file, defer ) ) {
 				std::cerr << "Failed to learn from .pgn" << std::endl;
 				return false;
 			}

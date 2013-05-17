@@ -74,9 +74,9 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 	}
 
 
-	unsigned char piecetype = 0;
-
+	pieces::type piecetype = pieces::none;
 	pieces::type promotion = pieces::none;
+
 	// Small b not in this list intentionally, to avoid disambiguation with a4xb
 	if( len && (str[len - 1] == 'q' || str[len - 1] == 'Q' || str[len - 1] == 'r' || str[len - 1] == 'R' || str[len - 1] == 'B' || str[len - 1] == 'n' || str[len - 1] == 'N' ) ) {
 		switch( str[len-1] ) {
@@ -102,37 +102,55 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 			--len;
 			str = str.substr(0, len);
 		}
-		piecetype = 'P';
+		piecetype = pieces::pawn;
 	}
 	else if( len > 2 && str[len - 1] == 'b' && str[len - 2] == '=' ) {
 		promotion = pieces::bishop;
 		len -= 2;
 		str = str.substr(0, len);
-		piecetype = 'P';
+		piecetype = pieces::pawn;
 	}
 	else if( len == 5 && str[0] >= 'a' && str[0] <= 'h' && str[len - 1] == 'b' ) {
 		// e7e8b
 		promotion = pieces::bishop;
 		--len;
 		str = str.substr(0, len);
-		piecetype = 'P';
+		piecetype = pieces::pawn;
 	}
 
 	const char* s = str.c_str();
 
+	pieces::type newType;
 	switch( *s ) {
-	case 'B':
-	case 'Q':
-	case 'K':
-	case 'R':
-	case 'N':
 	case 'P':
-		if( piecetype ) {
+		newType = pieces::pawn;
+		break;
+	case 'N':
+		newType = pieces::knight;
+		break;
+	case 'B':
+		newType = pieces::bishop;
+		break;
+	case 'R':
+		newType = pieces::rook;
+		break;
+	case 'Q':
+		newType = pieces::queen;
+		break;
+	case 'K':
+		newType = pieces::king;
+		break;
+	default:
+		newType = pieces::none;
+		break;
+	}
+	if( newType != pieces::none ) {
+		++s;
+		if( piecetype != pieces::none ) {
 			error = "Error (unknown command)";
 			return false;
 		}
-		piecetype = *(s++);
-		break;
+		piecetype = newType;
 	}
 
 	int first_col = -1;
@@ -186,8 +204,8 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 		++s;
 	}
 
-	if( !piecetype && (first_col == -1 || second_col == -1 || first_row == -1 || second_row == -1) ) {
-		piecetype = 'P';
+	if( piecetype == pieces::none && (first_col == -1 || second_col == -1 || first_row == -1 || second_row == -1) ) {
+		piecetype = pieces::pawn;
 	}
 
 	if( !got_separator && second_col == -1 && second_row == -1 ) {
@@ -206,39 +224,14 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 
 	move_info moves[200];
 	move_info* pm = moves;
-	calculate_moves<movegen_type::all>( p, pm, check );
+	calculate_moves_by_piece( p, pm, check, piecetype );
 
 	std::list<move_info> matches;
 
 	for( move_info* it = moves; it != pm; ++it ) {
-		char source_piece = 0;
-		
 		pieces::type piece = p.get_piece(it->m.source());
-		switch( piece ) {
-		case pieces::king:
-			source_piece = 'K';
-			break;
-		case pieces::queen:
-			source_piece = 'Q';
-			break;
-		case pieces::rook:
-			source_piece = 'R';
-			break;
-		case pieces::bishop:
-			source_piece = 'B';
-			break;
-		case pieces::knight:
-			source_piece = 'N';
-			break;
-		case pieces::pawn:
-			source_piece = 'P';
-			break;
-		default:
-			error = "Error (corrupt internal state): Got a move that does not have a source piece.";
-			return false;
-		}
 
-		if( piecetype && piecetype != source_piece ) {
+		if( piecetype != pieces::none && piecetype != piece ) {
 			continue;
 		}
 

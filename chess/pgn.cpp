@@ -34,7 +34,6 @@ bool pgn_reader::next( game& g )
 {
 	std::string line;
 
-
 	bool valid = true;
 
 	// Indicates whether we're in a braced comment.
@@ -182,4 +181,20 @@ bool pgn_reader::next( game& g )
 	}
 
 	return !g.moves_.empty();
+}
+
+unsigned int pgn_reader::size()
+{
+	std::streampos pos = in_.tellg();
+	in_.seekg(0);
+
+	unsigned int size = 0;
+	game g;
+
+	while( next(g) ) {
+		++size;
+	}
+	in_.seekg(pos);
+
+	return size;
 }

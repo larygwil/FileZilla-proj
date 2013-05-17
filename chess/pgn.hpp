@@ -21,6 +21,9 @@ public:
 
 	bool next( game& g );
 
+	// Number of games in the file
+	unsigned int size();
+
 private:
 	bool next_line( std::string& line );
 

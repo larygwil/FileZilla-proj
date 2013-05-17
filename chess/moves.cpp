@@ -550,6 +550,35 @@ std::vector<move> calculate_moves( position const& p, check_map const& check )
 	return ret;
 }
 
+
+void calculate_moves_by_piece( position const& p, move_info*& moves, check_map const& check, pieces::type pi )
+{
+	switch( pi ) {
+	case pieces::pawn:
+		calc_moves_pawns<movegen_type::all>( p, moves, check );
+		break;
+	case pieces::knight:
+		calc_moves_knights<movegen_type::all>( p, moves, check );
+		break;
+	case pieces::bishop:
+		calc_moves_bishops<movegen_type::all>( p, moves, check );
+		break;
+	case pieces::rook:
+		calc_moves_rooks<movegen_type::all>( p, moves, check );
+		break;
+	case pieces::queen:
+		calc_moves_queens<movegen_type::all>( p, moves, check );
+		break;
+	case pieces::king:
+		calc_moves_king<movegen_type::all>( p, moves, check );
+		break;
+	default:
+		calculate_moves<movegen_type::all>( p, moves, check );
+		break;
+	}
+}
+
+
 // Explicit instanciations
 template void calculate_moves<movegen_type::all>( position const& p, move_info*& moves, check_map const& check );
 template void calculate_moves<movegen_type::capture>( position const& p, move_info*& moves, check_map const& check );
