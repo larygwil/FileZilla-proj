@@ -654,6 +654,7 @@ void evaluate_pawn( uint64_t own_pawns, uint64_t foreign_pawns, color::type c, u
 #if 0
 	std::cerr << "Pawn: " << std::setw(2) << pawn
 			  << " Color: " << c
+			  << " Opposed: " << opposed
 			  << " Doubled: " << doubled
 			  << " Isolated: " << isolated
 			  << " Connected: " << connected
@@ -961,7 +962,10 @@ std::string explain_eval( position const& p )
 		ss << "                    |    White    |    Black    |       Total" << std::endl;
 		ss << "         Term       |   MG   EG   |   MG   EG   |   MG   EG  Scaled" << std::endl;
 		ss << "===================================================================" << std::endl;
-		ss << explain( p, "Material", p.material );
+		score mat[2];
+		mat[0] = p.material[0] + eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(p.bitboards[0][bb_type::pawns]));
+		mat[1] = p.material[1] + eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(p.bitboards[1][bb_type::pawns]));
+		ss << explain( p, "Material", mat );
 		if( detailed_results[eval_detail::imbalance][0] != score() ) {
 			ss << explain( p, "Imbalance", detailed_results[eval_detail::imbalance][0] );
 		}
