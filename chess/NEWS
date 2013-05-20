@@ -1,5 +1,19 @@
-Octochess r4984 (2013-02-24)
+Octochess r50?? (2013-05-??)
+- Implemented Multi-PV analysis
+- In analysis mode, the moves to be searched can be specified
+- CECP: hint command is now supported, it returns best move from transposition table.
+- More accurate timekeeping
+- Handle KRPvKR endgame
+- Improve KPvK endgame
+- Adjust scores if stronger side is pawnless
+- Smaller book format
+- Fix handling of enpassant in hypothetical positions not reachable in a game from the start position
+- Fix scaling of scores in opposite-bishop endings
+- Fixed overflow in evaluation of king attack
+- Various code cleanup
+- Faster statistics calculation
 
+Octochess r4984 (2013-02-24):
 - Add support for ARM architecture to run Octochess on Kindle Touch
 - New threading implementation
 - Implement 50-move rule
