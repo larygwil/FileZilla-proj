@@ -113,12 +113,13 @@ void pawn_structure_hash_table::store( uint64_t key, score const* eval, uint64_t
 	data_[index].data2 = v2;
 	data_[index].key = v1.p ^ v2 ^ key;
 
-#if 0
-	short ev2[2];
-	if( !lookup( key, ev2 ) ) {
+#if VERIFY_PAWN_HASH_TABLE
+	score ev2[2];
+	uint64_t passed2;
+	if( !lookup( key, ev2, passed2 ) ) {
 		abort();
 	}
-	if( eval[0] != ev2[0] || eval[1] != ev2[1] ) {
+	if( eval[0] != ev2[0] || eval[1] != ev2[1] || passed != passed2 ) {
 		abort();
 	}
 #endif
