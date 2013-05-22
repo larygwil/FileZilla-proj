@@ -668,14 +668,8 @@ void evaluate_pawn( uint64_t own_pawns, uint64_t foreign_pawns, color::type c, u
 
 
 template<bool detail>
-void evaluate_pawns( position const& p, eval_results& results )
+void do_evaluate_pawns( position const& p, eval_results& results, score* s )
 {
-	score s[2];
-	if( pawn_hash_table.lookup( p.pawn_hash, s, results.passed_pawns ) ) {
-		add_score<detail, eval_detail::pawn_structure>( results, s );
-		return;
-	}
-
 	for( int c = 0; c < 2; ++c ) {
 		uint64_t own_pawns = p.bitboards[c][bb_type::pawns];
 		uint64_t foreign_pawns = p.bitboards[1-c][bb_type::pawns];
@@ -683,10 +677,28 @@ void evaluate_pawns( position const& p, eval_results& results )
 		uint64_t pawns = own_pawns;
 		while( pawns ) {
 			uint64_t pawn = bitscan_unset( pawns );
-
 			evaluate_pawn( own_pawns, foreign_pawns, static_cast<color::type>(c), pawn, results, s );
 		}
 	}
+}
+
+template<bool detail>
+void evaluate_pawns( position const& p, eval_results& results )
+{
+	score s[2];
+	if( pawn_hash_table.lookup( p.pawn_hash, s, results.passed_pawns ) ) {
+		add_score<detail, eval_detail::pawn_structure>( results, s );
+
+#if VERIFY_PAWN_HASH_TABLE
+		score s2[2];
+		do_evaluate_pawns<detail>( p, results, s2 );
+		ASSERT( s[0] == s2[0] );
+		ASSERT( s[1] == s2[1] );
+#endif
+		return;
+	}
+
+	do_evaluate_pawns<detail>( p, results, s );
 
 	add_score<detail, eval_detail::pawn_structure>( results, s );
 	pawn_hash_table.store( p.pawn_hash, s, results.passed_pawns );
