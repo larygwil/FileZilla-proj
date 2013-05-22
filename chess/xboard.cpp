@@ -385,9 +385,9 @@ void xboard_thread::onRun()
 				state.bonus_time = duration();
 			}
 
-			uint64_t remaining_moves = std::max( 20, (80 - state.clock) / 2 );
+			uint64_t remaining_moves = std::max( 20, (82 - state.clock) / 2 );
 			if( state.time_control ) {
-				uint64_t remaining = (state.time_control * 2) - (state.clock % (state.time_control * 2));
+				uint64_t remaining = ((state.time_control * 2) - (state.clock % (state.time_control * 2)) + 2) / 2;
 				if( remaining < remaining_moves ) {
 					remaining_moves = remaining;
 				}
