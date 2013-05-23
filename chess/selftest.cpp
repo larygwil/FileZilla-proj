@@ -961,7 +961,12 @@ void check_condition_wait()
 				std::cerr << "If there has been a leap second since last reboot, update your kernel and reboot!." << std::endl;
 			}
 #endif
-			abort();
+			if( elapsed + duration::milliseconds(10) < wait ||
+				elapsed > wait + duration::milliseconds(10) )
+			{
+				std::cerr << "Difference is more than 10ms" << std::endl;
+				abort();
+			}
 		}
 	}
 	pass();
