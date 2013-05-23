@@ -404,7 +404,7 @@ void process( book& b )
 		int64_t seconds = (now - start).seconds();
 		if( seconds ) {
 			std::cerr << std::endl << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour.";
-			uint64_t eta = seconds / calculated * wl.size();
+			uint64_t eta = seconds * wl.size() / calculated;
 			std::cerr << " Estimated completion in " << eta / 60 << " minutes" << std::endl; 
 		}
 	}
@@ -472,7 +472,7 @@ void update( book& b, int entries_per_pos = 5 )
 		int64_t seconds = (now - start).seconds();
 		if( seconds ) {
 			std::cerr << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour.";
-			uint64_t eta = seconds / calculated * wl.size();
+			uint64_t eta = seconds * wl.size() / calculated;
 			std::cerr << " Estimated completion in " << eta / 60 << " minutes" << std::endl; 
 		}
 	}
