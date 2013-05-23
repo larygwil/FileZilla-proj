@@ -27,7 +27,8 @@ public:
 	unsigned char can_en_passant;
 
 	// After setting bitboards, castling rights and en-passant square,
-	// call this function to 
+	// call this function to update all derived values, e.g. material or
+	// the pawn hash.
 	void update_derived();
 
 	void clear_bitboards();
