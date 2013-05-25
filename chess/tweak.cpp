@@ -1,3 +1,4 @@
+#if DEVELOPMENT
 #include "calc.hpp"
 #include "chess.hpp"
 #include "config.hpp"
@@ -21,12 +22,13 @@
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <memory>
 
 int const THRESHOLD = 300;
 
 namespace {
+
+random rng;
 
 static calc_result tweak_calc( position& p, duration const& move_time_limit, int clock, seen_positions& seen
 		  , new_best_move_callback_base& new_best_cb = default_new_best_move_callback )
@@ -60,7 +62,7 @@ static calc_result tweak_calc( position& p, duration const& move_time_limit, int
 		}
 	}
 	else {
-		result.best_move = moves[(rand() + get_random_unsigned_long_long()) % moves.size()];
+		result.best_move = moves[(rand() + rng.get_uint64()) % moves.size()];
 	}
 
 	return result;
@@ -68,7 +70,7 @@ static calc_result tweak_calc( position& p, duration const& move_time_limit, int
 
 static void generate_test_positions_impl()
 {
-	conf.max_moves = 20 + get_random_unsigned_long_long() % 70;
+	conf.max_moves = 20 + rng.get_uint64() % 70;
 
 	transposition_table.clear_data();
 	pawn_hash_table.init( conf.pawn_hash_table_size() );
@@ -567,7 +569,7 @@ void combine( population& pop, std::set<individual>& seen, std::vector<reference
 	for( std::size_t r1 = 0; r1 < orig_count; ++r1 ) {
 		std::size_t r2 = r1;
 		while( r1 == r2 ) {
-			r2 = (get_random_unsigned_long_long() + rand()) % orig_count;
+			r2 = (rng.get_uint64() + rand()) % orig_count;
 		}
 
 		individual const& i1 = *pop[r1];
@@ -623,7 +625,7 @@ void select( population& pop, std::set<individual>& seen )
 
 	std::size_t limit = pop.size() - n;
 	while( out.size() < max_size ) {
-		std::size_t r = (get_random_unsigned_long_long() + rand()) % limit;
+		std::size_t r = (rng.get_uint64() + rand()) % limit;
 
 		out.push_back( pop[n + r] );
 		pop[n + r] = pop[n + limit - 1];
@@ -792,3 +794,4 @@ void tweak_evaluation()
 		}
 	}
 }
+#endif

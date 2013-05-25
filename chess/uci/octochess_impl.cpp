@@ -81,6 +81,8 @@ public:
 	calc_result result_;
 
 	timestamp start_;
+
+	random rng_;
 };
 
 octochess_uci::octochess_uci( gui_interface_ptr const& p ) 
@@ -320,7 +322,7 @@ bool octochess_uci::impl::do_book_move() {
 				}
 			}
 
-			simple_book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
+			simple_book_entry best_move = moves[rng_.get_uint64() % count_best];
 			gui_interface_->tell_best_move( move_to_long_algebraic( best_move.m ), "" );
 		}
 	}

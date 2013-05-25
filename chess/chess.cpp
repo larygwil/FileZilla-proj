@@ -16,7 +16,6 @@ contact tim.kosse@filezilla-project.org for details.
 #include "chess.hpp"
 #include "config.hpp"
 #include "calc.hpp"
-#include "epd.hpp"
 #include "eval.hpp"
 #include "eval_values.hpp"
 #include "fen.hpp"
@@ -25,16 +24,19 @@ contact tim.kosse@filezilla-project.org for details.
 #include "magic.hpp"
 #include "moves.hpp"
 #include "pawn_structure_hash_table.hpp"
-#include "random.hpp"
 #include "see.hpp"
 #include "statistics.hpp"
 #include "selftest.hpp"
-#include "tweak.hpp"
 #include "util.hpp"
 #include "xboard.hpp"
 #include "zobrist.hpp"
 
 #include "uci/runner.hpp"
+
+#if DEVELOPMENT
+#include "epd.hpp"
+#include "tweak.hpp"
+#endif
 
 #include <algorithm>
 #include <list>
@@ -127,15 +129,6 @@ int main( int argc, char const* argv[] )
 	init_pst();
 	eval_values::init();
 
-	if( conf.random_seed != -1 ) {
-		init_random( conf.random_seed );
-	}
-	else {
-		uint64_t seed = get_time();
-		init_random(seed);
-		std::cerr << "Random seed is " << seed << std::endl;
-	}
-
 	init_zobrist_tables();
 
 	bool from_stdin = false;
@@ -160,20 +153,22 @@ int main( int argc, char const* argv[] )
 	else if( command == "test" ) {
 		selftest();
 	}
+#if DEVELOPMENT
 	else if( command == "tweakgen" ) {
 		generate_test_positions();
 	}
 	else if( command == "tweak" ) {
 		tweak_evaluation();
 	}
+	else if( command == "sts" ) {
+		run_sts();
+	}
+#endif
 	else if( command == "xboard" ) {
 		xboard( from_stdin ? "xboard" : "" );
 	}
 	else if( command == "uci" ) {
 		run_uci( from_stdin );
-	}
-	else if( command == "sts" ) {
-		run_sts();
 	}
 	else {
 		xboard( command );

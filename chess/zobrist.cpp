@@ -34,31 +34,30 @@ void init_zobrist_tables()
 		return;
 	}
 
-	push_rng_state();
-	init_random( 42 );
+	random rng( 42 );
 
 	for( int c = 0; c < 2; ++c ) {
 		for( int i = 0; i < 64; ++i ) {
-			zobrist::pawns[c][i] = get_random_unsigned_long_long();
-			zobrist::knights[c][i] = get_random_unsigned_long_long();
-			zobrist::bishops[c][i] = get_random_unsigned_long_long();
-			zobrist::rooks[c][i] = get_random_unsigned_long_long();
-			zobrist::queens[c][i] = get_random_unsigned_long_long();
-			zobrist::kings[c][i] = get_random_unsigned_long_long();
+			zobrist::pawns[c][i] = rng.get_uint64();
+			zobrist::knights[c][i] = rng.get_uint64();
+			zobrist::bishops[c][i] = rng.get_uint64();
+			zobrist::rooks[c][i] = rng.get_uint64();
+			zobrist::queens[c][i] = rng.get_uint64();
+			zobrist::kings[c][i] = rng.get_uint64();
 		}
 	}
 	
 	for( unsigned int c = 0; c < 2; ++c ) {
 		zobrist::castle[c][0] = 0;
-		zobrist::castle[c][1] = get_random_unsigned_long_long();
-		zobrist::castle[c][2] = get_random_unsigned_long_long();
+		zobrist::castle[c][1] = rng.get_uint64();
+		zobrist::castle[c][2] = rng.get_uint64();
 		zobrist::castle[c][3] = zobrist::castle[c][1] ^ zobrist::castle[c][2];
 	}
 
 	zobrist::enpassant[0] = 0;
 	for( unsigned int i = 1; i < 64; ++i ) {
 		if( i / 8 == 2 || i / 8 == 5 ) {
-			zobrist::enpassant[i] = get_random_unsigned_long_long();
+			zobrist::enpassant[i] = rng.get_uint64();
 		}
 		else {
 			zobrist::enpassant[i] = 0;
@@ -67,13 +66,11 @@ void init_zobrist_tables()
 
 	for( unsigned int c = 0; c < 2; ++c ) {
 		for( unsigned int pawn = 0; pawn < 64; ++pawn ) {
-			zobrist::pawn_structure[c][pawn] = get_random_unsigned_long_long();
+			zobrist::pawn_structure[c][pawn] = rng.get_uint64();
 		}
 	}
 
 	zobrist::initialized = true;
-
-	pop_rng_state();
 }
 
 

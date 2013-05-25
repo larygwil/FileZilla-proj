@@ -970,7 +970,6 @@ int main( int argc, char const* argv[] )
 	init_magic();
 	init_pst();
 	eval_values::init();
-	init_random( 1234 );
 	init_zobrist_tables();
 
 	pawn_hash_table.init( conf.pawn_hash_table_size() );

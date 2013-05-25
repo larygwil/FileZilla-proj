@@ -1,3 +1,4 @@
+#if DEVELOPMENT
 #include "calc.hpp"
 #include "epd.hpp"
 #include "config.hpp"
@@ -154,3 +155,4 @@ void run_sts()
 	}
 	std::cerr << "Sum " << match_sum << " " << score_sum << std::endl;
 }
+#endif

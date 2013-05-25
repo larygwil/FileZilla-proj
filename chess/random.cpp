@@ -1,51 +1,35 @@
 #include "util/platform.hpp"
-#include "util/mutex.hpp"
 #include "random.hpp"
 
 #include <list>
-#include <iostream>
-#include <random>
-#include <time.h>
 
-namespace {
-static mutex m;
-static std::list<std::mt19937_64> stack;
-std::mt19937_64 engine;
+random::random()
+{
+	seed(get_time());
 }
 
-void init_random( uint64_t seed )
+random::random( uint64_t s )
 {
-	engine.seed( static_cast<unsigned long>(seed) );
+	seed( s );
+	seed(s);
 }
 
 
-unsigned char get_random_unsigned_char()
+void random::seed( uint64_t s )
 {
-	scoped_lock l( m ) ;
-	return static_cast<unsigned char>(engine());
+	scoped_lock l( m_ ) ;
+	engine_.seed( static_cast<unsigned long>(s) );
+}
+
+
+unsigned char random::get_unsigned_char()
+{
+	scoped_lock l( m_ ) ;
+	return static_cast<unsigned char>(engine_());
 }
 		
-uint64_t get_random_unsigned_long_long()
+uint64_t random::get_uint64()
 {
-	scoped_lock l( m ) ;
-	uint64_t ret = engine();
-	return ret;
-}
-
-void push_rng_state()
-{
-	scoped_lock l( m ) ;
-	stack.push_back( engine );
-}
-
-void pop_rng_state()
-{
-	scoped_lock l( m );
-	if( stack.empty() ) {
-		std::cerr << "Cannot pop rng state if empty" << std::endl;
-		abort();
-	}
-
-	engine = stack.back();
-	stack.pop_back();
+	scoped_lock l( m_ ) ;
+	return engine_();
 }

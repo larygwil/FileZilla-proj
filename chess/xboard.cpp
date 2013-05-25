@@ -207,6 +207,8 @@ struct xboard_state
 	pv_move_picker pv_move_picker_;
 
 	std::set<move> searchmoves_;
+
+	random rng_;
 };
 
 
@@ -552,7 +554,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 				}
 			}
 
-			simple_book_entry best_move = moves[get_random_unsigned_long_long() % count_best];
+			simple_book_entry best_move = moves[state.rng_.get_uint64() % count_best];
 			ASSERT( !best_move.m.empty() );
 
 			std::cout << "move " << move_to_long_algebraic( best_move.m ) << std::endl;

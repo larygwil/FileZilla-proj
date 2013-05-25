@@ -27,8 +27,6 @@ struct config
 
 	duration time_limit;
 
-	int random_seed;
-
 	std::string logfile;
 
 	bool ponder;

@@ -16,7 +16,9 @@
  *    the higher the fitness.
  */
 
+#if DEVELOPMENT
 void generate_test_positions();
 void tweak_evaluation();
+#endif
 
 #endif //__TWEAK_H__

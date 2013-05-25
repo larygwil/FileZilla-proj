@@ -1,13 +1,25 @@
 #ifndef __RANDOM_H__
 #define __RANDOM_H__
 
-void init_random( uint64_t seed );
+#include <random>
+#include "util/mutex.hpp"
 
-void push_rng_state();
-void pop_rng_state();
+class random
+{
+public:
+	// Auto-seeded based on time
+	random();
 
-unsigned char get_random_unsigned_char();
+	random( uint64_t s );
 
-uint64_t get_random_unsigned_long_long();
+	unsigned char get_unsigned_char();
+	uint64_t get_uint64();
+
+	void seed( uint64_t seed );
+
+private:
+	mutex m_;
+	std::mt19937_64 engine_;
+};
 
 #endif

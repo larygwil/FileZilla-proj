@@ -11,7 +11,6 @@ config::config()
   memory(get_system_memory() / 3 ),
   max_moves(0),
   time_limit( duration::hours(1) ),
-  random_seed(-1), //-1 == based on time
   ponder(),
   use_book(true),
   depth_(-1),
@@ -103,18 +102,6 @@ std::string config::init( int argc,  char const* argv[] )
 				exit(1);
 			}
 			conf.memory = v;
-		}
-		else if( opt == "--seed" ) {
-			if( ++i >= argc ) {
-				std::cerr << "Missing argument to " << opt << std::endl;
-				exit(1);
-			}
-			int v = atoi(argv[i]);
-			if( v < -1 ) {
-				std::cerr << "Invalid argument to " << opt << std::endl;
-				exit(1);
-			}
-			conf.random_seed = v;
 		}
 		else if( opt == "--logfile" ) {
 			if( ++i >= argc ) {
