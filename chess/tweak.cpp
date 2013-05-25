@@ -28,7 +28,7 @@ int const THRESHOLD = 300;
 
 namespace {
 
-random rng;
+randgen rng;
 
 static calc_result tweak_calc( position& p, duration const& move_time_limit, int clock, seen_positions& seen
 		  , new_best_move_callback_base& new_best_cb = default_new_best_move_callback )
@@ -40,7 +40,7 @@ static calc_result tweak_calc( position& p, duration const& move_time_limit, int
 
 	check_map check( p );
 	auto moves = calculate_moves<movegen_type::all>( p, check );
-	
+
 	calc_result result;
 	if( moves.empty() ) {
 		if( check.check ) {

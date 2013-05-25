@@ -34,7 +34,7 @@ void init_zobrist_tables()
 		return;
 	}
 
-	random rng( 42 );
+	randgen rng( 42 );
 
 	for( int c = 0; c < 2; ++c ) {
 		for( int i = 0; i < 64; ++i ) {
@@ -46,7 +46,7 @@ void init_zobrist_tables()
 			zobrist::kings[c][i] = rng.get_uint64();
 		}
 	}
-	
+
 	for( unsigned int c = 0; c < 2; ++c ) {
 		zobrist::castle[c][0] = 0;
 		zobrist::castle[c][1] = rng.get_uint64();

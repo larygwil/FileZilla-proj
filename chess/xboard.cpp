@@ -208,7 +208,7 @@ struct xboard_state
 
 	std::set<move> searchmoves_;
 
-	random rng_;
+	randgen rng_;
 };
 
 

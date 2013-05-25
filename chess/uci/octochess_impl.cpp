@@ -82,7 +82,7 @@ public:
 
 	timestamp start_;
 
-	random rng_;
+	randgen rng_;
 };
 
 octochess_uci::octochess_uci( gui_interface_ptr const& p ) 

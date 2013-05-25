@@ -4,18 +4,18 @@
 #include <random>
 #include "util/mutex.hpp"
 
-class random
+class randgen
 {
 public:
 	// Auto-seeded based on time
-	random();
+	randgen();
 
-	random( uint64_t s );
+	randgen( uint64_t s );
 
 	unsigned char get_unsigned_char();
 	uint64_t get_uint64();
 
-	void seed( uint64_t seed );
+	void seed( uint64_t s );
 
 private:
 	mutex m_;

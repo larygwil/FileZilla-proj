@@ -3,32 +3,32 @@
 
 #include <list>
 
-random::random()
+randgen::randgen()
 {
 	seed(get_time());
 }
 
-random::random( uint64_t s )
+randgen::randgen( uint64_t s )
 {
 	seed( s );
 	seed(s);
 }
 
 
-void random::seed( uint64_t s )
+void randgen::seed( uint64_t s )
 {
 	scoped_lock l( m_ ) ;
 	engine_.seed( static_cast<unsigned long>(s) );
 }
 
 
-unsigned char random::get_unsigned_char()
+unsigned char randgen::get_unsigned_char()
 {
 	scoped_lock l( m_ ) ;
 	return static_cast<unsigned char>(engine_());
 }
-		
-uint64_t random::get_uint64()
+
+uint64_t randgen::get_uint64()
 {
 	scoped_lock l( m_ ) ;
 	return engine_();
