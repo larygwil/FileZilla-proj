@@ -47,11 +47,11 @@ inline
 bool to_bool( std::string const& s, bool& b )
 {
 	bool ret = false;
-	if( s == "true" || s == "TRUE" || s == "True" || s == "1" ) {
+	if( s == "true" || s == "TRUE" || s == "True" || s == "1" || s == "yes" || s == "YES" || s == "Yes" ) {
 		b = true;
 		ret = true;
 	}
-	else if( s == "false" || s == "FALSE" || s == "False" || s == "0" ) {
+	else if( s == "false" || s == "FALSE" || s == "False" || s == "0" || s == "no" || s == "NO" || s == "No" ) {
 		b = false;
 		ret = true;
 	}
