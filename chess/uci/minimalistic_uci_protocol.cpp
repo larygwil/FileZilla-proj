@@ -111,6 +111,15 @@ void minimalistic_uci_protocol::handle_option( std::string const& args )
 			callbacks_->set_multipv( v );
 		}
 	}
+	else if( name == "Ponder" ) {
+		bool use_book;
+		if( !to_bool( value, use_book ) ) {
+			std::cerr << "malformed setoption: " << args << std::endl;
+		}
+		else {
+			// NOP, the GUI will send "go ponder" anyhow
+		}
+	}
 	else {
 		std::cerr << "Unknown option: " << args << std::endl;
 	}
