@@ -1065,23 +1065,20 @@ bool book::export_book( std::string const& fn )
 
 	out.write( header, 5 );
 
+	unsigned int written_positions = 0;
+	unsigned int written_moves = 0;
+
 	// Data
 	for( auto it : ed.output ) {
-		uint64_t hash = it.first;
-		for( unsigned int i = 0; i < 8; ++i ) {
-			out << static_cast<unsigned char>(hash % 256);
-			hash >>= 8;
-		}
-
 		auto entries = it.second;
-		
+
 		// Sort entries
-		std::stable_sort( entries.begin(), entries.end(), 
-				[]( export_entry const& lhs, export_entry const& rhs ) { 
+		std::stable_sort( entries.begin(), entries.end(),
+				[]( export_entry const& lhs, export_entry const& rhs ) {
 					if( lhs.forecast > rhs.forecast ) {
 						return true;
 					}
-					
+
 					if( lhs.forecast == rhs.forecast ) {
 						return lhs.depth_ > rhs.depth_;
 					}
@@ -1092,7 +1089,6 @@ bool book::export_book( std::string const& fn )
 
 		std::size_t i;
 		for( i = 0; i < entries.size() && i < 5; ++i ) {
-
 			auto const& e = entries[i];
 
 			if( e.forecast > 250 || e.forecast < -250 ) {
@@ -1101,20 +1097,36 @@ bool book::export_book( std::string const& fn )
 			if( i && e.forecast + 25 < entries[0].forecast ) {
 				break;
 			}
-
-			out << e.mi_;
-
-			unsigned short f = static_cast<unsigned short>( e.forecast );
-			out << static_cast<unsigned char>( f % 256 );
-			out << static_cast<unsigned char>( f / 256 );
 		}
 
-		for( ; i < 5; ++i ) {
-			out.write( null_entry, 3 );
+		if( i ) {
+			uint64_t hash = it.first;
+			for( unsigned int i = 0; i < 8; ++i ) {
+				out << static_cast<unsigned char>(hash % 256);
+				hash >>= 8;
+			}
+
+			for( std::size_t j = 0; j < i; ++j ) {
+				auto const& e = entries[i];
+				out << e.mi_;
+
+				unsigned short f = static_cast<unsigned short>( e.forecast );
+				out << static_cast<unsigned char>( f % 256 );
+				out << static_cast<unsigned char>( f / 256 );
+			}
+
+			++written_positions;
+			written_moves += i;
+
+			for( ; i < 5; ++i ) {
+				out.write( null_entry, 3 );
+			}
 		}
 	}
 
 	std::cerr << " done" << std::endl;
+
+	std::cout << "Exported book contains " << written_positions << " positions with " << written_moves << " moves." << std::endl;
 
 	return true;
 }
