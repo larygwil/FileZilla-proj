@@ -1101,13 +1101,13 @@ bool book::export_book( std::string const& fn )
 
 		if( i ) {
 			uint64_t hash = it.first;
-			for( unsigned int i = 0; i < 8; ++i ) {
+			for( unsigned int k = 0; k < 8; ++k ) {
 				out << static_cast<unsigned char>(hash % 256);
 				hash >>= 8;
 			}
 
 			for( std::size_t j = 0; j < i; ++j ) {
-				auto const& e = entries[i];
+				auto const& e = entries[j];
 				out << e.mi_;
 
 				unsigned short f = static_cast<unsigned short>( e.forecast );
