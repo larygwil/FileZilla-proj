@@ -11,7 +11,6 @@ randgen::randgen()
 randgen::randgen( uint64_t s )
 {
 	seed( s );
-	seed(s);
 }
 
 
