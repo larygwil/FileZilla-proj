@@ -34,13 +34,16 @@ unsigned int const MAX_BOOK_DEPTH = 10;
 
 void print_remaining( timestamp const& start, uint64_t total, uint64_t calculated, std::string const& name = "moves" )
 {
+	std::cerr << std::endl << total << " " << name << " remaining.";
+
 	timestamp now;
 	int64_t seconds = (now - start).seconds();
 	if( seconds ) {
-		std::cerr << std::endl << total << " " << name << "remaining. Processing " << (calculated * 3600) / seconds << " " << name << "/hour.";
+		std::cerr << " Processing " << (calculated * 3600) / seconds << " " << name << "/hour.";
 		uint64_t eta = seconds / calculated * total;
-		std::cerr << " Estimated completion in " << eta / 60 << " minutes" << std::endl; 
+		std::cerr << " Estimated completion in " << eta / 60 << " minutes";
 	}
+	std::cerr << std::endl;
 }
 
 bool deepen_move( book& b, position const& p, seen_positions const& seen, std::vector<move> const& history, move const& m )
@@ -585,7 +588,6 @@ bool learnpgn( book& b, std::string const& file, bool defer )
 					calculate_position( b, p, seen, h );
 				}
 			}
-			std::cerr << "\n";
 		}
 
 		++calculated;
