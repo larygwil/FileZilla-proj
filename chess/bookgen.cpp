@@ -34,7 +34,7 @@ unsigned int const MAX_BOOK_DEPTH = 10;
 
 void print_remaining( timestamp const& start, uint64_t total, uint64_t calculated, std::string const& name = "moves" )
 {
-	std::cerr << std::endl << calculated << " " << name << " remaining.";
+	std::cerr << std::endl << (total - calculated) << " " << name << " remaining.";
 
 	timestamp now;
 	int64_t seconds = (now - start).seconds();
