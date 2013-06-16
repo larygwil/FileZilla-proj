@@ -32,6 +32,17 @@ int const MAX_BOOKSEARCH_DEPTH = 20;
 
 unsigned int const MAX_BOOK_DEPTH = 10;
 
+void print_remaining( timestamp const& start, uint64_t total, uint64_t calculated, std::string const& name = "moves" )
+{
+	timestamp now;
+	int64_t seconds = (now - start).seconds();
+	if( seconds ) {
+		std::cerr << std::endl << total << " " << name << "remaining. Processing " << (calculated * 3600) / seconds << " " << name << "/hour.";
+		uint64_t eta = seconds / calculated * total;
+		std::cerr << " Estimated completion in " << eta / 60 << " minutes" << std::endl; 
+	}
+}
+
 bool deepen_move( book& b, position const& p, seen_positions const& seen, std::vector<move> const& history, move const& m )
 {
 	transposition_table.init( conf.memory );
@@ -366,13 +377,7 @@ void go( book& b, position const& p, seen_positions const& seen, std::vector<mov
 			calculate_position( b, w.p, w.seen, w.move_history );
 
 			++calculated;
-			timestamp now;
-			int64_t seconds = (now - start).seconds();
-			if( seconds ) {
-				std::cerr << std::endl << "Remaining work " << wl.count << " being processed with " << (calculated * 3600) / seconds << " moves/hour.";
-				uint64_t eta = seconds / calculated * wl.count;
-				std::cerr << " Estimated completion in " << eta / 60 << " minutes" << std::endl; 
-			}
+			print_remaining( start, wl.count, calculated );
 		}
 	}
 }
@@ -400,13 +405,7 @@ void process( book& b )
 		calculate_position( b, w.p, w.seen, w.move_history );
 
 		++calculated;
-		timestamp now;
-		int64_t seconds = (now - start).seconds();
-		if( seconds ) {
-			std::cerr << std::endl << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour.";
-			uint64_t eta = seconds * wl.size() / calculated;
-			std::cerr << " Estimated completion in " << eta / 60 << " minutes" << std::endl; 
-		}
+		print_remaining( start, wl.size(), calculated );
 	}
 }
 
@@ -470,13 +469,7 @@ void update( book& b, int entries_per_pos = 5 )
 		update_position( b, w.w.p, w.w.seen, w.w.move_history, w.entries );
 
 		++calculated;
-		timestamp now;
-		int64_t seconds = (now - start).seconds();
-		if( seconds ) {
-			std::cerr << "Remaining work " << wl.size() << " being processed with " << (calculated * 3600) / seconds << " moves/hour.";
-			uint64_t eta = seconds * wl.size() / calculated;
-			std::cerr << " Estimated completion in " << eta / 60 << " minutes" << std::endl; 
-		}
+		print_remaining( start, wl.size(), calculated );
 	}
 }
 
@@ -556,19 +549,26 @@ void print_pos( std::vector<move> const& history, std::vector<book_entry> const&
 
 bool learnpgn( book& b, std::string const& file, bool defer )
 {
+	timestamp start;
+
 	pgn_reader reader;
 	if( !reader.open( file ) ) {
 		return false;
 	}
 
+	unsigned int count = reader.size();
+	unsigned int calculated = 0;
+
+	std::cout << "Got " << count << " games to analyze." << std::endl;
+
 	game g;
 	while( reader.next( g ) ) {
-		std::cerr << "P";
 		while( g.moves_.size() > 20 ) {
 			g.moves_.pop_back();
 		}
 		if( defer ) {
 			b.mark_for_processing( std::vector<move>(g.moves_.begin(), g.moves_.end()) );
+			std::cerr << ".";
 		}
 		else {
 			position p;
@@ -585,7 +585,12 @@ bool learnpgn( book& b, std::string const& file, bool defer )
 					calculate_position( b, p, seen, h );
 				}
 			}
+			std::cerr << "\n";
+		}
 
+		++calculated;
+		if( !defer ) {
+			print_remaining( start, count, calculated, "games" );
 		}
 	}
 
