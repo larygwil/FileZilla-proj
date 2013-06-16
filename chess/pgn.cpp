@@ -194,6 +194,7 @@ unsigned int pgn_reader::size()
 	while( next(g) ) {
 		++size;
 	}
+	in_.clear();
 	in_.seekg(pos);
 
 	return size;
