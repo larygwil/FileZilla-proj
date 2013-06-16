@@ -221,7 +221,6 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 	stats_.misses.fetch_add( 1, std::memory_order_relaxed );;
 #endif
 
-	best_move.clear();
 	return score_type::none;
 }
 
