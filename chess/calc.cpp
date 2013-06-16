@@ -1229,7 +1229,7 @@ public:
 
 	mutex mtx_;
 	condition cond_;
-	
+
 	bool do_abort_;
 
 	thread_pool pool_;
@@ -1239,7 +1239,6 @@ public:
 calc_manager::calc_manager()
 	: impl_( new impl() )
 {
-	
 }
 
 
@@ -1294,10 +1293,13 @@ calc_result calc_manager::calc( position const& p, int max_depth, timestamp cons
 	// we can abort processing at high depths early if needed.
 	sorted_moves sorted;
 
+	short ev = result::none;
+
 	if( searchmoves.find( move() ) == searchmoves.end() ) {
 		move tt_move;
+		short hash_eval = 0;
 		short tmp = 0;
-		transposition_table.lookup( p.hash_, 0, 0, 0, 0, tmp, tt_move, tmp );
+		transposition_table.lookup( p.hash_, 0, 0, 0, 0, hash_eval, tt_move, tmp );
 		for( move_info* it = moves; it != pm; ++it ) {
 			move_data md;
 			md.m = *it;
@@ -1308,6 +1310,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, timestamp cons
 			}
 
 			if( it->m == tt_move ) {
+				ev = hash_eval;
 				sorted.insert( sorted.begin(), md );
 			}
 			else {
@@ -1338,10 +1341,14 @@ calc_result calc_manager::calc( position const& p, int max_depth, timestamp cons
 		}
 	}
 
-	short ev = evaluate_full( p );
+	if( ev == result::none ) {
+		ev = evaluate_full( p );
+	}
+	result.forecast = ev;
+	result.best_move = sorted.front().m.m;
+
 	new_best_cb.on_new_best_move( 1, p, 1, 0, ev, 0, duration(), sorted.front().pv );
 
-	result.best_move = moves->m;
 	if( moves + 1 >= pm && !ponder ) {
 		result.forecast = ev;
 		return result;
