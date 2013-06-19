@@ -1,4 +1,4 @@
-Octochess r50?? (2013-05-??)
+Octochess r5132 (2013-06-19)
 - Implemented Multi-PV analysis
 - In analysis mode, the moves to be searched can be specified
 - CECP: hint command is now supported, it returns best move from transposition table.
