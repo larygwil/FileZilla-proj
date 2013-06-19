@@ -566,7 +566,7 @@ void apply_move( position& p, move const& m )
 	p.hash_ ^= get_piece_hash( piece, p.self(), m.source() );
 
 	score delta = -pst[p.self()][piece][m.source()];
-	
+
 	if( m.castle() ) {
 		p.king_pos[p.self()] = m.target();
 		delta += pst[p.self()][pieces::king][m.target()];
@@ -659,7 +659,7 @@ void apply_move( position& p, move const& m )
 					((pawns & 0xfefefefefefefefeull) << 7) |
 					((pawns & 0x7f7f7f7f7f7f7f7full) << 9);
 			}
-			
+
 			if( m.enpassant() ) {
 				unsigned char ep = (m.target() & 0x7) | (m.source() & 0x38);
 				p.pawn_hash ^= get_pawn_structure_hash( p.other(), ep );
@@ -694,10 +694,15 @@ void apply_move( position& p, move const& m )
 		p.king_pos[p.self()] = m.target();
 	}
 
-	if( piece == pieces::pawn && (m.source() ^ m.target()) == 16 ) {
+	if( piece == pieces::pawn && (m.source() ^ m.target()) == 16) {
 		unsigned char ep_square = (m.target() / 8 + m.source() / 8) * 4 + m.target() % 8;
-		p.can_en_passant = ep_square;
-		p.hash_ ^= zobrist::enpassant[ep_square];
+		if( (1ull << ep_square) & p.bitboards[p.other()][bb_type::pawn_control] ) {
+			p.can_en_passant = ep_square;
+			p.hash_ ^= zobrist::enpassant[ep_square];
+		}
+		else {
+			p.can_en_passant = 0;
+		}
 	}
 	else {
 		p.can_en_passant = 0;
@@ -728,7 +733,7 @@ void apply_move( position& p, move const& m )
 	}
 	p.bitboards[p.self()][bb_type::all_pieces] ^= target_square;
 	p.board[m.source()] = pieces_with_color::none;
-	
+
 	if( piece == pieces::pawn ) {
 		uint64_t pawns = p.bitboards[p.self()][bb_type::pawns];
 		if( p.white() ) {
