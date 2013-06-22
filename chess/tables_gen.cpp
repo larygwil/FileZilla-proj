@@ -596,8 +596,6 @@ int main()
 				int king_x = king % 8;
 				int king_y = king / 8;
 
-				int king_cy = c ? king_y : (7 - king_y);
-
 				for( int pawn = 0; pawn < 64; ++pawn ) {
 					int pawn_x = pawn % 8;
 					int pawn_y = pawn / 8;
