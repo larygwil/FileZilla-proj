@@ -480,11 +480,11 @@ inline static void evaluate_queens( position const& p, color::type c, eval_resul
 short advance_bonus[] = { 1, 1, 1, 2, 4, 8 };
 
 template<bool detail>
-void evaluate_passed_pawns( position const& p, color::type c, eval_results& results )
+void evaluate_passed_pawns( position const& p, eval_results& results )
 {
 	for( int i = 0; i < 2; ++i ) {
 		uint64_t passed = (p.bitboards[i][bb_type::pawns] & results.passed_pawns );
-		uint64_t unstoppable = passed & ~rule_of_the_square[1-i][c][p.king_pos[1-i]];
+		uint64_t unstoppable = passed & ~rule_of_the_square[1-i][p.c][p.king_pos[1-i]];
 
 		while( passed ) {
 			uint64_t pawn = bitscan_unset( passed );
@@ -862,7 +862,7 @@ static void do_evaluate( position const& p, eval_results& results )
 		evaluate_center<detail>( p, static_cast<color::type>(c), results );
 	}
 
-	evaluate_passed_pawns<detail>( p, p.self(), results );
+	evaluate_passed_pawns<detail>( p, results );
 }
 
 score sum_up( position const& p, eval_results const& results ) {
