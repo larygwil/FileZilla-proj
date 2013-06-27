@@ -1,6 +1,7 @@
 #include "chess.hpp"
 #include "eval_values.hpp"
 
+#include <algorithm>
 #include <cmath>
 
 namespace eval_values {

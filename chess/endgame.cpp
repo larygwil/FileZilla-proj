@@ -1,6 +1,7 @@
 #include "endgame.hpp"
 #include "tables.hpp"
 
+#include <algorithm>
 #include <iostream>
 
 enum piece_masks : uint64_t {

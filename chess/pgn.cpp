@@ -27,7 +27,7 @@ bool pgn_reader::next_line( std::string& line ) {
 		return true;
 	}
 
-	return std::getline( in_, line ) != 0;
+	return std::getline(in_, line).good();
 }
 
 bool pgn_reader::next( game& g )

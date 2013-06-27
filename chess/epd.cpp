@@ -21,7 +21,7 @@ std::vector<epd> parse_epd( std::string const& fn )
 {
 	std::ifstream in( fn );
 	if( !in.is_open() ) {
-		std::cerr << in << " not found" << std::endl;
+		std::cerr << fn << " not found" << std::endl;
 		abort();
 	}
 
@@ -32,7 +32,7 @@ std::vector<epd> parse_epd( std::istream& in )
 {
 	std::vector<epd> ret;
 	std::string line;
-	while( std::getline( in, line ) != 0 ) {
+	while( std::getline( in, line ).good() ) {
 
 		std::vector<std::string> tokens = tokenize( line, " ;", '"' );
 		if( tokens.size() < 4 ) {
