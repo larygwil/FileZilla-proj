@@ -205,7 +205,7 @@ void octochess_uci::stop()
 	scoped_lock lock(impl_->mutex_);
 
 	if( !impl_->result_.best_move.empty() ) {
-		impl_->gui_interface_->tell_best_move( move_to_long_algebraic( impl_->result_.best_move ), move_to_long_algebraic( impl_->result_.ponder_move ) );
+		impl_->gui_interface_->tell_best_move( move_to_long_algebraic( impl_->pos_, impl_->result_.best_move ), move_to_long_algebraic( impl_->pos_, impl_->result_.ponder_move ) );
 		impl_->result_.best_move.clear();
 	}
 }
@@ -236,7 +236,7 @@ void octochess_uci::impl::onRun() {
 		if( !result.best_move.empty() ) {
 
 			if( !wait_for_stop_ ) {
-				gui_interface_->tell_best_move( move_to_long_algebraic( result.best_move ), move_to_long_algebraic( result.ponder_move ) );
+				gui_interface_->tell_best_move( move_to_long_algebraic( pos_, result.best_move ), move_to_long_algebraic( pos_, result.ponder_move ) );
 				result_.best_move.clear();
 			}
 			else {
@@ -323,7 +323,7 @@ bool octochess_uci::impl::do_book_move() {
 			}
 
 			simple_book_entry best_move = moves[rng_.get_uint64() % count_best];
-			gui_interface_->tell_best_move( move_to_long_algebraic( best_move.m ), "" );
+			gui_interface_->tell_best_move( move_to_long_algebraic( pos_, best_move.m ), "" );
 		}
 	}
 
@@ -337,7 +337,7 @@ bool octochess_uci::impl::pick_pv_move()
 	std::pair<move,move> m = pv_move_picker_.can_use_move_from_pv( pos_ );
 	if( !m.first.empty() ) {
 		ret = true;
-		gui_interface_->tell_best_move( move_to_long_algebraic( m.first ), move_to_long_algebraic( m.second ) );
+		gui_interface_->tell_best_move( move_to_long_algebraic( pos_, m.first ), move_to_long_algebraic( pos_, m.second ) );
 	}
 
 	return ret;
@@ -423,6 +423,12 @@ bool octochess_uci::is_move( std::string const& ms )
 	}
 
 	return ret;
+}
+
+
+void octochess_uci::fischer_random( bool frc )
+{
+	conf.fischer_random = frc;
 }
 
 

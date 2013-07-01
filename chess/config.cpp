@@ -13,6 +13,7 @@ config::config()
   time_limit( duration::hours(1) ),
   ponder(),
   use_book(true),
+  fischer_random(),
   depth_(-1),
   pawn_hash_table_size_(0)
 {

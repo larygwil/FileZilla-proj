@@ -48,6 +48,7 @@ public:
 	virtual bool use_book() const = 0;
 	virtual void use_book( bool use ) = 0;
 	virtual void set_multipv( unsigned int multipv ) = 0;
+	virtual void fischer_random( bool frc ) = 0;
 
 	virtual ~engine_interface() {}
 };

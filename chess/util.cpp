@@ -16,9 +16,6 @@
 #include <iostream>
 #include <list>
 
-extern unsigned char const queenside_rook_origin[2];
-extern unsigned char const kingside_rook_origin[2];
-
 bool validate_move( position const& p, move const& m )
 {
 	check_map check( p );
@@ -57,7 +54,7 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 	}
 
 	if( str == "0-0" || str == "O-O" ) {
-		m = move( p.white() ? 4 : 60, p.white() ? 6 : 62, move_flags::castle );
+		m = move(p.king_pos[p.self()], p.white() ? 6 : 62, move_flags::castle);
 		if( !validate_move( p, m ) ) {
 			error = "Illegal move (not valid)";
 			return false;
@@ -65,8 +62,8 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 		return true;
 	}
 	else if( str == "0-0-0" || str == "O-O-O" ) {
-		m = move( p.white() ? 4 : 60, p.white() ? 2 : 58, move_flags::castle );
-		if( !validate_move( p, m ) ) {
+		m = move(p.king_pos[p.self()], p.white() ? 2 : 58, move_flags::castle);
+		if( !validate_move(p, m) ) {
 			error = "Illegal move (not valid)";
 			return false;
 		}
@@ -226,7 +223,34 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 	move_info* pm = moves;
 	calculate_moves_by_piece( p, pm, check, piecetype );
 
-	std::list<move_info> matches;
+	std::list<move> matches;
+
+	// In Fischer Random chess, castling may be represented by king capturing own rook.
+	if( (piecetype == pieces::none || piecetype == pieces::king) && second_col != -1 && second_row == (p.c ? 7 : 0) && p.get_piece_with_color(second_col + second_row * 8) == (p.white() ? pieces_with_color::white_rook : pieces_with_color::black_rook) ) {
+
+		if( p.castle[p.self()] & (1ull << second_col)  ) {
+
+			bool kingside = second_col > p.king_pos[p.self()] % 8;
+			uint64_t target = second_row * 8 + (kingside ? 6 : 2);
+
+			for( move_info* it = moves; it != pm; ++it ) {
+				if( !it->m.castle() ) {
+					continue;
+				}
+				if( first_col != -1 && first_col != it->m.source() % 8 ) {
+					continue;
+				}
+				if( first_row != -1 && first_row != it->m.source() / 8 ) {
+					continue;
+				}			
+				if( it->m.target() != target ) {
+					continue;
+				}
+
+				matches.push_back( it->m );
+			}
+		}
+	}
 
 	for( move_info* it = moves; it != pm; ++it ) {
 		pieces::type piece = p.get_piece(it->m.source());
@@ -257,14 +281,24 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 			continue;
 		}
 
-		matches.push_back(*it);
+		matches.push_back(it->m);
+	}
+
+	// In Fischer-Random chess, a king move and a castling may have the very same source and target squares.
+	if( matches.size() == 2 ) {
+		move m1 = matches.front();
+		move m2 = matches.back();
+		if( m1.castle() != m2.castle() && m1.source() == m2.source() && m1.target() == m2.target() ) {
+			matches.clear();
+			matches.push_back( m1.castle() ? m2 : m1 );
+		}
 	}
 
 	if( matches.size() > 1 ) {
 		error = "Illegal move (ambigious)";
 		dlog() << "Candiates:" << std::endl;
-		for( std::list<move_info>::const_iterator it = matches.begin(); it != matches.end(); ++it ) {
-			dlog() << move_to_string( p, it->m ) << std::endl;
+		for( auto it : matches ) {
+			dlog() << move_to_string( p, it ) << std::endl;
 		}
 		return false;
 	}
@@ -290,13 +324,13 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 		return false;
 	}
 
-	move_info match = matches.front();
-	if( promotion && match.m.target() / 8 != (p.white() ? 7 : 0) ) {
+	move match = matches.front();
+	if( promotion && match.target() / 8 != (p.white() ? 7 : 0) ) {
 		error = "Illegal move (not valid, expecting a promotion)";
 		return false;
 	}
 
-	m = match.m;
+	m = match;
 
 	return true;
 }
@@ -307,7 +341,7 @@ std::string move_to_string( position const& p, move const& m, bool padding )
 	std::string ret;
 
 	if( m.castle() ) {
-		if( m.target() == 6 || m.target() == 62 ) {
+		if( (m.target() % 8) == 6 ) {
 			if( padding ) {
 				return "   O-O  ";
 			}
@@ -425,7 +459,7 @@ std::string move_to_san( position const& p, move const& m )
 	}
 
 	if( m.castle() ) {
-		if( m.target() == 6 || m.target() == 62 ) {
+		if( (m.target() % 8) == 6 ) {
 			return "O-O";
 		}
 		else {
@@ -513,31 +547,41 @@ std::string move_to_san( position const& p, move const& m )
 }
 
 
-std::string move_to_long_algebraic( move const& m )
+std::string move_to_long_algebraic( position const& p, move const& m )
 {
 	std::string ret;
 
 	if( !m.empty() ) {
 		ret += 'a' + m.source() % 8;
 		ret += '1' + m.source() / 8;
-		ret += 'a' + m.target() % 8;
-		ret += '1' + m.target() / 8;
 
-		if( m.promotion() ) {
-			switch( m.promotion_piece() ) {
-				case pieces::queen:
-				default:
-					ret += 'q';
-					break;
-				case pieces::rook:
-					ret += 'r';
-					break;
-				case pieces::bishop:
-					ret += 'b';
-					break;
-				case pieces::knight:
-					ret += 'n';
-					break;
+		if( conf.fischer_random && m.castle() ) {
+			bool kingside = (m.target() % 8) == 6;
+			uint64_t rook = kingside ? bitscan_reverse(p.castle[p.c]) : bitscan(p.castle[p.c]);
+			ret += 'a' + static_cast<unsigned char>(rook);
+			ret += '1' + m.target() / 8;
+
+		}
+		else {
+			ret += 'a' + m.target() % 8;
+			ret += '1' + m.target() / 8;
+
+			if( m.promotion() ) {
+				switch( m.promotion_piece() ) {
+					case pieces::queen:
+					default:
+						ret += 'q';
+						break;
+					case pieces::rook:
+						ret += 'r';
+						break;
+					case pieces::bishop:
+						ret += 'b';
+						break;
+					case pieces::knight:
+						ret += 'n';
+						break;
+				}
 			}
 		}
 	}
@@ -574,29 +618,47 @@ void apply_move( position& p, move const& m )
 		p.hash_ ^= get_piece_hash( piece, p.self(), m.target() );
 		p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()]];
 
+		bool kingside = (m.target() % 8) == 6;
+
+		uint64_t rook = kingside ? bitscan_reverse(p.castle[p.c]) : bitscan(p.castle[p.c]);
+
 		unsigned char row = p.white() ? 0 : 56;
-		if( m.target() % 8 == 6 ) {
+
+		// Source squares
+		p.bitboards[p.self()][bb_type::all_pieces] ^= 1ull << m.source();
+		p.bitboards[p.self()][bb_type::king] ^= 1ull << m.source();
+		p.bitboards[p.self()][bb_type::all_pieces] ^= 1ull << (row + rook);
+		p.bitboards[p.self()][bb_type::rooks] ^= 1ull << (row + rook);
+
+		p.board[m.source()] = pieces_with_color::none;
+
+		if( kingside ) {
 			// Kingside
-			p.bitboards[p.self()][bb_type::all_pieces] ^= 0xf0ull << row;
-			p.bitboards[p.self()][bb_type::king] ^= 0x50ull << row;
-			p.bitboards[p.self()][bb_type::rooks] ^= 0xa0ull << row;
 
-			delta += pst[p.self()][pieces::rook][row + 5] - pst[p.self()][pieces::rook][row + 7];
-			std::swap(p.board[m.source() + 1], p.board[m.target() + 1]);
+			// Target squares
+			p.bitboards[p.self()][bb_type::all_pieces] ^= 0x60ull << row;
+			p.bitboards[p.self()][bb_type::king] ^= 0x40ull << row;
+			p.bitboards[p.self()][bb_type::rooks] ^= 0x20ull << row;
 
-			p.hash_ ^= zobrist::rooks[p.self()][7 + row];
-			p.hash_ ^= zobrist::rooks[p.self()][5 + row];
+			delta += pst[p.self()][pieces::rook][row + 5] - pst[p.self()][pieces::rook][row + rook];
+			std::swap(p.board[row + 5], p.board[row + rook]);
+
+			p.hash_ ^= zobrist::rooks[p.self()][row + 5];
+			p.hash_ ^= zobrist::rooks[p.self()][row + rook];
 		}
 		else {
 			// Queenside
-			p.bitboards[p.self()][bb_type::all_pieces] ^= 0x1dull << row;
-			p.bitboards[p.self()][bb_type::king] ^= 0x14ull << row;
-			p.bitboards[p.self()][bb_type::rooks] ^= 0x09ull << row;
-			delta += pst[p.self()][pieces::rook][row + 3] - pst[p.self()][pieces::rook][row];
-			std::swap(p.board[m.source() - 1], p.board[m.target() - 2]);
 
-			p.hash_ ^= zobrist::rooks[p.self()][0 + row];
-			p.hash_ ^= zobrist::rooks[p.self()][3 + row];
+			// Target squares
+			p.bitboards[p.self()][bb_type::all_pieces] ^= 0x0cull << row;
+			p.bitboards[p.self()][bb_type::king] ^= 0x04ull << row;
+			p.bitboards[p.self()][bb_type::rooks] ^= 0x08ull << row;
+
+			delta += pst[p.self()][pieces::rook][row + 3] - pst[p.self()][pieces::rook][row + rook];
+			std::swap(p.board[row + 3], p.board[row + rook]);
+
+			p.hash_ ^= zobrist::rooks[p.self()][row + 3];
+			p.hash_ ^= zobrist::rooks[p.self()][row + rook];
 		}
 		p.can_en_passant = 0;
 		p.castle[p.self()] = 0;
@@ -610,7 +672,7 @@ void apply_move( position& p, move const& m )
 
 		p.c = p.other();
 
-		std::swap(p.board[m.source()], p.board[m.target()]);
+		p.board[m.target()] = pwc; 
 
 #if VERIFY_POSITION
 		p.verify_abort();
@@ -636,13 +698,9 @@ void apply_move( position& p, move const& m )
 			p.bitboards[p.other()][bb_type::all_pieces] ^= target_square;
 
 			if( captured_piece == pieces::rook ) {
-				if( m.target() == queenside_rook_origin[p.other()] ) {
-					p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()] & 0x2];
-					p.castle[p.other()] &= 0x1;
-				}
-				else if( m.target() == kingside_rook_origin[p.other()] ) {
-					p.hash_ ^= zobrist::castle[p.other()][p.castle[p.other()] & 0x1];
-					p.castle[p.other()] &= 0x2;
+				if( m.target() / 8 == (p.other() ? 7 : 0) && (1ull << (m.target() % 8)) & p.castle[p.other()] ) {
+					p.hash_ ^= zobrist::castle[p.other()][1ull << (m.target() % 8)];
+					p.castle[p.other()] ^= 1ull << (m.target() % 8);
 				}
 			}
 		}
@@ -679,13 +737,9 @@ void apply_move( position& p, move const& m )
 	}
 
 	if( piece == pieces::rook ) {
-		if( m.source() == queenside_rook_origin[p.self()] ) {
-			p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()] & 0x2];
-			p.castle[p.self()] &= 0x1;
-		}
-		else if( m.source() == kingside_rook_origin[p.self()] ) {
-			p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()] & 0x1];
-			p.castle[p.self()] &= 0x2;
+		if( m.source() / 8 == (p.self() ? 7 : 0) && (1ull << (m.source() % 8)) & p.castle[p.self()] ) {
+			p.hash_ ^= zobrist::castle[p.self()][1ull << (m.source() % 8)];
+			p.castle[p.self()] ^= 1ull << (m.source() % 8);
 		}
 	}
 	else if( piece == pieces::king ) {
@@ -910,9 +964,6 @@ bool do_is_valid_move( position const& p, move const& m, check_map const& check 
 
 	// Target must either be free or enemy piece
 	pieces_with_color::type captured_pwc = p.get_captured_piece_with_color( m );
-	if( captured_pwc != pieces_with_color::none && get_color(captured_pwc) == p.self() ) {
-		return false;
-	}
 
 	pieces::type piece = get_piece(pwc);
 	pieces::type captured_piece = get_piece(captured_pwc);
@@ -929,43 +980,85 @@ bool do_is_valid_move( position const& p, move const& m, check_map const& check 
 			if( check.check ) {
 				return false;
 			}
-			if( (m.target() & 0x07) == 2 ) {
-				if( !(p.castle[p.self()] & castles::queenside) ) {
-					return false;
-				}
-				if( !(p.bitboards[p.self()][bb_type::rooks] & (1ull << (m.source() - 4))) ) {
-					return false;
-				}
-				if( (p.bitboards[p.self()][bb_type::all_pieces] | p.bitboards[p.other()][bb_type::all_pieces]) & (7ull << (m.source() - 3 )) ) {
-					return false;
-				}
-				if( detect_check( p, p.self(), m.source() - 1, m.source() ) ) {
-					return false;
-				}
-				if( detect_check( p, p.self(), m.source() - 2, m.source() ) ) {
-					return false;
-				}
+
+			// Check source and target legality
+			if( m.source() / 8 != (p.self() ? 7 : 0) ) {
+				return false;
+			}
+
+			bool kingside;
+			if( m.target() == (p.self() ? 62 : 6) ) {
+				kingside = true;
+			}
+			else if( m.target() == (p.self() ? 58 : 2) ) {
+				kingside = false;
 			}
 			else {
-				if( !(p.castle[p.self()] & castles::kingside) ) {
-					return false;
-				}
-				if( !(p.bitboards[p.self()][bb_type::rooks] & (1ull << (m.source() + 3))) ) {
-					return false;
-				}
-				if( (p.bitboards[p.self()][bb_type::all_pieces] | p.bitboards[p.other()][bb_type::all_pieces]) & (3ull << (m.source() + 1 )) ) {
-					return false;
-				}
-				if( detect_check( p, p.self(), m.source() + 1, m.source() ) ) {
+				return false;
+			}
+
+			if( !p.castle[p.c] ) {
+				return false;
+			}
+
+			uint64_t row = p.self() ? 56 : 0;
+			uint64_t rook = kingside ? bitscan_reverse(p.castle[p.c]) : bitscan(p.castle[p.c]);
+			uint64_t rook_target = row + (kingside ? 5 : 3);
+
+			if( kingside != (row + rook > m.source()) ) {
+				return false;
+			}
+			
+			// Check castling rights
+			if( !(p.castle[p.self()] & (1ull << rook)) ) {
+				return false;
+			}
+
+			// Check rook exists
+			ASSERT(p.bitboards[p.self()][bb_type::rooks] & (1ull << (rook + row)));
+
+			// Check not checked target square
+
+			uint64_t all = p.get_occupancy();
+			all &= ~(1ull << (row + rook));
+			all &= ~(1ull << m.source());
+
+			uint64_t king_between = between_squares[m.source()][m.target()];
+			uint64_t rook_between = between_squares[row + rook][rook_target];
+
+			if( all & (king_between | (1ull << m.target()) ) )  {
+				return false;
+			}
+			if( all & (rook_between | (1ull << rook_target) ) ) {
+				return false;
+			}
+
+			while( king_between ) {
+				uint64_t sq = bitscan_unset(king_between);
+				
+				if( detect_check(p, p.self(), sq, row + rook) ) {
 					return false;
 				}
 			}
+			if( possible_king_moves[(m.source() + m.target()) / 2] & p.bitboards[p.other()][bb_type::king] ) {
+				return false;
+			}
+
+			if( detect_check(p, p.self(), m.target(), row + rook) ) {
+				return false;
+			}
 		}
-		else if( m.enpassant() || m.promotion() ) {
-			return false;
-		}
-		else if( !((1ull << m.target()) & possible_king_moves[m.source()]) ) {
-			return false;
+		else {
+			if( captured_pwc != pieces_with_color::none && get_color(captured_pwc) == p.self() ) {
+				return false;
+			}
+
+			if( m.enpassant() || m.promotion() ) {
+				return false;
+			}
+			else if( !((1ull << m.target()) & possible_king_moves[m.source()]) ) {
+				return false;
+			}
 		}
 
 		if( detect_check( p, p.self(), m.target(), m.source() ) ) {
@@ -973,6 +1066,10 @@ bool do_is_valid_move( position const& p, move const& m, check_map const& check 
 		}
 	}
 	else {
+		if( captured_pwc != pieces_with_color::none && get_color(captured_pwc) == p.self() ) {
+			return false;
+		}
+
 		if( check.check && check.multiple() ) {
 			return false;
 		}

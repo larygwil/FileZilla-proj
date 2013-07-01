@@ -20,7 +20,7 @@ std::string move_to_string( position const& p, move const& m, bool padding = tru
 std::string move_to_san( position const& p, move const& m );
 
 // E.g. c4d6, e1g1, e7e8q
-std::string move_to_long_algebraic( move const& m );
+std::string move_to_long_algebraic( position const& p, move const& m );
 
 void apply_move( position& p, move const& m );
 

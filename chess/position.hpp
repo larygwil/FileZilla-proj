@@ -18,9 +18,8 @@ class position
 public:
 	position();
 
-	// Bit 0: can castle kingside
-	// Bit 1: can castle queenside
-	short castle[2];
+	// At most two bits are set, each bit indicates the file of the rook that can castle.
+	unsigned char castle[2];
 
 	// 0 if en-passant not possible.
 	// Otherwise the enpassant square.
@@ -50,7 +49,7 @@ public:
 	int king_pos[2];
 
 	bool is_occupied_square( uint64_t square ) const;
-	uint64_t get_occupancy( uint64_t mask ) const;
+	uint64_t get_occupancy( uint64_t mask = 0xffffffffffffffffull ) const;
 
 	color::type c;
 

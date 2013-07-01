@@ -13,20 +13,12 @@ namespace zobrist {
 
 	uint64_t enpassant[64];
 
-	uint64_t castle[2][4];
+	uint64_t castle[2][256];
 
 	uint64_t pawn_structure[2][64];
 
 	bool initialized = false;
 }
-
-extern unsigned char const queenside_rook_origin[2] = {
-	0, 56
-};
-extern unsigned char const kingside_rook_origin[2] = {
-	7, 63
-};
-
 
 void init_zobrist_tables()
 {
@@ -48,10 +40,15 @@ void init_zobrist_tables()
 	}
 
 	for( unsigned int c = 0; c < 2; ++c ) {
-		zobrist::castle[c][0] = 0;
-		zobrist::castle[c][1] = rng.get_uint64();
-		zobrist::castle[c][2] = rng.get_uint64();
-		zobrist::castle[c][3] = zobrist::castle[c][1] ^ zobrist::castle[c][2];
+		for( unsigned int i = 0; i < 8; ++i ) {
+			zobrist::castle[c][1ull << i] = rng.get_uint64();
+		}
+		for( unsigned int i = 0; i < 8; ++i ) {
+			for( unsigned int j = i + 1; j < 8; ++j ) {
+				zobrist::castle[c][(1ull << i) | (1ull << j)] = zobrist::castle[c][1ull << i] ^ zobrist::castle[c][1ull << j];
+			}
+
+		}
 	}
 
 	zobrist::enpassant[0] = 0;

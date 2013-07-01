@@ -53,11 +53,13 @@ void minimalistic_uci_protocol::init()
 
 void minimalistic_uci_protocol::send_options()
 {
-	std::cout << "option name Hash type spin default " << callbacks_->get_hash_size() << " min " << callbacks_->get_min_hash_size() << " max 1048576" << std::endl;
-	std::cout << "option name Threads type spin default " << callbacks_->get_threads() << " min 1 max " << callbacks_->get_max_threads() << std::endl;
-	std::cout << "option name OwnBook type check default " << (callbacks_->use_book() ? "true" : "false") << std::endl;
-	std::cout << "option name Ponder type check default true" << std::endl;
-	std::cout << "option name MultiPV type spin default 1 min 1 max 99" << std::endl;
+	std::cout << "option name Hash type spin default " << callbacks_->get_hash_size() << " min " << callbacks_->get_min_hash_size() << " max 1048576" << "\n";
+	std::cout << "option name Threads type spin default " << callbacks_->get_threads() << " min 1 max " << callbacks_->get_max_threads() << "\n";
+	std::cout << "option name OwnBook type check default " << (callbacks_->use_book() ? "true" : "false") << "\n";
+	std::cout << "option name Ponder type check default true\n";
+	std::cout << "option name MultiPV type spin default 1 min 1 max 99\n";
+	std::cout << "option name UCI_Chess960 type check default false\n";
+	std::cout.flush();
 }
 
 
@@ -118,6 +120,15 @@ void minimalistic_uci_protocol::handle_option( std::string const& args )
 		}
 		else {
 			// NOP, the GUI will send "go ponder" anyhow
+		}
+	}
+	else if( name == "UCI_Chess960" ) {
+		bool frc;
+		if( !to_bool(value, frc) ) {
+			std::cerr << "malformed setoption: " << args << std::endl;
+		}
+		else {
+			callbacks_->fischer_random(frc);
 		}
 	}
 	else {

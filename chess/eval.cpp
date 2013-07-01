@@ -103,11 +103,13 @@ short evaluate_move( position const& p, move const& m )
 		unsigned char row = p.white() ? 0 : 56;
 		if( m.target() % 8 == 6 ) {
 			// Kingside
-			delta += pst[p.self()][pieces::rook][row + 5] - pst[p.self()][pieces::rook][row + 7];
+			uint64_t rook = bitscan_reverse(p.castle[p.c]);
+			delta += pst[p.self()][pieces::rook][row + 5] - pst[p.self()][pieces::rook][row + rook];
 		}
 		else {
 			// Queenside
-			delta += pst[p.self()][pieces::rook][row + 3] - pst[p.self()][pieces::rook][row];
+			uint64_t rook = bitscan(p.castle[p.c]);
+			delta += pst[p.self()][pieces::rook][row + 3] - pst[p.self()][pieces::rook][row + rook];
 		}
 	}
 	else {
@@ -321,7 +323,7 @@ inline static void evaluate_rook_trapped( position const& p, color::type c, uint
 					return;
 				}
 			}
-			add_score<detail, eval_detail::trapped_rook>( results, c, eval_values::trapped_rook[(p.castle[c] & castles::both) ? 0 : 1] );
+			add_score<detail, eval_detail::trapped_rook>( results, c, eval_values::trapped_rook[p.castle[c] ? 0 : 1] );
 		}
 		// Queenside
 		else if( king_file < 4 && rook_file < king_file ) {
@@ -331,8 +333,7 @@ inline static void evaluate_rook_trapped( position const& p, color::type c, uint
 					return;
 				}
 			}
-			// If we're queenside we can't castle anymore.
-			add_score<detail, eval_detail::trapped_rook>( results, c, eval_values::trapped_rook[1] );
+			add_score<detail, eval_detail::trapped_rook>(results, c, eval_values::trapped_rook[p.castle[c] ? 0 : 1]);
 		}
 	}
 }

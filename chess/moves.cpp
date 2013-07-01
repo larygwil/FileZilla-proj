@@ -123,26 +123,57 @@ void calc_moves_castles( position const& p, move_info*& moves, check_map const& 
 		return;
 	}
 
+	int king = p.king_pos[p.self()];
 	unsigned char row = p.white() ? 0 : 56;
-	// Queenside castling
-	if( p.castle[p.self()] & 0x2 ) {
-		if( p.get_occupancy( 0xeull << row ) == 0 && !(possible_king_moves[2 + row] & p.bitboards[p.other()][bb_type::king]) ) {
-			if( type != movegen_type::pseudocheck || (p.king_pos[p.other()] % 8) == 3 ) {
-				if( !detect_check( p, p.self(), 3 + row, 3 + row ) ) {
-					add_if_legal_king<type>( p, moves, 4 + row, 2 + row, move_flags::castle );
-				}
+
+	uint64_t castles = p.castle[p.self()];
+	while( castles ) {
+		uint64_t castle = bitscan_unset(castles);
+
+		bool kingside = castle > (king % 8);
+
+		if( type == movegen_type::pseudocheck && (p.king_pos[p.other()] % 8) != (kingside ? 5 : 3) ) {
+			continue;
+		}
+
+		uint64_t target = row + (kingside ? 6 : 2);
+		if( possible_king_moves[target] & p.bitboards[p.other()][bb_type::king] ) {
+			continue;
+		}
+
+		uint64_t rook_target = row + (kingside ? 5 : 3);
+
+		uint64_t all = p.get_occupancy();
+		all &= ~(1ull << (row + castle));
+		all &= ~(1ull << king);
+
+		uint64_t king_between = between_squares[king][target];
+		uint64_t rook_between = between_squares[row + castle][rook_target];
+
+		if( all & (king_between | (1ull << target) ) ) {
+			continue;
+		}
+		if( all & (rook_between | (1ull << rook_target)) ) {
+			continue;
+		}
+
+		bool valid = true;
+		while( king_between ) {
+			uint64_t sq = bitscan_unset(king_between);
+
+			if( detect_check(p, p.self(), sq, row + castle) ) {
+				valid = false;
+				break;
 			}
 		}
-	}
-	// Kingside castling
-	if( p.castle[p.self()] & 0x1 ) {
-		if( p.get_occupancy( 0x60ull << row ) == 0 && !(possible_king_moves[6 + row] & p.bitboards[p.other()][bb_type::king]) ) {
-			if( type != movegen_type::pseudocheck || (p.king_pos[p.other()] % 8) == 5 ) {
-				if( !detect_check( p, p.self(), 5 + row, 5 + row ) ) {
-					add_if_legal_king<type>( p, moves, 4 + row, 6 + row, move_flags::castle );
-				}
-			}
+		if( !valid ) {
+			continue;
 		}
+		if( possible_king_moves[(king + target) / 2] & p.bitboards[p.other()][bb_type::king] ) {
+			continue;
+		}
+
+		add_if_legal_king<type>(p, moves, king, target, move_flags::castle);
 	}
 }
 

@@ -45,7 +45,7 @@ contact tim.kosse@filezilla-project.org for details.
 #include <stdlib.h>
 #include <sstream>
 
-duration const TIME_LIMIT = duration::seconds(90);
+duration const TIME_LIMIT = duration::seconds(900);
 
 void auto_play()
 {

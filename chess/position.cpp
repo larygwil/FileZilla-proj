@@ -1,5 +1,6 @@
 #include "position.hpp"
 #include "chess.hpp"
+#include "config.hpp"
 #include "eval_values.hpp"
 #include "tables.hpp"
 #include "util.hpp"
@@ -15,8 +16,8 @@ position::position()
 
 void position::reset()
 {
-	castle[color::white] = 0x3;
-	castle[color::black] = 0x3;
+	castle[color::white] = 0x81;
+	castle[color::black] = 0x81;
 	
 	can_en_passant = 0;
 
@@ -218,32 +219,55 @@ bool position::verify( std::string& error ) const
 		error = "White and black pieces not disjunct";
 		return false;
 	}
-	if( castle[color::white] & castles::kingside ) {
-		if( king_pos[color::white] != 4 || !(bitboards[color::white][bb_type::rooks] & (1ull << 7)) ) {
-			error = "White's kingside castling right is not correct";
-			return false;
-		}
-	}
-	if( castle[color::white] & castles::queenside ) {
-		if( king_pos[color::white] != 4 || !(bitboards[color::white][bb_type::rooks] & 1ull) ) {
-			error = "White's queenside castling right is not correct";
-			return false;
-		}
-	}
-	if( castle[color::black] & castles::kingside ) {
-		if( king_pos[color::black] != 60 || !(bitboards[color::black][bb_type::rooks] & (1ull << 63)) ) {
-			error = "Black's kingside castling right is not correct";
-			return false;
-		}
-	}
-	if( castle[color::black] & castles::queenside ) {
-		if( king_pos[color::black] != 60 || !(bitboards[color::black][bb_type::rooks] & (1ull << 56)) ) {
-			error = "Black's queenside castling right is not correct";
-			return false;
-		}
-	}
 
 	for( int i = 0; i < 2; ++i ) {
+		if( castle[i] ) {
+			if( popcount(castle[i]) > 2 ) {
+				error = color::to_string(static_cast<color::type>(i)) + "'s castling rights include too many sides";
+				return false;
+			}
+
+			if( popcount(castle[i]) == 2 ) {
+				uint64_t queenside = bitscan(castle[i]);
+				uint64_t kingside = bitscan_reverse(castle[i]);
+				uint64_t king = king_pos[i] % 8;
+				if( queenside > king || kingside < king ) {
+					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not have king in center";
+					return false;
+				}
+			}
+
+			uint64_t s = castle[i];
+			while( s ) {
+				uint64_t r = 1ull << bitscan_unset(s);
+				if( i == color::black ) {
+					r <<= (7 * 8);
+				}
+				if( !(bitboards[i][bb_type::rooks] & r) ) {
+					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not match the rook positions";
+					return false;
+				}
+			}
+
+			if( !conf.fischer_random ) {
+				if( king_pos[i] != (i ? 60 : 4) ) {
+					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not match the king positions";
+					return false;
+				}
+				if( castle[i] & 0x7e ) {
+					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights on rooks other than A and H file";
+					return false;
+				}
+			}
+			else {
+				uint64_t castle_row = 0x7eull << (i ? 56 : 0);
+				if( !(1ull << king_pos[i]) & castle_row ) {
+					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not match the king positions";
+					return false;
+				}
+			}
+		}
+		
 		uint64_t all = 0;
 		for( int pi = bb_type::pawns; pi <= bb_type::king; ++pi ) {
 			all += popcount(bitboards[i][pi]);
@@ -411,6 +435,7 @@ uint64_t position::init_hash() const
 				hash ^= zobrist::kings[c][piece];
 			}
 		}
+
 
 		hash ^= zobrist::castle[c][castle[c]];
 	}

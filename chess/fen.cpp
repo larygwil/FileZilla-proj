@@ -1,3 +1,4 @@
+#include "config.hpp"
 #include "fen.hpp"
 #include "util.hpp"
 #include "tables.hpp"
@@ -77,21 +78,33 @@ std::string position_to_fen_noclock( position const& p )
 	}
 
 	bool can_castle = false;
-	if( p.castle[color::white] & 0x1 ) {
-		can_castle = true;
-		ss << 'K';
+	if( !conf.fischer_random ) {
+		if( p.castle[color::white] & 0x80 ) {
+			can_castle = true;
+			ss << 'K';
+		}
+		if( p.castle[color::white] & 0x01 ) {
+			can_castle = true;
+			ss << 'Q';
+		}
+		if( p.castle[color::black] & 0x80 ) {
+			can_castle = true;
+			ss << 'k';
+		}
+		if( p.castle[color::black] & 0x01 ) {
+			can_castle = true;
+			ss << 'q';
+		}
 	}
-	if( p.castle[color::white] & 0x2 ) {
-		can_castle = true;
-		ss << 'Q';
-	}
-	if( p.castle[color::black] & 0x1 ) {
-		can_castle = true;
-		ss << 'k';
-	}
-	if( p.castle[color::black] & 0x2 ) {
-		can_castle = true;
-		ss << 'q';
+	else {
+		for( unsigned int c = 0; c < 2; ++c ) {
+			uint64_t castles = p.castle[c];
+			while( castles ) {
+				can_castle = true;
+				uint64_t castle = bitscan_unset(castles);
+				ss << static_cast<char>((c ? 'a' : 'A') + castle)	;
+			}
+		}
 	}
 
 	if( !can_castle ) {
@@ -150,29 +163,6 @@ bool parse_fen( std::string const& fen, position& p, std::string* error )
 
 	p.castle[0] = 0;
 	p.castle[1] = 0;
-	if( castle != "-" ) {
-		for( std::size_t i = 0; i < castle.size(); ++i ) {
-			switch( castle[i] ) {
-			case 'Q':
-				p.castle[0] |= 0x2;
-				break;
-			case 'K':
-				p.castle[0] |= 0x1;
-				break;
-			case 'q':
-				p.castle[1] |= 0x2;
-				break;
-			case 'k':
-				p.castle[1] |= 0x1;
-				break;
-			default:
-				if( error ) {
-					*error = "Invalid castling rights.";
-				}
-				return false;
-			}
-		}
-	}
 
 	p.can_en_passant = 0;
 
@@ -312,6 +302,51 @@ bool parse_fen( std::string const& fen, position& p, std::string* error )
 	}
 
 	p.update_derived();
+
+	if( castle != "-" ) {
+		for( std::size_t i = 0; i < castle.size(); ++i ) {
+			switch( castle[i] ) {
+			case 'Q':
+				p.castle[0] |= 1ull << bitscan((p.bitboards[color::white][bb_type::rooks] & 0xffull) | (1ull << p.king_pos[0]));
+				break;
+			case 'K':
+				p.castle[0] |= 1ull << bitscan_reverse((p.bitboards[color::white][bb_type::rooks] & 0xffull) | (1ull << p.king_pos[0]));
+				break;
+			case 'q':
+				p.castle[1] |= 1ull << (bitscan((p.bitboards[color::black][bb_type::rooks] & 0xff00000000000000ull) | (1ull << p.king_pos[1])) - 56);
+				break;
+			case 'k':
+				p.castle[1] |= 1ull << (bitscan_reverse((p.bitboards[color::black][bb_type::rooks] & 0xff00000000000000ull) | (1ull << p.king_pos[1])) - 56);
+				break;
+			case 'a':
+			case 'b':
+			case 'c':
+			case 'd':
+			case 'e':
+			case 'f':
+			case 'g':
+			case 'h':
+				p.castle[1] |= 1ull << (castle[i] - 'a');
+				break;
+			case 'A':
+			case 'B':
+			case 'C':
+			case 'D':
+			case 'E':
+			case 'F':
+			case 'G':
+			case 'H':
+				p.castle[0] |= 1ull << (castle[i] - 'A');
+				break;
+			default:
+				if( error ) {
+					*error = "Invalid castling rights.";
+				}
+				return false;
+			}
+		}
+		p.hash_ = p.init_hash();
+	}
 
 	std::string tmp;
 	if( !p.verify(tmp) ) {

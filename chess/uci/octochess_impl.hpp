@@ -37,6 +37,7 @@ public:
 	virtual bool use_book() const;
 	virtual void use_book( bool use );
 	virtual void set_multipv( unsigned int multipv );
+	virtual void fischer_random( bool frc );
 
 private:
 	virtual void make_moves( std::vector<std::string> const& list_of_moves );

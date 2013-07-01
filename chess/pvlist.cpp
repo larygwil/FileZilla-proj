@@ -13,7 +13,7 @@ std::string pv_to_string( move const* pv, position p, bool use_long_algebraic_no
 	while( pv && !pv->empty() ) {
 		ss << 
 			( use_long_algebraic_notation ?
-				move_to_long_algebraic( *pv )
+				move_to_long_algebraic( p, *pv )
 				: move_to_string( p, *pv ) ) 
 		   << " ";
 

@@ -261,6 +261,19 @@ static void test_move_legality_check()
 	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::a2, square::b5, 0), false );
 	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::a2, square::c3, 0), false );
 	test_move_legality_check( "8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1", move( square::c5, square::d6, move_flags::enpassant), false );
+	test_move_legality_check("r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQK2R b KQkq - 0 1", move(square::e8, square::g8, move_flags::castle), true);
+	test_move_legality_check("r1bqk2r/pppp1ppp/2n1pn2/2B1P3/5P2/2N2N2/PPPP2PP/R2QKB1R b KQkq - 0 1", move(square::e8, square::g8, move_flags::castle), false);
+
+	conf.fischer_random = true;
+	test_move_legality_check("bqnb1rkr/p2p1ppp/1p3n2/2p1p3/8/1NPN4/PPBPPPPP/BQ3RKR w HFhf c6 0 5", move(square::g1, square::c1, move_flags::castle), true);
+	test_move_legality_check("8/8/8/8/8/8/4k3/R5K1 w A - 0 1", move(square::g1, square::c1, move_flags::castle), false);
+	test_move_legality_check("8/8/8/8/8/8/1k6/R5K1 w A - 0 1", move(square::g1, square::c1, move_flags::castle), false);
+	test_move_legality_check("8/8/8/8/8/1k6/8/R5K1 w A - 0 1", move(square::g1, square::c1, move_flags::castle), true);
+	test_move_legality_check("bb1rk1rq/pppppppp/3nn3/8/4P3/3N2N1/PPPP1PPP/BB1RK1RQ b DGdg -", move(square::e8, square::g8, move_flags::castle), true);
+	test_move_legality_check("bb1rr1kq/pppppppp/4n3/4PN2/8/nP1N4/P1PP1PPP/BB1RK1RQ w DG -", move(square::e1, square::g1, move_flags::castle), true);
+	test_move_legality_check("1k2r1bq/rppp1ppp/3nn3/4p3/4P2P/3N1P2/PPPP3P/RK1BRN1Q b AEe -", move(square::b8, square::c8, move_flags::castle), false);
+	test_move_legality_check("rk1br1bq/ppppp2p/3nn1p1/5p2/8/3NPBN1/PPPP1PPP/RK2R1BQ w AEae -", move( square::b1, square::c1, move_flags::castle), true );
+	conf.fischer_random = false;
 
 	pass();
 }
@@ -934,6 +947,14 @@ void check_disambiguation()
 	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N3 w - - 0 1", "N1f3", "N1f3" );
 	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne1f3", "Ne1f3" );
 	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne5f3", "N5f3" );
+
+	conf.fischer_random = true;
+	do_check_disambiguation( "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "f1g1", "Kg1" );
+	do_check_disambiguation( "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "Kg1", "Kg1" );
+	do_check_disambiguation( "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "O-O", "O-O" );
+	do_check_disambiguation( "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "f1h1", "O-O" );
+	conf.fischer_random = false;
+
 	pass();
 }
 

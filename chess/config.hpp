@@ -40,6 +40,8 @@ struct config
 	void set_max_search_depth( int depth );
 
 	unsigned int pawn_hash_table_size() const;
+
+	bool fischer_random;
 private:
 	void init_self_dir( std::string self );
 

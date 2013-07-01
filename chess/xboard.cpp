@@ -262,7 +262,8 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 
 		p.castle[color::white] = 0;
 		p.castle[color::black] = 0;
-		if( p.king_pos[color::white] == 4 ) {
+		//fixme
+		/*if( p.king_pos[color::white] == 4 ) {
 			if( p.bitboards[color::white][bb_type::rooks] & (1ull << 7) ) {
 				p.castle[color::white] |= castles::kingside;
 			}
@@ -277,7 +278,7 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 			if( p.bitboards[color::black][bb_type::rooks] & (1ull << 56) ) {
 				p.castle[color::black] |= castles::queenside;
 			}
-		}
+		}*/
 
 		move_history_.clear();
 		seen.reset_root( p.hash_ );
@@ -372,6 +373,30 @@ xboard_thread::~xboard_thread()
 	stop();
 }
 
+	
+void xboard_output_move_raw( position const& p, move const& m )
+{
+	if( conf.fischer_random && m.castle() ) {
+		bool kingside = (m.target() % 8) == 6;
+		if( kingside ) {
+			std::cout << "O-O" << std::endl;
+		}
+		else {
+			std::cout << "O-O-O" << std::endl;
+		}
+	}
+	else {
+		std::cout << move_to_long_algebraic( p, m ) << std::endl;
+	}
+}
+
+
+void xboard_output_move( position const& p,move const& m )
+{
+	std::cout << "move ";
+	xboard_output_move_raw( p, m);
+}
+
 
 void xboard_thread::onRun()
 {
@@ -428,7 +453,7 @@ void xboard_thread::onRun()
 
 		if( !result.best_move.empty() ) {
 
-			std::cout << "move " << move_to_long_algebraic( result.best_move ) << std::endl;
+			xboard_output_move( state.p, result.best_move );
 
 			state.apply( result.best_move );
 
@@ -557,7 +582,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 			simple_book_entry best_move = moves[state.rng_.get_uint64() % count_best];
 			ASSERT( !best_move.m.empty() );
 
-			std::cout << "move " << move_to_long_algebraic( best_move.m ) << std::endl;
+			xboard_output_move( state.p, best_move.m );
 
 			state.history.push_back( state.p );
 
@@ -576,7 +601,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 	std::pair<move,move> pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p );
 	if( !pv_move.first.empty() ) {
-		std::cout << "move " << move_to_long_algebraic( pv_move.first ) << std::endl;
+		xboard_output_move( state.p, pv_move.first );
 
 		state.history.push_back( state.p );
 
@@ -695,7 +720,8 @@ skip_getline:
 				move m;
 				transposition_table.lookup( state.p.hash_, 0, 0, result::loss, result::win, tmp, m, tmp );
 				if( !m.empty() ) {
-					std::cout << "Hint: " << move_to_long_algebraic( m ) << std::endl;
+					std::cout << "Hint: ";
+					xboard_output_move_raw( state.p, m );
 				}
 				continue;
 			}
@@ -713,7 +739,7 @@ skip_getline:
 		}
 		else if( cmd == "?" ) {
 			if( !best_move.empty() ) {
-				std::cout << "move " << move_to_long_algebraic( best_move ) << std::endl;
+				xboard_output_move( state.p, best_move );
 				state.apply( best_move );
 			}
 			else {
@@ -726,7 +752,7 @@ skip_getline:
 			std::cout << "feature myname=\"" << conf.program_name() << "\"\n";
 			std::cout << "feature setboard=1\n";
 			std::cout << "feature sigint=0\n";
-			std::cout << "feature variants=\"normal\"\n";
+			std::cout << "feature variants=\"normal,fischerandom\"\n";
 			std::cout << "feature memory=1\n";
 			std::cout << "feature smp=1\n";
 			std::cout << "feature option=\"MultiPV -spin 1 1 99\"\n";
@@ -925,6 +951,10 @@ skip_getline:
 		}
 		else if( cmd == "variant" ) {
 			if( args == "normal" ) {
+				conf.fischer_random = false;
+			}
+			else if( args == "fischerandom" || args == "fisherrandom" || args == "frc" ) {
+				conf.fischer_random = true;
 			}
 			else {
 				std::cout << "Error (bad command): Not a valid variant" << std::endl;
@@ -986,7 +1016,8 @@ skip_getline:
 			std::cout << "Possible moves:" << std::endl;
 			for( auto m : calculate_moves<movegen_type::all>( state.p ) ) {
 				if( args == "long" ) {
-					std::cout << " " << move_to_long_algebraic( m ) << std::endl;
+					std::cout << " ";
+					xboard_output_move_raw( state.p, m );
 				}
 				else if( args == "full" ) {
 					std::cout << " " << move_to_string( state.p, m ) << std::endl;

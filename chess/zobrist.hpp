@@ -21,7 +21,7 @@ namespace zobrist {
 
 	extern uint64_t enpassant[64];
 
-	extern uint64_t castle[2][4];
+	extern uint64_t castle[2][256];
 
 	extern uint64_t pawn_structure[2][64];
 

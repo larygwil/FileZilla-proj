@@ -1,6 +1,8 @@
 #ifndef __DEFINITIONS_H__
 #define __DEFINITIONS_H__
 
+#include <string>
+
 namespace pieces {
 enum type : unsigned char {
 	none = 0,
@@ -19,6 +21,14 @@ enum type {
 	white = 0,
 	black = 1
 };
+inline std::string to_string(type c) {
+	if (c == white) {
+		return "white";
+	}
+	else {
+		return "black";
+	}
+}
 }
 
 
@@ -63,15 +73,6 @@ enum type {
 }
 
 typedef uint64_t bitboard;
-
-namespace castles {
-enum type {
-	none = 0,
-	kingside = 1,
-	queenside = 2,
-	both = 3
-};
-}
 
 namespace move_flags {
 enum type {
