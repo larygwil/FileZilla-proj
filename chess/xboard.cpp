@@ -260,25 +260,35 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 		p.update_derived();
 		p.can_en_passant = 0;
 
-		p.castle[color::white] = 0;
-		p.castle[color::black] = 0;
-		//fixme
-		/*if( p.king_pos[color::white] == 4 ) {
-			if( p.bitboards[color::white][bb_type::rooks] & (1ull << 7) ) {
-				p.castle[color::white] |= castles::kingside;
+		for( int c = 0; c < 2; ++c ) {
+			uint64_t row = c ? 56 : 0;
+
+			p.castle[c] = 0;
+
+			if( !conf.fischer_random ) {
+				if( p.king_pos[c] == row + 4 ) {
+					if( p.bitboards[c][bb_type::rooks] & (1ull << (row + 7)) ) {
+						p.castle[c] |= 128u;
+					}
+					if( p.bitboards[c][bb_type::rooks] & (1ull << row)) {
+						p.castle[c] |= 1u;
+					}
+				}
 			}
-			if( p.bitboards[color::white][bb_type::rooks] & 1ull ) {
-				p.castle[color::white] |= castles::queenside;
+			else {
+				if( p.king_pos[c] > row && p.king_pos[c] < row + 8 ) {
+					uint64_t q_rook = bitscan(p.bitboards[c][bb_type::rooks] & (0xffull << row));
+					if( q_rook < p.king_pos[c] ) {
+						p.castle[c] |= 1ull << (q_rook % 8);
+					}
+					uint64_t k_rook = bitscan_reverse(p.bitboards[c][bb_type::rooks] & (0xffull << row));
+					if( k_rook > p.king_pos[c] ) {
+						p.castle[c] |= 1ull << (k_rook % 8);
+					}
+				}
 			}
 		}
-		if( p.king_pos[color::black] == 60 ) {
-			if( p.bitboards[color::black][bb_type::rooks] & (1ull << 63) ) {
-				p.castle[color::black] |= castles::kingside;
-			}
-			if( p.bitboards[color::black][bb_type::rooks] & (1ull << 56) ) {
-				p.castle[color::black] |= castles::queenside;
-			}
-		}*/
+		p.hash_ = p.init_hash();
 
 		move_history_.clear();
 		seen.reset_root( p.hash_ );
