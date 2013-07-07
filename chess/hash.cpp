@@ -31,7 +31,7 @@ hash::~hash()
 
 bool hash::init( unsigned int max_size, bool reset )
 {
-	if( !data_ || reset || init_size_ != max_size ) {
+	while( (!data_ || reset || init_size_ != max_size) && max_size > 0 ) {
 
 		init_size_ = max_size;
 
@@ -46,6 +46,10 @@ bool hash::init( unsigned int max_size, bool reset )
 		bucket_count_ = size_ / bucket_size;
 		aligned_free( data_ );
 		data_ = reinterpret_cast<entry*>(page_aligned_malloc( bucket_count_ * bucket_size ));
+
+		if( !data_ ) {
+			max_size /= 2;
+		}
 	}
 
 	return data_ != 0;
