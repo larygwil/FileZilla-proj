@@ -31,13 +31,13 @@ pawn_structure_hash_table::~pawn_structure_hash_table()
 
 bool pawn_structure_hash_table::init( uint64_t size_in_mib, bool reset )
 {
-	if( init_size_ != size_in_mib ) {
-		reset = true;
+	if( init_size_ != size_in_mib || reset ) {
+		aligned_free( data_ );
+		data_ = 0;
 		init_size_ = size_in_mib;
 	}
-	while( (!data_ || reset) && size_in_mib > 0 ) {
-		aligned_free( data_ );
 
+	while( !data_ && size_in_mib > 0 ) {
 		uint64_t size = size_in_mib * 1024 * 1024 / sizeof(entry);
 		size_ = size;
 		data_ = reinterpret_cast<entry*>(page_aligned_malloc( size_ * sizeof(entry) ) );

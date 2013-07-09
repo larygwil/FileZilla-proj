@@ -31,12 +31,13 @@ hash::~hash()
 
 bool hash::init( unsigned int max_size, bool reset )
 {
-	if( init_size_ != max_size ) {
-		reset = true;
+	if( init_size_ != max_size || reset ) {
+		aligned_free( data_ );
+		data_ = 0;
 		init_size_ = max_size;
 	}
-	while( (!data_ || reset) && max_size > 0 ) {
-		aligned_free( data_ );
+
+	while( !data_ && max_size > 0 ) {
 		hash_key max = static_cast<hash_key>(max_size) * 1024 * 1024;
 
 		size_ = 4 * 1024 * 1024;
