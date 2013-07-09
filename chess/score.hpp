@@ -2,7 +2,7 @@
 #define __SCORE_H__
 
 /*
- * The score object represents evaluations score. It can be used for partial evaluations
+ * The score object represents evaluation scores. It can be used for partial evaluations
  * as well as complete positional evaluations.
  *
  * The score is being represented by two shorts, one for middle-game and one for end-game
