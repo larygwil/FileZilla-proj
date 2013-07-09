@@ -31,8 +31,11 @@ pawn_structure_hash_table::~pawn_structure_hash_table()
 
 bool pawn_structure_hash_table::init( uint64_t size_in_mib, bool reset )
 {
-	if( !data_ || size_in_mib != init_size_ || reset ) {
+	if( init_size_ != size_in_mib ) {
+		reset = true;
 		init_size_ = size_in_mib;
+	}
+	while( (!data_ || reset) && size_in_mib > 0 ) {
 		aligned_free( data_ );
 
 		uint64_t size = size_in_mib * 1024 * 1024 / sizeof(entry);
@@ -40,6 +43,9 @@ bool pawn_structure_hash_table::init( uint64_t size_in_mib, bool reset )
 		data_ = reinterpret_cast<entry*>(page_aligned_malloc( size_ * sizeof(entry) ) );
 		if( data_ ) {
 			memset(data_, 0, sizeof(entry) * size_);
+		}
+		else {
+			size_in_mib /= 2;
 		}
 	}
 
