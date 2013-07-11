@@ -85,7 +85,7 @@ template<bool split_movegen>
 void perft( position const& p, std::size_t max_depth, uint64_t const* perft_results, std::size_t size )
 {
 	perft_ctx ctx;
-	for( unsigned int i = 0; i < std::min(max_depth, size); ++i ) {
+	for( unsigned int i = 0; i < max_depth; ++i ) {
 		ctx.move_ptr = ctx.moves;
 
 		std::cerr << "Calculating number of possible moves in " << (i + 1) << " plies:" << std::endl;
@@ -117,7 +117,10 @@ void perft( position const& p, std::size_t max_depth, uint64_t const* perft_resu
 			std::cerr << ss.str();
 		}
 
-		if( perft_results[i] != 0 && ret != perft_results[i] ) {
+		if( i >= size || !perft_results ) {
+			std::cerr << "PASS (no reference available)" << std::endl;
+		}
+		else if( perft_results[i] != 0 && ret != perft_results[i] ) {
 			std::cerr << "FAIL! Expected " << perft_results[i] << " moves." << std::endl;
 			abort();
 		}
