@@ -537,10 +537,10 @@ static void evaluate_king_attack( position const& p, color::type c, eval_results
 	attack += results.king_attacker_sum[c];
 
 	// Add all positions where a piece can safely give check
-	uint64_t secure_squares = ~(results.attacks[1-c][0] | p.bitboards[c][bb_type::all_pieces]); // Don't remove enemy pieces, those we would just capture
+	uint64_t const secure_squares = ~(results.attacks[1-c][0] | p.bitboards[c][bb_type::all_pieces]); // Don't remove enemy pieces, those we would just capture
+	uint64_t const all_blockers = p.bitboards[1-c][bb_type::all_pieces] | p.bitboards[c][bb_type::all_pieces];
 
 	uint64_t knight_checks = possible_knight_moves[ p.king_pos[1-c] ] & secure_squares;
-	uint64_t const all_blockers = p.bitboards[1-c][bb_type::all_pieces] | p.bitboards[c][bb_type::all_pieces];
 	uint64_t bishop_checks = bishop_magic( p.king_pos[1-c], all_blockers ) & secure_squares;
 	uint64_t rook_checks = rook_magic( p.king_pos[1-c], all_blockers ) & secure_squares;
 
@@ -568,7 +568,7 @@ static void evaluate_king_attack( position const& p, color::type c, eval_results
 
 	// 5% bonus if attacker is the one to move
 	if( p.self() == c ) {
-		signed_attack += signed_attack / 95;
+		signed_attack += signed_attack / (100 / 5);
 	}
 
 	if( signed_attack < 0 ) {
