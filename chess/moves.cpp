@@ -130,7 +130,7 @@ void calc_moves_castles( position const& p, move_info*& moves, check_map const& 
 	while( castles ) {
 		uint64_t castle = bitscan_unset(castles);
 
-		bool kingside = castle > (king % 8);
+		bool kingside = static_cast<int>(castle) > (king % 8);
 
 		if( type == movegen_type::pseudocheck && (p.king_pos[p.other()] % 8) != (kingside ? 5 : 3) ) {
 			continue;
