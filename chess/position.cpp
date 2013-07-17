@@ -72,13 +72,14 @@ void position::init_material()
 	material[0] = score();
 	material[1] = score();
 
-	for( unsigned int pi = 0; pi < 64; ++pi ) {
-		pieces_with_color::type pwc = get_piece_with_color( pi );
-		color::type c = get_color( pwc );
-		pieces::type b = ::get_piece( pwc );
+	for( unsigned int c = 0; c < 2; ++c ) {
+		uint64_t all = bitboards[c][bb_type::knights] | bitboards[c][bb_type::bishops] | bitboards[c][bb_type::rooks] | bitboards[c][bb_type::queens];
+		while( all ) {
+			uint64_t sq = bitscan_unset(all);
 
-		if( b != pieces::king && b != pieces::pawn ) {
-			material[c] += eval_values::material_values[b];
+			pieces::type pi = get_piece( sq );
+
+			material[c] += eval_values::material_values[pi];
 		}
 	}
 }
@@ -90,17 +91,25 @@ void position::init_eval()
 		eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(bitboards[0][bb_type::pawns])) -
 		eval_values::material_values[pieces::pawn] * static_cast<short>(popcount(bitboards[1][bb_type::pawns]));
 
-	score side[2];
-	for( unsigned int sq = 0; sq < 64; ++sq ) {
-		pieces_with_color::type pwc = get_piece_with_color( sq );
-		color::type c = get_color( pwc );
-		pieces::type pi = ::get_piece( pwc );
-		
-		side[c] += pst[c][pi][sq];
-	}
+	for( unsigned int c = 0; c < 2; ++c ) {
+		score side;
 
-	base_eval += side[color::white];
-	base_eval -= side[color::black];
+		uint64_t all = bitboards[c][bb_type::all_pieces];
+		while( all ) {
+			uint64_t sq = bitscan_unset(all);
+
+			pieces::type pi = get_piece( sq );
+
+			side += pst[c][pi][sq];
+		}
+
+		if( c ) {
+			base_eval -= side;
+		}
+		else {
+			base_eval += side;
+		}
+	}
 }
 
 

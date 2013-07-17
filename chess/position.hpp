@@ -81,12 +81,12 @@ public:
 	uint64_t hash_;
 
 	uint64_t init_hash() const;
+	void init_material();
+	void init_eval();
 private:
 	void init_bitboards();
 	void init_board();
 	void init_pawn_hash();
-	void init_material();
-	void init_eval();
 	void init_piece_sum();
 };
 
