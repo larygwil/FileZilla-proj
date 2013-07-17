@@ -922,5 +922,15 @@ int main()
 		std::cout << "};" << std::endl << std::endl;
 	}
 
+	std::cout << "extern unsigned int const max_move_count[7] = {" << std::endl;
+	std::cout << "\t 0," << std::endl;
+	std::cout << "\t 3, // not considering promotions" << std::endl;
+	std::cout << "\t 8," << std::endl;
+	std::cout << "\t13," << std::endl;
+	std::cout << "\t14," << std::endl;
+	std::cout << "\t27," << std::endl;
+	std::cout << "\t 8" << std::endl;
+	std::cout << "};" << std::endl;
+
 	return 0;
 }

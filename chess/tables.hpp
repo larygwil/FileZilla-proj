@@ -37,4 +37,6 @@ extern uint64_t const forward_pawn_attack[2][64];
 
 extern uint64_t const trapped_bishop[2][64];
 
+extern unsigned int const max_move_count[7];
+
 #endif
