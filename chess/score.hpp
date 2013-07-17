@@ -41,6 +41,8 @@ public:
 	short& mg() { return mg_; }
 	short& eg() { return eg_; }
 
+	typedef short&(score::*phase_ref)();
+
 	bool operator==( score const& rhs ) const;
 	bool operator!=( score const& rhs ) const;
 
