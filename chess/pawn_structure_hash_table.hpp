@@ -63,7 +63,4 @@ private:
 	uint64_t init_size_;
 };
 
-
-extern pawn_structure_hash_table pawn_hash_table;
-
 #endif

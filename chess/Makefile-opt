@@ -28,6 +28,7 @@ UTIL_SOURCE_FILES = \
 GENERIC_SOURCE_FILES = \
 	calc.cpp \
 	config.cpp \
+	context.cpp \
 	detect_check.cpp \
 	endgame.cpp \
 	eval.cpp \

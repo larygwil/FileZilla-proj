@@ -2,7 +2,7 @@
 #define __HASH_H__
 
 #include "assert.hpp"
-#include "chess.hpp"
+#include "move.hpp"
 
 #include <atomic>
 
@@ -157,7 +157,5 @@ private:
 
 	unsigned int init_size_;
 };
-
-extern hash transposition_table;
 
 #endif //__HASH_H__

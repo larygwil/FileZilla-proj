@@ -66,7 +66,7 @@ std::string config::init( int argc,  char const* argv[] )
 				std::cerr << "Invalid argument to " << opt << std::endl;
 				exit(1);
 			}
-			conf.max_moves = v;
+			max_moves = v;
 		}
 		else if( opt == "--threads" ) {
 			if( ++i >= argc ) {
@@ -78,7 +78,7 @@ std::string config::init( int argc,  char const* argv[] )
 				std::cerr << "Invalid argument to " << opt << std::endl;
 				exit(1);
 			}
-			conf.thread_count = v;
+			thread_count = v;
 		}
 		else if( opt == "--depth" ) {
 			if( ++i >= argc ) {
@@ -90,7 +90,7 @@ std::string config::init( int argc,  char const* argv[] )
 				std::cerr << "Invalid argument to " << opt << std::endl;
 				exit(1);
 			}
-			conf.set_max_search_depth( v );
+			set_max_search_depth( v );
 		}
 		else if( opt == "--memory" ) {
 			if( ++i >= argc ) {
@@ -102,20 +102,20 @@ std::string config::init( int argc,  char const* argv[] )
 				std::cerr << "Invalid argument to " << opt << std::endl;
 				exit(1);
 			}
-			conf.memory = v;
+			memory = v;
 		}
 		else if( opt == "--logfile" ) {
 			if( ++i >= argc ) {
 				std::cerr << "Missing argument to " << opt << std::endl;
 				exit(1);
 			}
-			conf.logfile = argv[i];
+			logfile = argv[i];
 		}
 		else if( opt == "--ponder" ) {
-			conf.ponder = true;
+			ponder = true;
 		}
 		else if( opt == "--nobook" ) {
-			conf.use_book = false;
+			use_book = false;
 		}
 		else {
 			std::cerr << "Unknown argument " << argv[i] << std::endl;
@@ -185,6 +185,3 @@ unsigned int config::pawn_hash_table_size() const
 
 	return ret;
 }
-
-config conf;
-

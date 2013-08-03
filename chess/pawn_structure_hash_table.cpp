@@ -4,8 +4,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-pawn_structure_hash_table pawn_hash_table;
-
 struct pawn_structure_hash_table::entry
 {
 	uint64_t key;

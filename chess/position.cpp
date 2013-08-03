@@ -166,10 +166,10 @@ unsigned char position::do_null_move( unsigned char old_enpassant )
 }
 
 
-bool position::verify() const
+bool position::verify( bool frc ) const
 {
 	std::string error;
-	bool ret = verify( error );
+	bool ret = verify( frc, error );
 	if( !ret ) {
 		std::cerr << error << std::endl;
 	}
@@ -177,7 +177,7 @@ bool position::verify() const
 	return ret;
 }
 
-bool position::verify( std::string& error ) const
+bool position::verify( bool frc, std::string& error ) const
 {
 	position p2 = *this;
 	p2.update_derived();
@@ -258,7 +258,7 @@ bool position::verify( std::string& error ) const
 				}
 			}
 
-			if( !conf.fischer_random ) {
+			if( !frc ) {
 				if( king_pos[i] != (i ? 60 : 4) ) {
 					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not match the king positions";
 					return false;
@@ -368,9 +368,9 @@ bool position::verify( std::string& error ) const
 }
 
 
-void position::verify_abort() const
+void position::verify_abort( bool frc ) const
 {
-	if( !verify() ) {
+	if( !verify( frc ) ) {
 		abort();
 	}
 }

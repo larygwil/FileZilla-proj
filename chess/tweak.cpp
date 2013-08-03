@@ -30,11 +30,11 @@ namespace {
 
 randgen rng;
 
-static calc_result tweak_calc( position& p, duration const& move_time_limit, int clock, seen_positions& seen
-		  , new_best_move_callback_base& new_best_cb = default_new_best_move_callback )
+static calc_result tweak_calc( context& ctx, position& p, duration const& move_time_limit, int clock, seen_positions& seen
+		  , new_best_move_callback_base& new_best_cb )
 {
 	if( clock > 10 ) {
-		calc_manager cmgr;
+		calc_manager cmgr(ctx);
 		return cmgr.calc( p, -1, timestamp(), move_time_limit, move_time_limit, clock, seen, new_best_cb );
 	}
 
@@ -68,19 +68,21 @@ static calc_result tweak_calc( position& p, duration const& move_time_limit, int
 	return result;
 }
 
-static void generate_test_positions_impl()
+static void generate_test_positions_impl( context& ctx )
 {
-	conf.max_moves = 20 + rng.get_uint64() % 70;
+	ctx.conf_.max_moves = 20 + rng.get_uint64() % 70;
 
-	transposition_table.clear_data();
-	pawn_hash_table.init( conf.pawn_hash_table_size() );
+	ctx.tt_.clear_data();
+	ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size() );
 	position p;
 
 	unsigned int i = 1;
 	seen_positions seen( p.hash_ );
 
+	def_new_best_move_callback cb( ctx.conf_ );
+
 	calc_result result;
-	while( !(result = tweak_calc( p, duration(), i, seen ) ).best_move.empty() ) {
+	while( !(result = tweak_calc( ctx, p, duration(), i, seen, cb ) ).best_move.empty() ) {
 		if( !validate_move( p, result.best_move ) ) {
 			std::cerr << std::endl << "NOT A VALID MOVE" << std::endl;
 			exit(1);
@@ -109,10 +111,10 @@ static void generate_test_positions_impl()
 
 		++i;
 
-		if( conf.max_moves && i >= conf.max_moves ) {
+		if( ctx.conf_.max_moves && i >= ctx.conf_.max_moves ) {
 			std::ofstream out("test/testpositions.txt", std::ofstream::app|std::ofstream::out );
 
-			std::string fen = position_to_fen_noclock( p );
+			std::string fen = position_to_fen_noclock( ctx.conf_, p );
 			out << fen << std::endl;
 
 			break;
@@ -121,14 +123,13 @@ static void generate_test_positions_impl()
 }
 }
 
-void generate_test_positions()
+void generate_test_positions( context& ctx )
 {
-	transposition_table.init( conf.memory );
-	
-	conf.set_max_search_depth( 6 );
+	ctx.tt_.init( ctx.conf_.memory );	
+	ctx.conf_.set_max_search_depth( 6 );
 	
 	while( true ) {
-		generate_test_positions_impl();
+		generate_test_positions_impl( ctx );
 	}
 }
 
@@ -400,7 +401,7 @@ struct individual
 		return true;
 	}
 
-	void calc_fitness( std::vector<reference_data>& data ) {
+	void calc_fitness( pawn_structure_hash_table& pawn_tt, std::vector<reference_data>& data ) {
 		apply();
 
 		fitness_ = 0;
@@ -409,8 +410,8 @@ struct individual
 			reference_data& ref = data[i];
 
 			ref.p.update_derived();
-			pawn_hash_table.clear( ref.p.pawn_hash );
-			short score = evaluate_full( ref.p );
+			pawn_tt.clear( ref.p.pawn_hash );
+			short score = evaluate_full( pawn_tt, ref.p );
 
 #if 0
 			double difference = std::abs( ref.avg_eval - static_cast<double>(score) );
@@ -507,7 +508,7 @@ bool insert( population& pop, std::set<individual>& seen, individual* i )
 }
 
 
-void mutate( population& pop, std::set<individual>& seen, std::vector<reference_data>& data )
+void mutate( pawn_structure_hash_table& pawn_tt, population& pop, std::set<individual>& seen, std::vector<reference_data>& data )
 {
 	// Randomly mutates elements and adds the resulting mutants to the container
 	std::size_t orig_count = pop.size();
@@ -553,11 +554,11 @@ void mutate( population& pop, std::set<individual>& seen, std::vector<reference_
 
 	for( std::size_t i = orig_count; i < pop.size(); ++i ) {
 		// Calculate fitness of new items
-		pop[i]->calc_fitness(data);
+		pop[i]->calc_fitness( pawn_tt, data );
 	}
 }
 
-void combine( population& pop, std::set<individual>& seen, std::vector<reference_data>& data )
+void combine( pawn_structure_hash_table& pawn_tt, population& pop, std::set<individual>& seen, std::vector<reference_data>& data )
 {
 	// Sex :)
 	// Hopefully by coupling up, we end up with a child that's better than each of its parents.
@@ -586,7 +587,7 @@ void combine( population& pop, std::set<individual>& seen, std::vector<reference
 			}
 		}
 		if( insert( pop, seen, child ) ) {
-			child->calc_fitness( data );
+			child->calc_fitness( pawn_tt, data );
 		}
 	}
 }
@@ -645,7 +646,7 @@ void select( population& pop, std::set<individual>& seen )
 }
 
 
-void save_new_best( individual& best, std::vector<reference_data>& data )
+void save_new_best( context& ctx, individual& best, std::vector<reference_data>& data )
 {
 	std::cout << std::endl;
 	best.apply();
@@ -653,20 +654,20 @@ void save_new_best( individual& best, std::vector<reference_data>& data )
 		tweak_base const& t = *tweaks[i];
 		std::cerr << "\t" << t.to_string();
 	}
-	std::string fen = position_to_fen_noclock( data[best.max_diff_pos_].p );
+	std::string fen = position_to_fen_noclock( ctx.conf_, data[best.max_diff_pos_].p );
 	std::cout << "New best: " << best.fitness_ << " " << best.max_diff_ << "  " << fen << std::endl;
 
-	best.calc_fitness( data );
+	best.calc_fitness( ctx.pawn_tt_, data );
 }
 
 
-std::vector<reference_data> load_data()
+std::vector<reference_data> load_data( context& ctx )
 {
 	std::vector<reference_data> ret;
 
-	std::ifstream in_fen(conf.self_dir + "test/testpositions.txt");
-	std::ifstream in_scores(conf.self_dir + "test/data.txt");
-	std::ifstream forecasts(conf.self_dir + "test/forecast.txt");
+	std::ifstream in_fen(ctx.conf_.self_dir + "test/testpositions.txt");
+	std::ifstream in_scores(ctx.conf_.self_dir + "test/data.txt");
+	std::ifstream forecasts(ctx.conf_.self_dir + "test/forecast.txt");
 
 	int endgames = 0;
 	int unknown_endgames = 0;
@@ -710,7 +711,7 @@ std::vector<reference_data> load_data()
 		if( !in_scores ) {
 			abort();
 		}
-		if( !parse_fen( fen, entry.p ) ) {
+		if( !parse_fen( ctx.conf_, fen, entry.p ) ) {
 			abort();
 		}
 
@@ -740,20 +741,20 @@ std::vector<reference_data> load_data()
 }
 
 
-void add_random( population & pop, std::set<individual>& seen, std::vector<reference_data>& data, unsigned int count = 10 ) {
+void add_random( pawn_structure_hash_table& pawn_tt, population & pop, std::set<individual>& seen, std::vector<reference_data>& data, unsigned int count = 10 ) {
 	for( unsigned int i = 0; i < count; ++i ) {
 		individual* p = new individual;
 		p->randomize();
-		p->calc_fitness( data );
+		p->calc_fitness( pawn_tt, data );
 		insert( pop, seen, p );
 	}
 }
 
 
-void tweak_evaluation()
+void tweak_evaluation( context& ctx )
 {
-	pawn_hash_table.init( conf.pawn_hash_table_size(), true );
-	std::vector<reference_data> data = load_data();
+	ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size(), true );
+	std::vector<reference_data> data = load_data( ctx );
 
 	init_genes();
 
@@ -768,7 +769,7 @@ void tweak_evaluation()
 	pop[0]->calc_fitness( data );
 	seen.insert( *pop[0] );
 #else
-	add_random( pop, seen, data, 50 );
+	add_random( ctx.pawn_tt_, pop, seen, data, 50 );
 #endif
 
 	while( true ) {
@@ -776,14 +777,14 @@ void tweak_evaluation()
 		std::flush( std::cout );
 		srand ( static_cast<unsigned int>(time(NULL)) );
 
-		mutate( pop, seen, data );
-		add_random( pop, seen, data );
-		combine( pop, seen, data );
+		mutate( ctx.pawn_tt_, pop, seen, data );
+		add_random( ctx.pawn_tt_, pop, seen, data );
+		combine( ctx.pawn_tt_, pop, seen, data );
 		sort( pop );
 		select( pop, seen );
 
 		if( pop.front()->fitness_ < best_fitness ) {
-			save_new_best( *pop.front(), data );
+			save_new_best( ctx, *pop.front(), data );
 			best_fitness = pop.front()->fitness_;
 			for( std::size_t i = 1; i < pop.size(); ++i ) {
 				delete pop[i];

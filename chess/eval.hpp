@@ -4,9 +4,9 @@
 #include "chess.hpp"
 #include "score.hpp"
 
-short evaluate_full( position const& p );
+short evaluate_full( pawn_structure_hash_table& pawn_tt, position const& p );
 
-std::string explain_eval( position const& p );
+std::string explain_eval( pawn_structure_hash_table& pawn_tt, position const& p );
 
 short evaluate_move( position const& p, move const& m );
 

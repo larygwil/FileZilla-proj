@@ -3,6 +3,6 @@
 
 #include <string>
 
-void xboard( std::string line );
+void xboard( context& ctx, std::string line );
 
 #endif

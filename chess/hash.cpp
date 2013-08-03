@@ -4,8 +4,6 @@
 #include <string.h>
 #include <iostream>
 
-hash transposition_table;
-
 struct entry {
 	uint64_t v;
 	uint64_t key;

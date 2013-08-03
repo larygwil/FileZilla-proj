@@ -5,8 +5,8 @@
 
 #include <string>
 
-std::string position_to_fen_noclock( position const& p );
+std::string position_to_fen_noclock( config const& conf, position const& p );
 
-bool parse_fen( std::string const& fen, position&, std::string* error = 0 );
+bool parse_fen( config const& conf, std::string const& fen, position&, std::string* error = 0 );
 
 #endif

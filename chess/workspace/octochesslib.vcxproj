@@ -157,6 +157,7 @@
   <ItemGroup>
     <ClCompile Include="..\calc.cpp" />
     <ClCompile Include="..\config.cpp" />
+    <ClCompile Include="..\context.cpp" />
     <ClCompile Include="..\detect_check.cpp" />
     <ClCompile Include="..\endgame.cpp" />
     <ClCompile Include="..\eval.cpp" />
@@ -193,6 +194,7 @@
     <ClInclude Include="..\calc.hpp" />
     <ClInclude Include="..\chess.hpp" />
     <ClInclude Include="..\config.hpp" />
+    <ClInclude Include="..\context.hpp" />
     <ClInclude Include="..\definitions.hpp" />
     <ClInclude Include="..\detect_check.hpp" />
     <ClInclude Include="..\endgame.hpp" />
@@ -202,6 +204,7 @@
     <ClInclude Include="..\hash.hpp" />
     <ClInclude Include="..\history.hpp" />
     <ClInclude Include="..\magic.hpp" />
+    <ClInclude Include="..\move.hpp" />
     <ClInclude Include="..\moves.hpp" />
     <ClInclude Include="..\pawn_structure_hash_table.hpp" />
     <ClInclude Include="..\phased_move_generator.hpp" />

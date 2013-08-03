@@ -22,13 +22,13 @@ enum type {
 }
 
 class check_map;
-class context;
+class calc_state;
 struct move_info;
 class position;
 class phased_move_generator_base
 {
 public:
-	phased_move_generator_base( context& cntx, position const& p, check_map const& check );
+	phased_move_generator_base( calc_state& cntx, position const& p, check_map const& check );
 	virtual ~phased_move_generator_base();
 
 	virtual move next() = 0;
@@ -44,7 +44,7 @@ public:
 	move hash_move;
 
 protected:
-	context& ctx;
+	calc_state& state_;
 	phases::type phase;
 	move_info* moves;
 	move_info* it;
@@ -59,7 +59,7 @@ protected:
 class qsearch_move_generator : public phased_move_generator_base
 {
 public:
-	qsearch_move_generator( context& cntx, position const& p, check_map const& check, bool pv_node, bool include_noncaptures );
+	qsearch_move_generator( calc_state& cntx, position const& p, check_map const& check, bool pv_node, bool include_noncaptures );
 
 	// Returns the next legal move.
 	// move_info's m, evaluation and pawns are filled out, sort is undefined.
@@ -75,7 +75,7 @@ class killer_moves;
 class move_generator : public phased_move_generator_base
 {
 public:
-	move_generator( context& cntx, killer_moves const& killers, position const& p, check_map const& check );
+	move_generator( calc_state& cntx, killer_moves const& killers, position const& p, check_map const& check );
 
 	// Returns the next legal move.
 	// move_info's m, evaluation and pawns are filled out, sort is undefined.

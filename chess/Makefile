@@ -24,6 +24,7 @@ UTIL_FILES = \
 OBJECT_FILES = \
 	calc.o \
 	config.o \
+	context.o \
 	detect_check.o \
 	endgame.o \
 	epd.o \

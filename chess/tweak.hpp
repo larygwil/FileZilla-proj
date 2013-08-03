@@ -17,8 +17,8 @@
  */
 
 #if DEVELOPMENT
-void generate_test_positions();
-void tweak_evaluation();
+void generate_test_positions( context& ctx );
+void tweak_evaluation( context& ctx );
 #endif
 
 #endif //__TWEAK_H__

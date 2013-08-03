@@ -45,7 +45,6 @@ int const delta_pruning = 50;
 
 short const ASPIRATION = 40;
 
-def_new_best_move_callback default_new_best_move_callback;
 null_new_best_move_callback null_new_best_move_cb;
 
 void sort_moves( move_info* begin, move_info* end, position const& p )
@@ -62,7 +61,7 @@ void sort_moves( move_info* begin, move_info* end, position const& p )
 }
 
 
-bool is_50move_draw( position const& p, check_map const& check, context& ctx, int ply, short& ret )
+bool is_50move_draw( position const& p, check_map const& check, calc_state& state, int ply, short& ret )
 {
 	if( p.halfmoves_since_pawnmove_or_capture >= 100 ) {
 		if( !check.check ) {
@@ -70,9 +69,9 @@ bool is_50move_draw( position const& p, check_map const& check, context& ctx, in
 			return true;
 		}
 		else {
-			move_info* m = ctx.move_ptr;
+			move_info* m = state.move_ptr;
 			calculate_moves<movegen_type::all>( p, m, check );
-			if( m != ctx.move_ptr ) {
+			if( m != state.move_ptr ) {
 				ret = result::draw;
 			}
 			else {
@@ -122,11 +121,11 @@ public:
 	volatile bool do_abort_;
 
 	enum {
-		max_contexts = 10
+		max_calc_states = 10
 	};
 
-	context contexts_[max_contexts];
-	unsigned int ctx_it_;
+	calc_state calc_states_[max_calc_states];
+	unsigned int state_it_;
 
 	bool waiting_;
 
@@ -160,7 +159,7 @@ public:
 		, cb_()
 		, multipv_(1)
 	{
-		ctx_it_ = 1;
+		state_it_ = 1;
 	}
 
 	sorted_moves get_moves() { return moves_; }
@@ -204,7 +203,7 @@ public:
 	work( worker_thread* master, int depth, int ply, position const& p
 		, check_map const& check, short alpha, short beta, short full_eval
 		, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen
-		, context const& master_ctx );
+		, calc_state const& master_state );
 
 	int const depth_;
 	int const ply_;
@@ -219,12 +218,12 @@ public:
 	move& best_move_;
 	phased_move_generator_base& gen_;
 	unsigned int processed_moves_;
-	context const& master_ctx_;
+	calc_state const& master_state_;
 
 	worker_thread* master_;
 	
 	uint64_t active_workers_;
-	unsigned char active_worker_contexts_[64];
+	unsigned char active_worker_calc_states_[64];
 
 	bool done_;
 };
@@ -233,7 +232,7 @@ public:
 work::work( worker_thread* master, int depth, int ply, position const& p
 		, check_map const& check, short alpha, short beta, short full_eval
 		, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen
-		, context const& master_ctx )
+		, calc_state const& master_state )
 	: depth_(depth)
 	, ply_(ply)
 	, p_(p)
@@ -247,7 +246,7 @@ work::work( worker_thread* master, int depth, int ply, position const& p
 	, best_move_(best_move)
 	, gen_(gen)
 	, processed_moves_(1)
-	, master_ctx_(master_ctx)
+	, master_state_(master_state)
 	, master_(master)
 	, active_workers_()
 	, done_()
@@ -259,7 +258,7 @@ work::work( worker_thread* master, int depth, int ply, position const& p
 class thread_pool
 {
 public:
-	thread_pool( mutex& m );
+	thread_pool( context& ctx, mutex& m );
 	~thread_pool();
 
 	void update_threads();
@@ -269,6 +268,8 @@ public:
 	void clear_abort();
 	void wait_for_idle( scoped_lock& l );
 
+	context& ctx_;
+	
 	volatile bool idle_;
 
 	mutex& m_;
@@ -286,15 +287,16 @@ public:
 };
 
 
-thread_pool::thread_pool( mutex& m )
-	: idle_(true)
+thread_pool::thread_pool( context& ctx, mutex& m )
+	: ctx_(ctx)
+	, idle_(true)
 	, m_(m)
 	, work_()
 	, idle_threads_()
 {
 	scoped_lock l( m_ );
 
-	for( unsigned int i = 0; i < std::min( 64u, conf.thread_count ); ++i ) {
+	for( unsigned int i = 0; i < std::min( 64u, ctx_.conf_.thread_count ); ++i ) {
 		worker_thread* t;
 		if( !i ) {
 			t = new master_worker_thread( *this, i );
@@ -336,8 +338,8 @@ void thread_pool::abort( scoped_lock& )
 	}
 	for( auto thread : threads_ ) {
 		thread->do_abort_ = true;
-		for( unsigned int i = 0; i < thread->max_contexts; ++i ) {
-			thread->contexts_[i].do_abort_ = true;
+		for( unsigned int i = 0; i < thread->max_calc_states; ++i ) {
+			thread->calc_states_[i].do_abort_ = true;
 		}
 	}
 }
@@ -361,7 +363,7 @@ void thread_pool::wait_for_idle( scoped_lock& l )
 
 void thread_pool::update_threads()
 {
-	unsigned int const thread_count = std::min( 64u, conf.thread_count );
+	unsigned int const thread_count = std::min( 64u, ctx_.conf_.thread_count );
 	ASSERT( thread_count > 0 );
 	ASSERT( idle_ );
 
@@ -393,8 +395,8 @@ void thread_pool::update_threads()
 void thread_pool::reduce_histories()
 {
 	for( auto thread : threads_ ) {
-		for( unsigned int i = 0; i < thread->max_contexts; ++i ) {
-			thread->contexts_[i].history_.reduce();
+		for( unsigned int i = 0; i < thread->max_calc_states; ++i ) {
+			thread->calc_states_[i].history_.reduce();
 		}
 	}
 }
@@ -402,13 +404,15 @@ void thread_pool::reduce_histories()
 worker_thread::worker_thread( thread_pool& pool, uint64_t thread_index )
 	: quit_()
 	, do_abort_()
-	, ctx_it_()
+	, state_it_()
 	, waiting_()
 	, pool_(pool)
 	, thread_index_(thread_index)
 {
-	for( unsigned int i = 0; i < max_contexts; ++i ) {
-		contexts_[i].thread_ = this;
+	for( unsigned int i = 0; i < max_calc_states; ++i ) {
+		calc_states_[i].thread_ = this;
+		calc_states_[i].tt_ = &pool.ctx_.tt_;
+		calc_states_[i].pawn_tt_ = &pool.ctx_.pawn_tt_;
 	}
 }
 
@@ -441,15 +445,15 @@ void worker_thread::process_work( scoped_lock& l )
 		move const m = w->gen_.next();
 
 		if( !m.empty() ) {
-			ASSERT( ctx_it_ < max_contexts );
+			ASSERT( state_it_ < max_calc_states );
 
-			// Create context from work
-			context& ctx = contexts_[ctx_it_];
-			ctx.do_abort_ = false;
+			// Create calc_state from work
+			calc_state& state = calc_states_[state_it_];
+			state.do_abort_ = false;
 
 			ASSERT( !(w->active_workers_ & (1ull << thread_index_)) );
 			w->active_workers_ |= 1ull << thread_index_;
-			w->active_worker_contexts_[thread_index_] = ctx_it_++;
+			w->active_worker_calc_states_[thread_index_] = state_it_++;
 			
 			// Extract non-const data
 			unsigned int processed = ++w->processed_moves_;
@@ -459,10 +463,10 @@ void worker_thread::process_work( scoped_lock& l )
 
 			l.unlock();
 
-			ctx.move_ptr = ctx.moves;
-			ctx.seen = w->master_ctx_.seen;
+			state.move_ptr = state.moves;
+			state.seen = w->master_state_.seen;
 
-			short value = ctx.inner_step( w->depth_, w->ply_, w->p_, w->check_, alpha, w->beta_, w->full_eval_
+			short value = state.inner_step( w->depth_, w->ply_, w->p_, w->check_, alpha, w->beta_, w->full_eval_
 				, w->last_ply_was_capture_, w->pv_node_, m, processed, phase, best_value );
 
 			l.lock();
@@ -470,10 +474,10 @@ void worker_thread::process_work( scoped_lock& l )
 			ASSERT( w->active_workers_ & (1ull << thread_index_) );
 			w->active_workers_ &= ~(1ull << thread_index_);
 
-			ASSERT( ctx_it_ > 0 );
-			--ctx_it_;
+			ASSERT( state_it_ > 0 );
+			--state_it_;
 
-			if( !do_abort_ && !ctx.do_abort_ ) {
+			if( !do_abort_ && !state.do_abort_ ) {
 				if( value > w->best_value_ ) {
 					w->best_value_ = value;
 
@@ -497,7 +501,7 @@ void worker_thread::process_work( scoped_lock& l )
 							uint64_t active = w->active_workers_;
 							while( active ) {
 								uint64_t index = bitscan_unset( active );
-								pool_.threads_[index]->contexts_[w->active_worker_contexts_[index]].do_abort_ = true;
+								pool_.threads_[index]->calc_states_[w->active_worker_calc_states_[index]].do_abort_ = true;
 							}
 							w->gen_.set_done();
 						}
@@ -558,8 +562,8 @@ void master_worker_thread::process_root( scoped_lock& l )
 	}
 	ASSERT( !idle_ );
 
-	context& ctx = contexts_[0];
-	ctx.do_abort_ = false;
+	calc_state& state = calc_states_[0];
+	state.do_abort_ = false;
 
 	l.unlock();
 
@@ -574,15 +578,15 @@ void master_worker_thread::process_root( scoped_lock& l )
 		position new_pos = p_;
 		apply_move( new_pos, d.m.m );
 
-		ctx.seen = seen_;
-		ctx.move_ptr = ctx.moves;
+		state.seen = seen_;
+		state.move_ptr = state.moves;
 
 		short value;
-		if( ctx.seen.is_two_fold( new_pos.hash_, 1 ) ) {
+		if( state.seen.is_two_fold( new_pos.hash_, 1 ) ) {
 			value = result::draw;
 		}
 		else {
-			ctx.seen.push_root( new_pos.hash_ );
+			state.seen.push_root( new_pos.hash_ );
 
 			check_map check( new_pos );
 
@@ -593,7 +597,7 @@ void master_worker_thread::process_root( scoped_lock& l )
 				short beta = std::min( root_beta, static_cast<short>(d.m.sort + ASPIRATION) );
 
 				if( alpha < beta ) {
-					short aspiration_value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -beta, -alpha, false );
+					short aspiration_value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -beta, -alpha, false );
 					if( aspiration_value > alpha && aspiration_value < beta ) {
 						// Aspiration search found something sensible
 						value = aspiration_value;
@@ -603,13 +607,13 @@ void master_worker_thread::process_root( scoped_lock& l )
 
 			if( value == result::loss ) {
 				if( root_alpha != result::loss ) {
-					value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_alpha-1, -root_alpha, false );
+					value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_alpha-1, -root_alpha, false );
 					if( value > root_alpha ) {
-						value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_beta, -root_alpha, false );
+						value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_beta, -root_alpha, false );
 					}
 				}
 				else {
-					value = -ctx.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_beta, -root_alpha, false );
+					value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_beta, -root_alpha, false );
 				}
 			}
 		}
@@ -621,7 +625,7 @@ void master_worker_thread::process_root( scoped_lock& l )
 #if USE_STATISTICS
 			d.seldepth = pool_.stats_.highest_depth();
 #endif
-			get_pv_from_tt( d.pv, p_, max_depth_ );
+			get_pv_from_tt( *state.tt_, d.pv, p_, max_depth_ );
 			std::size_t j;
 			for( j = i; j > 0 && (j > multipv || moves_[j-1].m.sort < value); --j ) {
 				std::swap( moves_[j], moves_[j-1] );
@@ -680,8 +684,8 @@ void master_worker_thread::init( position const& p, sorted_moves const& moves, i
 
 	clock %= 256;
 	for( auto thread : pool_.threads_ ) {
-		for( unsigned int i = 0; i < max_contexts; ++i ) {
-			thread->contexts_[i].clock = clock;
+		for( unsigned int i = 0; i < max_calc_states; ++i ) {
+			thread->calc_states_[i].clock = clock;
 		}
 	}
 }
@@ -699,7 +703,7 @@ void master_worker_thread::process( scoped_lock& l, unsigned int max_depth )
 }
 
 
-void context::split( int depth, int ply, position const& p
+void calc_state::split( int depth, int ply, position const& p
 		, check_map const& check, short alpha, short beta, short full_eval, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen )
 {
 	ASSERT( thread_ );
@@ -732,7 +736,7 @@ void context::split( int depth, int ply, position const& p
 
 	// Participate
 	while( !w.done_ ) {
-		if( thread_->ctx_it_ < thread_->max_contexts ) {
+		if( thread_->state_it_ < thread_->max_calc_states ) {
 			thread_->process_work( l );
 		}
 
@@ -748,7 +752,7 @@ void context::split( int depth, int ply, position const& p
 
 
 
-short context::quiescence_search( int ply, int depth, position const& p, check_map const& check, short alpha, short beta, short full_eval )
+short calc_state::quiescence_search( int ply, int depth, position const& p, check_map const& check, short alpha, short beta, short full_eval )
 {
 #if VERIFY_HASH
 	if( p.init_hash() != p.hash_ ) {
@@ -790,7 +794,7 @@ short context::quiescence_search( int ply, int depth, position const& p, check_m
 
 	short eval;
 	move tt_move;
-	score_type::type t = transposition_table.lookup( p.hash_, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
+	score_type::type t = tt_->lookup( p.hash_, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
 	ASSERT( full_eval == result::win || full_eval == evaluate_full( p ) );
 
 	if ( !pv_node && t != score_type::none ) {
@@ -814,12 +818,12 @@ short context::quiescence_search( int ply, int depth, position const& p, check_m
 
 	if( !check.check ) {
 		if( full_eval == result::win ) {
-			full_eval = evaluate_full( p );
+			full_eval = evaluate_full( *pawn_tt_, p );
 		}
 		if( full_eval > alpha ) {
 			if( full_eval >= beta ) {
 				if( !do_abort_ && t == score_type::none && tt_move.empty() ) {
-					transposition_table.store( p.hash_, tt_depth, ply, full_eval, alpha, beta, tt_move, clock, full_eval );
+					tt_->store( p.hash_, tt_depth, ply, full_eval, alpha, beta, tt_move, clock, full_eval );
 				}
 				return full_eval;
 			}
@@ -885,13 +889,13 @@ short context::quiescence_search( int ply, int depth, position const& p, check_m
 	}
 
 	if( !do_abort_ ) {
-		transposition_table.store( p.hash_, tt_depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
+		tt_->store( p.hash_, tt_depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
 	}
 	return best_value;
 }
 
 
-short context::step( int depth, int ply, position& p, check_map const& check, short alpha, short beta, bool last_was_null, short full_eval, unsigned char last_ply_was_capture )
+short calc_state::step( int depth, int ply, position& p, check_map const& check, short alpha, short beta, bool last_was_null, short full_eval, unsigned char last_ply_was_capture )
 {
 #if VERIFY_HASH
 	if( p.init_hash() != p.hash_ ) {
@@ -940,7 +944,7 @@ short context::step( int depth, int ply, position& p, check_map const& check, sh
 	score_type::type t;
 	{
 		short eval;
-		t = transposition_table.lookup( p.hash_, depth, ply, alpha, beta, eval, tt_move, full_eval );
+		t = tt_->lookup( p.hash_, depth, ply, alpha, beta, eval, tt_move, full_eval );
 		if( t != score_type::none ) {
 			if( t == score_type::exact || !pv_node ) {
 				return eval;
@@ -951,9 +955,9 @@ short context::step( int depth, int ply, position& p, check_map const& check, sh
 	int plies_remaining = (depth - cutoff) / depth_factor;
 
 	if( !pv_node && !check.check /*&& plies_remaining < 4*/ && full_eval == result::win ) {
-		full_eval = evaluate_full( p );
+		full_eval = evaluate_full( *pawn_tt_, p );
 		if( tt_move.empty() && t == score_type::none ) {
-			transposition_table.store( p.hash_, 0, ply, 0, 0, 0, tt_move, clock, full_eval );
+			tt_->store( p.hash_, 0, ply, 0, 0, 0, tt_move, clock, full_eval );
 		}
 	}
 
@@ -1011,7 +1015,7 @@ short context::step( int depth, int ply, position& p, check_map const& check, sh
 		step( depth - 2 * depth_factor, ply, p, check, alpha, beta, true, full_eval, last_ply_was_capture );
 
 		short eval;
-		transposition_table.lookup( p.hash_, depth, ply, alpha, beta, eval, tt_move, full_eval );
+		tt_->lookup( p.hash_, depth, ply, alpha, beta, eval, tt_move, full_eval );
 	}
 
 	short best_value = result::loss;
@@ -1066,13 +1070,13 @@ short context::step( int depth, int ply, position& p, check_map const& check, sh
 	}
 
 	if( !do_abort_ ) {
-		transposition_table.store( p.hash_, depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
+		tt_->store( p.hash_, depth, ply, best_value, old_alpha, beta, best_move, clock, full_eval );
 	}
 
 	return best_value;
 }
 
-short context::inner_step( int const depth, int const ply, position const& p, check_map const& check, short const alpha, short const beta
+short calc_state::inner_step( int const depth, int const ply, position const& p, check_map const& check, short const alpha, short const beta
 						  , short const full_eval, unsigned char const last_ply_was_capture
 						  , bool const pv_node, move const& m, unsigned int const processed_moves, phases::type const phase, short const best_value )
 {
@@ -1194,16 +1198,21 @@ short context::inner_step( int const depth, int const ply, position const& p, ch
 void def_new_best_move_callback::on_new_best_move( unsigned int, position const& p, int depth, int selective_depth , int evaluation, uint64_t nodes, duration const& /*elapsed*/, move const* pv )
 {
 	ss_.str( std::string() );
-	ss_ << "Best: " << std::setw(2) << depth << " " << std::setw(2) << selective_depth << " " << std::setw(7) << evaluation << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p ) << std::endl;
+	ss_ << "Best: " << std::setw(2) << depth << " "
+		<< std::setw(2) << selective_depth << " "
+		<< std::setw(7) << evaluation << " "
+		<< std::setw(10) << nodes << " "
+		<< std::setw(0) << pv_to_string( conf_, pv, p ) << std::endl;
 	std::cerr << ss_.str();
 }
 
 class calc_manager::impl
 {
 public:
-	impl()
-		: do_abort_()
-		, pool_(mtx_)
+	impl( context& ctx )
+		: ctx_(ctx)
+		, do_abort_()
+		, pool_(ctx, mtx_)
 	{
 	}
 
@@ -1213,10 +1222,10 @@ public:
 	int get_max_depth( int depth ) const
 	{
 		if( depth <= 0 ) {
-			return conf.max_search_depth();
+			return ctx_.conf_.max_search_depth();
 		}
 		else {
-			return std::min( depth, conf.max_search_depth() );
+			return std::min( depth, ctx_.conf_.max_search_depth() );
 		}
 	}
 
@@ -1226,6 +1235,8 @@ public:
 		do_abort_ = true;
 		pool_.abort( l );
 	}
+	
+	context& ctx_;
 
 	mutex mtx_;
 	condition cond_;
@@ -1236,8 +1247,8 @@ public:
 };
 
 
-calc_manager::calc_manager()
-	: impl_( new impl() )
+calc_manager::calc_manager( context& ctx )
+	: impl_( new impl(ctx) )
 {
 }
 
@@ -1299,7 +1310,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, timestamp cons
 		move tt_move;
 		short hash_eval = 0;
 		short tmp = 0;
-		transposition_table.lookup( p.hash_, 0, 0, 0, 0, hash_eval, tt_move, tmp );
+		impl_->ctx_.tt_.lookup( p.hash_, 0, 0, 0, 0, hash_eval, tt_move, tmp );
 		for( move_info* it = moves; it != pm; ++it ) {
 			move_data md;
 			md.m = *it;
@@ -1342,7 +1353,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, timestamp cons
 	}
 
 	if( ev == result::none ) {
-		ev = evaluate_full( p );
+		ev = evaluate_full( impl_->ctx_.pawn_tt_, p );
 	}
 	result.forecast = ev;
 	result.best_move = sorted.front().m.m;
@@ -1407,7 +1418,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, timestamp cons
 		}
 		sorted = new_sorted;
 
-		push_pv_to_tt( sorted[0].pv, p, clock );
+		push_pv_to_tt( impl_->ctx_.tt_, sorted[0].pv, p, clock );
 
 		duration elapsed = timestamp() - start;
 		if( !ponder && !move_time_limit.is_infinity() && elapsed > (time_limit * 3) / 5 && depth < max_depth && !impl_->do_abort_ ) {
@@ -1428,7 +1439,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, timestamp cons
 
 #if USE_STATISTICS
 		timestamp stop;
-		impl_->pool_.stats_.print( stop - start );
+		impl_->pool_.stats_.print( impl_->ctx_, stop - start );
 		impl_->pool_.stats_.accumulate( stop - start );
 		impl_->pool_.stats_.reset( false );
 #endif

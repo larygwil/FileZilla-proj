@@ -7,13 +7,13 @@
 #include <iostream>
 #include <sstream>
 
-std::string pv_to_string( move const* pv, position p, bool use_long_algebraic_notation )
+std::string pv_to_string( config const& conf, move const* pv, position p, bool use_long_algebraic_notation )
 {
 	std::stringstream ss;
 	while( pv && !pv->empty() ) {
 		ss << 
 			( use_long_algebraic_notation ?
-				move_to_long_algebraic( p, *pv )
+				move_to_long_algebraic( conf, p, *pv )
 				: move_to_string( p, *pv ) ) 
 		   << " ";
 
@@ -24,7 +24,7 @@ std::string pv_to_string( move const* pv, position p, bool use_long_algebraic_no
 	return ss.str();
 }
 
-void get_pv_from_tt( move* pv, position p, int max_depth )
+void get_pv_from_tt( hash& tt, move* pv, position p, int max_depth )
 {
 	ASSERT( pv && !pv->empty() );
 	apply_move( p, *pv );
@@ -36,7 +36,7 @@ void get_pv_from_tt( move* pv, position p, int max_depth )
 		move best;
 		short ev;
 		short full_eval;
-		transposition_table.lookup( p.hash_, 0, 0, result::loss, result::win, ev, best, full_eval );
+		tt.lookup( p.hash_, 0, 0, result::loss, result::win, ev, best, full_eval );
 		if( best.empty() ) {
 			break;
 		}
@@ -54,7 +54,7 @@ void get_pv_from_tt( move* pv, position p, int max_depth )
 	pv->clear();
 }
 
-void push_pv_to_tt( move const* pv, position p, int clock )
+void push_pv_to_tt( hash& tt, move const* pv, position p, int clock )
 {
 	ASSERT( pv && !pv->empty() );
 
@@ -67,9 +67,9 @@ void push_pv_to_tt( move const* pv, position p, int clock )
 		move best;
 		short ev;
 		short full_eval;
-		transposition_table.lookup( p.hash_, 0, 0, result::loss, result::win, ev, best, full_eval );
+		tt.lookup( p.hash_, 0, 0, result::loss, result::win, ev, best, full_eval );
 		if( best != *pv ) {
-			transposition_table.store( p.hash_, 0, ply, 0, 0, 0, *pv, clock, result::win );
+			tt.store( p.hash_, 0, ply, 0, 0, 0, *pv, clock, result::win );
 		}
 
 		apply_move( p, *pv );

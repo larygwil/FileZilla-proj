@@ -152,11 +152,11 @@ void perft( std::size_t max_depth )
 
 namespace {
 
-position test_parse_fen( std::string const& fen )
+position test_parse_fen( context const& ctx, std::string const& fen )
 {
 	position p;
 	std::string error;
-	if( !parse_fen( fen, p, &error ) ) {
+	if( !parse_fen( ctx.conf_, fen, p, &error ) ) {
 		std::cerr << "Could not parse fen: " << error << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
 		abort();
@@ -177,9 +177,9 @@ move test_parse_move( position const& p, std::string const& ms )
 	return m;
 }
 
-static void test_move_generation( std::string const& fen, std::string const& ref_moves )
+static void test_move_generation( context& ctx, std::string const& fen, std::string const& ref_moves )
 {
-	position p = test_parse_fen( fen );
+	position p = test_parse_fen( ctx, fen );
 
 	std::vector<std::string> ms;
 	for( auto m : calculate_moves<movegen_type::all>( p ) ) {
@@ -209,36 +209,36 @@ static void test_move_generation( std::string const& fen, std::string const& ref
 }
 
 
-static void test_move_generation()
+static void test_move_generation( context& ctx )
 {
 	checking("move generation");
 
-	test_move_generation( "4R3/p1pp1p1p/b1n1rn2/1p2p1pP/1B1QPBr1/qPPb2PN/Pk1PNP2/R3K3 w Q g6",
+	test_move_generation( ctx, "4R3/p1pp1p1p/b1n1rn2/1p2p1pP/1B1QPBr1/qPPb2PN/Pk1PNP2/R3K3 w Q g6",
 						"c3-c4 f2-f3 h5-h6 h5xg6 Bb4-a5 Bb4-c5 Bb4-d6 Bb4-e7 Bb4-f8 Bb4xa3 Bf4-e3 Bf4xe5 Bf4xg5 Ke1-d1 Ke1-f1 Ne2-c1 Ne2-g1 Nh3-g1 Nh3xg5 Qd4-b6 Qd4-c4 Qd4-c5 Qd4-d5 Qd4-d6 Qd4-e3 Qd4xa7 Qd4xd3 Qd4xd7 Qd4xe5 Ra1-b1 Ra1-c1 Ra1-d1 Re8-a8 Re8-b8 Re8-c8 Re8-d8 Re8-e7 Re8-f8 Re8-g8 Re8-h8 Re8xe6" );
-	test_move_generation( "r3k2r/8/2p5/1Q6/1q6/2P5/8/R3K2R w KqQk -",
+	test_move_generation( ctx, "r3k2r/8/2p5/1Q6/1q6/2P5/8/R3K2R w KqQk -",
 						"O-O O-O-O c3xb4 Ke1-d1 Ke1-d2 Ke1-e2 Ke1-f1 Ke1-f2 Qb5-a4 Qb5-a5 Qb5-a6 Qb5-b6 Qb5-b7 Qb5-b8 Qb5-c4 Qb5-c5 Qb5-d3 Qb5-d5 Qb5-e2 Qb5-e5 Qb5-f1 Qb5-f5 Qb5-g5 Qb5-h5 Qb5xb4 Qb5xc6 Ra1-a2 Ra1-a3 Ra1-a4 Ra1-a5 Ra1-a6 Ra1-a7 Ra1-b1 Ra1-c1 Ra1-d1 Ra1xa8 Rh1-f1 Rh1-g1 Rh1-h2 Rh1-h3 Rh1-h4 Rh1-h5 Rh1-h6 Rh1-h7 Rh1xh8" );
-	test_move_generation( "3k4/8/8/q2pP2K/8/8/8/8 w - d6",
+	test_move_generation( ctx, "3k4/8/8/q2pP2K/8/8/8/8 w - d6",
 						"e5-e6 Kh5-g4 Kh5-g5 Kh5-g6 Kh5-h4 Kh5-h6");
-	test_move_generation( "3k4/8/8/q2pPP1K/8/8/8/8 w - d6",
+	test_move_generation( ctx, "3k4/8/8/q2pPP1K/8/8/8/8 w - d6",
 						"e5-e6 e5xd6 f5-f6 Kh5-g4 Kh5-g5 Kh5-g6 Kh5-h4 Kh5-h6");
-	test_move_generation( "3k4/8/8/K2pP2q/8/8/8/8 w - d6",
+	test_move_generation( ctx, "3k4/8/8/K2pP2q/8/8/8/8 w - d6",
 						"e5-e6 Ka5-a4 Ka5-a6 Ka5-b4 Ka5-b5 Ka5-b6");
-	test_move_generation( "3k4/8/8/K2pPP1q/8/8/8/8 w - d6",
+	test_move_generation( ctx, "3k4/8/8/K2pPP1q/8/8/8/8 w - d6",
 						"e5-e6 e5xd6 f5-f6 Ka5-a4 Ka5-a6 Ka5-b4 Ka5-b5 Ka5-b6");
-	test_move_generation( "r1bqkb1r/ppp1ppPp/2n5/8/8/5N2/PpPP1PPP/R1BQKB1R w KQkq -",
+	test_move_generation( ctx, "r1bqkb1r/ppp1ppPp/2n5/8/8/5N2/PpPP1PPP/R1BQKB1R w KQkq -",
 						"a2-a3 a2-a4 c2-c3 c2-c4 d2-d3 d2-d4 g2-g3 g2-g4 g7-g8=B g7-g8=N g7-g8=Q g7-g8=R g7xf8=B g7xf8=N g7xf8=Q g7xf8=R g7xh8=B g7xh8=N g7xh8=Q g7xh8=R h2-h3 h2-h4 Bc1xb2 Bf1-a6 Bf1-b5 Bf1-c4 Bf1-d3 Bf1-e2 Ke1-e2 Nf3-d4 Nf3-e5 Nf3-g1 Nf3-g5 Nf3-h4 Qd1-e2 Ra1-b1 Rh1-g1");
-	test_move_generation( "8/5Rp1/6r1/4p2p/RPp1k2b/4B3/7P/5K2 b - b3 0 1",
+	test_move_generation( ctx, "8/5Rp1/6r1/4p2p/RPp1k2b/4B3/7P/5K2 b - b3 0 1",
 						"c4-c3 Bh4-d8 Bh4-e1 Bh4-e7 Bh4-f2 Bh4-f6 Bh4-g3 Bh4-g5 Ke4-d3 Ke4-d5 Ke4xe3 Rg6-a6 Rg6-b6 Rg6-c6 Rg6-d6 Rg6-e6 Rg6-f6 Rg6-g1 Rg6-g2 Rg6-g3 Rg6-g4 Rg6-g5 Rg6-h6");
-	test_move_generation( "8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1",
+	test_move_generation( ctx, "8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1",
 						"c5-c6 Kb3-a2 Kb3-a3 Kb3-a4 Kb3-b2 Kb3-b4 Kb3-c2 Kb3-c3" );
 
 	pass();
 }
 
 
-static void test_move_legality_check( std::string const& fen, move const& m, bool ref_valid )
+static void test_move_legality_check( context& ctx, std::string const& fen, move const& m, bool ref_valid )
 {
-	position p = test_parse_fen( fen );
+	position p = test_parse_fen( ctx, fen );
 
 	check_map check( p );
 	bool valid = is_valid_move( p, m, check );
@@ -252,38 +252,38 @@ static void test_move_legality_check( std::string const& fen, move const& m, boo
 	}
 }
 
-static void test_move_legality_check()
+static void test_move_legality_check( context& ctx )
 {
 	checking("move legality test");
 
-	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::c3, square::c6, 0), false );
-	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::c2, square::c4, 0), false );
-	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::c2, square::c3, 0), false );
-	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::b2, square::c3, 0), false );
-	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::a2, square::b2, 0), false );
-	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::a2, square::b5, 0), false );
-	test_move_legality_check( "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::a2, square::c3, 0), false );
-	test_move_legality_check( "8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1", move( square::c5, square::d6, move_flags::enpassant), false );
-	test_move_legality_check("r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQK2R b KQkq - 0 1", move(square::e8, square::g8, move_flags::castle), true);
-	test_move_legality_check("r1bqk2r/pppp1ppp/2n1pn2/2B1P3/5P2/2N2N2/PPPP2PP/R2QKB1R b KQkq - 0 1", move(square::e8, square::g8, move_flags::castle), false);
+	test_move_legality_check( ctx, "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::c3, square::c6, 0), false );
+	test_move_legality_check( ctx, "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::c2, square::c4, 0), false );
+	test_move_legality_check( ctx, "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::c2, square::c3, 0), false );
+	test_move_legality_check( ctx, "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::b2, square::c3, 0), false );
+	test_move_legality_check( ctx, "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::a2, square::b2, 0), false );
+	test_move_legality_check( ctx, "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::a2, square::b5, 0), false );
+	test_move_legality_check( ctx, "rnbqk2r/pppp1ppp/5n2/2b1p3/4P3/2Q5/PPPP1PPP/RNB1KBNR w KQkq - 0 1", move(square::a2, square::c3, 0), false );
+	test_move_legality_check( ctx, "8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1", move( square::c5, square::d6, move_flags::enpassant), false );
+	test_move_legality_check( ctx, "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQK2R b KQkq - 0 1", move(square::e8, square::g8, move_flags::castle), true);
+	test_move_legality_check( ctx, "r1bqk2r/pppp1ppp/2n1pn2/2B1P3/5P2/2N2N2/PPPP2PP/R2QKB1R b KQkq - 0 1", move(square::e8, square::g8, move_flags::castle), false);
 
-	conf.fischer_random = true;
-	test_move_legality_check("bqnb1rkr/p2p1ppp/1p3n2/2p1p3/8/1NPN4/PPBPPPPP/BQ3RKR w HFhf c6 0 5", move(square::g1, square::c1, move_flags::castle), true);
-	test_move_legality_check("8/8/8/8/8/8/4k3/R5K1 w A - 0 1", move(square::g1, square::c1, move_flags::castle), false);
-	test_move_legality_check("8/8/8/8/8/8/1k6/R5K1 w A - 0 1", move(square::g1, square::c1, move_flags::castle), false);
-	test_move_legality_check("8/8/8/8/8/1k6/8/R5K1 w A - 0 1", move(square::g1, square::c1, move_flags::castle), true);
-	test_move_legality_check("bb1rk1rq/pppppppp/3nn3/8/4P3/3N2N1/PPPP1PPP/BB1RK1RQ b DGdg -", move(square::e8, square::g8, move_flags::castle), true);
-	test_move_legality_check("bb1rr1kq/pppppppp/4n3/4PN2/8/nP1N4/P1PP1PPP/BB1RK1RQ w DG -", move(square::e1, square::g1, move_flags::castle), true);
-	test_move_legality_check("1k2r1bq/rppp1ppp/3nn3/4p3/4P2P/3N1P2/PPPP3P/RK1BRN1Q b AEe -", move(square::b8, square::c8, move_flags::castle), false);
-	test_move_legality_check("rk1br1bq/ppppp2p/3nn1p1/5p2/8/3NPBN1/PPPP1PPP/RK2R1BQ w AEae -", move( square::b1, square::c1, move_flags::castle), true );
-	conf.fischer_random = false;
+	ctx.conf_.fischer_random = true;
+	test_move_legality_check( ctx, "bqnb1rkr/p2p1ppp/1p3n2/2p1p3/8/1NPN4/PPBPPPPP/BQ3RKR w HFhf c6 0 5", move(square::g1, square::c1, move_flags::castle), true);
+	test_move_legality_check( ctx, "8/8/8/8/8/8/4k3/R5K1 w A - 0 1", move(square::g1, square::c1, move_flags::castle), false);
+	test_move_legality_check( ctx, "8/8/8/8/8/8/1k6/R5K1 w A - 0 1", move(square::g1, square::c1, move_flags::castle), false);
+	test_move_legality_check( ctx, "8/8/8/8/8/1k6/8/R5K1 w A - 0 1", move(square::g1, square::c1, move_flags::castle), true);
+	test_move_legality_check( ctx, "bb1rk1rq/pppppppp/3nn3/8/4P3/3N2N1/PPPP1PPP/BB1RK1RQ b DGdg -", move(square::e8, square::g8, move_flags::castle), true);
+	test_move_legality_check( ctx, "bb1rr1kq/pppppppp/4n3/4PN2/8/nP1N4/P1PP1PPP/BB1RK1RQ w DG -", move(square::e1, square::g1, move_flags::castle), true);
+	test_move_legality_check( ctx, "1k2r1bq/rppp1ppp/3nn3/4p3/4P2P/3N1P2/PPPP3P/RK1BRN1Q b AEe -", move(square::b8, square::c8, move_flags::castle), false);
+	test_move_legality_check( ctx, "rk1br1bq/ppppp2p/3nn1p1/5p2/8/3NPBN1/PPPP1PPP/RK2R1BQ w AEae -", move( square::b1, square::c1, move_flags::castle), true );
+	ctx.conf_.fischer_random = false;
 
 	pass();
 }
 
-static void test_zobrist( std::string const& fen, std::string const& ms )
+static void test_zobrist( context& ctx, std::string const& fen, std::string const& ms )
 {
-	position p = test_parse_fen( fen );
+	position p = test_parse_fen( ctx, fen );
 
 	move m = test_parse_move( p, ms );
 
@@ -303,25 +303,25 @@ static void test_zobrist( std::string const& fen, std::string const& ms )
 	}
 }
 
-static void test_zobrist()
+static void test_zobrist( context& ctx )
 {
 	checking("zobrist hashing");
 
-	test_zobrist( "rnbqk2r/1p3pp1/3bpn2/p2pN2p/P1Pp4/4P3/1P1BBPPP/RN1Q1RK1 b kq c3", "dxc3" );
-	test_zobrist( "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "e4" );
-	test_zobrist( "rn1qkbnr/pppb2pp/5p2/1B1pp3/4P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq e6 0 5", "O-O" );
-	test_zobrist( "r3kbnr/pp1n2pp/1qp2p2/3pp2b/4P3/PPN2N1P/2PPBPP1/R1BQR1K1 b kq - 2 10", "O-O-O" );
+	test_zobrist( ctx, "rnbqk2r/1p3pp1/3bpn2/p2pN2p/P1Pp4/4P3/1P1BBPPP/RN1Q1RK1 b kq c3", "dxc3" );
+	test_zobrist( ctx, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "e4" );
+	test_zobrist( ctx, "rn1qkbnr/pppb2pp/5p2/1B1pp3/4P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq e6 0 5", "O-O" );
+	test_zobrist( ctx, "r3kbnr/pp1n2pp/1qp2p2/3pp2b/4P3/PPN2N1P/2PPBPP1/R1BQR1K1 b kq - 2 10", "O-O-O" );
 
 	pass();
 }
 
-static bool test_lazy_eval( std::string const& fen, short& max_difference )
+static bool test_lazy_eval( context& ctx, std::string const& fen, short& max_difference )
 {
-	position p = test_parse_fen( fen );
+	position p = test_parse_fen( ctx, fen );
 
 	score currents = p.white() ? p.base_eval : -p.base_eval;
 	short current = currents.scale( p.material[0].mg() + p.material[1].mg() );
-	short full = evaluate_full( p );
+	short full = evaluate_full( ctx.pawn_tt_, p );
 
 	short diff = std::abs( full - current );
 
@@ -355,16 +355,16 @@ static void check_eval()
 	pass();
 }
 
-static void test_lazy_eval()
+static void test_lazy_eval( context& ctx )
 {
 	checking("lazy evaluation");
-	std::ifstream in_fen(conf.self_dir + "test/testpositions.txt");
+	std::ifstream in_fen(ctx.conf_.self_dir + "test/testpositions.txt");
 
 	short max_difference = 0;
 
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {
-		if( !test_lazy_eval( fen, max_difference ) ) {
+		if( !test_lazy_eval( ctx, fen, max_difference ) ) {
 			abort();
 		}
 	}
@@ -472,11 +472,11 @@ std::string flip_fen( std::string const& fen )
 }
 
 
-static bool test_evaluation( std::string const& fen, position const& p )
+static bool test_evaluation( context& ctx, std::string const& fen, position const& p )
 {
 	std::string flipped = flip_fen( fen );
 
-	position p2 = test_parse_fen( flipped );
+	position p2 = test_parse_fen( ctx, flipped );
 
 	if( p.material[0] != p2.material[1] || p.material[1] != p2.material[0] ) {
 		std::cerr << "Material not symmetric: " << p.material[0] << " " << p.material[1] << " " << p2.material[0] << " " << p2.material[1] << std::endl;
@@ -494,14 +494,14 @@ static bool test_evaluation( std::string const& fen, position const& p )
 		return false;
 	}
 
-	short eval_full = evaluate_full( p );
-	short flipped_eval_full = evaluate_full( p2 );
+	short eval_full = evaluate_full( ctx.pawn_tt_, p );
+	short flipped_eval_full = evaluate_full( ctx.pawn_tt_, p2 );
 	if( eval_full != flipped_eval_full ) {
 		std::cerr << "Evaluation not symmetric: " << eval_full << " " << flipped_eval_full << " " << std::endl;
 		std::cerr << "Fen: " << fen << std::endl;
-		std::cerr << explain_eval( p ) << std::endl;
+		std::cerr << explain_eval( ctx.pawn_tt_, p ) << std::endl;
 		std::cerr << "Flipped: " << flipped << std::endl;
-		std::cerr << explain_eval( p2 ) << std::endl;
+		std::cerr << explain_eval( ctx.pawn_tt_, p2 ) << std::endl;
 		return false;
 	}
 
@@ -550,16 +550,16 @@ static void test_moves_noncaptures( std::string const& fen, position const& p )
 }
 
 
-static void test_incorrect_positions()
+static void test_incorrect_positions( context& ctx )
 {
 	checking("fen validation");
-	std::ifstream in_fen(conf.self_dir + "test/bad_fen.txt");
+	std::ifstream in_fen(ctx.conf_.self_dir + "test/bad_fen.txt");
 
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {
 		position p;
 		std::string error;
-		if( parse_fen( fen, p, &error ) ) {
+		if( parse_fen( ctx.conf_, fen, p, &error ) ) {
 			std::cerr << "Fen of invalid position was not rejected." << std::endl;
 			std::cerr << "Fen: " << fen << std::endl;
 			abort();
@@ -569,15 +569,15 @@ static void test_incorrect_positions()
 }
 
 
-static void process_test_positions()
+static void process_test_positions( context& ctx )
 {
-	std::ifstream in_fen(conf.self_dir + "test/testpositions.txt");
+	std::ifstream in_fen(ctx.conf_.self_dir + "test/testpositions.txt");
 
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {
-		position p = test_parse_fen( fen );
+		position p = test_parse_fen( ctx, fen );
 
-		if( !test_evaluation( fen, p ) ) {
+		if( !test_evaluation( ctx, fen, p ) ) {
 			abort();
 		}
 
@@ -586,7 +586,7 @@ static void process_test_positions()
 }
 
 
-static void test_perft()
+static void test_perft( context& ctx )
 {
 	checking( "perft", true );
 
@@ -595,7 +595,7 @@ static void test_perft()
 		perft<false>(6);
 	}
 	{
-		position p = test_parse_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -");
+		position p = test_parse_fen( ctx, "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -" );
 		uint64_t const perft_results[] = {
 			6,
 			264,
@@ -609,7 +609,7 @@ static void test_perft()
 		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -");
+		position p = test_parse_fen( ctx, "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -" );
 		uint64_t const perft_results[] = {
 			14,
 			191,
@@ -624,7 +624,7 @@ static void test_perft()
 		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+		position p = test_parse_fen( ctx, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -" );
 		uint64_t const perft_results[] = {
 			48,
 			2039,
@@ -637,7 +637,7 @@ static void test_perft()
 		perft<false>(p, 5, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("rnbqkb1r/pp1p1ppp/2p5/4P3/2B5/8/PPP1NnPP/RNBQK2R w KQkq - 0 6");
+		position p = test_parse_fen( ctx, "rnbqkb1r/pp1p1ppp/2p5/4P3/2B5/8/PPP1NnPP/RNBQK2R w KQkq - 0 6" );
 		uint64_t const perft_results[] = {
 			42,
 			1352,
@@ -648,7 +648,7 @@ static void test_perft()
 		perft<false>(p, 3, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1");
+		position p = test_parse_fen( ctx, "8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1" );
 		uint64_t const perft_results[] = {
 			8,
 			104,
@@ -662,7 +662,7 @@ static void test_perft()
 		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("8/8/1k6/2b5/2pP4/8/5K2/8 b - d3 0 1");
+		position p = test_parse_fen( ctx, "8/8/1k6/2b5/2pP4/8/5K2/8 b - d3 0 1" );
 		uint64_t const perft_results[] = {
 			15,
 			126,
@@ -676,7 +676,7 @@ static void test_perft()
 		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("5k2/8/8/8/8/8/8/4K2R w K - 0 1");
+		position p = test_parse_fen( ctx, "5k2/8/8/8/8/8/8/4K2R w K - 0 1" );
 		uint64_t const perft_results[] = {
 			15,
 			66,
@@ -690,7 +690,7 @@ static void test_perft()
 		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("3k4/8/8/8/8/8/8/R3K3 w Q - 0 1");
+		position p = test_parse_fen( ctx, "3k4/8/8/8/8/8/8/R3K3 w Q - 0 1" );
 		uint64_t const perft_results[] = {
 			16,
 			71,
@@ -704,7 +704,7 @@ static void test_perft()
 		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1");
+		position p = test_parse_fen( ctx, "r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1" );
 		uint64_t const perft_results[] = {
 			26,
 			1141,
@@ -716,7 +716,7 @@ static void test_perft()
 		perft<false>(p, 4, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("r3k2r/8/3Q4/8/8/5q2/8/R3K2R b KQkq - 0 1");
+		position p = test_parse_fen( ctx, "r3k2r/8/3Q4/8/8/5q2/8/R3K2R b KQkq - 0 1" );
 		uint64_t const perft_results[] = {
 			44,
 			1494,
@@ -728,7 +728,7 @@ static void test_perft()
 		perft<false>(p, 4, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("2K2r2/4P3/8/8/8/8/8/3k4 w - - 0 1");
+		position p = test_parse_fen( ctx, "2K2r2/4P3/8/8/8/8/8/3k4 w - - 0 1" );
 		uint64_t const perft_results[] = {
 			11,
 			133,
@@ -742,7 +742,7 @@ static void test_perft()
 		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("8/8/1P2K3/8/2n5/1q6/8/5k2 b - - 0 1");
+		position p = test_parse_fen( ctx, "8/8/1P2K3/8/2n5/1q6/8/5k2 b - - 0 1" );
 		uint64_t const perft_results[] = {
 			29,
 			165,
@@ -755,7 +755,7 @@ static void test_perft()
 		perft<false>(p, 5, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("4k3/1P6/8/8/8/8/K7/8 w - - 0 1");
+		position p = test_parse_fen( ctx, "4k3/1P6/8/8/8/8/K7/8 w - - 0 1" );
 		uint64_t const perft_results[] = {
 			9,
 			40,
@@ -769,7 +769,7 @@ static void test_perft()
 		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("8/P1k5/K7/8/8/8/8/8 w - - 0 1");
+		position p = test_parse_fen( ctx, "8/P1k5/K7/8/8/8/8/8 w - - 0 1" );
 		uint64_t const perft_results[] = {
 			6,
 			27,
@@ -783,7 +783,7 @@ static void test_perft()
 		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("K1k5/8/P7/8/8/8/8/8 w - - 0 1");
+		position p = test_parse_fen( ctx, "K1k5/8/P7/8/8/8/8/8 w - - 0 1" );
 		uint64_t const perft_results[] = {
 			2,
 			6,
@@ -797,7 +797,7 @@ static void test_perft()
 		perft<false>(p, 6, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("8/k1P5/8/1K6/8/8/8/8 w - - 0 1");
+		position p = test_parse_fen( ctx, "8/k1P5/8/1K6/8/8/8/8 w - - 0 1" );
 		uint64_t const perft_results[] = {
 			10,
 			25,
@@ -812,7 +812,7 @@ static void test_perft()
 		perft<false>(p, 7, perft_results, sizeof(perft_results) / sizeof(uint64_t));
 	}
 	{
-		position p = test_parse_fen("8/8/2k5/5q2/5n2/8/5K2/8 b - - 0 1");
+		position p = test_parse_fen( ctx, "8/8/2k5/5q2/5n2/8/5K2/8 b - - 0 1" );
 		uint64_t const perft_results[] = {
 			37,
 			183,
@@ -884,9 +884,9 @@ static void check_bitscan()
 	pass();
 }
 
-static void check_see( std::string const& fen, std::string const& ms, int expected )
+static void check_see( context& ctx, std::string const& fen, std::string const& ms, int expected )
 {
-	position p = test_parse_fen( fen );
+	position p = test_parse_fen( ctx, fen );
 
 	move m = test_parse_move( p, ms );
 	
@@ -905,23 +905,23 @@ static void check_see( std::string const& fen, std::string const& ms, int expect
 	}
 }
 
-static void check_see()
+static void check_see( context& ctx )
 {
 	checking("static exchange evaluation");
 
-	check_see( "r3r3/p4ppp/4k3/R3n3/1N1KP3/8/6BP/8 w - -", "Rxe5", 1 );
-	check_see( "8/1k6/3r4/8/3Pp3/8/6K1/3R4 b - d3 0 1", "exd", 1 );
-	check_see( "8/1k6/3b4/8/3Pp3/8/6K1/3R4 b - d3 0 1", "exd", 0 );
-	check_see( "1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - -", "Rxe5", 1 );
-	check_see( "1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -", "Nxe5", -1 );
+	check_see( ctx, "r3r3/p4ppp/4k3/R3n3/1N1KP3/8/6BP/8 w - -", "Rxe5", 1 );
+	check_see( ctx, "8/1k6/3r4/8/3Pp3/8/6K1/3R4 b - d3 0 1", "exd", 1 );
+	check_see( ctx, "8/1k6/3b4/8/3Pp3/8/6K1/3R4 b - d3 0 1", "exd", 0 );
+	check_see( ctx, "1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - -", "Rxe5", 1 );
+	check_see( ctx, "1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -", "Nxe5", -1 );
 
 	pass();
 }
 
 
-void do_check_disambiguation( std::string const& fen, std::string const& ms, std::string const& ref )
+void do_check_disambiguation( context& ctx, std::string const& fen, std::string const& ms, std::string const& ref )
 {
-	position p = test_parse_fen( fen );
+	position p = test_parse_fen( ctx, fen );
 
 	move m;
 	std::string error;
@@ -941,22 +941,22 @@ void do_check_disambiguation( std::string const& fen, std::string const& ms, std
 }
 
 
-void check_disambiguation()
+void check_disambiguation( context& ctx )
 {
 	checking("disambiguations");
-	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k3N1 w - - 0 1", "Ngf3", "Ngf3" );
-	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k3N1 w - - 0 1", "N1f3", "Ngf3" );
-	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N3 w - - 0 1", "Ne1f3", "N1f3" );
-	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N3 w - - 0 1", "N1f3", "N1f3" );
-	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne1f3", "Ne1f3" );
-	do_check_disambiguation( "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne5f3", "N5f3" );
+	do_check_disambiguation( ctx, "2K5/8/8/4N3/8/8/8/2k3N1 w - - 0 1", "Ngf3", "Ngf3" );
+	do_check_disambiguation( ctx, "2K5/8/8/4N3/8/8/8/2k3N1 w - - 0 1", "N1f3", "Ngf3" );
+	do_check_disambiguation( ctx, "2K5/8/8/4N3/8/8/8/2k1N3 w - - 0 1", "Ne1f3", "N1f3" );
+	do_check_disambiguation( ctx, "2K5/8/8/4N3/8/8/8/2k1N3 w - - 0 1", "N1f3", "N1f3" );
+	do_check_disambiguation( ctx, "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne1f3", "Ne1f3" );
+	do_check_disambiguation( ctx, "2K5/8/8/4N3/8/8/8/2k1N1N1 w - - 0 1", "Ne5f3", "N5f3" );
 
-	conf.fischer_random = true;
-	do_check_disambiguation( "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "f1g1", "Kg1" );
-	do_check_disambiguation( "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "Kg1", "Kg1" );
-	do_check_disambiguation( "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "O-O", "O-O" );
-	do_check_disambiguation( "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "f1h1", "O-O" );
-	conf.fischer_random = false;
+	ctx.conf_.fischer_random = true;
+	do_check_disambiguation( ctx, "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "f1g1", "Kg1" );
+	do_check_disambiguation( ctx, "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "Kg1", "Kg1" );
+	do_check_disambiguation( ctx, "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "O-O", "O-O" );
+	do_check_disambiguation( ctx, "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "f1h1", "O-O" );
+	ctx.conf_.fischer_random = false;
 
 	pass();
 }
@@ -997,9 +997,9 @@ void check_condition_wait()
 }
 
 
-void check_kpvk( std::string const& fen, bool evaluated, int expected )
+void check_kpvk( context& ctx, std::string const& fen, bool evaluated, int expected )
 {
-	position p = test_parse_fen( fen );
+	position p = test_parse_fen( ctx, fen );
 
 	short s;
 	if( evaluate_endgame( p, s ) != evaluated ) {
@@ -1017,7 +1017,7 @@ void check_kpvk( std::string const& fen, bool evaluated, int expected )
 		}
 	}
 
-	position p2 = test_parse_fen( flip_fen( fen ) );
+	position p2 = test_parse_fen( ctx, flip_fen( fen ) );
 	expected *= -1;
 
 	if( evaluate_endgame( p2, s ) != evaluated ) {
@@ -1038,16 +1038,16 @@ void check_kpvk( std::string const& fen, bool evaluated, int expected )
 }
 
 
-void check_endgame_eval()
+void check_endgame_eval( context& ctx )
 {
 	checking("endgame evaluation");
 
-	check_kpvk("k7/8/7p/8/8/8/8/1K6 w - - 1 1", false, 0 );
-	check_kpvk("k7/8/7p/8/8/8/8/1K6 b - - 1 1", true, -1 );
-	check_kpvk("k7/7K/7p/8/8/8/8/8 b - - 1 1", true, -1 );
-	check_kpvk("k7/7K/7p/8/8/8/8/8 w - - 1 1", false, 0 );
-	check_kpvk("k7/8/2K5/7p/8/8/8/8 b - - 1 1", true, -1 );
-	check_kpvk("k7/8/2K5/7p/8/8/8/8 w - - 1 1", false, 0 );
+	check_kpvk( ctx, "k7/8/7p/8/8/8/8/1K6 w - - 1 1", false, 0 );
+	check_kpvk( ctx, "k7/8/7p/8/8/8/8/1K6 b - - 1 1", true, -1 );
+	check_kpvk( ctx, "k7/7K/7p/8/8/8/8/8 b - - 1 1", true, -1 );
+	check_kpvk( ctx, "k7/7K/7p/8/8/8/8/8 w - - 1 1", false, 0 );
+	check_kpvk( ctx, "k7/8/2K5/7p/8/8/8/8 b - - 1 1", true, -1 );
+	check_kpvk( ctx, "k7/8/2K5/7p/8/8/8/8 w - - 1 1", false, 0 );
 
 	std::string const fens[] = {
 		"8/3k4/8/8/5K2/8/8/8 w - - 0 1",
@@ -1076,8 +1076,8 @@ void check_endgame_eval()
 	};
 
 	for( auto const& fen: fens ) {
-		position p = test_parse_fen( fen );
-		position p2 = test_parse_fen( flip_fen( fen ) );
+		position p = test_parse_fen( ctx, fen );
+		position p2 = test_parse_fen( ctx, flip_fen( fen ) );
 
 		short ev = 0;
 		if( !evaluate_endgame( p, ev ) ) {
@@ -1169,31 +1169,33 @@ void check_scale()
 
 bool selftest()
 {
+	// Start by checking basics
 	check_popcount();
 	check_bitscan();
-	check_see();
-
-	pawn_hash_table.init( conf.pawn_hash_table_size() );
-
-	check_disambiguation();
-
 	check_time();
+
+	context ctx;
+	ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size() );
+
+	check_see( ctx );
+
+	check_disambiguation( ctx );
 
 	check_scale();
 	check_eval();
-	check_endgame_eval();
+	check_endgame_eval( ctx );
 
 	test_pst();
-	test_incorrect_positions();
-	process_test_positions();
-	test_move_generation();
-	test_move_legality_check();
-	test_zobrist();
-	test_lazy_eval();
+	test_incorrect_positions( ctx );
+	process_test_positions( ctx );
+	test_move_generation( ctx );
+	test_move_legality_check( ctx );
+	test_zobrist( ctx );
+	test_lazy_eval( ctx );
 
 	check_condition_wait();
 
-	test_perft();
+	test_perft( ctx );
 
 	std::cerr << "Self test passed" << std::endl;
 	return true;

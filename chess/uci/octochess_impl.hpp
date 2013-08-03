@@ -8,12 +8,14 @@
 
 #include <vector>
 
+class context;
+
 namespace octochess {
 namespace uci {
 
 class octochess_uci : engine_interface {
 public:
-	octochess_uci( gui_interface_ptr const& );
+	octochess_uci( context& ctx, gui_interface_ptr const& );
 	//callbacks
 	virtual void new_game() override;
 	virtual void set_position( std::string const& fen ) override;
@@ -24,7 +26,7 @@ public:
 	virtual bool is_move( std::string const& ms ) override;
 
 	//generic info
-	virtual std::string name() const { return conf.program_name(); }
+	virtual std::string name() const;
 	virtual std::string author() const { return "Tim Kosse"; }
 
 	// options

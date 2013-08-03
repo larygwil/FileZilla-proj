@@ -547,7 +547,7 @@ std::string move_to_san( position const& p, move const& m )
 }
 
 
-std::string move_to_long_algebraic( position const& p, move const& m )
+std::string move_to_long_algebraic( config const& conf, position const& p, move const& m )
 {
 	std::string ret;
 

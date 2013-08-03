@@ -6,7 +6,7 @@
 #include <iostream>
 #include <sstream>
 
-std::string position_to_fen_noclock( position const& p )
+std::string position_to_fen_noclock( config const& conf, position const& p )
 {
 	std::stringstream ss;
 
@@ -130,7 +130,7 @@ std::string position_to_fen_noclock( position const& p )
 	return ss.str();
 }
 
-bool parse_fen( std::string const& fen, position& p, std::string* error )
+bool parse_fen( config const& conf, std::string const& fen, position& p, std::string* error )
 {
 	std::stringstream in( fen );
 
@@ -349,7 +349,7 @@ bool parse_fen( std::string const& fen, position& p, std::string* error )
 	}
 
 	std::string tmp;
-	if( !p.verify(tmp) ) {
+	if( !p.verify(conf.fischer_random, tmp) ) {
 		if( error ) {
 			*error = tmp;
 		}

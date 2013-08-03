@@ -684,10 +684,10 @@ void do_evaluate_pawns( position const& p, eval_results& results, score* s )
 }
 
 template<bool detail>
-void evaluate_pawns( position const& p, eval_results& results )
+void evaluate_pawns( pawn_structure_hash_table& pawn_tt, position const& p, eval_results& results )
 {
 	score s[2];
-	if( pawn_hash_table.lookup( p.pawn_hash, s, results.passed_pawns ) ) {
+	if( pawn_tt.lookup( p.pawn_hash, s, results.passed_pawns ) ) {
 		add_score<detail, eval_detail::pawn_structure>( results, s );
 
 #if VERIFY_PAWN_HASH_TABLE
@@ -702,7 +702,7 @@ void evaluate_pawns( position const& p, eval_results& results )
 	do_evaluate_pawns<detail>( p, results, s );
 
 	add_score<detail, eval_detail::pawn_structure>( results, s );
-	pawn_hash_table.store( p.pawn_hash, s, results.passed_pawns );
+	pawn_tt.store( p.pawn_hash, s, results.passed_pawns );
 }
 
 
@@ -820,9 +820,9 @@ static void evaluate_imbalance( position const& p, eval_results& results )
 }
 
 template<bool detail>
-static void do_evaluate( position const& p, eval_results& results )
+static void do_evaluate( pawn_structure_hash_table& pawn_tt, position const& p, eval_results& results )
 {
-	evaluate_pawns<detail>( p, results );
+	evaluate_pawns<detail>( pawn_tt, p, results );
 
 	for( unsigned int c = 0; c < 2; ++c ) {
 		if( popcount( p.bitboards[c][bb_type::bishops] ) > 1 ) {
@@ -953,7 +953,7 @@ static std::string explain( position const& p, const char* name, eval_detail::ty
 }
 
 
-std::string explain_eval( position const& p )
+std::string explain_eval( pawn_structure_hash_table& pawn_tt, position const& p )
 {
 	std::stringstream ss;
 
@@ -968,7 +968,7 @@ std::string explain_eval( position const& p )
 		}
 
 		eval_results results;
-		do_evaluate<true>( p, results );
+		do_evaluate<true>( pawn_tt, p, results );
 
 		score full = sum_up( p, results );
 
@@ -1014,7 +1014,7 @@ std::string explain_eval( position const& p )
 }
 
 
-short evaluate_full( position const& p )
+short evaluate_full( pawn_structure_hash_table& pawn_tt, position const& p )
 {
 	short eval = 0;
 	if( evaluate_endgame( p, eval ) ) {
@@ -1025,7 +1025,7 @@ short evaluate_full( position const& p )
 	}
 
 	eval_results results;
-	do_evaluate<false>( p, results );
+	do_evaluate<false>( pawn_tt, p, results );
 
 	score full = sum_up( p, results );
 

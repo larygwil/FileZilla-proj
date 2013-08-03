@@ -22,11 +22,20 @@ struct new_best_move_callback_base
 	virtual void on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) = 0;
 
 	virtual bool print_only_updated() const { return false; };
+
 };
 
 struct def_new_best_move_callback : public new_best_move_callback_base
 {
+	def_new_best_move_callback( config const& conf )
+		: conf_(conf)
+	{
+	}
+
 	virtual void on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv );
+
+protected:
+	config const& conf_;
 
 private:
 	std::stringstream ss_;
@@ -37,7 +46,6 @@ struct null_new_best_move_callback : public new_best_move_callback_base
 	virtual void on_new_best_move( unsigned int, position const&, int, int, int, uint64_t, duration const&, move const* ) override {}
 };
 
-extern def_new_best_move_callback default_new_best_move_callback;
 extern null_new_best_move_callback null_new_best_move_cb;
 
 class calc_result
@@ -59,7 +67,7 @@ public:
 class calc_manager
 {
 public:
-	calc_manager();
+	calc_manager( context& ctx );
 	virtual ~calc_manager();
 
 	// May modify seen_positions at indexes > root_position
@@ -69,7 +77,7 @@ public:
 		   timestamp const& start,
 		   duration const& move_time_limit, duration const& deadline, int clock,
 		   seen_positions& seen,
-		   new_best_move_callback_base& new_best_cb = default_new_best_move_callback,
+		   new_best_move_callback_base& new_best_cb,
 		   std::set<move> const& searchmoves = std::set<move>() );
 
 	void clear_abort();
@@ -108,14 +116,16 @@ public:
 
 class worker_thread;
 
-class context
+class calc_state
 {
 public:
-	context( worker_thread* thread = 0 )
+	calc_state()
 		: clock(0)
 		, move_ptr(moves)
 		, do_abort_()
-		, thread_( thread )
+		, thread_()
+		, tt_()
+		, pawn_tt_()
 	{
 	}
 
@@ -145,6 +155,9 @@ public:
 	bool do_abort_;
 
 	worker_thread* thread_;
+
+	hash* tt_;
+	pawn_structure_hash_table* pawn_tt_;
 };
 
 #endif

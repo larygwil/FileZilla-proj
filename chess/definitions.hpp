@@ -1,6 +1,8 @@
 #ifndef __DEFINITIONS_H__
 #define __DEFINITIONS_H__
 
+#include "util/platform.hpp"
+
 #include <string>
 
 namespace pieces {

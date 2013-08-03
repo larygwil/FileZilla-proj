@@ -1,4 +1,6 @@
 #include "statistics.hpp"
+
+#include "context.hpp"
 #include "hash.hpp"
 #include "util/logger.hpp"
 #include "pawn_structure_hash_table.hpp"
@@ -27,7 +29,7 @@ statistics::statistics()
 }
 
 
-void statistics::print( duration const& elapsed )
+void statistics::print( context& ctx, duration const& elapsed )
 {
 	ss_.str( std::string() );
 
@@ -62,10 +64,10 @@ void statistics::print( duration const& elapsed )
 
 	ss_ << std::endl;
 	ss_ << "Transposition table stats:" << std::endl;
-	hash::stats s = transposition_table.get_stats( true );
+	hash::stats s = ctx.tt_.get_stats( true );
 
 	ss_ << "- Number of entries: " << std::setw(11) << s.entries << " (";
-	uint64_t max_hash_entry_count = transposition_table.max_hash_entry_count();
+	uint64_t max_hash_entry_count = ctx.tt_.max_hash_entry_count();
 	if( max_hash_entry_count ) {
 		if( s.entries > max_hash_entry_count ) {
 			s.entries = max_hash_entry_count;
@@ -91,7 +93,7 @@ void statistics::print( duration const& elapsed )
 	ss_ << std::endl;
 	ss_ << "- Index collisions:  " << std::setw(11) << s.index_collisions << std::endl;
 
-	pawn_structure_hash_table::stats ps = pawn_hash_table.get_stats(true);
+	pawn_structure_hash_table::stats ps = ctx.pawn_tt_.get_stats(true);
 
 	ss_ << std::endl;
 	ss_ << "Pawn structure hash table stats:" << std::endl;

@@ -17,7 +17,7 @@
 
 duration const d = duration::milliseconds(1000);
 
-std::vector<epd> parse_epd( std::string const& fn )
+std::vector<epd> parse_epd( config const& conf, std::string const& fn )
 {
 	std::ifstream in( fn );
 	if( !in.is_open() ) {
@@ -25,10 +25,10 @@ std::vector<epd> parse_epd( std::string const& fn )
 		abort();
 	}
 
-	return parse_epd( in );
+	return parse_epd( conf, in );
 }
 
-std::vector<epd> parse_epd( std::istream& in )
+std::vector<epd> parse_epd( config const& conf, std::istream& in )
 {
 	std::vector<epd> ret;
 	std::string line;
@@ -49,7 +49,7 @@ std::vector<epd> parse_epd( std::istream& in )
 		}
 
 		epd e;
-		if( !parse_fen( fen, e.p ) ) {
+		if( !parse_fen( conf, fen, e.p ) ) {
 			std::cerr << "Could not parse " << fen << std::endl;
 			abort();
 		}
@@ -77,7 +77,7 @@ std::vector<epd> parse_epd( std::istream& in )
 	return ret;
 }
 
-int run_sts( epd const& e, int& match, int& sum )
+int run_sts( context& ctx, epd const& e, int& match, int& sum )
 {
 	auto it = e.operations.find("c0");
 	if( it != e.operations.end() && !it->second.empty()) {
@@ -102,12 +102,12 @@ int run_sts( epd const& e, int& match, int& sum )
 			scores[m] = move_score;
 		}
 
-		transposition_table.init( conf.memory, true );
-		pawn_hash_table.init( conf.pawn_hash_table_size(), true );
+		ctx.tt_.init( ctx.conf_.memory, true );
+		ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size(), true );
 
-		calc_manager c;
+		calc_manager c(ctx);
 		seen_positions seen( e.p.hash_ );
-		calc_result r = c.calc( e.p, conf.max_search_depth(), timestamp(), duration::infinity(), d, 0, seen, null_new_best_move_cb );
+		calc_result r = c.calc( e.p, ctx.conf_.max_search_depth(), timestamp(), duration::infinity(), d, 0, seen, null_new_best_move_cb );
 		if( scores.find(r.best_move) != scores.end() ) {
 			sum += scores[r.best_move];
 		}
@@ -120,7 +120,7 @@ int run_sts( epd const& e, int& match, int& sum )
 	return sum;
 }
 
-void run_sts()
+void run_sts( context& ctx )
 {
 	logger::show_debug( false );
 
@@ -128,15 +128,15 @@ void run_sts()
 	std::vector<int> scores;
 	for( int i = 1; i <= 14; ++i ) {
 		std::ostringstream ss;
-		ss << conf.self_dir << "sts/STS" << i << ".epd";
+		ss << ctx.conf_.self_dir << "sts/STS" << i << ".epd";
 
-		std::vector<epd> epds = parse_epd( ss.str() );
+		std::vector<epd> epds = parse_epd( ctx.conf_, ss.str() );
 
 		int match = 0;
 		int score = 0;
 
 		for( auto e : epds ) {
-			run_sts( e, match, score );
+			run_sts( ctx, e, match, score );
 		}
 
 		std::cerr << i << " " << match << " " << score << std::endl;

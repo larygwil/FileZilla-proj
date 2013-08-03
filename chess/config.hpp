@@ -14,12 +14,13 @@
 #define MAX_QDEPTH 40
 #endif
 
-struct config
+class config
 {
+public:
 	config();
 
 	// Returns the command to execute
-	std::string init( int argc,  char const* argv[] );
+	std::string init( int argc, char const* argv[] );
 
 	unsigned int thread_count;
 	unsigned int memory;
@@ -48,6 +49,5 @@ private:
 	int depth_;
 	unsigned int pawn_hash_table_size_; // In MiB
 };
-extern config conf;
 
 #endif

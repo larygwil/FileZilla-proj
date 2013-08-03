@@ -34,9 +34,10 @@ enum type {
 
 struct xboard_state
 {
-	xboard_state()
-		: clock()
-		, book_( conf.self_dir )
+	xboard_state( context& ctx )
+		: ctx_(ctx)
+		, clock()
+		, book_( ctx.conf_.self_dir )
 		, mode_(mode::force)
 		, self(color::black)
 		, time_control()
@@ -168,6 +169,7 @@ struct xboard_state
 	// Returns false if program should quit.
 	bool handle_edit_mode( std::string const& cmd );
 
+	context& ctx_;
 	position p;
 	int clock;
 	seen_positions seen;
@@ -265,7 +267,7 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 
 			p.castle[c] = 0;
 
-			if( !conf.fischer_random ) {
+			if( !ctx_.conf_.fischer_random ) {
 				if( p.king_pos[c] == row + 4 ) {
 					if( p.bitboards[c][bb_type::rooks] & (1ull << (row + 7)) ) {
 						p.castle[c] |= 128u;
@@ -294,7 +296,7 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 		seen.reset_root( p.hash_ );
 		started_from_root = false;
 
-		if( !p.verify() ) {
+		if( !p.verify( ctx_.conf_.fischer_random ) ) {
 			// Specs say to tell user error until next edit/new/setboard command. Since we cannot do that yet, refuse to leave edit mode.
 			std::cout << "Error (invalid position): Cannot leave edit mode while the position is not valid." << std::endl;
 		}
@@ -370,7 +372,8 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 
 
 xboard_thread::xboard_thread( xboard_state& s )
-: abort()
+: cmgr_(s.ctx_)
+, abort()
 , state(s)
 , ponder_()
 , depth_(-1)
@@ -384,7 +387,7 @@ xboard_thread::~xboard_thread()
 }
 
 	
-void xboard_output_move_raw( position const& p, move const& m )
+void xboard_output_move_raw( config& conf, position const& p, move const& m )
 {
 	if( conf.fischer_random && m.castle() ) {
 		bool kingside = (m.target() % 8) == 6;
@@ -396,15 +399,15 @@ void xboard_output_move_raw( position const& p, move const& m )
 		}
 	}
 	else {
-		std::cout << move_to_long_algebraic( p, m ) << std::endl;
+		std::cout << move_to_long_algebraic( conf, p, m ) << std::endl;
 	}
 }
 
 
-void xboard_output_move( position const& p,move const& m )
+void xboard_output_move( config& conf, position const& p,move const& m )
 {
 	std::cout << "move ";
-	xboard_output_move_raw( p, m);
+	xboard_output_move_raw( conf, p, m );
 }
 
 
@@ -463,7 +466,7 @@ void xboard_thread::onRun()
 
 		if( !result.best_move.empty() ) {
 
-			xboard_output_move( state.p, result.best_move );
+			xboard_output_move( state.ctx_.conf_, state.p, result.best_move );
 
 			state.apply( result.best_move );
 
@@ -472,7 +475,7 @@ void xboard_thread::onRun()
 				dlog() << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << result.forecast << std::endl;
 			}
 
-			ponder_ = conf.ponder;
+			ponder_ = state.ctx_.conf_.ponder;
 		}
 		else {
 			if( result.forecast == result::win ) {
@@ -556,7 +559,11 @@ void xboard_thread::on_new_best_move( unsigned int, position const& p, int depth
 
 		int64_t cs = elapsed.milliseconds() / 10;
 		std::stringstream ss;
-		ss << std::setw(2) << depth << " " << std::setw(7) << evaluation << " " << std::setw(6) << cs << " " << std::setw(10) << nodes << " " << std::setw(0) << pv_to_string( pv, p ) << std::endl;
+		ss << std::setw(2) << depth << " " 
+			<< std::setw(7) << evaluation << " "
+			<< std::setw(6) << cs << " " 
+			<< std::setw(10) << nodes << " " 
+			<< std::setw(0) << pv_to_string( state.ctx_.conf_, pv, p ) << std::endl;
 		if( state.post ) {
 			std::cout << ss.str();
 			std::cout.flush();
@@ -578,7 +585,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 	state.last_go_color = state.p.self();
 
 	// Do a step
-	if( conf.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
+	if( state.ctx_.conf_.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
 		std::vector<simple_book_entry> moves = state.book_.get_entries( state.p );
 		if( !moves.empty() ) {
 			short best = moves.front().forecast;
@@ -592,7 +599,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 			simple_book_entry best_move = moves[state.rng_.get_uint64() % count_best];
 			ASSERT( !best_move.m.empty() );
 
-			xboard_output_move( state.p, best_move.m );
+			xboard_output_move( state.ctx_.conf_, state.p, best_move.m );
 
 			state.history.push_back( state.p );
 
@@ -611,7 +618,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 
 	std::pair<move,move> pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p );
 	if( !pv_move.first.empty() ) {
-		xboard_output_move( state.p, pv_move.first );
+		xboard_output_move( state.ctx_.conf_, state.p, pv_move.first );
 
 		state.history.push_back( state.p );
 
@@ -646,7 +653,7 @@ void resume( xboard_thread& thread, xboard_state& state, timestamp const& cmd_re
 bool parse_setboard( xboard_state& state, std::string const& args, std::string& error )
 {
 	position new_pos;
-	if( !parse_fen( args, new_pos, &error ) ) {
+	if( !parse_fen( state.ctx_.conf_, args, new_pos, &error ) ) {
 		return false;
 	}
 
@@ -661,7 +668,7 @@ bool parse_setboard( xboard_state& state, std::string const& args, std::string& 
 }
 
 
-void xboard( std::string line)
+void xboard( context& ctx, std::string line )
 {
 	if( uses_native_popcnt() && !cpu_has_popcnt() ) {
 		std::cout << "tellusererror Your CPU does not support the POPCNT instruction, but this version of Octochess has been built to use this instruction. Please use a generic (but slower) version of Octochess for your CPU." << std::endl;
@@ -669,11 +676,11 @@ void xboard( std::string line)
 		exit(1);
 	}
 
-	xboard_state state;
+	xboard_state state(ctx);
 	xboard_thread thread( state );
 
-	pawn_hash_table.init( conf.pawn_hash_table_size() );
-	transposition_table.init( conf.memory );
+	ctx.tt_.init( ctx.conf_.memory );
+	ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size() );
 
 	if( !line.empty() ) {
 		goto skip_getline;
@@ -713,11 +720,11 @@ skip_getline:
 
 			// The following commands do not stop the thread.
 			if( cmd == "hard" ) {
-				conf.ponder = true;
+				ctx.conf_.ponder = true;
 				continue;
 			}
 			else if( cmd == "easy" ) {
-				conf.ponder = false;
+				ctx.conf_.ponder = false;
 				continue;
 			}
 			else if( cmd == "." ) {
@@ -728,10 +735,10 @@ skip_getline:
 			else if( cmd == "hint" ) {
 				short tmp;
 				move m;
-				transposition_table.lookup( state.p.hash_, 0, 0, result::loss, result::win, tmp, m, tmp );
+				ctx.tt_.lookup( state.p.hash_, 0, 0, result::loss, result::win, tmp, m, tmp );
 				if( !m.empty() ) {
 					std::cout << "Hint: ";
-					xboard_output_move_raw( state.p, m );
+					xboard_output_move_raw( ctx.conf_, state.p, m );
 				}
 				continue;
 			}
@@ -749,7 +756,7 @@ skip_getline:
 		}
 		else if( cmd == "?" ) {
 			if( !best_move.empty() ) {
-				xboard_output_move( state.p, best_move );
+				xboard_output_move( ctx.conf_, state.p, best_move );
 				state.apply( best_move );
 			}
 			else {
@@ -759,7 +766,7 @@ skip_getline:
 		else if( cmd == "protover" ) {
 			//std::cout << "feature ping=1" << std::endl;
 			std::cout << "feature analyze=1\n";
-			std::cout << "feature myname=\"" << conf.program_name() << "\"\n";
+			std::cout << "feature myname=\"" << ctx.conf_.program_name() << "\"\n";
 			std::cout << "feature setboard=1\n";
 			std::cout << "feature sigint=0\n";
 			std::cout << "feature variants=\"normal,fischerandom\"\n";
@@ -926,9 +933,9 @@ skip_getline:
 		else if( cmd == "memory" ) {
 			unsigned int mem;
 			if( to_int<unsigned int>( args, mem, 4 ) ) {
-				conf.memory = mem;
-				transposition_table.init(conf.memory);
-				pawn_hash_table.init( conf.pawn_hash_table_size() );
+				ctx.conf_.memory = mem;
+				ctx.tt_.init(ctx.conf_.memory);
+				ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size() );
 			}
 			else {
 				std::cout << "Error (bad command): Not a valid st command" << std::endl;
@@ -937,7 +944,7 @@ skip_getline:
 		else if( cmd == "cores" ) {
 			unsigned int cores;
 			if( to_int<unsigned int>( args, cores, 1, get_cpu_count() ) ) {
-				conf.thread_count = cores;
+				ctx.conf_.thread_count = cores;
 			}
 			else {
 				std::cout << "Error (bad command): Not a valid st command" << std::endl;
@@ -961,10 +968,10 @@ skip_getline:
 		}
 		else if( cmd == "variant" ) {
 			if( args == "normal" ) {
-				conf.fischer_random = false;
+				ctx.conf_.fischer_random = false;
 			}
 			else if( args == "fischerandom" || args == "fisherrandom" || args == "frc" ) {
-				conf.fischer_random = true;
+				ctx.conf_.fischer_random = true;
 			}
 			else {
 				std::cout << "Error (bad command): Not a valid variant" << std::endl;
@@ -1027,7 +1034,7 @@ skip_getline:
 			for( auto m : calculate_moves<movegen_type::all>( state.p ) ) {
 				if( args == "long" ) {
 					std::cout << " ";
-					xboard_output_move_raw( state.p, m );
+					xboard_output_move_raw( ctx.conf_, state.p, m );
 				}
 				else if( args == "full" ) {
 					std::cout << " " << move_to_string( state.p, m ) << std::endl;
@@ -1038,10 +1045,10 @@ skip_getline:
 			}
 		}
 		else if( cmd == "fen" ) {
-			std::cout << position_to_fen_noclock( state.p ) << std::endl;
+			std::cout << position_to_fen_noclock( ctx.conf_, state.p ) << std::endl;
 		}
 		else if( cmd == "score" || cmd == "eval" ) {
-			std::cout << explain_eval( state.p ) << std::endl;
+			std::cout << explain_eval( ctx.pawn_tt_, state.p ) << std::endl;
 		}
 		else if( cmd == "hash" ) {
 			std::cout << state.p.hash_ << std::endl;

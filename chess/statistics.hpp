@@ -3,13 +3,13 @@
 
 #define USE_STATISTICS 1
 
-#include "chess.hpp"
 #include "config.hpp"
 #include "util/time.hpp"
 #include <atomic>
 #include <sstream>
 
 #if USE_STATISTICS
+class context;
 class statistics {
 public:
 	statistics();
@@ -20,7 +20,7 @@ public:
 	int highest_depth() const;
 	int busiest_depth() const;
 
-	void print( duration const& elapsed );
+	void print( context& ctx, duration const& elapsed );
 	void print_details();
 
 	void reset( bool total );

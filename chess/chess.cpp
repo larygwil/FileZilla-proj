@@ -47,10 +47,10 @@ contact tim.kosse@filezilla-project.org for details.
 
 duration const TIME_LIMIT = duration::seconds(900);
 
-void auto_play()
+void auto_play( context& ctx )
 {
-	transposition_table.init( conf.memory );
-	pawn_hash_table.init( conf.pawn_hash_table_size() );
+	ctx.tt_.init( ctx.conf_.memory );
+	ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size() );
 	timestamp start;
 	position p;
 
@@ -58,9 +58,11 @@ void auto_play()
 
 	seen_positions seen( p.hash_ );
 
-	calc_manager cmgr;
+	def_new_best_move_callback cb( ctx.conf_ );
+
+	calc_manager cmgr(ctx);
 	calc_result result;
-	while( !(result = cmgr.calc( p, -1, timestamp(), TIME_LIMIT, TIME_LIMIT, i, seen ) ).best_move.empty() ) {
+	while( !(result = cmgr.calc( p, -1, timestamp(), TIME_LIMIT, TIME_LIMIT, i, seen, cb ) ).best_move.empty() ) {
 		cmgr.clear_abort();
 		if( p.white() ) {
 			std::cout << std::setw(3) << i << ".";
@@ -71,7 +73,7 @@ void auto_play()
 		if( !p.white() ) {
 			++i;
 			std::cout << std::endl;
-			if( conf.max_moves && i > conf.max_moves ) {
+			if( ctx.conf_.max_moves && i > ctx.conf_.max_moves ) {
 				break;
 			}
 		}
@@ -118,11 +120,12 @@ int main( int argc, char const* argv[] )
 {
 	console_init();
 
-	std::string command = conf.init( argc, argv );
+	context ctx;
+	std::string command = ctx.conf_.init( argc, argv );
 
-	logger::init( conf.logfile );
+	logger::init( ctx.conf_.logfile );
 
-	std::cerr << conf.program_name() << std::endl;
+	std::cerr << ctx.conf_.program_name() << std::endl;
 	std::cerr << std::endl;
 
 	init_magic();
@@ -144,10 +147,10 @@ int main( int argc, char const* argv[] )
 	}
 
 	if( command == "auto" ) {
-		auto_play();
+		auto_play( ctx );
 	}
 	else if( command == "perft" ) {
-		pawn_hash_table.init( conf.pawn_hash_table_size() );
+		ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size() );
 		perft<false>();
 	}
 	else if( command == "test" ) {
@@ -155,23 +158,23 @@ int main( int argc, char const* argv[] )
 	}
 #if DEVELOPMENT
 	else if( command == "tweakgen" ) {
-		generate_test_positions();
+		generate_test_positions( ctx );
 	}
 	else if( command == "tweak" ) {
-		tweak_evaluation();
+		tweak_evaluation( ctx );
 	}
 	else if( command == "sts" ) {
-		run_sts();
+		run_sts( ctx );
 	}
 #endif
 	else if( command == "xboard" ) {
-		xboard( from_stdin ? "xboard" : "" );
+		xboard( ctx, from_stdin ? "xboard" : "" );
 	}
 	else if( command == "uci" ) {
-		run_uci( from_stdin );
+		run_uci( ctx, from_stdin );
 	}
 	else {
-		xboard( command );
+		xboard( ctx, command );
 	}
 
 	logger::cleanup();
