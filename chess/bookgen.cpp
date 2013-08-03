@@ -702,7 +702,7 @@ bool parse_move_bg( book& b, std::vector<move> const& history, position const& p
 	std::size_t i;
 
 	std::vector<book_entry> moves = b.get_entries( p, history );
-	if( to_int<std::size_t>( line, i, 1, moves.size() ) ) {
+	if( to_int<std::size_t>( line, i, 1, moves.size(), false ) ) {
 		m = moves[i-1].m;
 		return true;
 	}

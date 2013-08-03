@@ -20,7 +20,7 @@ inline std::string to_string( T const& t )
 
 
 template<typename T>
-bool to_int( std::string const& s, T& t, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max() )
+bool to_int( std::string const& s, T& t, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max(), bool clamp = true )
 {
 	bool ret = false;
 
@@ -33,11 +33,15 @@ bool to_int( std::string const& s, T& t, T min = std::numeric_limits<T>::min(), 
 	if( ss ) {
 		if( t < min ) {
 			t = min;
+			ret = clamp;
 		}
 		else if( t > max ) {
 			t = max;
+			ret = clamp;
 		}
-		ret = true;
+		else {
+			ret = true;
+		}
 	}
 
 	return ret;
