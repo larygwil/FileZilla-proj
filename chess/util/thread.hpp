@@ -15,6 +15,9 @@ public:
 	virtual void onRun() = 0;
 
 private:
+	thread( thread const& t );
+	thread& operator=( thread const& t );
+
 	impl* impl_;
 };
 

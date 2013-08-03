@@ -9,11 +9,14 @@
 #include "pawn_structure_hash_table.hpp"
 #include "see.hpp"
 #include "selftest.hpp"
+#include "util/logger.hpp"
 #include "util/mutex.hpp"
 #include "util/time.hpp"
 #include "util/string.hpp"
+#include "util/thread.hpp"
 #include "util.hpp"
 
+#include <array>
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
@@ -1165,6 +1168,66 @@ void check_scale()
 
 	pass();
 }
+
+class context_isolation_test_thread : public thread
+{
+public:
+	context_isolation_test_thread()
+		: nodes_()
+	{
+		ctx_.conf_.memory = 1;
+		ctx_.conf_.thread_count = 1;
+		ctx_.tt_.init( 1 );
+		ctx_.pawn_tt_.init( 1 );
+	}
+
+	virtual void onRun()
+	{
+		calc_manager c(ctx_);
+
+		position p;
+		seen_positions seen;
+
+		timestamp start;
+		c.calc( p, 13, start, duration::infinity(), duration::infinity(), 0, seen, null_new_best_move_cb );
+
+		statistics& s = c.stats();
+		s.accumulate( duration( start, timestamp() ) );
+		nodes_ = s.total_full_width_nodes + s.total_quiescence_nodes;
+	}
+
+	uint64_t nodes_;
+	context ctx_;
+};
+
+void test_context_isolation()
+{
+	checking("checking context isolation");
+
+	bool debug = logger::show_debug();
+	logger::show_debug( false );
+
+	std::array<context_isolation_test_thread, 10> threads;
+	for( auto& t : threads ) {
+		t.spawn();
+	}
+	for( auto& t : threads ) {
+		t.join();
+	}
+
+	uint64_t nodes = threads[0].nodes_;
+	for( auto& t : threads ) {
+		if( t.nodes_ != nodes ) {
+			std::cerr << "Contexts are not isolated, different node counts" << std::endl;
+			abort();
+		}
+	}
+
+	logger::show_debug( debug );
+
+	pass();
+}
+
 }
 
 bool selftest()
@@ -1194,6 +1257,8 @@ bool selftest()
 	test_lazy_eval( ctx );
 
 	check_condition_wait();
+
+	test_context_isolation();
 
 	test_perft( ctx );
 
