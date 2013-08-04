@@ -761,7 +761,7 @@ short calc_state::quiescence_search( int ply, int depth, position const& p, chec
 	}
 #endif
 #if VERIFY_POSITION
-	p.verify_abort();
+	p.verify_abort( thread_->pool_.ctx_.conf_.fischer_random );
 #endif
 
 	if( do_abort_ ) {
@@ -795,7 +795,7 @@ short calc_state::quiescence_search( int ply, int depth, position const& p, chec
 	short eval;
 	move tt_move;
 	score_type::type t = tt_->lookup( p.hash_, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
-	ASSERT( full_eval == result::win || full_eval == evaluate_full( p ) );
+	ASSERT( full_eval == result::win || full_eval == evaluate_full( *pawn_tt_, p ) );
 
 	if ( !pv_node && t != score_type::none ) {
 		return eval;
@@ -904,7 +904,7 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 	}
 #endif
 #if VERIFY_POSITION
-	p.verify_abort();
+	p.verify_abort( thread_->pool_.ctx_.conf_.fischer_random );
 #endif
 
 	if( depth < cutoff || ply >= MAX_DEPTH ) {
