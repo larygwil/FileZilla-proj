@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -181,12 +181,12 @@
     <ClCompile Include="..\statistics.cpp" />
     <ClCompile Include="..\util\logger.cpp" />
     <ClCompile Include="..\util\mutex_win.cpp" />
+    <ClCompile Include="..\util\platform.cpp" />
     <ClCompile Include="..\util\string.cpp" />
     <ClCompile Include="..\tables.cpp" />
     <ClCompile Include="..\util\thread.cpp" />
     <ClCompile Include="..\util\time.cpp" />
     <ClCompile Include="..\util.cpp" />
-    <ClCompile Include="..\util\windows.cpp" />
     <ClCompile Include="..\zobrist.cpp" />
   </ItemGroup>
   <ItemGroup>
