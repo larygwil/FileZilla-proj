@@ -69,7 +69,9 @@ move qsearch_move_generator::next()
 			if( !is_valid_move( p_, hash_move, check_ ) ) {
 				std::cerr << "Possible type-1 hash collision:" << std::endl;
 				std::cerr << board_to_string( p_, color::white ) << std::endl;
-				std::cerr << position_to_fen_noclock( p_ ) << std::endl;
+				config tmp;
+				tmp.fischer_random = true;
+				std::cerr << position_to_fen_noclock( tmp, p_ ) << std::endl;
 				std::cerr << move_to_string( p_, hash_move ) << std::endl;
 			}
 			else
@@ -185,7 +187,9 @@ move move_generator::next() {
 			if( !is_valid_move( p_, hash_move, check_ ) ) {
 				std::cerr << "Possible type-1 hash collision:" << std::endl;
 				std::cerr << board_to_string( p_, color::white ) << std::endl;
-				std::cerr << position_to_fen_noclock( p_ ) << std::endl;
+				config tmp;
+				tmp.fischer_random = true;
+				std::cerr << position_to_fen_noclock( tmp, p_ ) << std::endl;
 				std::cerr << move_to_string( p_, hash_move ) << std::endl;
 			}
 			else

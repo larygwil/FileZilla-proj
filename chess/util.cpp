@@ -1264,7 +1264,9 @@ bool is_valid_move( position const& p, move const& m, check_map const& check )
 	}
 	if( ret || it != end ) {
 		std::cerr << board_to_string( p, color::white ) << std::endl;
-		std::cerr << position_to_fen_noclock( p ) << std::endl;
+		config tmp;
+		tmp.fischer_random = true;
+		std::cerr << position_to_fen_noclock( tmp, p ) << std::endl;
 		std::cerr << move_to_string( p, m ) << std::endl;
 		std::cerr << "Ret: " << ret << std::endl;
 		abort();

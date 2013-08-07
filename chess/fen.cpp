@@ -123,7 +123,7 @@ std::string position_to_fen_noclock( config const& conf, position const& p )
 
 #if VERIFY_FEN
 	position p2;
-	if( !parse_fen( ss.str(), p2 ) ) {
+	if( !parse_fen( conf, ss.str(), p2 ) ) {
 		std::cerr << "FAIL" << std::endl;
 	}
 #endif
@@ -349,7 +349,7 @@ bool parse_fen( config const& conf, std::string const& fen, position& p, std::st
 	}
 
 	std::string tmp;
-	if( !p.verify(conf.fischer_random, tmp) ) {
+	if( !p.verify(tmp) || (!conf.fischer_random && !p.verify_castling( tmp, conf.fischer_random ) ) ) {
 		if( error ) {
 			*error = tmp;
 		}

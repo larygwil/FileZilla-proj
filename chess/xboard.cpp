@@ -296,7 +296,7 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 		seen.reset_root( p.hash_ );
 		started_from_root = false;
 
-		if( !p.verify( ctx_.conf_.fischer_random ) ) {
+		if( !p.verify() ) {
 			// Specs say to tell user error until next edit/new/setboard command. Since we cannot do that yet, refuse to leave edit mode.
 			std::cout << "Error (invalid position): Cannot leave edit mode while the position is not valid." << std::endl;
 		}

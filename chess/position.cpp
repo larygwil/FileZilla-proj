@@ -166,10 +166,10 @@ unsigned char position::do_null_move( unsigned char old_enpassant )
 }
 
 
-bool position::verify( bool frc ) const
+bool position::verify() const
 {
 	std::string error;
-	bool ret = verify( frc, error );
+	bool ret = verify( error );
 	if( !ret ) {
 		std::cerr << error << std::endl;
 	}
@@ -177,7 +177,7 @@ bool position::verify( bool frc ) const
 	return ret;
 }
 
-bool position::verify( bool frc, std::string& error ) const
+bool position::verify( std::string& error ) const
 {
 	position p2 = *this;
 	p2.update_derived();
@@ -230,53 +230,6 @@ bool position::verify( bool frc, std::string& error ) const
 	}
 
 	for( int i = 0; i < 2; ++i ) {
-		if( castle[i] ) {
-			if( popcount(castle[i]) > 2 ) {
-				error = color::to_string(static_cast<color::type>(i)) + "'s castling rights include too many sides";
-				return false;
-			}
-
-			if( popcount(castle[i]) == 2 ) {
-				uint64_t queenside = bitscan(castle[i]);
-				uint64_t kingside = bitscan_reverse(castle[i]);
-				uint64_t king = king_pos[i] % 8;
-				if( queenside > king || kingside < king ) {
-					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not have king in center";
-					return false;
-				}
-			}
-
-			uint64_t s = castle[i];
-			while( s ) {
-				uint64_t r = 1ull << bitscan_unset(s);
-				if( i == color::black ) {
-					r <<= (7 * 8);
-				}
-				if( !(bitboards[i][bb_type::rooks] & r) ) {
-					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not match the rook positions";
-					return false;
-				}
-			}
-
-			if( !frc ) {
-				if( king_pos[i] != (i ? 60 : 4) ) {
-					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not match the king positions";
-					return false;
-				}
-				if( castle[i] & 0x7e ) {
-					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights on rooks other than A and H file";
-					return false;
-				}
-			}
-			else {
-				uint64_t castle_row = 0x7eull << (i ? 56 : 0);
-				if( !(1ull << king_pos[i]) & castle_row ) {
-					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not match the king positions";
-					return false;
-				}
-			}
-		}
-		
 		uint64_t all = 0;
 		for( int pi = bb_type::pawns; pi <= bb_type::king; ++pi ) {
 			all += popcount(bitboards[i][pi]);
@@ -285,6 +238,10 @@ bool position::verify( bool frc, std::string& error ) const
 			error = "Internal error: Bitboards for difference pieces not disjunct";
 			return false;
 		}
+	}
+
+	if( !verify_castling( error, true ) ) {
+		return false;
 	}
 
 	if( can_en_passant ) {
@@ -368,9 +325,9 @@ bool position::verify( bool frc, std::string& error ) const
 }
 
 
-void position::verify_abort( bool frc ) const
+void position::verify_abort() const
 {
-	if( !verify( frc ) ) {
+	if( !verify() ) {
 		abort();
 	}
 }
@@ -456,4 +413,59 @@ uint64_t position::init_hash() const
 	}
 
 	return hash;
+}
+
+
+bool position::verify_castling( std::string& error, bool allow_frc ) const
+{
+	for( int i = 0; i < 2; ++i ) {
+		uint64_t s = castle[i];
+		if( s ) {
+			if( popcount(castle[i]) > 2 ) {
+				error = color::to_string(static_cast<color::type>(i)) + "'s castling rights include too many sides";
+				return false;
+			}
+
+			if( popcount(castle[i]) == 2 ) {
+				uint64_t queenside = bitscan(castle[i]);
+				uint64_t kingside = bitscan_reverse(castle[i]);
+				uint64_t king = king_pos[i] % 8;
+				if( queenside > king || kingside < king ) {
+					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not have king in center";
+					return false;
+				}
+			}
+
+			while( s ) {
+				uint64_t r = 1ull << bitscan_unset(s);
+				if( i == color::black ) {
+					r <<= (7 * 8);
+				}
+				if( !(bitboards[i][bb_type::rooks] & r) ) {
+					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not match the rook positions";
+					return false;
+				}
+			}
+			
+			if( !allow_frc ) {
+				if( king_pos[i] != (i ? 60 : 4) ) {
+					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not match the king positions";
+					return false;
+				}
+				if( castle[i] & 0x7e ) {
+					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights on rooks other than A and H file";
+					return false;
+				}
+			}
+			else {
+				uint64_t castle_row = 0x7eull << (i ? 56 : 0);
+				if( !(1ull << king_pos[i]) & castle_row ) {
+					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not match the king positions";
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
 }

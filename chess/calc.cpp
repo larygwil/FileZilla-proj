@@ -405,7 +405,7 @@ worker_thread::worker_thread( thread_pool& pool, uint64_t thread_index )
 	: quit_()
 	, do_abort_()
 	, state_it_()
-	, waiting_()
+	, waiting_(true)
 	, pool_(pool)
 	, thread_index_(thread_index)
 {
@@ -761,7 +761,7 @@ short calc_state::quiescence_search( int ply, int depth, position const& p, chec
 	}
 #endif
 #if VERIFY_POSITION
-	p.verify_abort( thread_->pool_.ctx_.conf_.fischer_random );
+	p.verify_abort();
 #endif
 
 	if( do_abort_ ) {
@@ -904,7 +904,7 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 	}
 #endif
 #if VERIFY_POSITION
-	p.verify_abort( thread_->pool_.ctx_.conf_.fischer_random );
+	p.verify_abort();
 #endif
 
 	if( depth < cutoff || ply >= MAX_DEPTH ) {

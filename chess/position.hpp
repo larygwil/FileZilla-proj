@@ -69,9 +69,11 @@ public:
 	// Resets position to initial starting position
 	void reset();
 
-	bool verify( bool frc ) const;
-	bool verify( bool frc, std::string& error ) const;
-	void verify_abort( bool frc ) const;
+	bool verify() const;
+	bool verify( std::string& error ) const;
+	void verify_abort() const;
+
+	bool verify_castling( std::string& error, bool allow_frc ) const;
 
 	unsigned char do_null_move( unsigned char old_enpassant = 0 );
 
