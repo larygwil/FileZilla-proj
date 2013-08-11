@@ -456,7 +456,7 @@ void worker_thread::process_work( scoped_lock& l )
 			w->active_worker_calc_states_[thread_index_] = state_it_++;
 			
 			// Extract non-const data
-			unsigned int processed = ++w->processed_moves_;
+			unsigned int processed = w->processed_moves_++;
 			short alpha = w->alpha_;
 			phases::type phase = w->gen_.get_phase();
 			short best_value = w->best_value_;
@@ -1028,11 +1028,11 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 
 	move m;
 	while( !(m = gen.next()).empty() ) {
-		++processed_moves;
 
 		short value = inner_step( depth, ply, p, check
 			, alpha, beta, full_eval, last_ply_was_capture, pv_node
 			, m, processed_moves, gen.get_phase(), best_value );
+		++processed_moves;
 
 		if( value > best_value ) {
 			best_value = value;
