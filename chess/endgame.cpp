@@ -118,7 +118,7 @@ bool evaluate_KPvK( position const& p, color::type c, short& result )
 	}
 }
 
-bool evaluate_KBPvKP( position const& p, color::type c, short& result )
+bool evaluate_KBPvKP_opposed( position const& p, color::type c, short& result )
 {
 	// This endgame is drawn if pawn on home rank on a, b, g or h with king behind it or in adjacent corner and enemy pawn ahead of it.
 	// As in: 8/8/8/b7/8/3k2p1/6P1/7K w - -
@@ -163,6 +163,63 @@ bool evaluate_KBPvKP( position const& p, color::type c, short& result )
 	result = result::draw;
 
 	return true;
+}
+
+bool evaluate_KBPvKP_sides( position const& p, color::type c, short& result )
+{
+	// Drawn if own pawn on a or h, enemy king in front of pawn on same file, or wrt. pawn file, b7 pr g7
+	// and own king in front of enemy pawn.
+	// Example: 8/1k6/8/P7/4p3/4K3/8/6B1 w - - 0 1
+	if( !((p.bitboards[c][bb_type::pawns]) & 0x0081818181818100ull) ) {
+		return false;
+	}
+
+	uint64_t pawn = bitscan(p.bitboards[c][bb_type::pawns]);
+	uint64_t enemy_king_mask = doubled_pawns[c][pawn];
+	if( !c ) {
+		enemy_king_mask |= (pawn % 8) ? 0xc0c0000000000000ull : 0x0303000000000000ull;
+	}
+	else {
+		enemy_king_mask |= (pawn % 8) ? 0x000000000000c0c0ull : 0x0000000000000303ull;
+	}
+	if( !(enemy_king_mask & p.bitboards[1-c][bb_type::king]) ) {
+		return false;
+	}
+
+	bool promotion_square_is_light = (pawn % 8) == 0;
+	bool is_light_squared_bishop = (p.bitboards[c][bb_type::bishops] & light_squared_bishop_mask) != 0;
+	if( promotion_square_is_light == is_light_squared_bishop ) {
+		return false;
+	}
+
+	uint64_t enemy_pawn = bitscan( p.bitboards[1-c][bb_type::pawns] );
+
+	if( c ) {
+		if( (pawn / 8) >= (enemy_pawn / 8) ) {
+			return false;
+		}
+	}
+	else {
+		if( (pawn / 8) <= (enemy_pawn / 8) ) {
+			return false;
+		}
+	}
+
+	if( !(rule_of_the_square[c][p.c][p.king_pos[c]] & p.bitboards[1-c][bb_type::pawns]) && !(p.bitboards[c][bb_type::all_pieces] & doubled_pawns[1-c][enemy_pawn]) ) {
+		return false;
+	}
+
+	result = 0;
+	return true;
+}
+
+bool evaluate_KBPvKP( position const& p, color::type c, short& result )
+{
+	if( evaluate_KBPvKP_opposed( p, c, result ) ) {
+		return true;
+	}
+
+	return evaluate_KBPvKP_sides( p, c, result );
 }
 
 bool evaluate_KPvKP( position const& p, color::type c, short& result )
@@ -342,7 +399,7 @@ bool evaluate_endgame( position const& p, short& result )
 				bool promotion_square_is_light = (pawn % 8) == 0;
 				bool is_light_squared_bishop = (p.bitboards[color::white][bb_type::bishops] & light_squared_bishop_mask) != 0;
 				if( promotion_square_is_light != is_light_squared_bishop ) {
-					result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
+					result = 0;
 					return true;
 				}
 			}
@@ -356,7 +413,7 @@ bool evaluate_endgame( position const& p, short& result )
 				bool promotion_square_is_light = (pawn % 8) == 7;
 				bool is_light_squared_bishop = (p.bitboards[color::black][bb_type::bishops] & light_squared_bishop_mask) != 0;
 				if( promotion_square_is_light != is_light_squared_bishop ) {
-					result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
+					result = 0;
 					return true;
 				}
 			}
