@@ -982,9 +982,10 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 		short value;
 
 		{
-			null_move_block seen_block( seen, ply );
-
 			unsigned char old_enpassant = p.do_null_move();
+
+			null_move_block seen_block( seen, p, ply );
+
 			check_map new_check( p );
 			value = -step( new_depth, ply + 1, p, new_check, -beta, -beta + 1, true );
 			p.do_null_move( old_enpassant );

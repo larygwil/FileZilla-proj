@@ -64,11 +64,12 @@ void seen_positions::pop_root( unsigned int count )
 }
 
 
-null_move_block::null_move_block( seen_positions& seen, int ply )
+null_move_block::null_move_block( seen_positions& seen, uint64_t hash, int ply )
 	: seen_(seen)
 	, old_null_(seen.null_move_position)
 {
-	seen.null_move_position = seen.root_position + ply - 1;
+	seen.pos[seen.root_position + ply] = hash_;
+	seen.null_move_position = seen.root_position + ply;
 }
 
 

@@ -29,7 +29,7 @@ private:
 
 class null_move_block {
 public:
-	null_move_block( seen_positions& seen, int ply );
+	null_move_block( seen_positions& seen, uint64_t hash, int ply );
 	~null_move_block();
 
 private:
