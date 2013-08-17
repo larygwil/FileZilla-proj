@@ -275,3 +275,11 @@ void move_generator::update_history()
 		state_.history_.record_cut( p_, bad_captures_end_, it, p_.self() );
 	}
 }
+
+void move_generator::rewind()
+{
+	state_.move_ptr = moves;
+	bad_captures_end_ = moves;
+	it = moves;
+	phase = phases::hash_move;
+}

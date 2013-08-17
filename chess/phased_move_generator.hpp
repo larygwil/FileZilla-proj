@@ -46,7 +46,7 @@ public:
 protected:
 	calc_state& state_;
 	phases::type phase;
-	move_info* moves;
+	move_info* const moves;
 	move_info* it;
 
 	position const& p_;
@@ -82,6 +82,8 @@ public:
 	virtual move next() override;
 
 	void update_history();
+
+	void rewind();
 private:
 	killer_moves const& killers_;
 };
