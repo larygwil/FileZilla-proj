@@ -68,7 +68,7 @@ null_move_block::null_move_block( seen_positions& seen, uint64_t hash, int ply )
 	: seen_(seen)
 	, old_null_(seen.null_move_position)
 {
-	seen.pos[seen.root_position + ply] = hash_;
+	seen.pos[seen.root_position + ply] = hash;
 	seen.null_move_position = seen.root_position + ply;
 }
 
