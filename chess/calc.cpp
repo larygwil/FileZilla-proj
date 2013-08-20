@@ -106,6 +106,9 @@ Things to consider:
   only do the slow locking if things look promising
 */
 class thread_pool;
+namespace {
+class work;
+}
 class worker_thread : public thread
 {
 public:
@@ -131,6 +134,8 @@ public:
 
 	thread_pool& pool_;
 	uint64_t thread_index_;
+
+	work* current_work_;
 };
 
 
@@ -203,7 +208,7 @@ public:
 	work( worker_thread* master, int depth, int ply, position const& p
 		, check_map const& check, short alpha, short beta, short full_eval
 		, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen
-		, calc_state const& master_state );
+		, calc_state& master_state);
 
 	int const depth_;
 	int const ply_;
@@ -218,21 +223,34 @@ public:
 	move& best_move_;
 	phased_move_generator_base& gen_;
 	unsigned int processed_moves_;
-	calc_state const& master_state_;
+	calc_state& master_state_;
 
 	worker_thread* master_;
 	
 	uint64_t active_workers_;
 	unsigned char active_worker_calc_states_[64];
 
+	// True if there has been a cutoff
+	bool cutoff_;
+
+	// True if all work processed, no more active children
 	bool done_;
+
+	work* parent_split_;
 };
 
+bool cutoff_in_tree( work* w )
+{
+	while( w && !w->cutoff_ ) {
+		w = w->parent_split_;
+	}
+	return w != 0;
+}
 
 work::work( worker_thread* master, int depth, int ply, position const& p
 		, check_map const& check, short alpha, short beta, short full_eval
 		, unsigned char last_ply_was_capture, bool pv_node, short& best_value, move& best_move, phased_move_generator_base& gen
-		, calc_state const& master_state )
+		, calc_state& master_state )
 	: depth_(depth)
 	, ply_(ply)
 	, p_(p)
@@ -249,7 +267,9 @@ work::work( worker_thread* master, int depth, int ply, position const& p
 	, master_state_(master_state)
 	, master_(master)
 	, active_workers_()
+	, cutoff_()
 	, done_()
+	, parent_split_(master->current_work_)
 {
 }
 }
@@ -408,6 +428,7 @@ worker_thread::worker_thread( thread_pool& pool, uint64_t thread_index )
 	, waiting_(true)
 	, pool_(pool)
 	, thread_index_(thread_index)
+	, current_work_()
 {
 	for( unsigned int i = 0; i < max_calc_states; ++i ) {
 		calc_states_[i].thread_ = this;
@@ -442,80 +463,97 @@ void worker_thread::process_work( scoped_lock& l )
 	work* w;
 	while( (w = pool_.work_) && !quit_ && !do_abort_ ) {
 
-		move const m = w->gen_.next();
+		ASSERT( !w->cutoff_ );
+		if( cutoff_in_tree( w->parent_split_ ) ) {
+			if( pool_.work_ == w ) {
+				pool_.work_ = 0;
+			}
+			w->cutoff_ = true;
+			w->gen_.set_done();
+		}
+		else {
+			move const m = w->gen_.next();
 
-		if( !m.empty() ) {
-			ASSERT( state_it_ < max_calc_states );
+			if( !m.empty() ) {
+				ASSERT( state_it_ < max_calc_states );
 
-			// Create calc_state from work
-			calc_state& state = calc_states_[state_it_];
-			state.do_abort_ = false;
+				// Create calc_state from work
+				calc_state& state = calc_states_[state_it_];
+				state.do_abort_ = false;
 
-			ASSERT( !(w->active_workers_ & (1ull << thread_index_)) );
-			w->active_workers_ |= 1ull << thread_index_;
-			w->active_worker_calc_states_[thread_index_] = state_it_++;
+				ASSERT( !(w->active_workers_ & (1ull << thread_index_)) );
+				w->active_workers_ |= 1ull << thread_index_;
+				w->active_worker_calc_states_[thread_index_] = state_it_++;
 			
-			// Extract non-const data
-			unsigned int processed = w->processed_moves_++;
-			short alpha = w->alpha_;
-			phases::type phase = w->gen_.get_phase();
-			short best_value = w->best_value_;
+				// Extract non-const data
+				unsigned int processed = w->processed_moves_++;
+				short alpha = w->alpha_;
+				phases::type phase = w->gen_.get_phase();
+				short best_value = w->best_value_;
 
-			l.unlock();
+				work* old_work = current_work_;
+				current_work_ = w;
 
-			state.move_ptr = state.moves;
-			state.seen = w->master_state_.seen;
+				l.unlock();
 
-			short value = state.inner_step( w->depth_, w->ply_, w->p_, w->check_, alpha, w->beta_, w->full_eval_
-				, w->last_ply_was_capture_, w->pv_node_, m, processed, phase, best_value );
+				state.move_ptr = state.moves;
+				state.seen = w->master_state_.seen;
 
-			l.lock();
+				short value = state.inner_step( w->depth_, w->ply_, w->p_, w->check_, alpha, w->beta_, w->full_eval_
+					, w->last_ply_was_capture_, w->pv_node_, m, processed, phase, best_value );
 
-			ASSERT( w->active_workers_ & (1ull << thread_index_) );
-			w->active_workers_ &= ~(1ull << thread_index_);
+				l.lock();
 
-			ASSERT( state_it_ > 0 );
-			--state_it_;
+				current_work_ = old_work;
 
-			if( !do_abort_ && !state.do_abort_ ) {
-				if( value > w->best_value_ ) {
-					w->best_value_ = value;
+				ASSERT( w->active_workers_ & (1ull << thread_index_) );
+				w->active_workers_ &= ~(1ull << thread_index_);
 
-					if( value > w->alpha_ ) {
-						w->best_move_ = m;
+				ASSERT( state_it_ > 0 );
+				--state_it_;
 
-						if( value >= w->beta_ ) {
+				if( !do_abort_ && !state.do_abort_ ) {
+					if( value > w->best_value_ ) {
+						w->best_value_ = value;
 
-							/* Killer and history handling, tough one...
-							if( !p.get_captured_piece(mi.m) ) {
-								killers[p.self()][ply].add_killer( mi.m );
-								gen.update_history();
-							}*/
+						if( value > w->alpha_ ) {
+							w->best_move_ = m;
 
-							// We're done, with cutoff
-							if( pool_.work_ == w ) {
-								pool_.work_ = 0;
+							if( value >= w->beta_ ) {
+
+								// Killer (and history handling)
+								if( !w->p_.get_captured_piece(m) ) {
+									state.killers[w->p_.self()][w->ply_].add_killer( m );
+									w->master_state_.killers[w->p_.self()][w->ply_].add_killer( m );
+									//gen.update_history();
+								}
+
+								// We're done, with cutoff
+								if( pool_.work_ == w ) {
+									pool_.work_ = 0;
+								}
+								w->cutoff_ = true;
+
+								// Abort other workers
+								uint64_t active = w->active_workers_;
+								while( active ) {
+									uint64_t index = bitscan_unset( active );
+									pool_.threads_[index]->calc_states_[w->active_worker_calc_states_[index]].do_abort_ = true;
+								}
+								w->gen_.set_done();
 							}
-
-							// Abort other workers
-							uint64_t active = w->active_workers_;
-							while( active ) {
-								uint64_t index = bitscan_unset( active );
-								pool_.threads_[index]->calc_states_[w->active_worker_calc_states_[index]].do_abort_ = true;
+							else {
+								w->alpha_ = value;
 							}
-							w->gen_.set_done();
-						}
-						else {
-							w->alpha_ = value;
 						}
 					}
 				}
 			}
-		}
-		else {
-			// Not much more to do with this node
-			pool_.work_ = 0;
-			ASSERT( w->gen_.get_phase() == phases::done );
+			else {
+				// Not much more to do with this node
+				pool_.work_ = 0;
+				ASSERT( w->gen_.get_phase() == phases::done );
+			}
 		}
 
 		if( w->gen_.get_phase() == phases::done && !w->active_workers_ ) {
@@ -722,6 +760,14 @@ void calc_state::split( int depth, int ply, position const& p
 		return;
 	}
 
+	{
+		work* w = thread_->current_work_;
+		if( cutoff_in_tree( w ) ) {
+			do_abort_ = true;
+			return;
+		}
+	}
+
 	// Queue work
 	work w( thread_, depth, ply, p, check, alpha, beta, full_eval, last_ply_was_capture, pv_node, best_value, best_move, gen, *this );
 	thread_->pool_.work_ = &w;
@@ -734,20 +780,32 @@ void calc_state::split( int depth, int ply, position const& p
 		thread_->pool_.threads_[index]->cond_.signal( l );
 	}
 
-	// Participate
 	while( !w.done_ ) {
 		if( thread_->state_it_ < thread_->max_calc_states ) {
-			thread_->process_work( l );
+			// Be a helpful master and participate in the search, if it either
+			// is our own split point, or belongs to a slave.
+			work* pw = thread_->pool_.work_;
+			while( pw && pw != &w ) {
+				pw = pw->parent_split_;
+			}
+			if( pw == &w ) {
+				thread_->process_work( l );
+				continue;
+			}
 		}
 
-		if( !w.done_ ) {
-			thread_->waiting_ = true;
-			thread_->cond_.wait( l );
-			thread_->waiting_ = false;
-		}
+		thread_->waiting_ = true;
+		thread_->cond_.wait( l );
+		thread_->waiting_ = false;
 	}
 	ASSERT( !w.active_workers_ );
 	ASSERT( thread_->pool_.work_ != &w );
+
+	{
+		if( cutoff_in_tree( thread_->current_work_ ) ) {
+			do_abort_ = true;
+		}
+	}
 }
 
 
@@ -914,6 +972,16 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 	if( do_abort_ ) {
 		return result::loss;
 	}
+	else {
+		work* w = thread_->current_work_;
+		while( w && !w->cutoff_ ) {
+			w = w->parent_split_;
+		}
+		if( w ) {
+			do_abort_ = true;
+			return result::loss;
+		}
+	}
 
 #if USE_STATISTICS
 	thread_->pool_.stats_.node( ply );
@@ -1054,6 +1122,9 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 
 		if( processed_moves == 1 && plies_remaining > 4 ) {
 			split( depth, ply, p, check, alpha, beta, full_eval, last_ply_was_capture, pv_node, best_value, best_move, gen );
+			if( do_abort_ ) {
+				return result::loss;
+			}
 		}
 	}
 
