@@ -149,10 +149,6 @@ int main( int argc, char const* argv[] )
 	if( command == "auto" ) {
 		auto_play( ctx );
 	}
-	else if( command == "perft" ) {
-		ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size() );
-		perft<false>();
-	}
 	else if( command == "test" ) {
 		selftest();
 	}

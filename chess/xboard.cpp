@@ -10,6 +10,7 @@
 #include "pv_move_picker.hpp"
 #include "random.hpp"
 #include "see.hpp"
+#include "selftest.hpp"
 #include "statistics.hpp"
 #include "util/logger.hpp"
 #include "util/mutex.hpp"
@@ -1066,6 +1067,9 @@ skip_getline:
 		}
 		else if( cmd == "board" ) {
 			std::cout << board_to_string( state.p, color::white );
+		}
+		else if( cmd == "perft" ) {
+			perft( state.p );
 		}
 		else {
 			move m;
