@@ -209,6 +209,7 @@
     <ClInclude Include="..\pawn_structure_hash_table.hpp" />
     <ClInclude Include="..\phased_move_generator.hpp" />
     <ClInclude Include="..\simple_book.hpp" />
+    <ClInclude Include="..\util\atomic.hpp" />
     <ClInclude Include="..\util\logger.hpp" />
     <ClInclude Include="..\util\mutex.hpp" />
     <ClInclude Include="..\util\platform.hpp" />
