@@ -4,7 +4,7 @@
 #include "assert.hpp"
 #include "move.hpp"
 
-#include <atomic>
+#include "util/atomic.hpp"
 
 /*
  * General considerations:
@@ -122,11 +122,11 @@ public:
 		stats( stats const& s );
 		stats& operator=( stats const& s );
 
-		std::atomic_ullong entries;
-		std::atomic_ullong hits;
-		std::atomic_ullong best_move;
-		std::atomic_ullong misses;
-		std::atomic_ullong index_collisions;
+		atomic_uint64_t entries;
+		atomic_uint64_t hits;
+		atomic_uint64_t best_move;
+		atomic_uint64_t misses;
+		atomic_uint64_t index_collisions;
 	};
 
 	stats get_stats( bool reset );

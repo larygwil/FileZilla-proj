@@ -1,5 +1,6 @@
 #include "platform.hpp"
 
+#include <algorithm>
 #include <sys/time.h>
 #include <stdio.h>
 #include <errno.h>
@@ -29,7 +30,7 @@ void console_init()
 
 unsigned int get_cpu_count()
 {
-	return sysconf(_SC_NPROCESSORS_ONLN);
+	return std::min( MAX_THREADS, sysconf(_SC_NPROCESSORS_ONLN) );
 }
 
 

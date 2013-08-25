@@ -2,6 +2,7 @@
 
 #include <windows.h>
 
+#include <algorithm>
 #include <iostream>
 
 uint64_t timer_precision()
@@ -63,7 +64,7 @@ unsigned int get_cpu_count()
 		free( buffer );
 	}
 
-	return count;
+	return std::min( MAX_THREADS, count );
 }
 
 // In MiB

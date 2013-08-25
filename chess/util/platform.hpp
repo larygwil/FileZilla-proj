@@ -14,6 +14,12 @@
   #include "unix.hpp"
 #endif
 
+#ifndef MAX_THREADS
+#define MAX_THREADS 64
+#else
+static_assert( MAX_THREADS >= 1 && MAX_THREADS <= 64, "MAX_THREADS needs to be between 1 and 64 inclusive." );
+#endif
+
 /*
  * Allocates a block of memory of size bytes with a start adress being an
  * integer multiple of the system's memory page size.

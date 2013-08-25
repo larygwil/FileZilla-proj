@@ -79,6 +79,9 @@ std::string config::init( int argc,  char const* argv[] )
 				exit(1);
 			}
 			thread_count = v;
+			if( thread_count > get_cpu_count() ) {
+				thread_count = get_cpu_count();
+			}
 		}
 		else if( opt == "--depth" ) {
 			if( ++i >= argc ) {

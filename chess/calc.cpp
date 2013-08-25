@@ -827,7 +827,7 @@ short calc_state::quiescence_search( int ply, int depth, position const& p, chec
 	}
 
 #if USE_STATISTICS
-	thread_->pool_.stats_.quiescence_nodes.fetch_add( 1, std::memory_order_relaxed );
+	add_relaxed( thread_->pool_.stats_.quiescence_nodes , 1 );
 #endif
 
 	short ret;
@@ -1120,6 +1120,7 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 			}
 		}
 
+#if MAX_THREADS > 1
 		if( processed_moves == 1 && plies_remaining > 4 ) {
 			split( depth, ply, p, check, alpha, beta, full_eval, last_ply_was_capture, pv_node, best_value, best_move, gen );
 			if( do_abort_ ) {
@@ -1127,6 +1128,7 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 			}
 		}
 	}
+#endif
 
 	if( !processed_moves ) {
 		if( check.check ) {

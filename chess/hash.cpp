@@ -161,10 +161,10 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 	pos->v = v;
 #if USE_STATISTICS
 	if( !pos->key ) {
-		stats_.entries.fetch_add( 1, std::memory_order_relaxed );
+		add_relaxed( stats_.entries, 1 );
 	}
 	else {
-		stats_.index_collisions.fetch_add( 1, std::memory_order_relaxed );
+		add_relaxed( stats_.index_collisions, 1 );
 	}
 #endif
 	pos->key = save_key;
@@ -204,7 +204,7 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 				( type == score_type::upper_bound && alpha >= eval ) )
 			{
 	#if USE_STATISTICS
-				stats_.hits.fetch_add( 1, std::memory_order_relaxed );
+				add_relaxed( stats_.hits, 1 );
 	#endif
 				return static_cast<score_type::type>(type);
 			}
@@ -212,10 +212,10 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 
 #if USE_STATISTICS
 		if( !best_move.empty() ) {
-			stats_.best_move.fetch_add( 1, std::memory_order_relaxed );;
+			add_relaxed( stats_.best_move, 1 );
 		}
 		else {
-			stats_.misses.fetch_add( 1, std::memory_order_relaxed );;
+			add_relaxed( stats_.misses, 1 );
 		}
 #endif
 
@@ -223,7 +223,7 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 	}
 
 #if USE_STATISTICS
-	stats_.misses.fetch_add( 1, std::memory_order_relaxed );;
+	add_relaxed( stats_.misses, 1 );
 #endif
 
 	return score_type::none;
@@ -262,22 +262,22 @@ hash::stats::stats()
 
 hash::stats::stats( stats const& s )
 {
-	entries.store( s.entries );
-	hits.store( s.hits );
-	best_move.store( s.best_move);
-	misses.store( s.misses);
-	index_collisions.store( s.index_collisions );
+	atomic_store( entries, s.entries );
+	atomic_store( hits, s.hits );
+	atomic_store( best_move, s.best_move );
+	atomic_store( misses, s.misses );
+	atomic_store( index_collisions, s.index_collisions );
 }
 
 
 hash::stats& hash::stats::operator=( stats const& s )
 {
 	if( this != &s ) {
-		entries.store( s.entries );
-		hits.store( s.hits );
-		best_move.store( s.best_move);
-		misses.store( s.misses);
-		index_collisions.store( s.index_collisions );
+		atomic_store( entries, s.entries );
+		atomic_store( hits, s.hits );
+		atomic_store( best_move, s.best_move);
+		atomic_store( misses, s.misses);
+		atomic_store( index_collisions, s.index_collisions );
 	}
 
 	return *this;
