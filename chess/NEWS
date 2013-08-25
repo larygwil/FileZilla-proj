@@ -1,3 +1,10 @@
+Octochess r5178 (2013-08-25)
+- Full support for Fischer Random Chess, aka Chess960
+- KBPvPK endgame is handled better
+- Fixed too early move counter increment in search
+- Fix repetition draw detection after a null-move
+- Small improvements to the threading if searching with multiple cores.
+
 Octochess r5132 (2013-06-19)
 - Implemented Multi-PV analysis
 - In analysis mode, the moves to be searched can be specified
