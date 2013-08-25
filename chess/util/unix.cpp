@@ -30,7 +30,7 @@ void console_init()
 
 unsigned int get_cpu_count()
 {
-	return std::min( MAX_THREADS, sysconf(_SC_NPROCESSORS_ONLN) );
+	return std::min( long(MAX_THREADS), sysconf(_SC_NPROCESSORS_ONLN) );
 }
 
 

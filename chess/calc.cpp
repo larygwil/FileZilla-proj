@@ -1127,8 +1127,8 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 				return result::loss;
 			}
 		}
-	}
 #endif
+	}
 
 	if( !processed_moves ) {
 		if( check.check ) {
