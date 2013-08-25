@@ -124,7 +124,11 @@ public:
 	volatile bool do_abort_;
 
 	enum {
+#if MAX_THREADS > 1
 		max_calc_states = 10
+#else
+		max_calc_states = 1
+#endif
 	};
 
 	calc_state calc_states_[max_calc_states];
