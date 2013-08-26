@@ -7,6 +7,13 @@
 #include <iostream>
 #include <unistd.h>
 #include <sys/mman.h>
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
 
 uint64_t timer_precision()
 {
@@ -36,9 +43,16 @@ unsigned int get_cpu_count()
 
 int get_system_memory()
 {
+#ifndef __APPLE__
 	uint64_t pages = sysconf(_SC_PHYS_PAGES);
 	uint64_t page_size = sysconf(_SC_PAGE_SIZE);
 	return pages * page_size / 1024 / 1024;
+#else
+	uint64_t v = 0;
+	size_t l = sizeof(v);
+	sysctlbyname("hw.memsize", &v, &l, 0, 0);
+	return v / 1024 / 1024;
+#endif
 }
 
 
