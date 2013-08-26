@@ -14,7 +14,12 @@ class platform_initializer
 public:
 	platform_initializer()
 	{
-		std::locale("");
+		try {
+			std::locale("");
+		}
+		catch( std::exception const& ) {
+			// Ignore errors
+		}
 	};
 };
 
