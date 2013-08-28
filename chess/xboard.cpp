@@ -61,6 +61,7 @@ struct xboard_state
 		p.reset();
 
 		move_history_.clear();
+		history.clear();
 
 		clock = 1;
 
@@ -294,6 +295,7 @@ bool xboard_state::handle_edit_mode( std::string const& cmd )
 		p.hash_ = p.init_hash();
 
 		move_history_.clear();
+		history.clear();
 		seen.reset_root( p.hash_ );
 		started_from_root = false;
 
