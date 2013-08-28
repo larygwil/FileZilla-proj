@@ -735,6 +735,14 @@ skip_getline:
 				std::cout << "Error (unknown command): ." << std::endl;
 				continue;
 			}
+			else if( cmd == "wait" ) {
+				l.unlock();
+				int d = 0;
+				if( to_int( args, d ) ) {
+					usleep( d * 1000 );
+				}
+				continue;
+			}
 			else if( cmd == "hint" ) {
 				short tmp;
 				move m;
