@@ -64,7 +64,7 @@ void hash::clear_data()
 
 
 namespace field_shifts {
-enum type {
+enum type : uint64_t {
 	age = 0,
 	depth = 8,
 	move = 17,
@@ -74,7 +74,7 @@ enum type {
 }
 
 namespace field_masks {
-enum type {
+enum type : uint64_t {
 	age = 0xff,
 	depth = 0x1ff,
 	move = 0xffff,

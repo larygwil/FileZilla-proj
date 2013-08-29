@@ -103,9 +103,9 @@ struct entry;
 namespace score_type {
 enum type {
 	none,
-	exact,
 	lower_bound,
-	upper_bound
+	upper_bound,
+	exact 
 };
 }
 
