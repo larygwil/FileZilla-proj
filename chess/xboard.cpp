@@ -981,7 +981,7 @@ skip_getline:
 			if( args == "normal" ) {
 				ctx.conf_.fischer_random = false;
 			}
-			else if( args == "fischerandom" || args == "fisherrandom" || args == "frc" ) {
+			else if( args == "fischerrandom" || args == "fischerandom" || args == "fisherandom" || args == "fisherrandom" || args == "frc" ) {
 				ctx.conf_.fischer_random = true;
 			}
 			else {
