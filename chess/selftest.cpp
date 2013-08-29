@@ -808,6 +808,7 @@ void check_disambiguation( context& ctx )
 	do_check_disambiguation( ctx, "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "Kg1", "Kg1" );
 	do_check_disambiguation( ctx, "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "O-O", "O-O" );
 	do_check_disambiguation( ctx, "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBK1R w H - 0 1", "f1h1", "O-O" );
+	do_check_disambiguation( ctx, "rknbbnrq/pppppppp/8/8/8/8/PPPPPPPP/R1NBBKR1 w G - 0 1", "f1g1", "O-O" );
 	ctx.conf_.fischer_random = false;
 
 	pass();

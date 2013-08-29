@@ -288,7 +288,7 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 	if( matches.size() == 2 ) {
 		move m1 = matches.front();
 		move m2 = matches.back();
-		if( m1.castle() != m2.castle() && m1.source() == m2.source() && m1.target() == m2.target() ) {
+		if( (m1.castle() || m2.castle()) && m1.source() == m2.source() && m1.target() == m2.target() ) {
 			matches.clear();
 			matches.push_back( m1.castle() ? m2 : m1 );
 		}
