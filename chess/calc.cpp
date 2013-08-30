@@ -859,7 +859,7 @@ short calc_state::quiescence_search( int ply, int depth, position const& p, chec
 	score_type::type t = tt_->lookup( p.hash_, tt_depth, ply, alpha, beta, eval, tt_move, full_eval );
 	ASSERT( full_eval == result::win || full_eval == evaluate_full( *pawn_tt_, p ) );
 
-	if ( !pv_node && t != score_type::none ) {
+	if ( (!pv_node && t != score_type::none) || t == score_type::exact ) {
 		return eval;
 	}
 
