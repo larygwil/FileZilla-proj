@@ -459,7 +459,7 @@ bool position::verify_castling( std::string& error, bool allow_frc ) const
 			}
 			else {
 				uint64_t castle_row = 0x7eull << (i ? 56 : 0);
-				if( !(1ull << king_pos[i]) & castle_row ) {
+				if( !((1ull << king_pos[i]) & castle_row) ) {
 					error = color::to_string(static_cast<color::type>(i)) + "'s castling rights do not match the king positions";
 					return false;
 				}
