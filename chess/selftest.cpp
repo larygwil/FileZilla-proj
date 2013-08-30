@@ -7,6 +7,7 @@
 #include "fen.hpp"
 #include "moves.hpp"
 #include "pawn_structure_hash_table.hpp"
+#include "random.hpp"
 #include "see.hpp"
 #include "selftest.hpp"
 #include "util/logger.hpp"
@@ -1078,6 +1079,56 @@ void test_context_isolation()
 	pass();
 }
 
+void check_tt( context& ctx)
+{
+	checking("transposition table");
+
+	randgen rng;
+
+	uint64_t hash = rng.get_uint64();
+	
+
+	short alpha = -123;
+	short beta = 99;
+	short eval = 556;
+	short fev = -24;
+
+	move bm;
+	bm.d = 1234;
+	ctx.tt_.store(hash, 23, 4, eval, alpha, beta, bm, 55, fev );
+
+	{
+		short eval2 = result::win;
+		short fev2 = result::win;
+		move bm2;
+
+		score_type::type t = ctx.tt_.lookup( hash, 23, 4, alpha, beta, eval2, bm2, fev2 );
+
+		if( t != score_type::lower_bound || eval2 != eval || bm2 != bm || fev2 != fev ) {
+			std::cerr << "Looked up transposition table entry doesn't match stored one.\n";
+			abort();
+		}
+	}
+
+	beta = 1000;
+	ctx.tt_.store(hash, 23, 4, eval, alpha, beta, move(), 55, fev );
+
+	{
+		short eval2 = result::win;
+		short fev2 = result::win;
+		move bm2;
+
+		score_type::type t = ctx.tt_.lookup( hash, 23, 4, alpha, beta, eval2, bm2, fev2 );
+
+		if( t != score_type::exact || eval2 != eval || bm2 != bm || fev2 != fev ) {
+			std::cerr << "Looked up transposition table entry doesn't match stored one.\n";
+			abort();
+		}
+	}
+
+	pass();
+}
+
 }
 
 bool selftest()
@@ -1089,6 +1140,7 @@ bool selftest()
 
 	context ctx;
 	ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size() );
+	ctx.tt_.init( 1 );
 
 	check_see( ctx );
 
@@ -1097,6 +1149,8 @@ bool selftest()
 	check_scale();
 	check_eval();
 	check_endgame_eval( ctx );
+
+	check_tt( ctx );
 
 	test_pst();
 	test_incorrect_positions( ctx );
