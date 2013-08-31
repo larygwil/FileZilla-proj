@@ -1,3 +1,9 @@
+Octochess r5190 (2013-08-31)
+- Fix a bug in the transposition table leading to bogus entries
+- Do not report f1g1 castling move as ambiguous in Fischer Random Chess with king on f1, rook on g1.
+- CECP: Fix typo in detecting fischerrandom variant
+- Fix crash on startup if system's default locale is invalid
+
 Octochess r5178 (2013-08-25)
 - Full support for Fischer Random Chess, aka Chess960
 - KBPvPK endgame is handled better
