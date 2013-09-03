@@ -186,7 +186,7 @@ inline static void evaluate_knight_mobility( position const& p, color::type c, u
 	}
 
 	moves &= ~(p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::pawn_control]);
-	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility_knight[popcount(moves)] );
+	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility[pieces::knight][popcount(moves)] );
 }
 
 
@@ -249,7 +249,7 @@ inline static void evaluate_bishop_mobility( position const& p, color::type c, u
 	results.attacks[c][pieces::bishop] |= moves;
 
 	moves &= ~(p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::pawn_control]);
-	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility_bishop[popcount(moves)] );
+	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility[pieces::bishop][popcount(moves)] );
 }
 
 
@@ -361,7 +361,7 @@ inline static void evaluate_rook_mobility( position const& p, color::type c, uin
 
 	moves &= ~(p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::pawn_control]);
 	uint64_t const move_count = popcount(moves);
-	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility_rook[move_count] );
+	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility[pieces::rook][move_count] );
 
 	if( move_count < 4 ) {
 		evaluate_rook_trapped<detail>( p, c, rook, results );
@@ -441,7 +441,7 @@ inline static void evaluate_queen_mobility( position const& p, color::type c, ui
 	results.attacks[c][pieces::queen] |= moves;
 
 	moves &= ~(p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::pawn_control]);
-	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility_queen[popcount(moves)] );
+	add_score<detail, eval_detail::mobility>( results, c, eval_values::mobility[pieces::queen][popcount(moves)] );
 }
 
 

@@ -1,5 +1,6 @@
 #include "chess.hpp"
 #include "eval_values.hpp"
+#include "tables.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -52,26 +53,11 @@ score defended_by_pawn[6];
 score attacked_piece[6];
 score hanging_piece[6];
 
-score mobility_knight_min;
-score mobility_knight_max;
-score mobility_knight_rise;
-score mobility_knight_offset;
-score mobility_bishop_min;
-score mobility_bishop_max;
-score mobility_bishop_rise;
-score mobility_bishop_offset;
-score mobility_rook_min;
-score mobility_rook_max;
-score mobility_rook_rise;
-score mobility_rook_offset;
-score mobility_queen_min;
-score mobility_queen_max;
-score mobility_queen_rise;
-score mobility_queen_offset;
+score mobility_rise[6];
+score mobility_min[6];
+score mobility_duration[6];
 
 score side_to_move;
-
-short drawishness;
 
 score rooks_on_rank_7;
 
@@ -94,10 +80,7 @@ score connected_pawn[2][8];
 score candidate_passed_pawn[8];
 score backward_pawn[2][8];
 
-score mobility_knight[9];
-score mobility_bishop[14];
-score mobility_rook[15];
-score mobility_queen[7+7+7+6+1];
+score mobility[6][28];
 
 score king_attack[200];
 
@@ -114,131 +97,127 @@ void init()
 	king_check_by_piece[pieces::pawn]  =     0;
 
 	// Tweaked values
-	material_values[pieces::pawn]   = score( 77, 80 );
-	material_values[pieces::knight] = score( 320, 334 );
-	material_values[pieces::bishop] = score( 356, 413 );
-	material_values[pieces::rook]   = score( 572, 624 );
-	material_values[pieces::queen]  = score( 1228, 1168 );
-	double_bishop                   = score( 52, 33 );
-	passed_pawn_advance_power       = score( 207, 152 );
+	material_values[pieces::pawn]   = score( 75, 91 );
+	material_values[pieces::knight] = score( 308, 365 );
+	material_values[pieces::bishop] = score( 341, 413 );
+	material_values[pieces::rook]   = score( 577, 664 );
+	material_values[pieces::queen]  = score( 1195, 1214 );
+	double_bishop                   = score( 35, 42 );
+	passed_pawn_advance_power       = score( 182, 190 );
 	passed_pawn_king_distance[0]    = score( 0, 6 );
-	passed_pawn_king_distance[1]    = score( 1, 4 );
-	passed_pawn_base[0]             = score( 5, 12 );
-	passed_pawn_base[1]             = score( 0, 4 );
+	passed_pawn_king_distance[1]    = score( 0, 5 );
+	passed_pawn_base[0]             = score( 5, 9 );
+	passed_pawn_base[1]             = score( 1, 2 );
 	passed_pawn_base[2]             = score( 1, 0 );
 	passed_pawn_base[3]             = score( 1, 0 );
-	doubled_pawn_base[0][0]         = score( 34, 4 );
-	doubled_pawn_base[0][1]         = score( 9, 1 );
-	doubled_pawn_base[0][2]         = score( 9, 0 );
-	doubled_pawn_base[0][3]         = score( 7, 0 );
-	doubled_pawn_base[1][0]         = score( 9, 1 );
-	doubled_pawn_base[1][1]         = score( 3, 0 );
-	doubled_pawn_base[1][2]         = score( 3, 0 );
+	doubled_pawn_base[0][0]         = score( 18, 17 );
+	doubled_pawn_base[0][1]         = score( 6, 5 );
+	doubled_pawn_base[0][2]         = score( 5, 5 );
+	doubled_pawn_base[0][3]         = score( 5, 5 );
+	doubled_pawn_base[1][0]         = score( 14, 1 );
+	doubled_pawn_base[1][1]         = score( 0, 0 );
+	doubled_pawn_base[1][2]         = score( 0, 0 );
 	doubled_pawn_base[1][3]         = score( 0, 0 );
-	backward_pawn_base[0][0]        = score( 5, 1 );
-	backward_pawn_base[0][1]        = score( 0, 0 );
-	backward_pawn_base[0][2]        = score( 0, 0 );
-	backward_pawn_base[0][3]        = score( 0, 0 );
-	backward_pawn_base[1][0]        = score( 12, 14 );
-	backward_pawn_base[1][1]        = score( 0, 3 );
-	backward_pawn_base[1][2]        = score( 4, 0 );
+	backward_pawn_base[0][0]        = score( 14, 2 );
+	backward_pawn_base[0][1]        = score( 3, 0 );
+	backward_pawn_base[0][2]        = score( 2, 0 );
+	backward_pawn_base[0][3]        = score( 4, 0 );
+	backward_pawn_base[1][0]        = score( 11, 11 );
+	backward_pawn_base[1][1]        = score( 3, 1 );
+	backward_pawn_base[1][2]        = score( 3, 2 );
 	backward_pawn_base[1][3]        = score( 0, 0 );
-	isolated_pawn_base[0][0]        = score( 4, 2 );
-	isolated_pawn_base[0][1]        = score( 1, 0 );
-	isolated_pawn_base[0][2]        = score( 1, 0 );
-	isolated_pawn_base[0][3]        = score( 0, 0 );
-	isolated_pawn_base[1][0]        = score( 15, 17 );
-	isolated_pawn_base[1][1]        = score( 2, 0 );
-	isolated_pawn_base[1][2]        = score( 1, 0 );
-	isolated_pawn_base[1][3]        = score( 4, 5 );
-	connected_pawn_base[0][0]       = score( 1, 5 );
-	connected_pawn_base[0][1]       = score( 0, 1 );
+	isolated_pawn_base[0][0]        = score( 9, 1 );
+	isolated_pawn_base[0][1]        = score( 0, 0 );
+	isolated_pawn_base[0][2]        = score( 3, 0 );
+	isolated_pawn_base[0][3]        = score( 2, 0 );
+	isolated_pawn_base[1][0]        = score( 12, 16 );
+	isolated_pawn_base[1][1]        = score( 4, 0 );
+	isolated_pawn_base[1][2]        = score( 4, 0 );
+	isolated_pawn_base[1][3]        = score( 3, 5 );
+	connected_pawn_base[0][0]       = score( 1, 6 );
+	connected_pawn_base[0][1]       = score( 0, 0 );
 	connected_pawn_base[0][2]       = score( 0, 0 );
 	connected_pawn_base[0][3]       = score( 0, 1 );
-	connected_pawn_base[1][0]       = score( 11, 1 );
+	connected_pawn_base[1][0]       = score( 12, 1 );
 	connected_pawn_base[1][1]       = score( 0, 0 );
 	connected_pawn_base[1][2]       = score( 0, 0 );
 	connected_pawn_base[1][3]       = score( 0, 0 );
-	candidate_passed_pawn_base[0]   = score( 18, 27 );
-	candidate_passed_pawn_base[1]   = score( 0, 0 );
-	candidate_passed_pawn_base[2]   = score( 6, 7 );
-	candidate_passed_pawn_base[3]   = score( 6, 9 );
-	pawn_shield[0]                  = score( 31, 4 );
-	pawn_shield[1]                  = score( 21, 4 );
+	candidate_passed_pawn_base[0]   = score( 15, 20 );
+	candidate_passed_pawn_base[1]   = score( 4, 4 );
+	candidate_passed_pawn_base[2]   = score( 5, 6 );
+	candidate_passed_pawn_base[3]   = score( 5, 6 );
+	pawn_shield[0]                  = score( 28, 3 );
+	pawn_shield[1]                  = score( 19, 4 );
 	pawn_shield[2]                  = score( 11, 1 );
-	pawn_shield[3]                  = score( 3, 1 );
-	pawn_shield_attack[0]           = score( 35, 29 );
-	pawn_shield_attack[1]           = score( 6, 11 );
-	pawn_shield_attack[2]           = score( 6, 9 );
+	pawn_shield[3]                  = score( 4, 1 );
+	pawn_shield_attack[0]           = score( 33, 13 );
+	pawn_shield_attack[1]           = score( 10, 4 );
+	pawn_shield_attack[2]           = score( 6, 5 );
 	pawn_shield_attack[3]           = score( 6, 1 );
-	absolute_pin[2]                 = score( 1, 43 );
-	absolute_pin[3]                 = score( 10, 10 );
-	absolute_pin[4]                 = score( 17, 1 );
-	absolute_pin[5]                 = score( 3, 1 );
-	rooks_on_open_file              = score( 23, 14 );
-	rooks_on_half_open_file         = score( 10, 7 );
-	connected_rooks                 = score( 1, 4 );
-	tropism[1]                      = score( 3, 1 );
+	absolute_pin[2]                 = score( 1, 41 );
+	absolute_pin[3]                 = score( 5, 7 );
+	absolute_pin[4]                 = score( 12, 1 );
+	absolute_pin[5]                 = score( 1, 1 );
+	rooks_on_open_file              = score( 18, 20 );
+	rooks_on_half_open_file         = score( 9, 7 );
+	connected_rooks                 = score( 2, 3 );
+	tropism[1]                      = score( 2, 1 );
 	tropism[2]                      = score( 3, 1 );
 	tropism[3]                      = score( 1, 1 );
 	tropism[4]                      = score( 3, 1 );
 	tropism[5]                      = score( 1, 1 );
 	king_attack_by_piece[1]         = 1;
-	king_attack_by_piece[2]         = 12;
+	king_attack_by_piece[2]         = 14;
 	king_attack_by_piece[3]         = 13;
-	king_attack_by_piece[4]         = 20;
-	king_attack_by_piece[5]         = 16;
+	king_attack_by_piece[4]         = 19;
+	king_attack_by_piece[5]         = 17;
 	king_check_by_piece[2]          = 1;
-	king_check_by_piece[3]          = 6;
+	king_check_by_piece[3]          = 10;
 	king_check_by_piece[4]          = 1;
-	king_check_by_piece[5]          = 3;
-	king_melee_attack_by_rook       = 5;
+	king_check_by_piece[5]          = 2;
+	king_melee_attack_by_rook       = 7;
 	king_melee_attack_by_queen      = 17;
-	king_attack_pawn_shield         = 22;
+	king_attack_pawn_shield         = 18;
 	center_control                  = score( 4, 1 );
-	material_imbalance[0]           = score( 57, 31 );
-	material_imbalance[1]           = score( 133, 52 );
-	rule_of_the_square              = score( 2, 8 );
-	passed_pawn_unhindered          = score( 0, 6 );
-	defended_by_pawn[1]             = score( 0, 10 );
-	defended_by_pawn[2]             = score( 8, 4 );
-	defended_by_pawn[3]             = score( 4, 5 );
-	defended_by_pawn[4]             = score( 9, 5 );
+	material_imbalance[0]           = score( 90, 38 );
+	material_imbalance[1]           = score( 182, 68 );
+	rule_of_the_square              = score( 2, 6 );
+	passed_pawn_unhindered          = score( 3, 6 );
+	defended_by_pawn[1]             = score( 0, 9 );
+	defended_by_pawn[2]             = score( 6, 13 );
+	defended_by_pawn[3]             = score( 3, 3 );
+	defended_by_pawn[4]             = score( 7, 1 );
 	defended_by_pawn[5]             = score( 0, 0 );
-	attacked_piece[1]               = score( 1, 18 );
-	attacked_piece[2]               = score( 0, 14 );
+	attacked_piece[1]               = score( 0, 19 );
+	attacked_piece[2]               = score( 0, 13 );
 	attacked_piece[3]               = score( 6, 7 );
-	attacked_piece[4]               = score( 14, 18 );
-	attacked_piece[5]               = score( 25, 6 );
-	hanging_piece[1]                = score( 1, 19 );
-	hanging_piece[2]                = score( 8, 10 );
-	hanging_piece[3]                = score( 22, 10 );
-	hanging_piece[4]                = score( 20, 23 );
-	hanging_piece[5]                = score( 28, 11 );
-	mobility_knight_min             = score( -3, -13 );
-	mobility_knight_max             = score( 32, 37 );
-	mobility_knight_rise            = score( 10, 9 );
-	mobility_knight_offset          = score( 0, 0 );
-	mobility_bishop_min             = score( -25, -60 );
-	mobility_bishop_max             = score( 9, 3 );
-	mobility_bishop_rise            = score( 9, 9 );
-	mobility_bishop_offset          = score( 2, 1 );
-	mobility_rook_min               = score( -4, -4 );
-	mobility_rook_max               = score( 3, 47 );
-	mobility_rook_rise              = score( 6, 23 );
-	mobility_rook_offset            = score( 3, 6 );
-	mobility_queen_min              = score( -21, -49 );
-	mobility_queen_max              = score( 3, 41 );
-	mobility_queen_rise             = score( 2, 29 );
-	mobility_queen_offset           = score( 14, 1 );
+	attacked_piece[4]               = score( 11, 22 );
+	attacked_piece[5]               = score( 19, 13 );
+	hanging_piece[1]                = score( 2, 22 );
+	hanging_piece[2]                = score( 16, 10 );
+	hanging_piece[3]                = score( 16, 13 );
+	hanging_piece[4]                = score( 24, 20 );
+	hanging_piece[5]                = score( 27, 13 );
+	mobility_rise[2]                = score( 7, 11 );
+	mobility_rise[3]                = score( 7, 7 );
+	mobility_rise[4]                = score( 7, 15 );
+	mobility_rise[5]                = score( 8, 14 );
+	mobility_min[2]                 = score( 1, 4 );
+	mobility_min[3]                 = score( 1, 3 );
+	mobility_min[4]                 = score( 7, 5 );
+	mobility_min[5]                 = score( 0, 0 );
+	mobility_duration[2]            = score( 4, 1 );
+	mobility_duration[3]            = score( 10, 10 );
+	mobility_duration[4]            = score( 1, 3 );
+	mobility_duration[5]            = score( 2, 4 );
 	side_to_move                    = score( 9, 0 );
-	rooks_on_rank_7                 = score( 18, 32 );
-	knight_outposts[0]              = score( 11, 12 );
-	knight_outposts[1]              = score( 17, 29 );
-	bishop_outposts[0]              = score( 1, 8 );
-	bishop_outposts[1]              = score( 9, 10 );
-	trapped_rook[0].mg()            = -16;
-	trapped_rook[1].mg()            = -101;
+	rooks_on_rank_7                 = score( 13, 33 );
+	knight_outposts[0]              = score( 10, 16 );
+	knight_outposts[1]              = score( 21, 27 );
+	bishop_outposts[0]              = score( 1, 6 );
+	bishop_outposts[1]              = score( 8, 12 );
+	trapped_rook[0].mg()            = -21;
+	trapped_rook[1].mg()            = -97;
 
 	update_derived();
 }
@@ -256,64 +235,28 @@ void update_derived()
 	phase_transition_begin = 0;
 	phase_transition_duration = phase_transition_material_begin - phase_transition_material_end;
 
-	for( short i = 0; i <= 8; ++i ) {
-		if( i > mobility_knight_offset.mg() ) {
-			mobility_knight[i].mg() = std::min(short(mobility_knight_min.mg() + mobility_knight_rise.mg() * (i - mobility_knight_offset.mg())), mobility_knight_max.mg());
-		}
-		else {
-			mobility_knight[i].mg() = mobility_knight_min.mg();
-		}
-		if( i > mobility_knight_offset.eg() ) {
-			mobility_knight[i].eg() = std::min(short(mobility_knight_min.eg() + mobility_knight_rise.eg() * (i - mobility_knight_offset.eg())), mobility_knight_max.eg());
-		}
-		else {
-			mobility_knight[i].eg() = mobility_knight_min.eg();
-		}
-	}
+	auto update_mobility = []( int count, score* mobility, score& rise, score& min, score& duration ) {
 
-	for( short i = 0; i <= 13; ++i ) {
-		if( i > mobility_bishop_offset.mg() ) {
-			mobility_bishop[i].mg() = std::min(short(mobility_bishop_min.mg() + mobility_bishop_rise.mg() * (i - mobility_bishop_offset.mg())), mobility_bishop_max.mg());
-		}
-		else {
-			mobility_bishop[i].mg() = mobility_bishop_min.mg();
-		}
-		if( i > mobility_bishop_offset.eg() ) {
-			mobility_bishop[i].eg() = std::min(short(mobility_bishop_min.eg() + mobility_bishop_rise.eg() * (i - mobility_bishop_offset.eg())), mobility_bishop_max.eg());
-		}
-		else {
-			mobility_bishop[i].eg() = mobility_bishop_min.eg();
-		}
-	}
+		auto update_mobility_phase = []( int count, score::phase_ref f, score* mobility, short rise, short min, short duration ) {
 
-	for( short i = 0; i <= 14; ++i ) {
-		if( i > mobility_rook_offset.mg() ) {
-			mobility_rook[i].mg() = std::min(short(mobility_rook_min.mg() + mobility_rook_rise.mg() * (i - mobility_rook_offset.mg())), mobility_rook_max.mg());
-		}
-		else {
-			mobility_rook[i].mg() = mobility_rook_min.mg();
-		}
-		if( i > mobility_rook_offset.eg() ) {
-			mobility_rook[i].eg() = std::min(short(mobility_rook_min.eg() + mobility_rook_rise.eg() * (i - mobility_rook_offset.eg())), mobility_rook_max.eg());
-		}
-		else {
-			mobility_rook[i].eg() = mobility_rook_min.eg();
-		}
-	}
+			int mid = min + duration / 2;
+			(mobility[mid].*f)() = (duration % 2) ? (-rise / 2) : 0;
 
-	for( short i = 0; i <= 27; ++i ) {
-		if( i > mobility_queen_offset.mg() ) {
-			mobility_queen[i].mg() = std::min(short(mobility_queen_min.mg() + mobility_queen_rise.mg() * (i - mobility_queen_offset.mg())), mobility_queen_max.mg());
-		}
-		else {
-			mobility_queen[i].mg() = mobility_queen_min.mg();
-		}
-		if( i > mobility_queen_offset.eg() ) {
-			mobility_queen[i].eg() = std::min(short(mobility_queen_min.eg() + mobility_queen_rise.eg() * (i - mobility_queen_offset.eg())), mobility_queen_max.eg());
-		}
-		else {
-			mobility_queen[i].eg() = mobility_queen_min.eg();
-		}
+			for( int i = mid - 1; i >= 0; --i ) {
+				(mobility[i].*f)() = (mobility[i + 1].*f)() - ((i >= min) ? rise : 1);
+			}
+
+			for( int i = mid + 1; i <= count; ++i ) {
+				(mobility[i].*f)() = (mobility[i - 1].*f)() + ((i <= (min + duration)) ? rise : 1);
+			}
+		};
+
+		update_mobility_phase( count, &score::mg, mobility, rise.mg(), min.mg(), duration.mg() );
+		update_mobility_phase( count, &score::eg, mobility, rise.eg(), min.eg(), duration.eg() );
+	};
+
+	for( int i = pieces::knight; i <= pieces::queen; ++i ) {
+		update_mobility( max_move_count[i], mobility[i], mobility_rise[i], mobility_min[i], mobility_duration[i] );
 	}
 
 	for( short i = 0; i < 200; ++i ) {
@@ -374,8 +317,30 @@ void update_derived()
 	}
 }
 
-bool sane()
+bool sane_base( bool& changed )
 {
+	auto check_mobility = [&changed]( int count, score& min, score& duration ) {
+		
+		auto check_mobility_phase = [&changed]( int count, short& min, short& duration ) {
+
+			if( min >= count ) {
+				min = count - 1;
+				changed = true;
+			}
+			if( min + duration > count ) {
+				duration = count - min;
+				changed = true;
+			}
+		};
+
+		check_mobility_phase( count, min.mg(), duration.mg() );
+		check_mobility_phase( count, min.eg(), duration.eg() );
+	};
+
+	for( int i = pieces::knight; i <= pieces::queen; ++i ) {
+		check_mobility( max_move_count[i], mobility_min[i], mobility_duration[i] );
+	}
+
 	for( int i = 1; i < 5; ++i ) {
 		if( material_values[i].mg() >= material_values[i+1].mg() ) {
 			return false;
@@ -384,33 +349,15 @@ bool sane()
 			return false;
 		}
 	}
-	if( mobility_knight[8].mg() < 0 ) {
-		return false;
-	}
-	if( mobility_knight[8].eg() < 0 ) {
-		return false;
-	}
-	if( mobility_bishop[13].mg() < 0 ) {
-		return false;
-	}
-	if( mobility_bishop[13].eg() < 0 ) {
-		return false;
-	}
-	if( mobility_rook[14].mg() < 0 ) {
-		return false;
-	}
-	if( mobility_rook[14].eg() < 0 ) {
-		return false;
-	}
-	if( mobility_queen[27].mg() < 0 ) {
-		return false;
-	}
-	if( mobility_queen[27].eg() < 0 ) {
-		return false;
-	}
 
 	return true;
 }
+
+bool sane_derived()
+{
+	return true;
+}
+
 
 bool normalize()
 {
@@ -465,56 +412,6 @@ bool normalize()
 				backward_pawn_base[c][i].eg() = backward_pawn_base[c][0].eg() / 3;
 				changed = true;
 			}
-		}
-	}
-	if( mobility_knight_max.mg() > mobility_knight[8].mg() ) {
-		mobility_knight_max.mg() = mobility_knight[8].mg();
-		changed = true;
-	}
-	if( mobility_knight_max.eg() > mobility_knight[8].eg() ) {
-		mobility_knight_max.eg() = mobility_knight[8].eg();
-		changed = true;
-	}
-	if( mobility_bishop_max.mg() > mobility_bishop[13].mg() ) {
-		mobility_bishop_max.mg() = mobility_bishop[13].mg();
-		changed = true;
-	}
-	if( mobility_bishop_max.eg() > mobility_bishop[13].eg() ) {
-		mobility_bishop_max.eg() = mobility_bishop[13].eg();
-		changed = true;
-	}
-	if( mobility_rook_max.mg() > mobility_rook[14].mg() ) {
-		mobility_rook_max.mg() = mobility_rook[14].mg();
-		changed = true;
-	}
-	if( mobility_rook_max.eg() > mobility_rook[14].eg() ) {
-		mobility_rook_max.eg() = mobility_rook[14].eg();
-		changed = true;
-	}
-	if( mobility_queen_max.mg() > mobility_queen[27].mg() ) {
-		mobility_queen_max.mg() = mobility_queen[27].mg();
-		changed = true;
-	}
-	if( mobility_queen_max.eg() > mobility_queen[27].eg() ) {
-		mobility_queen_max.eg() = mobility_queen[27].eg();
-		changed = true;
-	}
-	for( int i = 1; i < 4; ++i ) {
-		if( pawn_shield[i].mg() > pawn_shield[i-1].mg() ) {
-			pawn_shield[i].mg() = pawn_shield[i-1].mg();
-			changed = true;
-		}
-		if( pawn_shield[i].eg() > pawn_shield[i-1].eg() ) {
-			pawn_shield[i].eg() = pawn_shield[i-1].eg();
-			changed = true;
-		}
-		if( pawn_shield_attack[i].mg() > pawn_shield_attack[i-1].mg() ) {
-			pawn_shield_attack[i].mg() = pawn_shield_attack[i-1].mg();
-			changed = true;
-		}
-		if( pawn_shield_attack[i].eg() > pawn_shield_attack[i-1].eg() ) {
-			pawn_shield_attack[i].eg() = pawn_shield_attack[i-1].eg();
-			changed = true;
 		}
 	}
 

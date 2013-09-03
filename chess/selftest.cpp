@@ -345,7 +345,12 @@ static bool test_lazy_eval( context& ctx, std::string const& fen, short& max_dif
 static void check_eval()
 {
 	checking("evaluation");
-	if( !eval_values::sane() ) {
+	bool changed = false;
+	if( !eval_values::sane_base( changed ) || changed ) {
+		std::cerr << "Evaluation values not sane" << std::endl;
+		abort();
+	}
+	if( !eval_values::sane_derived() ) {
 		std::cerr << "Evaluation values not sane" << std::endl;
 		abort();
 	}
@@ -356,6 +361,7 @@ static void check_eval()
 
 	pass();
 }
+
 
 static void test_lazy_eval( context& ctx )
 {

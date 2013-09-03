@@ -52,26 +52,11 @@ namespace eval_values {
 	extern score attacked_piece[6];
 	extern score hanging_piece[6];
 
-	extern score mobility_knight_min;
-	extern score mobility_knight_max;
-	extern score mobility_knight_rise;
-	extern score mobility_knight_offset;
-	extern score mobility_bishop_min;
-	extern score mobility_bishop_max;
-	extern score mobility_bishop_rise;
-	extern score mobility_bishop_offset;
-	extern score mobility_rook_min;
-	extern score mobility_rook_max;
-	extern score mobility_rook_rise;
-	extern score mobility_rook_offset;
-	extern score mobility_queen_min;
-	extern score mobility_queen_max;
-	extern score mobility_queen_rise;
-	extern score mobility_queen_offset;
+	extern score mobility_rise[6];
+	extern score mobility_min[6];
+	extern score mobility_duration[6];
 
 	extern score side_to_move;
-
-	extern short drawishness;
 
 	extern score rooks_on_rank_7;
 
@@ -93,10 +78,7 @@ namespace eval_values {
 	extern score candidate_passed_pawn[8];
 	extern score backward_pawn[2][8];
 
-	extern score mobility_knight[9];
-	extern score mobility_bishop[14];
-	extern score mobility_rook[15];
-	extern score mobility_queen[7+7+7+6+1];
+	extern score mobility[6][28];
 
 	extern score king_attack[200];
 
@@ -105,8 +87,9 @@ namespace eval_values {
 	extern score advanced_passed_pawn[8][6];
 
 	void init();
+	bool sane_base( bool& changed );
 	void update_derived();
-	bool sane();
+	bool sane_derived();
 	bool normalize();
 }
 

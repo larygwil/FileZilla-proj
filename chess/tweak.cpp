@@ -323,24 +323,10 @@ void init_genes()
 	MAKE_GENES( defended_by_pawn, 0, 100, 5, 1 );
 	MAKE_GENES( attacked_piece, 0, 100, 5, 1 );
 	MAKE_GENES( hanging_piece, 1, 100, 5, 1 );
-	MAKE_GENE( mobility_knight_min, -100, 0 );
-	MAKE_GENE( mobility_knight_max, 1, 100 );
-	MAKE_GENE( mobility_knight_rise, 1, 50 );
-	MAKE_GENE( mobility_knight_offset, 0, 4 );
-	MAKE_GENE( mobility_bishop_min, -100, 0 );
-	MAKE_GENE( mobility_bishop_max, 1, 100 );
-	MAKE_GENE( mobility_bishop_rise, 1, 50 );
-	MAKE_GENE( mobility_bishop_offset, 0, 7 );
-	MAKE_GENE( mobility_rook_min, -100, 0 );
-	MAKE_GENE( mobility_rook_max, 1, 100 );
-	MAKE_GENE( mobility_rook_rise, 1, 50 );
-	MAKE_GENE( mobility_rook_offset, 0, 7 );
-	MAKE_GENE( mobility_queen_min, -100, 0 );
-	MAKE_GENE( mobility_queen_max, 1, 100 );
-	MAKE_GENE( mobility_queen_rise, 1, 50 );
-	MAKE_GENE( mobility_queen_offset, 0, 14 );
+	MAKE_GENES( mobility_rise, 1, 15, 4, 2 );
+	MAKE_GENES( mobility_min, 0, 27, 4, 2 );
+	MAKE_GENES( mobility_duration, 1, 26, 4, 2 );
 	MAKE_GENE( side_to_move, 0, 100 );
-	//MAKE_GENE( drawishness, -500, 0 );
 	MAKE_GENE( rooks_on_rank_7, 1, 100 );
 	MAKE_GENES( knight_outposts, 1, 100, 2, 0 );
 	MAKE_GENES( bishop_outposts, 1, 100, 2, 0 );
@@ -389,11 +375,19 @@ struct individual
 		for( unsigned int i = 0; i < values_.size(); ++i ) {
 			*genes[i].target_ = values_[i];
 		}
-		eval_values::update_derived();
-		if( !eval_values::sane() ) {
+
+		bool changed = false;
+		if( !eval_values::sane_base( changed ) ) {
 			return false;
 		}
-		if( eval_values::normalize() ) {
+		eval_values::update_derived();
+		if( !eval_values::sane_derived() ) {
+			return false;
+		}
+
+		changed |= eval_values::normalize();
+
+		if( changed ) {
 			for( unsigned int i = 0; i < genes.size(); ++i ) {
 				values_[i] = *genes[i].target_;
 			}
@@ -409,7 +403,8 @@ struct individual
 		for( std::size_t i = 0; i < data.size(); ++i ) {
 			reference_data& ref = data[i];
 
-			ref.p.update_derived();
+			ref.p.init_material();
+			ref.p.init_eval();
 			pawn_tt.clear( ref.p.pawn_hash );
 			short score = evaluate_full( pawn_tt, ref.p );
 
@@ -764,9 +759,9 @@ void tweak_evaluation( context& ctx )
 	population pop;
 	std::set<individual> seen;
 
-#if 0
+#if 1
 	pop.push_back( new individual() );
-	pop[0]->calc_fitness( data );
+	pop[0]->calc_fitness( ctx.pawn_tt_, data );
 	seen.insert( *pop[0] );
 #else
 	add_random( ctx.pawn_tt_, pop, seen, data, 50 );
