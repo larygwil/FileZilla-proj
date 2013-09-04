@@ -662,18 +662,44 @@ std::vector<reference_data> load_data( context& ctx )
 
 	std::ifstream in_fen(ctx.conf_.self_dir + "test/testpositions.txt");
 	std::ifstream in_scores(ctx.conf_.self_dir + "test/data.txt");
-	std::ifstream forecasts(ctx.conf_.self_dir + "test/forecast.txt");
+	//std::ifstream forecasts(ctx.conf_.self_dir + "test/forecast.txt");
 
 	int endgames = 0;
 	int unknown_endgames = 0;
 	int marginal = 0;
+	int duplicate = 0;
+
+	std::string mode;
+	std::getline( in_scores, mode );
+
+	bool modes[100] = {0};
+
+	{
+		std::istringstream ss(mode);
+		std::string m;
+		int i = 0;
+		while( (ss >> m) ) {
+			if( m == "abs" ) {
+				modes[i] = true;
+			}
+			else if( m == "rel" ) {
+				modes[i] = false;
+			}
+			else {
+				abort();
+			}
+			++i;
+		}
+	}
+
+	std::set<uint64_t> seen;
 
 	std::string fen;
 	while( std::getline( in_fen, fen ) ) {
 		std::string score_line;
 		std::getline( in_scores, score_line );
-		std::string forecast_line;
-		std::getline( forecasts, forecast_line );
+		//std::string forecast_line;
+		//std::getline( forecasts, forecast_line );
 
 		short score = 0;
 		int count = 0;
@@ -681,16 +707,37 @@ std::vector<reference_data> load_data( context& ctx )
 		reference_data entry;
 		entry.min_eval = result::win;
 		entry.max_eval = result::loss;
-		to_int<short>( forecast_line, entry.forecast );
+		//to_int<short>( forecast_line, entry.forecast );
 
 		if( score_line.empty() ) {
 			++marginal;
 			continue;
 		}
 
+		if( !parse_fen( ctx.conf_, fen, entry.p ) ) {
+			abort();
+		}
+
+		if( !seen.insert( entry.p.hash_ ).second ) {
+			++duplicate;
+			continue;
+		}
+		
+		short endgame = 0;
+		if( evaluate_endgame( entry.p, endgame ) ) {
+			++endgames;
+			continue;
+		}
+
 		std::istringstream ss(score_line);
-		short v;
-		while( (ss >> v) ) {
+		ss.imbue( std::locale::classic() );
+		double vd;
+		while( (ss >> vd) ) {
+			vd *= 100;
+			if( modes[count] && entry.p.black() ) {
+				vd = -vd;
+			}
+			short v = static_cast<short>(vd);
 			score += v;
 			++count;
 			entry.min_eval = std::min(entry.min_eval, v);
@@ -706,16 +753,6 @@ std::vector<reference_data> load_data( context& ctx )
 		if( !in_scores ) {
 			abort();
 		}
-		if( !parse_fen( ctx.conf_, fen, entry.p ) ) {
-			abort();
-		}
-
-		short endgame = 0;
-		if( evaluate_endgame( entry.p, endgame ) ) {
-			++endgames;
-			continue;
-		}
-
 		if( popcount( entry.p.bitboards[0][bb_type::all_pieces] | entry.p.bitboards[1][bb_type::all_pieces] ) <= 7 ) {
 			++unknown_endgames;
 			continue;
@@ -731,7 +768,7 @@ std::vector<reference_data> load_data( context& ctx )
 		ret.push_back(entry);
 	}
 
-	std::cout << "Loaded " << ret.size() << " test positions of which " << marginal << " are marginal. Removed " << endgames << " known and " << unknown_endgames << " unknown endgames." << std::endl;
+	std::cout << "Loaded " << ret.size() << " test positions of which " << marginal << " are marginal. Removed " << duplicate << " duplicates. Removed " << endgames << " known and " << unknown_endgames << " unknown endgames." << std::endl;
 	return ret;
 }
 
