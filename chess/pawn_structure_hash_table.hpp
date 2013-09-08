@@ -56,10 +56,14 @@ public:
 	void clear( uint64_t key );
 
 private:
+
+	entry* get_entry( uint64_t key );
+	entry const* get_entry( uint64_t key ) const;
+
 	mutable stats stats_;
 
 	entry* data_;
-	uint64_t size_;
+	uint64_t key_mask_;
 	uint64_t init_size_;
 };
 

@@ -14,7 +14,7 @@ unsigned int const bucket_size = sizeof(entry) * bucket_entries;
 
 hash::hash()
 	: size_()
-	, bucket_count_()
+	, key_mask_()
 	, data_()
 	, init_size_()
 {
@@ -44,9 +44,12 @@ bool hash::init( unsigned int max_size, bool reset )
 		}
 
 		// Make sure size is a multiple of block size
-		bucket_count_ = size_ / bucket_size;
+		ASSERT( !(size_ % bucket_size) );
+		key_mask_ = (size_ / bucket_size) - 1;
+		key_mask_ *= bucket_size;
+
 		aligned_free( data_ );
-		data_ = reinterpret_cast<entry*>(page_aligned_malloc( bucket_count_ * bucket_size ));
+		data_ = reinterpret_cast<entry*>(page_aligned_malloc( size_ ));
 
 		if( !data_ ) {
 			max_size /= 2;
@@ -105,9 +108,9 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 		eval -= ply;
 	}
 
-	uint64_t bucket_offset = (key % bucket_count_) * bucket_entries;
-	entry* bucket = data_ + bucket_offset;
-
+	uint64_t bucket_offset = key & key_mask_;
+	entry* bucket = reinterpret_cast<entry*>(reinterpret_cast<unsigned char*>(data_) + bucket_offset);
+	
 	uint64_t v = static_cast<uint64_t>(clock) << field_shifts::age;
 	v |= static_cast<uint64_t>(remaining_depth) << field_shifts::depth;
 	v |= static_cast<uint64_t>(t) << field_shifts::node_type;
@@ -115,7 +118,7 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 
 	for( unsigned int i = 0; i < bucket_entries; ++i ) {
 		uint64_t old_v = (bucket + i)->v;
-		if( !(((old_v ^ (bucket + i)->key) ^ key) & 0xffffffffffff0000ull ) ) {
+		if( !(((old_v ^ (bucket + i)->key) ^ key) & 0xffffffffffc0003full ) ) {
 
 			// If overwriting existing entry, copy existing move if we have none.
 			// Otherwise we might end up with truncated pv.
@@ -126,7 +129,7 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 				v |= static_cast<uint64_t>(best_move.d) << field_shifts::move;
 			}
 
-			unsigned long long save_key = ((key ^ v) & 0xffffffffffff0000ull) | static_cast<unsigned short>(full_eval);
+			unsigned long long save_key = ((key ^ v) & 0xffffffffffc0003full) | (static_cast<uint64_t>(static_cast<unsigned short>(full_eval)) << 6);
 			(bucket + i)->v = v;
 			(bucket + i)->key = save_key;
 			return;
@@ -134,7 +137,7 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 	}
 
 	v |= static_cast<uint64_t>(best_move.d) << field_shifts::move;
-	unsigned long long save_key = ((key ^ v) & 0xffffffffffff0000ull) | static_cast<unsigned short>(full_eval);
+	unsigned long long save_key = ((key ^ v) & 0xffffffffffc0003full) | (static_cast<uint64_t>(static_cast<unsigned short>(full_eval)) << 6);
 
 	unsigned short lowest_depth = 511;
 	entry* pos = 0;
@@ -173,16 +176,16 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 
 score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, unsigned char ply, short alpha, short beta, short& eval, move& best_move, short& full_eval )
 {
-	uint64_t bucket_offset = (key % bucket_count_) * bucket_entries;
-	entry const* bucket = data_ + bucket_offset;
+	uint64_t bucket_offset = key & key_mask_;
+	entry const* bucket = reinterpret_cast<entry const*>(reinterpret_cast<unsigned char const*>(data_) + bucket_offset);
 
 	for( unsigned int i = 0; i < bucket_entries; ++i, ++bucket ) {
 		uint64_t v = bucket->v;
 		uint64_t stored_key = bucket->key;
-		if( ((v ^ stored_key) ^ key) & 0xffffffffffff0000ull ) {
+		if( ((v ^ stored_key) ^ key) & 0xffffffffffc0003full ) {
 			continue;
 		}
-		full_eval = static_cast<short>(static_cast<unsigned short>(stored_key & 0xFFFFull));
+		full_eval = static_cast<short>(static_cast<unsigned short>((stored_key >> 6) & 0xFFFFull));
 
 		best_move.d = (v >> field_shifts::move) & 0xFFFF;
 
@@ -245,7 +248,7 @@ hash::stats hash::get_stats(bool reset)
 
 uint64_t hash::max_hash_entry_count() const
 {
-	return bucket_count_ * bucket_entries;
+	return size_ / bucket_size * bucket_entries;
 }
 
 

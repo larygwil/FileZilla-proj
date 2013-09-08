@@ -15,7 +15,7 @@ struct pawn_structure_hash_table::entry
 
 pawn_structure_hash_table::pawn_structure_hash_table()
 	: data_()
-	, size_()
+	, key_mask_()
 	, init_size_()
 {
 }
@@ -36,11 +36,15 @@ bool pawn_structure_hash_table::init( uint64_t size_in_mib, bool reset )
 	}
 
 	while( !data_ && size_in_mib > 0 ) {
-		uint64_t size = size_in_mib * 1024 * 1024 / sizeof(entry);
-		size_ = size;
-		data_ = reinterpret_cast<entry*>(page_aligned_malloc( size_ * sizeof(entry) ) );
+		uint64_t size = size_in_mib * 1024 * 1024;
+		while( size * 2 <= size_in_mib ) {
+			size *= 2;
+		}
+
+		data_ = reinterpret_cast<entry*>(page_aligned_malloc( size ) );
 		if( data_ ) {
-			memset(data_, 0, sizeof(entry) * size_);
+			memset(data_, 0, size);
+			key_mask_ = ((size/sizeof(entry)) - 1) << 5;
 		}
 		else {
 			size_in_mib /= 2;
@@ -62,22 +66,35 @@ union uv1 {
 };
 
 
+pawn_structure_hash_table::entry* pawn_structure_hash_table::get_entry( uint64_t key )
+{
+	uint64_t offset = key & key_mask_;
+	return reinterpret_cast<entry*>(reinterpret_cast<unsigned char*>(data_) + offset);
+}
+
+
+pawn_structure_hash_table::entry const* pawn_structure_hash_table::get_entry( uint64_t key ) const
+{
+	uint64_t offset = key & key_mask_;
+	return reinterpret_cast<entry const*>(reinterpret_cast<unsigned char const*>(data_) + offset);
+}
+
+
 void pawn_structure_hash_table::clear( uint64_t key )
 {
-	uint64_t index = key % size_;
-	data_[index].key = 0;
+	get_entry(key)->key = 0;
 }
 
 
 bool pawn_structure_hash_table::lookup( uint64_t key, score* eval, uint64_t& passed ) const
 {
-	uint64_t index = key % size_;
-
+	entry const* entry = get_entry(key);
+	
 	uv1 v1;
-	v1.p = data_[index].data1;
-	uint64_t v2 = data_[index].data2;
+	v1.p = entry->data1;
+	uint64_t v2 = entry->data2;
 
-	uint64_t dk = data_[index].key;
+	uint64_t dk = entry->key;
 
 	if( (v1.p ^ v2 ^ dk) != key) {
 #if USE_STATISTICS
@@ -103,7 +120,7 @@ bool pawn_structure_hash_table::lookup( uint64_t key, score* eval, uint64_t& pas
 
 void pawn_structure_hash_table::store( uint64_t key, score const* eval, uint64_t passed )
 {
-	uint64_t index = key % size_;
+	entry* entry = get_entry(key);
 
 	uv1 v1;
 	v1.s.mg0 = eval[0].mg();
@@ -113,9 +130,9 @@ void pawn_structure_hash_table::store( uint64_t key, score const* eval, uint64_t
 
 	uint64_t v2 = passed;
 
-	data_[index].data1 = v1.p;
-	data_[index].data2 = v2;
-	data_[index].key = v1.p ^ v2 ^ key;
+	entry->data1 = v1.p;
+	entry->data2 = v2;
+	entry->key = v1.p ^ v2 ^ key;
 
 #if VERIFY_PAWN_HASH_TABLE
 	score ev2[2];
