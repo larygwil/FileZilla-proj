@@ -1,5 +1,4 @@
 #include "pawn_structure_hash_table.hpp"
-#include "statistics.hpp"
 
 #include <string.h>
 #include <stdlib.h>
@@ -97,7 +96,7 @@ bool pawn_structure_hash_table::lookup( uint64_t key, score* eval, uint64_t& pas
 	uint64_t dk = entry->key;
 
 	if( (v1.p ^ v2 ^ dk) != key) {
-#if USE_STATISTICS
+#if USE_STATISTICS >= 2
 		++stats_.misses;
 #endif
 		return false;
@@ -110,7 +109,7 @@ bool pawn_structure_hash_table::lookup( uint64_t key, score* eval, uint64_t& pas
 
 	passed = v2;
 
-#if USE_STATISTICS
+#if USE_STATISTICS >= 2
 	++stats_.hits;
 #endif
 
@@ -146,7 +145,7 @@ void pawn_structure_hash_table::store( uint64_t key, score const* eval, uint64_t
 #endif
 }
 
-
+#if USE_STATISTICS >= 2
 pawn_structure_hash_table::stats pawn_structure_hash_table::get_stats( bool reset )
 {
 	stats ret = stats_;
@@ -156,3 +155,4 @@ pawn_structure_hash_table::stats pawn_structure_hash_table::get_stats( bool rese
 
 	return ret;
 }
+#endif

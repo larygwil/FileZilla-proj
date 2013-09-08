@@ -63,6 +63,8 @@ void statistics::print( context& ctx, duration const& elapsed )
 	}
 
 	ss_ << std::endl;
+
+#if USE_STATISTICS >= 2
 	ss_ << "Transposition table stats:" << std::endl;
 	hash::stats s = ctx.tt_.get_stats( true );
 
@@ -107,6 +109,7 @@ void statistics::print( context& ctx, duration const& elapsed )
 		ss_ << " (" << 100 * static_cast<double>(ps.misses) / (ps.hits + ps.misses) << "%)";
 	}
 	ss_ << std::endl << std::endl;
+#endif
 
 	dlog() << ss_.str();
 }

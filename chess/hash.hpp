@@ -3,6 +3,7 @@
 
 #include "assert.hpp"
 #include "move.hpp"
+#include "statistics.hpp"
 
 #include "util/atomic.hpp"
 
@@ -115,6 +116,7 @@ public:
 	hash();
 	~hash();
 
+#if USE_STATISTICS >= 2
 	class stats
 	{
 public:
@@ -130,6 +132,7 @@ public:
 	};
 
 	stats get_stats( bool reset );
+#endif
 
 	// max_size is in megabytes
 	bool init( unsigned int max_size, bool reinit = false );
@@ -149,7 +152,9 @@ public:
 	uint64_t max_hash_entry_count() const;
 
 private:
+#if USE_STATISTICS >= 2
 	stats stats_;
+#endif
 
 	hash_key size_;
 	hash_key bucket_count_;

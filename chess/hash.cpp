@@ -1,5 +1,4 @@
 #include "hash.hpp"
-#include "statistics.hpp"
 
 #include <string.h>
 #include <iostream>
@@ -162,7 +161,7 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 	}
 
 	pos->v = v;
-#if USE_STATISTICS
+#if USE_STATISTICS >= 2
 	if( !pos->key ) {
 		add_relaxed( stats_.entries, 1 );
 	}
@@ -206,14 +205,14 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 				( type == score_type::lower_bound && beta <= eval ) ||
 				( type == score_type::upper_bound && alpha >= eval ) )
 			{
-	#if USE_STATISTICS
+#if USE_STATISTICS >= 2
 				add_relaxed( stats_.hits, 1 );
-	#endif
+#endif
 				return static_cast<score_type::type>(type);
 			}
 		}
 
-#if USE_STATISTICS
+#if USE_STATISTICS >= 2
 		if( !best_move.empty() ) {
 			add_relaxed( stats_.best_move, 1 );
 		}
@@ -225,7 +224,7 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 		return score_type::none;
 	}
 
-#if USE_STATISTICS
+#if USE_STATISTICS >= 2
 	add_relaxed( stats_.misses, 1 );
 #endif
 
@@ -233,6 +232,13 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 }
 
 
+uint64_t hash::max_hash_entry_count() const
+{
+	return size_ / bucket_size * bucket_entries;
+}
+
+
+#if USE_STATISTICS >= 2
 hash::stats hash::get_stats(bool reset)
 {
 	stats ret = stats_;
@@ -244,11 +250,6 @@ hash::stats hash::get_stats(bool reset)
 		stats_.best_move = 0;
 	}
 	return ret;
-}
-
-uint64_t hash::max_hash_entry_count() const
-{
-	return size_ / bucket_size * bucket_entries;
 }
 
 
@@ -285,3 +286,4 @@ hash::stats& hash::stats::operator=( stats const& s )
 
 	return *this;
 }
+#endif

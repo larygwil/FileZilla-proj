@@ -3,6 +3,7 @@
 
 #include "util/platform.hpp"
 #include "score.hpp"
+#include "statistics.hpp"
 
 /*
  * Hash table to hold the pawn structure evaluation.
@@ -27,6 +28,7 @@ class pawn_structure_hash_table
 {
 	struct entry;
 public:
+#if USE_STATISTICS >= 2
 	class stats
 	{
 	public:
@@ -39,6 +41,7 @@ public:
 		uint64_t hits;
 		uint64_t misses;
 	};
+#endif
 
 	pawn_structure_hash_table();
 	~pawn_structure_hash_table();
@@ -51,7 +54,9 @@ public:
 	// Pass array of two shorts
 	void store( uint64_t key, score const* eval, uint64_t passed );
 
+#if USE_STATISTICS >= 2
 	stats get_stats( bool reset );
+#endif
 
 	void clear( uint64_t key );
 
@@ -60,7 +65,9 @@ private:
 	entry* get_entry( uint64_t key );
 	entry const* get_entry( uint64_t key ) const;
 
+#if USE_STATISTICS >= 2
 	mutable stats stats_;
+#endif
 
 	entry* data_;
 	uint64_t key_mask_;

@@ -1,7 +1,13 @@
 #ifndef __STATISTICS_H__
 #define __STATISTICS_H__
 
+#ifndef USE_STATISTICS
+#if DEVELOPMENT
+#define USE_STATISTICS 2
+#else
 #define USE_STATISTICS 1
+#endif
+#endif
 
 #include "config.hpp"
 #include "util/time.hpp"
