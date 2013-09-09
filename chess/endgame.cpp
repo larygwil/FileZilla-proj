@@ -346,6 +346,12 @@ bool evaluate_endgame( position const& p, short& result )
 		result = result::draw;
 		return true;
 
+	// With two knights one cannot force a mate unless enemy is one epic moron.
+	case white_knight * 2:
+	case black_knight * 2:
+		result = result::draw;
+		return true;
+
 	// Usually drawn pawnless endgames, equal combinations. Still possible to force a mate if enemy loses a piece.
 	case white_queen + black_queen:
 	case white_rook + black_rook:
