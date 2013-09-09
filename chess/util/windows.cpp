@@ -43,7 +43,7 @@ unsigned int get_cpu_count()
 		buffer = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION>(malloc( len ));
 	}
 
-	int count = 1;
+	int count = 0;
 
 	if( buffer != 0 ) {
 		DWORD offset = 0;
@@ -62,6 +62,10 @@ unsigned int get_cpu_count()
 		}
 
 		free( buffer );
+	}
+
+	if( !count ) {
+		count = 1;
 	}
 
 	return std::min( MAX_THREADS, count );
