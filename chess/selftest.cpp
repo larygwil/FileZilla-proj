@@ -1048,9 +1048,11 @@ public:
 		timestamp start;
 		c.calc( p, 13, start, duration::infinity(), duration::infinity(), 0, seen, null_new_best_move_cb );
 
+#if USE_STATISTICS
 		statistics& s = c.stats();
 		s.accumulate( duration( start, timestamp() ) );
 		nodes_ = s.total_full_width_nodes + s.total_quiescence_nodes;
+#endif
 	}
 
 	uint64_t nodes_;
