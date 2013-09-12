@@ -134,8 +134,6 @@ public:
 	calc_state calc_states_[max_calc_states];
 	unsigned int state_it_;
 
-	bool waiting_;
-
 	thread_pool& pool_;
 	uint64_t thread_index_;
 
@@ -429,7 +427,6 @@ worker_thread::worker_thread( thread_pool& pool, uint64_t thread_index )
 	: quit_()
 	, do_abort_()
 	, state_it_()
-	, waiting_(true)
 	, pool_(pool)
 	, thread_index_(thread_index)
 	, current_work_()
@@ -449,10 +446,8 @@ void worker_thread::onRun()
 		pool_.idle_threads_ |= 1ull << thread_index_;
 		pool_.idle_ = true;
 
-		waiting_ = true;
 		cond_.wait( l );
-		waiting_ = false;
-
+		
 		pool_.idle_threads_ &= ~(1ull << thread_index_);
 		if( !pool_.idle_threads_ ) {
 			pool_.idle_ = false;
@@ -560,11 +555,9 @@ void worker_thread::process_work( scoped_lock& l )
 			}
 		}
 
-		if( w->gen_.get_phase() == phases::done && !w->active_workers_ ) {
+		if( w->gen_.get_phase() == phases::done && !w->active_workers_ && !w->done_ ) {
 			w->done_ = true;
-			if( w->master_ && w->master_->waiting_ ) {
-				w->master_->cond_.signal( l );
-			}
+			w->master_->cond_.signal( l );
 		}
 	}
 }
@@ -575,35 +568,39 @@ void master_worker_thread::onRun()
 	scoped_lock l( pool_.m_ );
 	while( !quit_ ) {
 
-		pool_.idle_threads_ |= 1ull << thread_index_;
-		pool_.idle_ = true;
-		ASSERT( popcount(pool_.idle_threads_) == pool_.threads_.size() );
-
-		waiting_ = true;
-		cond_.wait( l );
-		waiting_ = false;
-
-		pool_.idle_threads_ &= ~(1ull << thread_index_);
-		if( !pool_.idle_threads_ ) {
-			pool_.idle_ = false;
+		do {
+			cond_.wait( l );
 		}
+		while( idle_ && !quit_ && !do_abort_ );
+		
+		if( moves_.empty() || do_abort_ ) {
+			if( !idle_ ) {
+				idle_ = true;
+				calc_cond_.signal( l );
+			}
+		}
+		else if( !idle_ ) {
 
-		process_root( l );
+			pool_.idle_threads_ &= ~(1ull << thread_index_);
+			if( !pool_.idle_threads_ ) {
+				pool_.idle_ = false;
+			}
+
+			process_root( l );
+
+			idle_ = true;
+			calc_cond_.signal( l );
+
+			pool_.idle_threads_ |= 1ull << thread_index_;
+			pool_.idle_ = true;
+			ASSERT( popcount(pool_.idle_threads_) == pool_.threads_.size() );
+		}
 	}
 }
 
 
 void master_worker_thread::process_root( scoped_lock& l )
 {
-	if( moves_.empty() || do_abort_ ) {
-		if( !idle_ ) {
-			idle_ = true;
-			calc_cond_.signal( l );
-		}
-		return;
-	}
-	ASSERT( !idle_ );
-
 	calc_state& state = calc_states_[0];
 	state.do_abort_ = false;
 
@@ -684,8 +681,6 @@ void master_worker_thread::process_root( scoped_lock& l )
 	}
 
 	l.lock();
-	idle_ = true;
-	calc_cond_.signal( l );
 }
 
 
@@ -717,7 +712,6 @@ void master_worker_thread::print_best( unsigned int updated )
 void master_worker_thread::init( position const& p, sorted_moves const& moves, int clock, seen_positions const& seen, new_best_move_callback_base* cb , timestamp const& start )
 {
 	ASSERT( idle_ );
-	ASSERT( waiting_ );
 	p_ = p;
 	moves_ = moves;
 	seen_ = seen;
@@ -736,8 +730,7 @@ void master_worker_thread::init( position const& p, sorted_moves const& moves, i
 void master_worker_thread::process( scoped_lock& l, unsigned int max_depth )
 {
 	ASSERT( idle_ );
-	ASSERT( waiting_ );
-
+	
 	max_depth_ = max_depth;
 
 	idle_ = false;
@@ -780,7 +773,6 @@ void calc_state::split( int depth, int ply, position const& p
 	uint64_t idle = thread_->pool_.idle_threads_;
 	while( idle ) {
 		uint64_t index = bitscan_unset( idle ); 
-		ASSERT( thread_->pool_.threads_[index]->waiting_ );
 		thread_->pool_.threads_[index]->cond_.signal( l );
 	}
 
@@ -798,9 +790,7 @@ void calc_state::split( int depth, int ply, position const& p
 			}
 		}
 
-		thread_->waiting_ = true;
 		thread_->cond_.wait( l );
-		thread_->waiting_ = false;
 	}
 	ASSERT( !w.active_workers_ );
 	ASSERT( thread_->pool_.work_ != &w );
