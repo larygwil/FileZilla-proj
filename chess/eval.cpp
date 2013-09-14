@@ -147,10 +147,9 @@ short evaluate_move( position const& p, move const& m )
 }
 
 
-uint64_t const central_squares[2] = { 0x000000003c3c3c00ull, 0x003c3c3c00000000ull };
-
 namespace {
 
+uint64_t const central_squares[2] = { 0x000000003c3c3c00ull, 0x003c3c3c00000000ull };
 
 template<bool detail>
 inline static void evaluate_pawns_mobility( position const& p, color::type c, eval_results& results )
@@ -190,7 +189,7 @@ inline static void evaluate_knight_mobility( position const& p, color::type c, u
 }
 
 
-short outpost_squares[64] = {
+short const outpost_squares[64] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 1, 1, 1, 1, 1, 1, 0,
@@ -511,7 +510,7 @@ void evaluate_passed_pawns( position const& p, eval_results& results )
 	}
 }
 
-uint64_t base_king_attack[2][8] = {
+uint64_t const base_king_attack[2][8] = {
 	{
 		0, 5, 12, 25, 25, 25, 25, 25
 	},
