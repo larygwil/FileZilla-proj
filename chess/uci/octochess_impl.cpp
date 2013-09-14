@@ -178,7 +178,7 @@ void octochess_uci::calculate( timestamp const& start, calculate_mode_type mode,
 		impl_->ponder_ = ponder;
 		impl_->searchmoves_.clear();
 
-		for( auto ms : tokenize(searchmoves) ) {
+		for( auto const& ms : tokenize(searchmoves) ) {
 			std::string error;
 
 			move m;

@@ -1042,7 +1042,7 @@ skip_getline:
 		// Octochess-specific commands mainly for testing and debugging
 		else if( cmd == "moves" ) {
 			std::cout << "Possible moves:" << std::endl;
-			for( auto m : calculate_moves<movegen_type::all>( state.p ) ) {
+			for( auto const& m : calculate_moves<movegen_type::all>( state.p ) ) {
 				if( args == "long" ) {
 					std::cout << " ";
 					xboard_output_move_raw( ctx.conf_, state.p, m );

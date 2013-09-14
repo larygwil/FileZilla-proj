@@ -561,10 +561,30 @@ static void test_moves_noncaptures( std::string const& fen, position const& p )
 static void test_incorrect_positions( context& ctx )
 {
 	checking("fen validation");
-	std::ifstream in_fen(ctx.conf_.self_dir + "test/bad_fen.txt");
 
-	std::string fen;
-	while( std::getline( in_fen, fen ) ) {
+	auto fens = {
+		"8/8/8/8/8/8/8/8 w - -",
+		"k7/8/8/8/8/8/8/8 w - -",
+		"K7/8/8/8/8/8/8/8 w - -",
+		"Kk6/8/8/8/8/8/8/8 w - -",
+		"kQK5/8/8/8/8/8/8/8 w - -",
+		"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e4",
+		"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e2",
+		"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq f3",
+		"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e3",
+		"rnbqkbnr/pppppppp/8/8/4P3/8/PPPPPPPP/RNBQKBNR b KQkq e3",
+		"rnbqkbnr/pppppppp/8/8/4P3/4P3/PPPP1PPP/RNBQKBNR b KQkq e3",
+		"rnbqkbnr/pppppppp/8/8/8/8/PPPP1PPP/RNBQKBNR b KQkq e3",
+		"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e6",
+		"r2k3r/8/8/8/8/8/8/R3K2R w KQkq -",
+		"r3k2r/8/8/8/8/8/8/R2K3R w KQkq -",
+		"1r2k2r/8/8/8/8/8/8/R3K2R w KQkq -",
+		"r3k2r/8/8/8/8/8/8/1R2K2R w KQkq -",
+		"r3k1r1/8/8/8/8/8/8/R3K2R w KQkq -",
+		"r3k2r/8/8/8/8/8/8/R3K1R1 w KQkq -"
+	};
+
+	for( auto const& fen : fens ) {
 		position p;
 		std::string error;
 		if( parse_fen( ctx.conf_, fen, p, &error ) ) {
@@ -573,6 +593,7 @@ static void test_incorrect_positions( context& ctx )
 			abort();
 		}
 	}
+
 	pass();
 }
 
