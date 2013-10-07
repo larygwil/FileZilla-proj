@@ -501,12 +501,12 @@ void calc_moves_pawn_pushes( position const& p, move_info*& moves, check_map con
 	}
 	while( double_pushes ) {
 		uint64_t pawn_move = bitscan_unset( double_pushes );
-		add_if_legal<type>( p, moves, check, pawn_move - (c ? -16 : 16), pawn_move, move_flags::none, pieces::pawn );
+		add_if_legal<type>( p, moves, check, c ? pawn_move + 16 : pawn_move - 16, pawn_move, move_flags::none, pieces::pawn );
 	}
 
 	while( pawn_pushes ) {
 		uint64_t pawn_move = bitscan_unset( pawn_pushes );
-		add_if_legal_pawn<type>( p, moves, check, pawn_move - (c ? -8 : 8), pawn_move );
+		add_if_legal_pawn<type>( p, moves, check, c ? pawn_move + 8 : pawn_move - 8, pawn_move );
 	}
 }
 
