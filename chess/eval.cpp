@@ -493,7 +493,7 @@ void evaluate_passed_pawns( position const& p, eval_results& results )
 
 			uint64_t advance = i ? (6 - pawn / 8) : (pawn / 8 - 1);
 
-			add_score<detail, eval_detail::passed_pawns>( results, static_cast<color::type>(i), (eval_values::passed_pawn_king_distance[0] * king_distance[pawn + (i ? -8 : 8)][p.king_pos[1-i]] - eval_values::passed_pawn_king_distance[1] * king_distance[pawn + (i ? -8 : 8)][p.king_pos[i]]) * advance_bonus[advance] );
+			add_score<detail, eval_detail::passed_pawns>( results, static_cast<color::type>(i), (eval_values::passed_pawn_king_distance[0] * king_distance[i ? pawn - 8 : pawn + 8][p.king_pos[1-i]] - eval_values::passed_pawn_king_distance[1] * king_distance[i ? pawn - 8 : pawn + 8][p.king_pos[i]]) * advance_bonus[advance] );
 
 			add_score<detail, eval_detail::passed_pawns>( results, static_cast<color::type>(i), eval_values::advanced_passed_pawn[file][advance] );
 
@@ -641,7 +641,7 @@ void evaluate_pawn( uint64_t own_pawns, uint64_t foreign_pawns, color::type c, u
 		// Candidate passer
 		uint64_t file = 0x0101010101010101ull << (pawn % 8);
 		uint64_t opposition = passed_pawns[c][pawn] & foreign_pawns;
-		uint64_t support = forward_pawn_attack[1-c][pawn + (c ? -8 : 8)] & own_pawns;
+		uint64_t support = forward_pawn_attack[1-c][c ? pawn - 8 : pawn + 8] & own_pawns;
 		if( !(file & foreign_pawns) && popcount(opposition) <= popcount(support) ) {
 			candidate = true;
 		}

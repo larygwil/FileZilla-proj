@@ -25,7 +25,7 @@ bool seen_positions::is_three_fold( uint64_t hash, int ply ) const
 
 bool seen_positions::is_two_fold( uint64_t hash, int ply ) const
 {
-	for( int i = root_position + ply - 4; i >= static_cast<int>(null_move_position); i -= 2 ) {
+	for( int i = static_cast<int>(root_position) + ply - 4; i >= static_cast<int>(null_move_position); i -= 2 ) {
 		if( pos[i] == hash ) {
 			return true;
 		}
