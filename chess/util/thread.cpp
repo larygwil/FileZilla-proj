@@ -1,6 +1,8 @@
 #include "thread.hpp"
 #include "platform.hpp"
 
+#include <stdlib.h>
+
 #if WINDOWS
 namespace {
 extern "C" {
@@ -107,6 +109,11 @@ thread::thread()
 
 thread::~thread()
 {
+	// If we're here, vtable is already partially destroyed. Bad if thread were to still be running.
+	if( spawned() ) {
+		abort();
+	}
+
 	delete impl_;
 }
 

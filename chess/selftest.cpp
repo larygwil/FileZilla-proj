@@ -636,6 +636,11 @@ public:
 	{
 	}
 
+	virtual ~perft_thread()
+	{
+		join();
+	}
+
 	virtual void onRun()
 	{
 		context ctx;
@@ -1057,6 +1062,11 @@ public:
 		ctx_.conf_.thread_count = 1;
 		ctx_.tt_.init( 1 );
 		ctx_.pawn_tt_.init( 1 );
+	}
+
+	virtual ~context_isolation_test_thread()
+	{
+		join();
 	}
 
 	virtual void onRun()
