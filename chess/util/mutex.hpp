@@ -10,6 +10,9 @@ public:
 	mutex();
 	~mutex();
 
+	mutex( mutex const& ) = delete;
+	mutex& operator=( mutex const& ) = delete;
+
 private:
 	friend class scoped_lock;
 	friend class condition;
@@ -20,8 +23,11 @@ private:
 class scoped_lock
 {
 public:
-	scoped_lock( mutex& m );
+	explicit scoped_lock( mutex& m );
 	~scoped_lock();
+
+	scoped_lock( scoped_lock const& ) = delete;
+	scoped_lock& operator=( scoped_lock const& ) = delete;
 
 	void lock();
 	void unlock();
@@ -40,6 +46,9 @@ public:
 	condition();
 	~condition();
 
+	condition( condition const& ) = delete;
+	condition& operator=( condition const& ) = delete;
+	
 	void wait( scoped_lock& l );
 	// Milliseconds
 	void wait( scoped_lock& l, duration const& timeout );
