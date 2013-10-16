@@ -3,28 +3,6 @@
 #include <stdexcept>
 
 namespace {
-int64_t gcd( int64_t a, int64_t b )
-{
-	if( a < 0 ) {
-		a = -a;
-	}
-	if( b < 0 ) {
-		b = -b;
-	}
-
-	if( !a ) {
-		return b;
-	}
-
-	while( b != 0 ) {
-		int64_t t = b;
-		b = a % b;
-		a = t;
-	}
-
-	return a;
-}
-
 // The partial gcd only consideres factors of 2 and 5.
 int64_t partial_gcd( int64_t a, int64_t b )
 {
@@ -49,7 +27,7 @@ int64_t partial_gcd( int64_t a, int64_t b )
 int64_t muldiv( int64_t v, int64_t mul, int64_t div )
 {
 	// Divide mul and div by its greatest common divisor.
-	// This doesn't change the result per-se, but avoids 
+	// This doesn't change the result per-se, but avoids
 	// integer overflows if either value is large.
 	int64_t g = partial_gcd( mul, div );
 	mul /= g;
