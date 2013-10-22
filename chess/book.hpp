@@ -68,8 +68,11 @@ class book
 {
 public:
 	class impl;
-	book( std::string const& book_dir );
+	explicit book( std::string const& book_dir );
 	virtual ~book();
+
+	book( book const& ) = delete;
+	book& operator=( book const& ) = delete;
 
 	bool open( std::string const& book_dir );
 	void close();

@@ -14,7 +14,8 @@ namespace octochess {
 namespace uci {
 
 minimalistic_uci_protocol::minimalistic_uci_protocol()
-	: connected_(false)
+	: callbacks_()
+	, connected_(false)
 {}
 
 void minimalistic_uci_protocol::thread_entry_point( bool already_got_init ) {

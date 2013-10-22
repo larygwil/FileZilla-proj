@@ -67,8 +67,11 @@ public:
 class calc_manager
 {
 public:
-	calc_manager( context& ctx );
+	explicit calc_manager( context& ctx );
 	virtual ~calc_manager();
+
+	calc_manager( calc_manager const& ) = delete;
+	calc_manager& operator=( calc_manager const& ) const = delete;
 
 	// May modify seen_positions at indexes > root_position
 	// move_time_limit is the desired time we should calculate.
