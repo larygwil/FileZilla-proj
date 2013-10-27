@@ -36,8 +36,8 @@ mutex::~mutex()
 scoped_lock::scoped_lock( mutex& m )
 	: m_(m)
 {
-	pthread_mutex_lock( &m.impl_->m_ );
 	locked_ = true;
+	pthread_mutex_lock( &m.impl_->m_ );
 }
 
 
@@ -51,8 +51,8 @@ scoped_lock::~scoped_lock()
 
 void scoped_lock::lock()
 {
-	pthread_mutex_lock( &m_.impl_->m_ );
 	locked_ = true;
+	pthread_mutex_lock( &m_.impl_->m_ );
 }
 
 
