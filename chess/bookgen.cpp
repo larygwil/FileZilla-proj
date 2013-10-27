@@ -780,7 +780,9 @@ bool process_command( context& ctx, book& b, std::string const& cmd, std::string
 		else {
 			int count = 1;
 			if( !args.empty() ) {
-				to_int( args, count, 1, static_cast<int>(state.history.size()) );
+				if( !to_int( args, count, 1, static_cast<int>(state.history.size()) ) ) {
+					return false;
+				}
 			}
 			for( int i = 0; i < count; ++i ) {
 				state.history.pop_back();
@@ -879,7 +881,9 @@ bool process_command( context& ctx, book& b, std::string const& cmd, std::string
 	else if( cmd == "treedeepen" ) {
 		int offset = 0;
 		if( !args.empty() ) {
-			to_int( args, offset, 0, 1000 );
+			if( !to_int( args, offset, 0, 1000 ) ) {
+				return false;
+			}
 		}
 		deepen_tree( ctx, b, state.p, state.seen, state.history, offset );
 	}
