@@ -157,7 +157,6 @@ private:
 #endif
 
 	hash_key size_;
-	hash_key bucket_count_;
 	hash_key key_mask_;
 	entry* data_;
 
