@@ -819,6 +819,28 @@ static void evaluate_imbalance( position const& p, eval_results& results )
 }
 
 template<bool detail>
+static void evaluate_pieces( position const& p, color::type c, eval_results& results )
+{
+	results.attacks[c][pieces::pawn] = p.bitboards[c][bb_type::pawn_control];
+	evaluate_pawns_mobility<detail>( p, c, results );
+	evaluate_knights<detail>( p, c, results );
+	evaluate_bishops<detail>( p, c, results );
+	evaluate_rooks<detail>( p, c, results );
+	evaluate_queens<detail>( p, c, results );
+
+	//Piece-square tables already contain this
+	//results.center_control += static_cast<short>(popcount(p.bitboards[c][bb_type::all_pieces] & center_squares));
+
+	results.attacks[c][pieces::none] =
+			results.attacks[c][pieces::pawn] |
+			results.attacks[c][pieces::knight] |
+			results.attacks[c][pieces::bishop] |
+			results.attacks[c][pieces::rook] |
+			results.attacks[c][pieces::queen] |
+			possible_king_moves[p.king_pos[c]];
+}
+
+template<bool detail>
 static void do_evaluate( pawn_structure_hash_table& pawn_tt, position const& p, eval_results& results )
 {
 	evaluate_pawns<detail>( pawn_tt, p, results );
@@ -836,27 +858,10 @@ static void do_evaluate( pawn_structure_hash_table& pawn_tt, position const& p, 
 	add_score<detail, eval_detail::side_to_move>( results, p.self(), eval_values::side_to_move );
 
 	for( unsigned int c = 0; c < 2; ++c ) {
-		results.attacks[c][pieces::pawn] = p.bitboards[c][bb_type::pawn_control];
-		evaluate_pawns_mobility<detail>( p, static_cast<color::type>(c), results );
-		evaluate_knights<detail>( p, static_cast<color::type>(c), results );
-		evaluate_bishops<detail>( p, static_cast<color::type>(c), results );
-		evaluate_rooks<detail>( p, static_cast<color::type>(c), results );
-		evaluate_queens<detail>( p, static_cast<color::type>(c), results );
-
-		//Piece-square tables already contain this
-		//results.center_control += static_cast<short>(popcount(p.bitboards[c][bb_type::all_pieces] & center_squares));
-
-		results.attacks[c][pieces::none] =
-				results.attacks[c][pieces::pawn] |
-				results.attacks[c][pieces::knight] |
-				results.attacks[c][pieces::bishop] |
-				results.attacks[c][pieces::rook] |
-				results.attacks[c][pieces::queen] |
-				possible_king_moves[p.king_pos[c]];
+		evaluate_pieces<detail>( p, static_cast<color::type>(c), results );
 	}
 
 	for( unsigned int c = 0; c < 2; ++c ) {
-
 		evaluate_piece_defense<detail>( p, static_cast<color::type>(c), results );
 		evaluate_king_attack<detail>( p, static_cast<color::type>(c), results );
 		evaluate_center<detail>( p, static_cast<color::type>(c), results );
