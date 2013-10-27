@@ -718,7 +718,6 @@ skip_getline:
 				else {
 					continue;
 				}
-				state.searchmoves_.clear();
 			}
 
 			// The following commands do not stop the thread.
@@ -966,6 +965,7 @@ skip_getline:
 			// We need to keep track of side to play
 			state.clock = state.p.c;
 			state.p.c = color::white;
+			state.searchmoves_.clear();
 		}
 		else if( cmd == "usermove" ) {
 			move m;
