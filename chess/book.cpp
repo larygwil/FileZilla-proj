@@ -151,7 +151,8 @@ bool book::open( std::string const& book_dir )
 namespace {
 struct cb_data {
 	cb_data()
-		: pm()
+		: entries()
+		, pm()
 		, valid_()
 		, by_hash_()
 	{
