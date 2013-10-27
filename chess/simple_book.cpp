@@ -12,6 +12,7 @@ public:
 	impl()
 		: header_size()
 		, moves_per_entry()
+		, entry_size()
 		, size()
 	{
 	}
