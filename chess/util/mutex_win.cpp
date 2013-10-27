@@ -34,8 +34,8 @@ mutex::~mutex()
 scoped_lock::scoped_lock( mutex& m )
 	: m_(m)
 {
-	EnterCriticalSection( &m.impl_->cs_ );
 	locked_ = true;
+	EnterCriticalSection( &m.impl_->cs_ );
 }
 
 
@@ -49,8 +49,8 @@ scoped_lock::~scoped_lock()
 
 void scoped_lock::lock()
 {
-	EnterCriticalSection( &m_.impl_->cs_ );
 	locked_ = true;
+	EnterCriticalSection( &m_.impl_->cs_ );
 }
 
 
