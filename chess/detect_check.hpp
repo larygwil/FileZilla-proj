@@ -24,7 +24,10 @@
 class check_map
 {
 public:
-	check_map( position const& p );
+	explicit check_map( position const& p );
+
+	check_map() = delete;
+	check_map& operator=( check_map const& ) = delete;
 
 	unsigned char board[64];
 	unsigned char check;

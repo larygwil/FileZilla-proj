@@ -74,9 +74,8 @@ static void process_piece( position const& p, check_map& map, uint64_t piece )
 
 
 check_map::check_map( position const& p )
+	: board()
 {
-	memset( board, 0, sizeof(board) );
-
 	uint64_t potential_rook_checks = rook_magic( p.king_pos[p.self()], p.bitboards[p.other()][bb_type::all_pieces] ) & (p.bitboards[p.other()][bb_type::rooks] | p.bitboards[p.other()][bb_type::queens]);
 	while( potential_rook_checks ) {
 		uint64_t rook = bitscan_unset( potential_rook_checks );
