@@ -163,6 +163,7 @@ public:
 	master_worker_thread( thread_pool& pool, uint64_t thread_index )
 		: worker_thread( pool, thread_index )
 		, idle_(true)
+		, max_depth_()
 		, cb_()
 		, multipv_(1)
 	{
