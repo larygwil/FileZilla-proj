@@ -24,23 +24,25 @@ bool to_int( std::string const& s, T& t, T min = std::numeric_limits<T>::min(), 
 {
 	bool ret = false;
 
-	std::stringstream ss;
-	ss.flags(std::stringstream::skipws);
-	ss.str(s);
+	if( min <= max ) {
+		std::stringstream ss;
+		ss.flags(std::stringstream::skipws);
+		ss.str(s);
 
-	ss >> t;
+		ss >> t;
 
-	if( ss ) {
-		if( t < min ) {
-			t = min;
-			ret = clamp;
-		}
-		else if( t > max ) {
-			t = max;
-			ret = clamp;
-		}
-		else {
-			ret = true;
+		if( ss ) {
+			if( t < min ) {
+				t = min;
+				ret = clamp;
+			}
+			else if( t > max ) {
+				t = max;
+				ret = clamp;
+			}
+			else {
+				ret = true;
+			}
 		}
 	}
 
