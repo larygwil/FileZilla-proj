@@ -737,7 +737,7 @@ skip_getline:
 			else if( cmd == "wait" ) {
 				l.unlock();
 				int d = 0;
-				if( to_int( args, d ) ) {
+				if( to_int( args, d, 0, 1000 * 1000 ) ) {
 					usleep( d * 1000 );
 				}
 				continue;
