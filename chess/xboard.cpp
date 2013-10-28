@@ -942,13 +942,13 @@ skip_getline:
 		}
 		else if( cmd == "memory" ) {
 			unsigned int mem;
-			if( to_int<unsigned int>( args, mem, 4 ) ) {
+			if( to_int<unsigned int>( args, mem, 4, 1024 * 1024 * 1024 ) ) {
 				ctx.conf_.memory = mem;
 				ctx.tt_.init(ctx.conf_.memory);
 				ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size() );
 			}
 			else {
-				std::cout << "Error (bad command): Not a valid st command" << std::endl;
+				std::cout << "Error (bad command): Not a valid memory command" << std::endl;
 			}
 		}
 		else if( cmd == "cores" ) {
@@ -957,7 +957,7 @@ skip_getline:
 				ctx.conf_.thread_count = cores;
 			}
 			else {
-				std::cout << "Error (bad command): Not a valid st command" << std::endl;
+				std::cout << "Error (bad command): Not a valid cores command" << std::endl;
 			}
 		}
 		else if( cmd == "edit" ) {
