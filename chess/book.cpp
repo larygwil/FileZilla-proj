@@ -63,24 +63,6 @@ BookMoveSort const book_move_sort;
 }
 
 
-std::vector<unsigned char> book::serialize_history( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end )
-{
-	std::vector<unsigned char> ret;
-	ret.reserve( (end - begin) * 2);
-	for( std::vector<move>::const_iterator it = begin; it != end; ++it ) {
-		append_move_to_history( ret, *it );
-	}
-
-	return ret;
-}
-
-
-std::vector<unsigned char> book::serialize_history( std::vector<move> const& history )
-{
-	return serialize_history( history.begin(), history.end() );
-}
-
-
 book_entry::book_entry()
 	: forecast()
 	, search_depth()
@@ -97,6 +79,9 @@ public:
 	{
 	}
 
+	std::vector<unsigned char> serialize_history( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end );
+	std::vector<unsigned char> serialize_history( std::vector<move> const& history );
+
 	mutex mtx;
 
 	std::ofstream logfile;
@@ -111,6 +96,24 @@ book::book( std::string const& book_dir )
 			impl_->close();
 		}
 	}
+}
+
+
+std::vector<unsigned char> book::impl::serialize_history( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end )
+{
+	std::vector<unsigned char> ret;
+	ret.reserve( (end - begin) * 2);
+	for( std::vector<move>::const_iterator it = begin; it != end; ++it ) {
+		append_move_to_history( ret, *it );
+	}
+
+	return ret;
+}
+
+
+std::vector<unsigned char> book::impl::serialize_history( std::vector<move> const& history )
+{
+	return serialize_history( history.begin(), history.end() );
 }
 
 
@@ -288,7 +291,7 @@ std::vector<book_entry> book::get_entries( position const& p, std::vector<move> 
 		data.p = p;
 		data.entries = &ret;
 
-		std::vector<unsigned char> hs = serialize_history( history );
+		std::vector<unsigned char> hs = impl_->serialize_history( history );
 
 		statement s( *impl_, "SELECT data FROM position WHERE pos = :1" );
 
@@ -576,7 +579,7 @@ bool book::add_entries( std::vector<move> const& history, std::vector<book_entry
 
 	std::sort( entries.begin(), entries.end(), book_move_sort );
 
-	std::vector<unsigned char> hs = serialize_history( history );
+	std::vector<unsigned char> hs = impl_->serialize_history( history );
 
 	position p;
 	get_position( history, p );
@@ -671,7 +674,7 @@ bool book::mark_for_processing( std::vector<move> const& history )
 	for( std::vector<move>::const_iterator it = history.begin(); it != history.end(); ++it ) {
 		apply_move( p, *it );
 
-		std::vector<unsigned char> hs = serialize_history( history.begin(), it + 1 );
+		std::vector<unsigned char> hs = impl_->serialize_history( history.begin(), it + 1 );
 		s.bind( 1, hs );
 		s.bind( 2, p.hash_ );
 		if( !s.exec() ) {
@@ -776,7 +779,7 @@ bool book::redo_hashes()
 	}
 
 	for( std::list<work>::const_iterator it = wl.begin(); it != wl.end(); ++it ) {
-		std::vector<unsigned char> hs = serialize_history( it->move_history );
+		std::vector<unsigned char> hs = impl_->serialize_history( it->move_history );
 		s.bind( 1, it->p.hash_ );
 		s.bind( 2, hs );
 		s.exec();
@@ -824,7 +827,7 @@ bool book::update_entry( std::vector<move> const& history, book_entry const& ent
 		return false;
 	}
 
-	std::vector<unsigned char> hs = serialize_history( history );
+	std::vector<unsigned char> hs = impl_->serialize_history( history );
 
 	std::vector<unsigned char> data;
 	statement s( *impl_, "SELECT data FROM position WHERE pos = :1" );

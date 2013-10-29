@@ -112,9 +112,6 @@ public:
 
 	bool redo_hashes();
 
-	std::vector<unsigned char> serialize_history( std::vector<move>::const_iterator const& begin, std::vector<move>::const_iterator const& end );
-	std::vector<unsigned char> serialize_history( std::vector<move> const& history );
-
 	bool export_book( std::string const& fn );
 
 private:
