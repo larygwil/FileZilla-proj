@@ -75,7 +75,7 @@ class killer_moves;
 class move_generator : public phased_move_generator_base
 {
 public:
-	move_generator( calc_state& cntx, killer_moves const& killers, position const& p, check_map const& check );
+	move_generator( calc_state& cntx, int ply, killer_moves const& killers, position const& p, check_map const& check );
 
 	// Returns the next legal move.
 	// move_info's m, evaluation and pawns are filled out, sort is undefined.
@@ -85,7 +85,16 @@ public:
 
 	void rewind();
 private:
+	
+	int const ply_;
 	killer_moves const& killers_;
+
+#if VERIFY_KILLERS
+	move const km1_;
+	move const km2_;
+
+	void verify_killers();
+#endif
 };
 
 

@@ -11,6 +11,7 @@
 #define CHECK_TYPE_1_COLLISION 0
 #define VERIFY_FEN 0
 #define VERIFY_PAWN_HASH_TABLE 0
+#define VERIFY_KILLERS 0
 
 #if USE_ASSERT
 #define ASSERT(x) do{ \

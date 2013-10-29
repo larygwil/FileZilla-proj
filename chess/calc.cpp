@@ -523,8 +523,8 @@ void worker_thread::process_work( scoped_lock& l )
 
 								// Killer (and history handling)
 								if( !w->p_.get_captured_piece(m) ) {
-									state.killers[w->p_.self()][w->ply_].add_killer( m );
-									w->master_state_.killers[w->p_.self()][w->ply_].add_killer( m );
+									state.killers[w->p_.self()].add_killer( m, w->ply_ );
+									w->master_state_.killers[w->p_.self()].add_killer( m, w->ply_ );
 									//gen.update_history();
 								}
 
@@ -1087,7 +1087,7 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 
 	unsigned int processed_moves = 0;
 	
-	move_generator gen( *this, killers[p.self()][ply], p, check );
+	move_generator gen( *this, ply, killers[p.self()], p, check );
 	gen.hash_move = tt_move;
 
 	move m;
@@ -1106,7 +1106,7 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 
 				if( value >= beta ) {		
 					if( !p.get_captured_piece(m) ) {
-						killers[p.self()][ply].add_killer( m );
+						killers[p.self()].add_killer( m, ply );
 						gen.update_history();
 					}
 					break;

@@ -102,19 +102,18 @@ class killer_moves
 public:
 	killer_moves() {}
 
-	void add_killer( move const& m ) {
-		if( m1 != m ) {
-			m2 = m1;
-			m1 = m;
+	void add_killer( move const& m, int ply ) {
+		if( m_[ply * 2 + 1] != m ) {
+			m_[ply * 2] = m_[ply * 2 + 1];
+			m_[ply * 2 + 1] = m;
 		}
 	}
 
-	bool is_killer( move const& m ) const {
-		return m == m1 || m == m2;
+	bool is_killer( move const& m, int ply ) const {
+		return m == m_[ply * 2] || m == m_[ply * 2 + 1];
 	}
 
-	move m1;
-	move m2;
+	move m_[(MAX_DEPTH + 1) * 2];
 };
 
 class worker_thread;
@@ -139,7 +138,7 @@ public:
 
 	seen_positions seen;
 
-	killer_moves killers[2][MAX_DEPTH + 1];
+	killer_moves killers[2];
 
 	history history_;
 

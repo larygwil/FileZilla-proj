@@ -168,16 +168,28 @@ move qsearch_move_generator::next()
 }
 
 
-move_generator::move_generator( calc_state& cntx, killer_moves const& killers, position const& p, check_map const& check )
+move_generator::move_generator( calc_state& cntx, int ply, killer_moves const& killers, position const& p, check_map const& check )
 	: phased_move_generator_base( cntx, p, check )
+	, ply_(ply)
 	, killers_(killers)
+#if VERIFY_KILLERS
+	, km1_( killers_.m_[ply_ * 2 + 1] )
+	, km2_( killers_.m_[ply_ * 2] )
+#endif
 {
 }
 
 
 // Returns the next legal move.
 // move_info's m, evaluation and pawns are filled out, sort is undefined.
-move move_generator::next() {
+move move_generator::next()
+{
+#if VERIFY_KILLERS
+	if( phase != phases::done ) {
+		verify_killers();
+	}
+#endif
+
 	// The fall-throughs are on purpose
 	switch( phase ) {
 	case phases::hash_move:
@@ -227,14 +239,21 @@ move move_generator::next() {
 		state_.move_ptr = bad_captures_end_;
 		phase = phases::killer1;
 	case phases::killer1:
-		phase = phases::killer2;
-		if( !killers_.m1.empty() && killers_.m1 != hash_move && !p_.get_captured_piece(killers_.m1) && is_valid_move( p_, killers_.m1, check_ ) ) {
-			return killers_.m1;
+		{
+			phase = phases::killer2;
+			move const& m1 = killers_.m_[ply_ * 2 + 1];
+			if( !m1.empty() && m1 != hash_move && !p_.get_captured_piece(m1) && is_valid_move( p_, m1, check_ ) ) {
+				return m1;
+			}
 		}
 	case phases::killer2:
-		phase = phases::noncaptures_gen;
-		if( !killers_.m2.empty() && killers_.m2 != hash_move && killers_.m1 != killers_.m2 && !p_.get_captured_piece(killers_.m2) && is_valid_move( p_, killers_.m2, check_ ) ) {
-			return killers_.m2;
+		{
+			phase = phases::noncaptures_gen;
+			move const& m1 = killers_.m_[ply_ * 2 + 1];
+			move const& m2 = killers_.m_[ply_ * 2];
+			if( !m2.empty() && m2 != hash_move && m1 != m2 && !p_.get_captured_piece(m2) && is_valid_move( p_, m2, check_ ) ) {
+				return m2;
+			}
 		}
 	case phases::noncaptures_gen:
 		it = bad_captures_end_;
@@ -244,7 +263,7 @@ move move_generator::next() {
 		sort( it, state_.move_ptr );
 	case phases::noncapture:
 		while( it != state_.move_ptr ) {
-			if( it->m != hash_move && it->m != killers_.m1 && it->m != killers_.m2 ) {
+			if( it->m != hash_move && !killers_.is_killer( it->m, ply_ ) ) {
 				return (it++)->m;
 			}
 			else {
@@ -283,3 +302,14 @@ void move_generator::rewind()
 	it = moves;
 	phase = phases::hash_move;
 }
+
+#if VERIFY_KILLERS
+void move_generator::verify_killers()
+{
+	move const& m1 = killers_.m_[ply_ * 2 + 1];
+	move const& m2 = killers_.m_[ply_ * 2];
+
+	ASSERT( m1 == km1_ );
+	ASSERT( m2 == km2_ );
+}
+#endif
