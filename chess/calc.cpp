@@ -1109,6 +1109,10 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 						killers[p.self()].add_killer( m, ply );
 						gen.update_history();
 					}
+#if USE_STATISTICS >= 2
+					thread_->pool_.stats_.add_cutoff( processed_moves );
+#endif
+
 					break;
 				}
 				alpha = value;

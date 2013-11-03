@@ -16,15 +16,15 @@ statistics::statistics()
 	, total_full_width_nodes()
 	, total_quiescence_nodes()
 	, total_elapsed()
+	, cutoffs_()
+	, processed_()
+	, full_width_nodes()
 {
 	try {
 		ss_.imbue( std::locale("") );
 	}
 	catch( std::exception const& ) {
 		// Who cares
-	}
-	for( int i = 0; i < MAX_DEPTH; ++i ) {
-		full_width_nodes[i] = 0;
 	}
 }
 
@@ -109,6 +109,10 @@ void statistics::print( context& ctx, duration const& elapsed )
 		ss_ << " (" << 100 * static_cast<double>(ps.misses) / (ps.hits + ps.misses) << "%)";
 	}
 	ss_ << std::endl << std::endl;
+
+	if( cutoffs_ > 0 ) {
+		ss_ << "Moves per cutoff: " << static_cast<double>(processed_) / cutoffs_ << "\n\n";
+	}
 #endif
 
 	dlog() << ss_.str();
@@ -153,6 +157,9 @@ void statistics::accumulate( statistics const& stats )
 		full_width_nodes[i] += stats.full_width_nodes[i];
 	}
 	quiescence_nodes += stats.quiescence_nodes;
+
+	cutoffs_ += stats.cutoffs_;
+	processed_ += stats.processed_;
 }
 
 
@@ -162,6 +169,10 @@ void statistics::reset( bool total )
 		full_width_nodes[i] = 0;
 	}
 	quiescence_nodes = 0;
+
+	cutoffs_ = 0;
+	processed_ = 0;
+
 	if( total ) {
 		total_full_width_nodes = 0;
 		total_quiescence_nodes = 0;
@@ -228,5 +239,13 @@ void statistics::print_details()
 	dlog() << ss_.str();
 }
 
+
+#if USE_STATISTICS >= 2
+void statistics::add_cutoff( int processed )
+{
+	add_relaxed( processed_, processed );
+	add_relaxed( cutoffs_, 1 );
+}
+#endif
 
 #endif

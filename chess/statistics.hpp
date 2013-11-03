@@ -42,7 +42,16 @@ public:
 
 	duration total_elapsed;
 
+#if USE_STATISTICS >= 2
+	void add_cutoff( int processed );
+#endif
+
 private:
+#if USE_STATISTICS >= 2
+	atomic_uint64_t cutoffs_;
+	atomic_uint64_t processed_;
+#endif
+
 	atomic_uint64_t full_width_nodes[MAX_DEPTH];
 
 	// Constructing a new stringstream and imbuing it with
