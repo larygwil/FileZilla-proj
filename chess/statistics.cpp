@@ -16,8 +16,10 @@ statistics::statistics()
 	, total_full_width_nodes()
 	, total_quiescence_nodes()
 	, total_elapsed()
+#if USE_STATISTICS >= 2
 	, cutoffs_()
 	, processed_()
+#endif
 	, full_width_nodes()
 {
 	try {
@@ -158,8 +160,10 @@ void statistics::accumulate( statistics const& stats )
 	}
 	quiescence_nodes += stats.quiescence_nodes;
 
+#if USE_STATISTICS >= 2
 	cutoffs_ += stats.cutoffs_;
 	processed_ += stats.processed_;
+#endif
 }
 
 
@@ -170,8 +174,10 @@ void statistics::reset( bool total )
 	}
 	quiescence_nodes = 0;
 
+#if USE_STATISTICS >= 2
 	cutoffs_ = 0;
 	processed_ = 0;
+#endif
 
 	if( total ) {
 		total_full_width_nodes = 0;
