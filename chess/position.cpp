@@ -190,11 +190,11 @@ bool position::verify( std::string& error ) const
 		error = "Black king count is not exactly one";
 		return false;
 	}
-	if( static_cast<int>(bitscan( bitboards[color::white][bb_type::king])) != king_pos[color::white] ) {
+	if( bitscan( bitboards[color::white][bb_type::king]) != king_pos[color::white] ) {
 		error = "Internal error: White king position does not match king bitboard";
 		return false;
 	}
-	if( static_cast<int>(bitscan( bitboards[color::black][bb_type::king])) != king_pos[color::black] ) {
+	if( bitscan( bitboards[color::black][bb_type::king]) != king_pos[color::black] ) {
 		error = "Internal error: Black king position does not match king bitboard";
 		return false;
 	}

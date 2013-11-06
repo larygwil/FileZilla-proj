@@ -226,11 +226,12 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 	std::list<move> matches;
 
 	// In Fischer Random chess, castling may be represented by king capturing own rook.
-	if( (piecetype == pieces::none || piecetype == pieces::king) && second_col != -1 && second_row == (p.c ? 7 : 0) && p.get_piece_with_color(second_col + second_row * 8) == (p.white() ? pieces_with_color::white_rook : pieces_with_color::black_rook) ) {
+	if( (piecetype == pieces::none || piecetype == pieces::king) && second_col >= 0 && second_row == (p.c ? 7 : 0) && p.get_piece_with_color(second_col + second_row 
+* 8) == (p.white() ? pieces_with_color::white_rook : pieces_with_color::black_rook) ) {
 
 		if( p.castle[p.self()] & (1ull << second_col)  ) {
 
-			bool kingside = second_col > p.king_pos[p.self()] % 8;
+			bool kingside = static_cast<unsigned int>(second_col) > p.king_pos[p.self()] % 8;
 			uint64_t target = second_row * 8 + (kingside ? 6 : 2);
 
 			for( move_info* it = moves; it != pm; ++it ) {
