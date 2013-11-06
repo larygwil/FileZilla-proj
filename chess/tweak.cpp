@@ -339,27 +339,10 @@ struct individual
 	individual()
 		: fitness_()
 		, max_diff_()
-		, max_diff_pos_()
 	{
 		for( unsigned int i = 0; i < genes.size(); ++i ) {
 			values_.push_back( *genes[i].target_ );
 		}
-	}
-
-	individual( individual const& ref )
-		: values_( ref.values_ )
-		, fitness_( ref.fitness_ )
-		, max_diff_( ref.max_diff_ )
-	{
-	}
-
-	individual& operator=( individual const& ref )
-	{
-		values_ = ref.values_;
-		fitness_ = ref.fitness_;
-		max_diff_ = ref.max_diff_;
-
-		return *this;
 	}
 
 	void randomize()
@@ -395,11 +378,13 @@ struct individual
 		return true;
 	}
 
-	void calc_fitness( pawn_structure_hash_table& pawn_tt, std::vector<reference_data>& data ) {
+	int calc_fitness( pawn_structure_hash_table& pawn_tt, std::vector<reference_data>& data ) {
 		apply();
 
 		fitness_ = 0;
 		max_diff_ = 0;
+		int max_diff_pos_ = -1;
+
 		for( std::size_t i = 0; i < data.size(); ++i ) {
 			reference_data& ref = data[i];
 
@@ -459,6 +444,8 @@ struct individual
 			}
 		}
 		fitness_ /= data.size();
+
+		return max_diff_pos_;
 	}
 
 	bool operator<( individual const& rhs ) const {
@@ -481,7 +468,6 @@ struct individual
 
 	double fitness_;
 	short max_diff_;
-	int max_diff_pos_;
 };
 
 
@@ -649,10 +635,17 @@ void save_new_best( context& ctx, individual& best, std::vector<reference_data>&
 		tweak_base const& t = *tweaks[i];
 		std::cerr << "\t" << t.to_string();
 	}
-	std::string fen = position_to_fen_noclock( ctx.conf_, data[best.max_diff_pos_].p );
-	std::cout << "New best: " << best.fitness_ << " " << best.max_diff_ << "  " << fen << std::endl;
 
-	best.calc_fitness( ctx.pawn_tt_, data );
+	int max_diff_pos = best.calc_fitness( ctx.pawn_tt_, data );
+
+	std::string fen;
+	if( max_diff_pos >= 0 && max_diff_pos < data.size() ) {
+		fen = position_to_fen_noclock( ctx.conf_, data[max_diff_pos].p );
+	}
+	else {
+		fen = "unknown";
+	}
+	std::cout << "New best: " << best.fitness_ << " " << best.max_diff_ << "  " << fen << std::endl;
 }
 
 
@@ -760,6 +753,7 @@ std::vector<reference_data> load_data( context& ctx )
 
 		if( entry.min_eval > THRESHOLD || entry.max_eval < -THRESHOLD) {
 			++marginal;
+			continue;
 		}
 
 		entry.avg_eval = score;
