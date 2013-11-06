@@ -1070,7 +1070,7 @@ bool book::export_book( std::string const& fn )
 	out.write( header, 5 );
 
 	unsigned int written_positions = 0;
-	unsigned int written_moves = 0;
+	std::size_t written_moves = 0;
 
 	// Data
 	for( auto it : ed.output ) {
