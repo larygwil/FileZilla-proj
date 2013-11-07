@@ -1165,6 +1165,22 @@ void check_tt( context& ctx)
 		}
 	}
 
+	eval = -5666;
+	ctx.tt_.store(hash, 23, 4, eval, alpha, beta, move(), 55, fev );
+
+	{
+		short eval2 = result::win;
+		short fev2 = result::win;
+		move bm2;
+
+		score_type::type t = ctx.tt_.lookup( hash, 23, 4, alpha, beta, eval2, bm2, fev2 );
+
+		if( t != score_type::upper_bound || eval2 != eval || bm2 != bm || fev2 != fev ) {
+			std::cerr << "Looked up transposition table entry doesn't match stored one.\n";
+			abort();
+		}
+	}
+
 	pass();
 }
 

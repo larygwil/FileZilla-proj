@@ -110,10 +110,15 @@ void hash::store( hash_key key, unsigned short remaining_depth, unsigned char pl
 	uint64_t bucket_offset = key & key_mask_;
 	entry* bucket = reinterpret_cast<entry*>(reinterpret_cast<unsigned char*>(data_) + bucket_offset);
 	
+	ASSERT( clock <= field_masks::age );
+	ASSERT( remaining_depth <= field_masks::depth );
+	ASSERT( t <= field_masks::node_type );
+	ASSERT( static_cast<unsigned short>(eval) <= field_masks::score );
+	
 	uint64_t v = static_cast<uint64_t>(clock) << field_shifts::age;
 	v |= static_cast<uint64_t>(remaining_depth) << field_shifts::depth;
 	v |= static_cast<uint64_t>(t) << field_shifts::node_type;
-	v |= static_cast<uint64_t>(eval) << field_shifts::score;
+	v |= static_cast<uint64_t>(static_cast<unsigned short>(eval)) << field_shifts::score;
 
 	for( unsigned int i = 0; i < bucket_entries; ++i ) {
 		uint64_t old_v = (bucket + i)->v;
