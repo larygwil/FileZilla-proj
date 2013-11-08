@@ -143,7 +143,7 @@ struct xboard_state
 	{
 		duration threshold = (from_level ? duration::seconds(2) : duration::milliseconds(500)) * moves_between_updates;
 
-		if( moves_between_updates && time_remaining != duration::infinity() && (time_remaining - new_remaining).absolute() < threshold ) {
+		if( moves_between_updates && time_remaining != duration::infinity() && new_remaining != duration::infinity() && (time_remaining - new_remaining).absolute() < threshold ) {
 			level_cmd_differences += time_remaining - new_remaining;
 			level_cmd_count += moves_between_updates;
 
