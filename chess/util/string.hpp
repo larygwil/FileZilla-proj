@@ -44,6 +44,13 @@ bool to_int( std::string const& s, T& t, T min = std::numeric_limits<T>::min(), 
 				ret = true;
 			}
 		}
+		else {
+			t = min;
+		}
+	}
+	else {
+		// Can't do much here, at least don't leave t uninitizliazed.
+		t = min;
 	}
 
 	return ret;
