@@ -639,7 +639,7 @@ void save_new_best( context& ctx, individual& best, std::vector<reference_data>&
 	int max_diff_pos = best.calc_fitness( ctx.pawn_tt_, data );
 
 	std::string fen;
-	if( max_diff_pos >= 0 && max_diff_pos < data.size() ) {
+	if( max_diff_pos >= 0 && static_cast<std::size_t>(max_diff_pos) < data.size() ) {
 		fen = position_to_fen_noclock( ctx.conf_, data[max_diff_pos].p );
 	}
 	else {
