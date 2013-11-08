@@ -191,7 +191,7 @@ score_type::type hash::lookup( hash_key key, unsigned short remaining_depth, uns
 		}
 		full_eval = static_cast<short>(static_cast<unsigned short>((stored_key >> 6) & 0xFFFFull));
 
-		best_move.d = (v >> field_shifts::move) & 0xFFFF;
+		best_move.d = (v >> field_shifts::move) & field_masks::move;
 
 		unsigned short depth = (v >> field_shifts::depth) & field_masks::depth;
 
