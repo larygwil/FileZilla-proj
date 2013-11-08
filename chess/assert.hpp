@@ -5,7 +5,6 @@
 
 #define USE_ASSERT 0
 #define VERIFY_POSITION 0
-#define VERIFY_HASH 0
 #define VERIFY_EVAL 0
 #define VERIFY_IS_VALID_MOVE 0
 #define CHECK_TYPE_1_COLLISION 0
