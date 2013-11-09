@@ -214,12 +214,19 @@ void calc_moves_king( position const& p, move_info*& moves, check_map const& che
 }
 
 
-template<movegen_type type>
-void calc_moves_queen( position const& p, move_info*& moves, check_map const& check, uint64_t queen )
+template<movegen_type type, pieces::type piece>
+void calc_moves_slider( position const& p, move_info*& moves, check_map const& check, uint64_t slider )
 {
 	uint64_t const all_blockers = p.bitboards[p.self()][bb_type::all_pieces] | p.bitboards[p.other()][bb_type::all_pieces];
 
-	uint64_t possible_moves = rook_magic( queen, all_blockers ) | bishop_magic( queen, all_blockers );
+	uint64_t possible_moves = 0;
+	if( piece != pieces::bishop ) {
+		possible_moves |= rook_magic( slider, all_blockers );
+	}
+	if( piece != pieces::rook ) {
+		possible_moves |= bishop_magic( slider, all_blockers );
+	}
+
 	if( type == movegen_type::capture ) {
 		possible_moves &= p.bitboards[p.other()][bb_type::all_pieces];
 	}
@@ -230,117 +237,36 @@ void calc_moves_queen( position const& p, move_info*& moves, check_map const& ch
 		possible_moves &= ~(p.bitboards[p.self()][bb_type::all_pieces] | p.bitboards[p.other()][bb_type::all_pieces]);
 
 		if( type == movegen_type::pseudocheck ) {
-			uint64_t occ = all_blockers ^ (1ull << queen);
+			uint64_t occ = all_blockers ^ (1ull << slider);
 			uint64_t ba = bishop_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()][bb_type::bishops] | p.bitboards[p.self()][bb_type::queens]);
 			uint64_t ra = rook_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()][bb_type::rooks] | p.bitboards[p.self()][bb_type::queens]);
 			if( !(ba | ra ) ) {
-				possible_moves &= bishop_magic( p.king_pos[p.other()], all_blockers ) | rook_magic( p.king_pos[p.other()], all_blockers );
+				uint64_t mask = 0;
+				if( piece != pieces::bishop ) {
+					mask |= rook_magic( p.king_pos[p.other()], all_blockers );
+				}
+				if( piece != pieces::rook ) {
+					mask |= bishop_magic( p.king_pos[p.other()], all_blockers );
+				}
+				possible_moves &= mask;
 			}
 		}
 	}
 	
 	while( possible_moves ) {
-		uint64_t queen_move = bitscan_unset( possible_moves );
-		add_if_legal<type>( p, moves, check, queen, queen_move, move_flags::none, pieces::queen );
+		uint64_t m = bitscan_unset( possible_moves );
+		add_if_legal<type>( p, moves, check, slider, m, move_flags::none, piece );
 	}
 }
 
 
-template<movegen_type type>
-void calc_moves_queens( position const& p, move_info*& moves, check_map const& check )
+template<movegen_type type, pieces::type piece>
+void calc_moves_sliders( position const& p, move_info*& moves, check_map const& check )
 {
-	uint64_t queens = p.bitboards[p.self()][bb_type::queens];
-	while( queens ) {
-		uint64_t queen = bitscan_unset( queens );
-		calc_moves_queen<type>( p, moves, check, queen );
-	}
-}
-
-
-template<movegen_type type>
-void calc_moves_bishop( position const& p, move_info*& moves, check_map const& check,
-						uint64_t bishop )
-{
-	uint64_t const all_blockers = p.bitboards[p.self()][bb_type::all_pieces] | p.bitboards[p.other()][bb_type::all_pieces];
-
-	uint64_t possible_moves = bishop_magic( bishop, all_blockers );
-	if( type == movegen_type::capture ) {
-		possible_moves &= p.bitboards[p.other()][bb_type::all_pieces];
-	}
-	else if( type == movegen_type::all ) {
-		possible_moves &= ~p.bitboards[p.self()][bb_type::all_pieces];
-	}
-	else {
-		possible_moves &= ~(p.bitboards[p.self()][bb_type::all_pieces] | p.bitboards[p.other()][bb_type::all_pieces]);
-
-		if( type == movegen_type::pseudocheck ) {
-			uint64_t occ = all_blockers ^ (1ull << bishop);
-			uint64_t ba = bishop_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()][bb_type::bishops] | p.bitboards[p.self()][bb_type::queens]);
-			uint64_t ra = rook_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()][bb_type::rooks] | p.bitboards[p.self()][bb_type::queens]);
-			if( !(ba | ra ) ) {
-				possible_moves &= bishop_magic( p.king_pos[p.other()], all_blockers );
-			}
-		}
-	}
-
-	while( possible_moves ) {
-		uint64_t bishop_move = bitscan_unset( possible_moves );
-		add_if_legal<type>( p, moves, check, bishop, bishop_move, move_flags::none, pieces::bishop );
-	}
-}
-
-
-template<movegen_type type>
-void calc_moves_bishops( position const& p, move_info*& moves, check_map const& check )
-{
-	uint64_t bishops = p.bitboards[p.self()][bb_type::bishops];
-	while( bishops ) {
-		uint64_t bishop = bitscan_unset( bishops );
-		calc_moves_bishop<type>( p, moves, check, bishop );
-	}
-}
-
-
-template<movegen_type type>
-void calc_moves_rook( position const& p, move_info*& moves, check_map const& check,
-					  uint64_t rook )
-{
-	uint64_t const all_blockers = p.bitboards[p.self()][bb_type::all_pieces] | p.bitboards[p.other()][bb_type::all_pieces];
-
-	uint64_t possible_moves = rook_magic( rook, all_blockers );
-	if( type == movegen_type::capture ) {
-		possible_moves &= p.bitboards[p.other()][bb_type::all_pieces];
-	}
-	else if( type == movegen_type::all ) {
-		possible_moves &= ~p.bitboards[p.self()][bb_type::all_pieces];
-	}
-	else {
-		possible_moves &= ~(p.bitboards[p.self()][bb_type::all_pieces] | p.bitboards[p.other()][bb_type::all_pieces]);
-
-		if( type == movegen_type::pseudocheck ) {
-			uint64_t occ = all_blockers ^ (1ull << rook);
-			uint64_t ba = bishop_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()][bb_type::bishops] | p.bitboards[p.self()][bb_type::queens]);
-			uint64_t ra = rook_magic( p.king_pos[p.other()], occ ) & (p.bitboards[p.self()][bb_type::rooks] | p.bitboards[p.self()][bb_type::queens]);
-			if( !(ba | ra ) ) {
-				possible_moves &= rook_magic( p.king_pos[p.other()], all_blockers );
-			}
-		}
-	}
-
-	while( possible_moves ) {
-		uint64_t rook_move = bitscan_unset( possible_moves );
-		add_if_legal<type>( p, moves, check, rook, rook_move, move_flags::none, pieces::rook );
-	}
-}
-
-
-template<movegen_type type>
-void calc_moves_rooks( position const& p, move_info*& moves, check_map const& check )
-{
-	uint64_t rooks = p.bitboards[p.self()][bb_type::rooks];
-	while( rooks ) {
-		uint64_t rook = bitscan_unset( rooks );
-		calc_moves_rook<type>( p, moves, check, rook );
+	uint64_t sliders = p.bitboards[p.self()][piece];
+	while( sliders ) {
+		uint64_t slider = bitscan_unset( sliders );
+		calc_moves_slider<type, piece>( p, moves, check, slider );
 	}
 }
 
@@ -553,9 +479,9 @@ void calculate_moves( position const& p, move_info*& moves, check_map const& che
 	if( !check.check || !check.multiple() )
 	{
 		calc_moves_pawns<type>( p, moves, check );
-		calc_moves_queens<type>( p, moves, check );
-		calc_moves_rooks<type>( p, moves, check );
-		calc_moves_bishops<type>( p, moves, check );
+		calc_moves_sliders<type, pieces::queen>( p, moves, check );
+		calc_moves_sliders<type, pieces::rook>( p, moves, check );
+		calc_moves_sliders<type, pieces::bishop>( p, moves, check );
 		calc_moves_knights<type>( p, moves, check );
 	}
 
@@ -592,13 +518,13 @@ void calculate_moves_by_piece( position const& p, move_info*& moves, check_map c
 		calc_moves_knights<movegen_type::all>( p, moves, check );
 		break;
 	case pieces::bishop:
-		calc_moves_bishops<movegen_type::all>( p, moves, check );
+		calc_moves_sliders<movegen_type::all, pieces::bishop>( p, moves, check );
 		break;
 	case pieces::rook:
-		calc_moves_rooks<movegen_type::all>( p, moves, check );
+		calc_moves_sliders<movegen_type::all, pieces::rook>( p, moves, check );
 		break;
 	case pieces::queen:
-		calc_moves_queens<movegen_type::all>( p, moves, check );
+		calc_moves_sliders<movegen_type::all, pieces::queen>( p, moves, check );
 		break;
 	case pieces::king:
 		calc_moves_king<movegen_type::all>( p, moves, check );
