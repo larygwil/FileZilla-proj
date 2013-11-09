@@ -51,4 +51,6 @@ inline uint64_t generic_popcount( uint64_t w )
 bool uses_native_popcnt();
 bool cpu_has_popcnt();
 
+void millisleep( int ms );
+
 #endif

@@ -144,7 +144,7 @@ bool cpu_has_popcnt()
 	return (info[3] & (1 << 23)) != 0;
 }
 
-void usleep( uint64_t usecs )
+void millisleep( int ms )
 {
-	Sleep( static_cast<DWORD>(usecs / 1000) );
+	Sleep( static_cast<DWORD>(ms) );
 }

@@ -106,6 +106,4 @@ int get_system_memory();
 
 #define atoll _atoi64
 
-void usleep( uint64_t usecs );
-
 #endif

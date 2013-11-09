@@ -991,7 +991,7 @@ void check_time()
 	timestamp t;
 	timestamp t2;
 	timestamp t3 = t2;
-	usleep(2000);
+	millisleep(2);
 	timestamp t4;
 
 	if( t > t2 ) {

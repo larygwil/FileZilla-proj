@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <iostream>
+#include <time.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #ifdef __APPLE__
@@ -106,4 +107,23 @@ bool cpu_has_popcnt()
 {
 	// We may lie
 	return true;
+}
+
+void millisleep( int ms )
+{
+	timespec t;
+	if( clock_gettime( CLOCK_REALTIME, &t ) != 0 ) {
+		return;
+	}
+
+	t.tv_sec += ms / 1000;
+	t.tv_nsec += (ms % 1000) * 1000000;
+	if( t.tv_nsec >= 1000000000 ) {
+		t.tv_nsec -= 1000000000;
+		++t.tv_sec;
+	}
+
+	while( clock_nanosleep( CLOCK_REALTIME, TIMER_ABSTIME, &t, 0 ) == EINTR ) {
+		// Repeat in case of a signal.
+	}
 }

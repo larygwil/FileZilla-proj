@@ -76,11 +76,11 @@ sqlite/sqlite3.o: sqlite/sqlite3.c sqlite/sqlite3.h
 
 
 octochess: $(UTIL_FILES) $(OBJECT_FILES) $(CHESS_FILES)
-	$(CXX) $(CXXFLAGS) -pthread -o $@ $^
+	$(CXX) $(CXXFLAGS) -pthread -o $@ $^ -lrt
 
 
 bookgen: $(UTIL_FILES) $(OBJECT_FILES) $(BOOKGEN_FILES)
-	$(CXX) $(CXXFLAGS) -pthread -o $@ $^
+	$(CXX) $(CXXFLAGS) -pthread -o $@ $^ -lrt
 
 clean:
 	rm -f octochess bookgen tables_gen

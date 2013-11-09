@@ -675,7 +675,7 @@ void xboard( context& ctx, std::string line )
 {
 	if( uses_native_popcnt() && !cpu_has_popcnt() ) {
 		std::cout << "tellusererror Your CPU does not support the POPCNT instruction, but this version of Octochess has been built to use this instruction. Please use a generic (but slower) version of Octochess for your CPU." << std::endl;
-		usleep(1000);
+		millisleep(1000);
 		exit(1);
 	}
 
@@ -738,7 +738,7 @@ skip_getline:
 				l.unlock();
 				int d = 0;
 				if( to_int( args, d, 0, 1000 * 1000 ) ) {
-					usleep( d * 1000 );
+					millisleep( d );
 				}
 				continue;
 			}
