@@ -13,12 +13,12 @@
 
 MoveSort moveSort;
 
-extern uint64_t const pawn_enpassant[2] = {
+uint64_t const pawn_enpassant[2] = {
 	0x000000ff00000000ull,
 	0x00000000ff000000ull
 };
 
-extern uint64_t const pawn_double_move[2] = {
+uint64_t const pawn_double_move[2] = {
 	0x0000000000ff0000ull,
 	0x0000ff0000000000ull
 };
@@ -72,7 +72,7 @@ void add_if_legal( position const& p, move_info*& moves, check_map const& check,
 // Adds the move if it does not result in self getting into check
 template<movegen_type type>
 void add_if_legal_pawn( position const& p, move_info*& moves, check_map const& check,
-				  uint64_t const& source, uint64_t const& target )
+						uint64_t const& source, uint64_t const& target )
 {
 	unsigned char const& cv_old = check.board[source];
 	unsigned char const& cv_new = check.board[target];
@@ -388,11 +388,13 @@ void calc_moves_pawn_en_passant( position const& p, move_info*& moves, check_map
 
 
 template<movegen_type type>
-void calc_moves_pawn_captures( position const& p, move_info*& moves, check_map const& check, uint64_t pawn_captures, int shift )
+void add_pawn_moves( position const& p, move_info*& moves, check_map const& check, uint64_t pawn_moves, int delta )
 {
-	while( pawn_captures ) {
-		uint64_t pawn_move = bitscan_unset( pawn_captures );
-		add_if_legal_pawn<type>( p, moves, check, pawn_move - shift, pawn_move );
+	while( pawn_moves ) {
+		uint64_t target = bitscan_unset( pawn_moves );
+		uint64_t source = static_cast<uint64_t>(target + delta);
+
+		add_if_legal_pawn<type>( p, moves, check, source, target );
 	}
 }
 
@@ -425,15 +427,9 @@ void calc_moves_pawn_pushes( position const& p, move_info*& moves, check_map con
 			double_pushes &= (checks >> 16) | pawn_control[p.other()][p.king_pos[p.other()]] | 0xff000000000000ffull;
 		}
 	}
-	while( double_pushes ) {
-		uint64_t pawn_move = bitscan_unset( double_pushes );
-		add_if_legal<type>( p, moves, check, c ? pawn_move + 16 : pawn_move - 16, pawn_move, move_flags::none, pieces::pawn );
-	}
 
-	while( pawn_pushes ) {
-		uint64_t pawn_move = bitscan_unset( pawn_pushes );
-		add_if_legal_pawn<type>( p, moves, check, c ? pawn_move + 8 : pawn_move - 8, pawn_move );
-	}
+	add_pawn_moves<type>( p, moves, check, double_pushes, c ? 16 : -16 );
+	add_pawn_moves<type>( p, moves, check, pawn_pushes, c ? 8 : -8 );
 }
 
 
@@ -447,8 +443,8 @@ void calc_moves_pawns( position const& p, move_info*& moves, check_map const& ch
 		}
 		if( type == movegen_type::all || type == movegen_type::capture ) {
 			uint64_t pawns = p.bitboards[p.self()][bb_type::pawns];
-			calc_moves_pawn_captures<type>( p, moves, check, ((pawns & 0xfefefefefefefefeull) << 7) & p.bitboards[p.other()][bb_type::all_pieces], 7 );
-			calc_moves_pawn_captures<type>( p, moves, check, ((pawns & 0x7f7f7f7f7f7f7f7full) << 9) & p.bitboards[p.other()][bb_type::all_pieces], 9 );
+			add_pawn_moves<type>( p, moves, check, ((pawns & 0xfefefefefefefefeull) << 7) & p.bitboards[p.other()][bb_type::all_pieces], -7 );
+			add_pawn_moves<type>( p, moves, check, ((pawns & 0x7f7f7f7f7f7f7f7full) << 9) & p.bitboards[p.other()][bb_type::all_pieces], -9 );
 		}
 	}
 	else {
@@ -457,8 +453,8 @@ void calc_moves_pawns( position const& p, move_info*& moves, check_map const& ch
 		}
 		if( type == movegen_type::all || type == movegen_type::capture ) {
 			uint64_t pawns = p.bitboards[p.self()][bb_type::pawns];
-			calc_moves_pawn_captures<type>( p, moves, check, ((pawns & 0xfefefefefefefefeull) >> 9) & p.bitboards[p.other()][bb_type::all_pieces], -9 );
-			calc_moves_pawn_captures<type>( p, moves, check, ((pawns & 0x7f7f7f7f7f7f7f7full) >> 7) & p.bitboards[p.other()][bb_type::all_pieces], -7 );
+			add_pawn_moves<type>( p, moves, check, ((pawns & 0xfefefefefefefefeull) >> 9) & p.bitboards[p.other()][bb_type::all_pieces], 9 );
+			add_pawn_moves<type>( p, moves, check, ((pawns & 0x7f7f7f7f7f7f7f7full) >> 7) & p.bitboards[p.other()][bb_type::all_pieces], 7 );
 		}
 	}
 
