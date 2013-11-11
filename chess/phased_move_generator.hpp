@@ -81,8 +81,6 @@ public:
 	// move_info's m, evaluation and pawns are filled out, sort is undefined.
 	virtual move next() override;
 
-	void update_history();
-
 	void rewind();
 private:
 	

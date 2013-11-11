@@ -524,8 +524,9 @@ void worker_thread::process_work( scoped_lock& l )
 								// Killer (and history handling)
 								if( !w->p_.get_captured_piece(m) ) {
 									state.killers[w->p_.self()].add_killer( m, w->ply_ );
+									state.history_.record_cut( w->p_, m, processed );
 									w->master_state_.killers[w->p_.self()].add_killer( m, w->ply_ );
-									//gen.update_history();
+									w->master_state_.history_.record_cut( w->p_, m, processed );
 								}
 
 								// We're done, with cutoff
@@ -546,6 +547,10 @@ void worker_thread::process_work( scoped_lock& l )
 								w->alpha_ = value;
 							}
 						}
+					}
+					if( value < w->beta_ ) {
+						state.history_.record_cut( w->p_, m, processed );
+						w->master_state_.history_.record_cut( w->p_, m, processed );
 					}
 				}
 			}
@@ -1107,17 +1112,17 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 				if( value >= beta ) {		
 					if( !p.get_captured_piece(m) ) {
 						killers[p.self()].add_killer( m, ply );
-						gen.update_history();
+						history_.record_cut( p, m, processed_moves );
 					}
 #if USE_STATISTICS >= 2
 					thread_->pool_.stats_.add_cutoff( processed_moves );
 #endif
-
 					break;
 				}
 				alpha = value;
 			}
 		}
+		history_.record( p, m );
 
 #if MAX_THREADS > 1
 		if( processed_moves == 1 && plies_remaining > 4 ) {

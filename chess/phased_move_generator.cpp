@@ -288,13 +288,6 @@ move move_generator::next()
 	return move();
 }
 
-void move_generator::update_history()
-{
-	if( phase == phases::noncapture ) {
-		state_.history_.record_cut( p_, bad_captures_end_, it, p_.self() );
-	}
-}
-
 void move_generator::rewind()
 {
 	state_.move_ptr = moves;

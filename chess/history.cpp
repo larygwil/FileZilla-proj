@@ -21,6 +21,7 @@ void history::clear()
 
 void history::reduce()
 {
+	// TODO: Dividing by two, is it strong enough? Perhaps just a clear.
 	for( int c = 0; c < 2; ++c ) {
 		for( int pi = pieces::pawn; pi <= pieces::king; ++pi ) {
 			for( int sq = 0; sq < 64; ++sq ) {
@@ -38,11 +39,18 @@ int history::get_value( pieces::type piece, move const& m, color::type c ) const
 	return static_cast<int>((cut_[c][piece][m.target()] << 24ull) / all_[c][piece][m.target()]);
 }
 
-void history::record_cut( position const& p, const move_info *begin, const move_info *end, color::type c )
+void history::record( position const& p, move const& m )
 {
-	move_info const* cut = end - 1;
-	++cut_[c][p.get_piece(cut->m.source())][cut->m.target()];
-	for( move_info const* it = begin; it != end; ++it ) {
-		++all_[c][p.get_piece(it->m.source())][it->m.target()];
+	if( p.get_captured_piece( m ) != pieces::none ) {
+		return;
 	}
+
+	++all_[p.self()][p.get_piece(m.source())][m.target()];
+}
+
+void history::record_cut( position const& p, move const& m, int processed )
+{
+	ASSERT( p.get_captured_piece( m ) == pieces::none );
+
+	cut_[p.self()][p.get_piece(m.source())][m.target()] += 1 + processed / 2;
 }
