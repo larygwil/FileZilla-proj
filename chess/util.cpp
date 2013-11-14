@@ -734,7 +734,7 @@ void apply_move( position& p, move const& m )
 			p.material[p.other()] -= eval_values::material_values[ captured_piece ];
 		}
 
-		p.piece_sum -= 1ull << ((captured_piece - 1 + (p.white() ? 5 : 0) ) * 4);
+		p.piece_sum -= 1ull << ((captured_piece - 1 + (p.white() ? 5 : 0) ) * 6);
 	}
 
 	if( piece == pieces::rook ) {
@@ -775,8 +775,8 @@ void apply_move( position& p, move const& m )
 
 		p.board[m.target()] = static_cast<pieces_with_color::type>(m.promotion_piece() + (p.white() ? 0 : 8));
 
-		p.piece_sum -= 1ull << (p.black() ? 20 : 0);
-		p.piece_sum += 1ull << ((promotion_piece - 1 + (p.black() ? 5 : 0) ) * 4);
+		p.piece_sum -= 1ull << (p.black() ? 30 : 0);
+		p.piece_sum += 1ull << ((promotion_piece - 1 + (p.black() ? 5 : 0) ) * 6);
 
 		p.hash_ ^= get_piece_hash( promotion_piece, p.self(), m.target() );
 	}

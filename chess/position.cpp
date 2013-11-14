@@ -61,7 +61,7 @@ void position::init_piece_sum()
 	for( int c = 0; c < 2; ++c ) {
 		for( int piece = pieces::pawn; piece < pieces::king; ++piece ) {
 			uint64_t count = popcount( bitboards[c][piece] );
-			piece_sum |= count << ((piece - 1 + (c ? 5 : 0)) * 4);
+			piece_sum |= count << ((piece - 1 + (c ? 5 : 0)) * 6);
 		}
 	}
 }
@@ -307,7 +307,7 @@ bool position::verify( std::string& error ) const
 	for( int c = 0; c < 2; ++c ) {
 		for( int piece = pieces::pawn; piece < pieces::king; ++piece ) {
 			uint64_t count = popcount( bitboards[c][piece] );
-			ver_piece_sum |= count << ((piece - 1 + (c ? 5 : 0)) * 4);
+			ver_piece_sum |= count << ((piece - 1 + (c ? 5 : 0)) * 6);
 		}
 	}
 	if( piece_sum != ver_piece_sum ) {

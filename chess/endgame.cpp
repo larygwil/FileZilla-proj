@@ -5,17 +5,19 @@
 #include <iostream>
 
 enum piece_masks : uint64_t {
-	white_pawn =   0x1ull,
-	white_knight = 0x10ull,
-	white_bishop = 0x100ull,
-	white_rook =   0x1000ull,
-	white_queen =  0x10000ull,
-	black_pawn =   0x100000ull,
-	black_knight = 0x1000000ull,
-	black_bishop = 0x10000000ull,
-	black_rook =   0x100000000ull,
-	black_queen =  0x1000000000ull,
-	max         =  0x10000000000ull
+	bits_per_piece = 6,
+
+	white_pawn =   1ull << (bits_per_piece * 0),
+	white_knight = 1ull << (bits_per_piece * 1),
+	white_bishop = 1ull << (bits_per_piece * 2),
+	white_rook =   1ull << (bits_per_piece * 3),
+	white_queen =  1ull << (bits_per_piece * 4),
+	black_pawn =   1ull << (bits_per_piece * 5),
+	black_knight = 1ull << (bits_per_piece * 6),
+	black_bishop = 1ull << (bits_per_piece * 7),
+	black_rook =   1ull << (bits_per_piece * 8),
+	black_queen =  1ull << (bits_per_piece * 9),
+	max         =  1ull << (bits_per_piece * 10)
 };
 
 extern uint64_t const light_squared_bishop_mask = 0x55aa55aa55aa55aaull;
