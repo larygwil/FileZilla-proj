@@ -4,12 +4,7 @@
 #include "random.hpp"
 
 namespace zobrist {
-	uint64_t pawns[2][64];
-	uint64_t knights[2][64];
-	uint64_t bishops[2][64];
-	uint64_t rooks[2][64];
-	uint64_t queens[2][64];
-	uint64_t kings[2][64];
+	uint64_t hashes[8][2][64];
 
 	uint64_t enpassant[64];
 
@@ -30,12 +25,11 @@ void init_zobrist_tables()
 
 	for( int c = 0; c < 2; ++c ) {
 		for( int i = 0; i < 64; ++i ) {
-			zobrist::pawns[c][i] = rng.get_uint64();
-			zobrist::knights[c][i] = rng.get_uint64();
-			zobrist::bishops[c][i] = rng.get_uint64();
-			zobrist::rooks[c][i] = rng.get_uint64();
-			zobrist::queens[c][i] = rng.get_uint64();
-			zobrist::kings[c][i] = rng.get_uint64();
+			zobrist::hashes[0][c][i] = 0;
+			zobrist::hashes[7][c][i] = 0;
+			for( int pi = pieces::pawn; pi <= pieces::king; ++pi ) {
+				zobrist::hashes[pi][c][i] = rng.get_uint64();
+			}
 		}
 	}
 
@@ -71,24 +65,9 @@ void init_zobrist_tables()
 }
 
 
-uint64_t get_piece_hash( pieces::type pi, color::type c, int pos )
+uint64_t get_piece_hash( pieces::type pi, color::type c, uint64_t pos )
 {
-	switch( pi ) {
-		case pieces::pawn:
-			return zobrist::pawns[c][pos];
-		case pieces::knight:
-			return zobrist::knights[c][pos];
-		case pieces::bishop:
-			return zobrist::bishops[c][pos];
-		case pieces::rook:
-			return zobrist::rooks[c][pos];
-		case pieces::queen:
-			return zobrist::queens[c][pos];
-		case pieces::king:
-			return zobrist::kings[c][pos];
-		default:
-			return 0;
-	}
+	return zobrist::hashes[pi][c][pos];
 }
 	
 uint64_t get_pawn_structure_hash( color::type c, unsigned char pawn )

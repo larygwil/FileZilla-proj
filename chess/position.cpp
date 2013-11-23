@@ -381,27 +381,8 @@ uint64_t position::init_hash() const
 		while( pieces ) {
 			uint64_t piece = bitscan_unset( pieces );
 
-			uint64_t bpiece = 1ull << piece;
-			if( bitboards[c][bb_type::pawns] & bpiece ) {
-				hash ^= zobrist::pawns[c][piece];
-			}
-			else if( bitboards[c][bb_type::knights] & bpiece ) {
-				hash ^= zobrist::knights[c][piece];
-			}
-			else if( bitboards[c][bb_type::bishops] & bpiece ) {
-				hash ^= zobrist::bishops[c][piece];
-			}
-			else if( bitboards[c][bb_type::rooks] & bpiece ) {
-				hash ^= zobrist::rooks[c][piece];
-			}
-			else if( bitboards[c][bb_type::queens] & bpiece ) {
-				hash ^= zobrist::queens[c][piece];
-			}
-			else {//if( bitboards[c][bb_type::king] & bpiece ) {
-				hash ^= zobrist::kings[c][piece];
-			}
+			hash ^= get_piece_hash( get_piece( piece ), static_cast<color::type>(c), piece );
 		}
-
 
 		hash ^= zobrist::castle[c][castle[c]];
 	}

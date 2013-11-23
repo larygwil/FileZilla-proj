@@ -644,8 +644,8 @@ void apply_move( position& p, move const& m )
 			delta += pst[p.self()][pieces::rook][row + 5] - pst[p.self()][pieces::rook][row + rook];
 			std::swap(p.board[row + 5], p.board[row + rook]);
 
-			p.hash_ ^= zobrist::rooks[p.self()][row + 5];
-			p.hash_ ^= zobrist::rooks[p.self()][row + rook];
+			p.hash_ ^= get_piece_hash( pieces::rook, p.self(), row + 5 );
+			p.hash_ ^= get_piece_hash( pieces::rook, p.self(), row + rook );
 		}
 		else {
 			// Queenside
@@ -658,8 +658,8 @@ void apply_move( position& p, move const& m )
 			delta += pst[p.self()][pieces::rook][row + 3] - pst[p.self()][pieces::rook][row + rook];
 			std::swap(p.board[row + 3], p.board[row + rook]);
 
-			p.hash_ ^= zobrist::rooks[p.self()][row + 3];
-			p.hash_ ^= zobrist::rooks[p.self()][row + rook];
+			p.hash_ ^= get_piece_hash( pieces::rook, p.self(), row + 3 );
+			p.hash_ ^= get_piece_hash( pieces::rook, p.self(), row + rook );
 		}
 		p.can_en_passant = 0;
 		p.castle[p.self()] = 0;
@@ -691,7 +691,7 @@ void apply_move( position& p, move const& m )
 			p.bitboards[p.other()][bb_type::pawns] ^= ep_square;
 			p.bitboards[p.other()][bb_type::all_pieces] ^= ep_square;
 			p.board[ep] = pieces_with_color::none;
-			p.hash_ ^= zobrist::pawns[p.other()][ep];
+			p.hash_ ^= get_piece_hash( pieces::pawn, p.other(), ep );
 		}
 		else {
 			p.hash_ ^= get_piece_hash( static_cast<pieces::type>(captured_piece), p.other(), m.target() );
@@ -700,7 +700,7 @@ void apply_move( position& p, move const& m )
 
 			if( captured_piece == pieces::rook ) {
 				if( m.target() / 8 == (p.other() ? 7 : 0) && (1ull << (m.target() % 8)) & p.castle[p.other()] ) {
-					p.hash_ ^= zobrist::castle[p.other()][1ull << (m.target() % 8)];
+					p.hash_ ^= get_piece_hash( pieces::pawn, p.other(), 1ull << (m.target() % 8) );
 					p.castle[p.other()] ^= 1ull << (m.target() % 8);
 				}
 			}
