@@ -549,8 +549,8 @@ void worker_thread::process_work( scoped_lock& l )
 						}
 					}
 					if( value < w->beta_ ) {
-						state.history_.record_cut( w->p_, m, processed );
-						w->master_state_.history_.record_cut( w->p_, m, processed );
+						state.history_.record( w->p_, m );
+						w->master_state_.history_.record( w->p_, m );
 					}
 				}
 			}
