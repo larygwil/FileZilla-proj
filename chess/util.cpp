@@ -700,7 +700,7 @@ void apply_move( position& p, move const& m )
 
 			if( captured_piece == pieces::rook ) {
 				if( m.target() / 8 == (p.other() ? 7 : 0) && (1ull << (m.target() % 8)) & p.castle[p.other()] ) {
-					p.hash_ ^= get_piece_hash( pieces::pawn, p.other(), 1ull << (m.target() % 8) );
+					p.hash_ ^= zobrist::castle[p.other()][1ull << (m.target() % 8)];
 					p.castle[p.other()] ^= 1ull << (m.target() % 8);
 				}
 			}
