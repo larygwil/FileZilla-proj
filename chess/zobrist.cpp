@@ -10,8 +10,6 @@ namespace zobrist {
 
 	uint64_t castle[2][256];
 
-	uint64_t pawn_structure[2][64];
-
 	bool initialized = false;
 }
 
@@ -55,12 +53,6 @@ void init_zobrist_tables()
 		}
 	}
 
-	for( unsigned int c = 0; c < 2; ++c ) {
-		for( unsigned int pawn = 0; pawn < 64; ++pawn ) {
-			zobrist::pawn_structure[c][pawn] = rng.get_uint64();
-		}
-	}
-
 	zobrist::initialized = true;
 }
 
@@ -70,11 +62,6 @@ uint64_t get_piece_hash( pieces::type pi, color::type c, uint64_t pos )
 	return zobrist::hashes[pi][c][pos];
 }
 	
-uint64_t get_pawn_structure_hash( color::type c, unsigned char pawn )
-{
-	return zobrist::pawn_structure[c][pawn];
-}
-
 
 uint64_t get_enpassant_hash( unsigned char ep )
 {

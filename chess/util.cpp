@@ -721,11 +721,11 @@ void apply_move( position& p, move const& m )
 
 			if( m.enpassant() ) {
 				unsigned char ep = (m.target() & 0x7) | (m.source() & 0x38);
-				p.pawn_hash ^= get_pawn_structure_hash( p.other(), ep );
+				p.pawn_hash ^= get_piece_hash( pieces::pawn, p.other(), ep );
 				delta += pst[p.other()][pieces::pawn][ep] + eval_values::material_values[ pieces::pawn ];
 			}
 			else {
-				p.pawn_hash ^= get_pawn_structure_hash( p.other(), m.target() );
+				p.pawn_hash ^= get_piece_hash( pieces::pawn, p.other(), m.target() );
 				delta += pst[p.other()][pieces::pawn][m.target()] + eval_values::material_values[ pieces::pawn ];
 			}
 		}
@@ -802,9 +802,9 @@ void apply_move( position& p, move const& m )
 				((pawns & 0x7f7f7f7f7f7f7f7full) >> 7);
 		}
 
-		p.pawn_hash ^= get_pawn_structure_hash( p.self(), m.source());
+		p.pawn_hash ^= get_piece_hash( pieces::pawn, p.self(), m.source());
 		if( !m.promotion() ) {
-			p.pawn_hash ^= get_pawn_structure_hash( p.self(), m.target() );
+			p.pawn_hash ^= get_piece_hash( pieces::pawn, p.self(), m.target() );
 		}
 	}
 
@@ -830,7 +830,7 @@ void position::init_pawn_hash()
 		uint64_t cpawns = bitboards[c][bb_type::pawns];
 		while( cpawns ) {
 			uint64_t pawn = bitscan_unset( cpawns );
-			pawn_hash ^= get_pawn_structure_hash( static_cast<color::type>(c), static_cast<unsigned char>(pawn) );
+			pawn_hash ^= get_piece_hash( pieces::pawn, static_cast<color::type>(c), static_cast<unsigned char>(pawn) );
 		}
 	}
 }
