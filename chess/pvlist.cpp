@@ -26,12 +26,17 @@ std::string pv_to_string( config const& conf, move const* pv, position p, bool u
 
 void get_pv_from_tt( hash& tt, move* pv, position p, int max_depth )
 {
-	ASSERT( pv && !pv->empty() );
-	apply_move( p, *pv );
+	ASSERT( pv );
+	
+	int depth = 0;
 
-	++pv;
+	if( !pv->empty() ) {
+		apply_move( p, *pv );
+		++pv;
+		++depth;
+	}
 
-	for( int depth = 1; depth < max_depth; ++depth ) {
+	for( ; depth < max_depth; ++depth ) {
 
 		move best;
 		short ev;

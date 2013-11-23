@@ -1081,6 +1081,11 @@ skip_getline:
 		else if( cmd == "perft" ) {
 			perft( state.p );
 		}
+		else if( cmd == "pv" ) {
+			move pv[13];
+			get_pv_from_tt( state.ctx_.tt_, pv, state.p, 12 );
+			std::cout << pv_to_string( state.ctx_.conf_, pv, state.p ) << std::endl;
+		}
 		else {
 			move m;
 			std::string error;
