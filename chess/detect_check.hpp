@@ -33,6 +33,10 @@ public:
 	unsigned char check;
 
 	inline bool multiple() const { return (check & 0x40) != 0; }
+
+private:
+	void process_slider( position const& p, uint64_t piece );
+	void process_direct_check( position const& p, uint64_t piece );
 };
 
 bool detect_check( position const& p, color::type c, uint64_t king, uint64_t ignore );

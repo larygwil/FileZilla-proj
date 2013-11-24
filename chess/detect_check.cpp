@@ -32,41 +32,40 @@ bool detect_check( position const& p, color::type c )
 }
 
 
-void calc_check_map_knight( check_map& map, unsigned char king, uint64_t knight )
+void check_map::process_direct_check( position const& p, uint64_t piece )
 {
-	unsigned char v = 0x80 | static_cast<unsigned char>(knight);
-	map.board[knight] = v;
+	unsigned char cpi = static_cast<unsigned char>(piece) | 0x80;
+	board[piece] = cpi;
 
-	if( !map.board[king] ) {
-		map.board[king] = v;
+	if( !board[p.king_pos[p.self()]] ) {
+		board[p.king_pos[p.self()]] = cpi;
 	}
 	else {
-		map.board[king] = 0x80 | 0x40;
+		board[p.king_pos[p.self()]] = 0x80 | 0x40;
 	}
 }
 
 
-static void process_piece( position const& p, check_map& map, uint64_t piece )
+void check_map::process_slider( position const& p, uint64_t piece )
 {
 	uint64_t between = between_squares[piece][p.king_pos[p.self()]];
 
 	uint64_t block_count = popcount( between & p.bitboards[p.self()][bb_type::all_pieces] );
 	if( block_count < 2 ) {
 		unsigned char cpi = static_cast<unsigned char>(piece) | 0x80;
-
-		map.board[piece] = cpi;
+		board[piece] = cpi;
 
 		while( between ) {
 			uint64_t sq = bitscan_unset( between );
-			map.board[sq] = cpi;
+			board[sq] = cpi;
 		}
 
 		if( !block_count ) {
-			if( !map.board[p.king_pos[p.self()]] ) {
-				map.board[p.king_pos[p.self()]] = cpi;
+			if( !board[p.king_pos[p.self()]] ) {
+				board[p.king_pos[p.self()]] = cpi;
 			}
 			else {
-				map.board[p.king_pos[p.self()]] = 0x80 | 0x40;
+				board[p.king_pos[p.self()]] = 0x80 | 0x40;
 			}
 		}
 	}
@@ -76,22 +75,18 @@ static void process_piece( position const& p, check_map& map, uint64_t piece )
 check_map::check_map( position const& p )
 	: board()
 {
-	uint64_t potential_rook_checks = rook_magic( p.king_pos[p.self()], p.bitboards[p.other()][bb_type::all_pieces] ) & (p.bitboards[p.other()][bb_type::rooks] | p.bitboards[p.other()][bb_type::queens]);
-	while( potential_rook_checks ) {
-		uint64_t rook = bitscan_unset( potential_rook_checks );
-		process_piece( p, *this, rook );
-	}
-	uint64_t potential_bishop_checks = bishop_magic( p.king_pos[p.self()], p.bitboards[p.other()][bb_type::all_pieces] ) & (p.bitboards[p.other()][bb_type::bishops] | p.bitboards[p.other()][bb_type::queens]);
-	potential_bishop_checks |= pawn_control[p.self()][p.king_pos[p.self()]] & p.bitboards[p.other()][bb_type::pawns];
-	while( potential_bishop_checks ) {
-		uint64_t bishop = bitscan_unset( potential_bishop_checks );
-		process_piece( p, *this, bishop );
+	uint64_t slider_checks = rook_magic( p.king_pos[p.self()], p.bitboards[p.other()][bb_type::all_pieces] ) & (p.bitboards[p.other()][bb_type::rooks] | p.bitboards[p.other()][bb_type::queens]);
+	slider_checks |= bishop_magic( p.king_pos[p.self()], p.bitboards[p.other()][bb_type::all_pieces] ) & (p.bitboards[p.other()][bb_type::bishops] | p.bitboards[p.other()][bb_type::queens]);
+	while( slider_checks ) {
+		uint64_t piece = bitscan_unset( slider_checks );
+		process_slider( p, piece );
 	}
 
-	uint64_t knights = possible_knight_moves[p.king_pos[p.self()]] & p.bitboards[p.other()][bb_type::knights];
-	while( knights ) {
-		uint64_t knight = bitscan_unset( knights );
-		calc_check_map_knight( *this, p.king_pos[p.self()], knight );
+	uint64_t direct_checks = possible_knight_moves[p.king_pos[p.self()]] & p.bitboards[p.other()][bb_type::knights];
+	direct_checks |= pawn_control[p.self()][p.king_pos[p.self()]] & p.bitboards[p.other()][bb_type::pawns];
+	while( direct_checks ) {
+		uint64_t piece = bitscan_unset( direct_checks );
+		process_direct_check( p, piece );
 	}
 
 	check = board[p.king_pos[p.self()]];
