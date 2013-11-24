@@ -48,7 +48,7 @@ struct eval_results {
 	{
 		for( int c = 0; c < 2; ++c ) {
 
-			for( int pi = 0; pi < 7; ++pi ) {
+			for( int pi = 1; pi < 6; ++pi ) {
 				attacks[c][pi] = 0;
 			}
 
@@ -58,7 +58,7 @@ struct eval_results {
 		}
 	}
 
-	uint64_t attacks[2][7];
+	uint64_t attacks[2][8];
 	short pawn_shield[2];
 
 	short count_king_attackers[2];
