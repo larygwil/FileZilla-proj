@@ -9,7 +9,7 @@ history::history()
 void history::clear()
 {
 	for( int c = 0; c < 2; ++c ) {
-		for( int pi = 0; pi < 7; ++pi ) {
+		for( int pi = pieces::pawn; pi <= pieces::king; ++pi ) {
 			for( int sq = 0; sq < 64; ++sq ) {
 				all_[c][pi][sq] = 1;
 				cut_[c][pi][sq] = 1;

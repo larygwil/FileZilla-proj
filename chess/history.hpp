@@ -18,8 +18,8 @@ public:
 	int get_value( pieces::type piece, move const& m, color::type c ) const;
 
 private:
-	uint64_t cut_[2][7][64];
-	uint64_t all_[2][7][64];
+	uint64_t cut_[2][8][64];
+	uint64_t all_[2][8][64];
 };
 
 #endif
