@@ -509,7 +509,7 @@ const score king_values[32] = {
 }
 
 
-score pst[2][7][64];
+score pst[2][8][64];
 
 
 void update_pst()

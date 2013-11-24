@@ -93,7 +93,7 @@ namespace eval_values {
 	bool normalize();
 }
 
-extern score pst[2][7][64];
+extern score pst[2][8][64];
 void init_pst();
 void update_pst();
 
