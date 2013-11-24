@@ -422,7 +422,7 @@ void update( context& ctx, book& b, int entries_per_pos = 5 )
 		return;
 	}
 
-	std::cerr << "Collecting all positions with at most " << entries_per_pos << " moves to update per position\n";
+	std::cerr << "Collecting all positions with at most " << entries_per_pos << " moves to update per position.\n";
 
 	std::list<book_entry_with_position> wl = b.get_all_entries();
 	if( wl.empty() ) {
@@ -982,7 +982,7 @@ int main( int argc, char const* argv[] )
 	logger::show_debug( false );
 
 	init_magic();
-	init_pst();
+	pst.init();
 	eval_values::init();
 	init_zobrist_tables();
 

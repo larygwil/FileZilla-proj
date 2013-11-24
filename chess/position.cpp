@@ -100,7 +100,7 @@ void position::init_eval()
 
 			pieces::type pi = get_piece( sq );
 
-			side += pst[c][pi][sq];
+			side += pst(static_cast<color::type>(c), pi, sq);
 		}
 
 		if( c ) {

@@ -388,12 +388,12 @@ static void test_pst() {
 		int opposite = (i % 8) + (7 - i / 8) * 8;
 		int mirror = (i / 8) * 8 + 7 - i % 8;
 		for( int p = 1; p < 7; ++p ) {
-			if( pst[0][p][i] != pst[1][p][opposite] ) {
-				std::cerr << "PST not symmetric for piece " << p << ", squares " << i << " and " << opposite << ": " << pst[0][p][i] << " " << pst[1][p][opposite] << std::endl;
+			if( pst(color::white, static_cast<pieces::type>(p), i) != pst(color::black, static_cast<pieces::type>(p), opposite) ) {
+				std::cerr << "PST not symmetric for piece " << p << ", squares " << i << " and " << opposite << ": " << pst(color::white, static_cast<pieces::type>(p), i) << " " << pst(color::black, static_cast<pieces::type>(p), opposite) << std::endl;
 				abort();
 			}
-			if( pst[0][p][i] != pst[0][p][mirror] ) {
-				std::cerr << "PST not symmetric for piece " << p << ", squares " << i << " and " << mirror << ": " << pst[0][p][i] << " " << pst[0][p][mirror] << std::endl;
+			if( pst(color::white, static_cast<pieces::type>(p), i) != pst(color::white, static_cast<pieces::type>(p), mirror) ) {
+				std::cerr << "PST not symmetric for piece " << p << ", squares " << i << " and " << mirror << ": " << pst(color::white, static_cast<pieces::type>(p), i) << " " << pst(color::white, static_cast<pieces::type>(p), mirror) << std::endl;
 				abort();
 			}
 		}

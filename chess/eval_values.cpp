@@ -509,37 +509,38 @@ const score king_values[32] = {
 }
 
 
-score pst[2][8][64];
+piece_square_table pst;
 
 
-void update_pst()
+void piece_square_table::update()
 {
 	for( int i = 0; i < 32; ++i ) {
-		pst[0][1][(i / 4) * 8 + 7 - i % 4] = pst_data::pawn_values[i];
-		pst[0][2][(i / 4) * 8 + 7 - i % 4] = pst_data::knight_values[i];
-		pst[0][3][(i / 4) * 8 + 7 - i % 4] = pst_data::bishop_values[i];
-		pst[0][4][(i / 4) * 8 + 7 - i % 4] = pst_data::rook_values[i];
-		pst[0][5][(i / 4) * 8 + 7 - i % 4] = pst_data::queen_values[i];
-		pst[0][6][(i / 4) * 8 + 7 - i % 4] = pst_data::king_values[i];
+		ref(color::white, pieces::pawn, (i / 4) * 8 + 7 - i % 4) = pst_data::pawn_values[i];
+		ref(color::white, pieces::knight, (i / 4) * 8 + 7 - i % 4) = pst_data::knight_values[i];
+		ref(color::white, pieces::bishop, (i / 4) * 8 + 7 - i % 4) = pst_data::bishop_values[i];
+		ref(color::white, pieces::rook, (i / 4) * 8 + 7 - i % 4) = pst_data::rook_values[i];
+		ref(color::white, pieces::queen, (i / 4) * 8 + 7 - i % 4) = pst_data::queen_values[i];
+		ref(color::white, pieces::king, (i / 4) * 8 + 7 - i % 4) = pst_data::king_values[i];
 	}
 
 	for( int i = 0; i < 64; ++i ) {
 		for( int p = 1; p < 7; ++p ) {
-			pst[1][p][i] = pst[0][p][63-i];
+			ref(color::black, static_cast<pieces::type>(p), i) = ref(color::white, static_cast<pieces::type>(p), 63-i);
 		}
 	}
 }
 
-void init_pst()
+
+void piece_square_table::init()
 {
 	for( int i = 0; i < 32; ++i ) {
-		pst[0][1][(i / 4) * 8 + i % 4] = pst_data::pawn_values[i];
-		pst[0][2][(i / 4) * 8 + i % 4] = pst_data::knight_values[i];
-		pst[0][3][(i / 4) * 8 + i % 4] = pst_data::bishop_values[i];
-		pst[0][4][(i / 4) * 8 + i % 4] = pst_data::rook_values[i];
-		pst[0][5][(i / 4) * 8 + i % 4] = pst_data::queen_values[i];
-		pst[0][6][(i / 4) * 8 + i % 4] = pst_data::king_values[i];
+		ref(color::white, pieces::pawn, (i / 4) * 8 + i % 4) = pst_data::pawn_values[i];
+		ref(color::white, pieces::knight, (i / 4) * 8 + i % 4) = pst_data::knight_values[i];
+		ref(color::white, pieces::bishop, (i / 4) * 8 + i % 4) = pst_data::bishop_values[i];
+		ref(color::white, pieces::rook, (i / 4) * 8 + i % 4) = pst_data::rook_values[i];
+		ref(color::white, pieces::queen, (i / 4) * 8 + i % 4) = pst_data::queen_values[i];
+		ref(color::white, pieces::king, (i / 4) * 8 + i % 4) = pst_data::king_values[i];
 	}
 
-	update_pst();
+	update();
 }

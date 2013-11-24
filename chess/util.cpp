@@ -610,11 +610,11 @@ void apply_move( position& p, move const& m )
 	p.hash_ ^= zobrist::enpassant[p.can_en_passant];
 	p.hash_ ^= get_piece_hash( piece, p.self(), m.source() );
 
-	score delta = -pst[p.self()][piece][m.source()];
+	score delta = -pst(p.self(), piece, m.source());
 
 	if( m.castle() ) {
 		p.king_pos[p.self()] = m.target();
-		delta += pst[p.self()][pieces::king][m.target()];
+		delta += pst(p.self(), pieces::king, m.target());
 
 		p.hash_ ^= get_piece_hash( piece, p.self(), m.target() );
 		p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()]];
@@ -641,7 +641,7 @@ void apply_move( position& p, move const& m )
 			p.bitboards[p.self()][bb_type::king] ^= 0x40ull << row;
 			p.bitboards[p.self()][bb_type::rooks] ^= 0x20ull << row;
 
-			delta += pst[p.self()][pieces::rook][row + 5] - pst[p.self()][pieces::rook][row + rook];
+			delta += pst(p.self(), pieces::rook, row + 5) - pst(p.self(), pieces::rook, row + rook);
 			std::swap(p.board[row + 5], p.board[row + rook]);
 
 			p.hash_ ^= get_piece_hash( pieces::rook, p.self(), row + 5 );
@@ -655,7 +655,7 @@ void apply_move( position& p, move const& m )
 			p.bitboards[p.self()][bb_type::king] ^= 0x04ull << row;
 			p.bitboards[p.self()][bb_type::rooks] ^= 0x08ull << row;
 
-			delta += pst[p.self()][pieces::rook][row + 3] - pst[p.self()][pieces::rook][row + rook];
+			delta += pst(p.self(), pieces::rook, row + 3) - pst(p.self(), pieces::rook, row + rook);
 			std::swap(p.board[row + 3], p.board[row + rook]);
 
 			p.hash_ ^= get_piece_hash( pieces::rook, p.self(), row + 3 );
@@ -722,15 +722,15 @@ void apply_move( position& p, move const& m )
 			if( m.enpassant() ) {
 				unsigned char ep = (m.target() & 0x7) | (m.source() & 0x38);
 				p.pawn_hash ^= get_piece_hash( pieces::pawn, p.other(), ep );
-				delta += pst[p.other()][pieces::pawn][ep] + eval_values::material_values[ pieces::pawn ];
+				delta += pst(p.other(), pieces::pawn, ep) + eval_values::material_values[ pieces::pawn ];
 			}
 			else {
 				p.pawn_hash ^= get_piece_hash( pieces::pawn, p.other(), m.target() );
-				delta += pst[p.other()][pieces::pawn][m.target()] + eval_values::material_values[ pieces::pawn ];
+				delta += pst(p.other(), pieces::pawn, m.target()) + eval_values::material_values[ pieces::pawn ];
 			}
 		}
 		else {
-			delta += pst[p.other()][captured_piece][m.target()] + eval_values::material_values[ captured_piece ];
+			delta += pst(p.other(), captured_piece, m.target()) + eval_values::material_values[ captured_piece ];
 			p.material[p.other()] -= eval_values::material_values[ captured_piece ];
 		}
 
@@ -771,7 +771,7 @@ void apply_move( position& p, move const& m )
 		p.material[p.self()] += eval_values::material_values[ promotion_piece ];
 
 		delta -= eval_values::material_values[pieces::pawn];
-		delta += eval_values::material_values[promotion_piece] + pst[p.self()][promotion_piece][m.target()];
+		delta += eval_values::material_values[promotion_piece] + pst(p.self(), promotion_piece, m.target());
 
 		p.board[m.target()] = static_cast<pieces_with_color::type>(m.promotion_piece() + (p.white() ? 0 : 8));
 
@@ -782,7 +782,7 @@ void apply_move( position& p, move const& m )
 	}
 	else {
 		p.bitboards[p.self()][piece] ^= target_square;
-		delta += pst[p.self()][piece][m.target()];
+		delta += pst(p.self(), piece, m.target());
 		p.board[m.target()] = pwc;
 		p.hash_ ^= get_piece_hash( piece, p.self(), m.target() );
 	}

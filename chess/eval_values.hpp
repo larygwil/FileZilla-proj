@@ -2,6 +2,8 @@
 #define __EVAL_VALUES_H__
 
 #include "score.hpp"
+#include "definitions.hpp"
+#include "position.hpp"
 
 #define LAZY_EVAL 980
 
@@ -93,8 +95,24 @@ namespace eval_values {
 	bool normalize();
 }
 
-extern score pst[2][8][64];
-void init_pst();
-void update_pst();
+class piece_square_table
+{
+public:
+	score const& operator()( color::type c, pieces::type pi, uint64_t sq ) const {
+		return d_[pi][c][sq];
+	}
+
+	void init();
+	void update();
+
+private:
+	score& ref( color::type c, pieces::type pi, uint64_t sq ) {
+		return d_[pi][c][sq];
+	}
+
+	score d_[8][2][64];
+};
+
+extern piece_square_table pst;
 
 #endif

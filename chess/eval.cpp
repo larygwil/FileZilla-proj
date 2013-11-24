@@ -95,21 +95,21 @@ inline void add_score( eval_results& results, score const* s ) {
 short evaluate_move( position const& p, move const& m )
 {
 	pieces::type piece = p.get_piece(m.source());
-	score delta = -pst[p.self()][piece][m.source()];
+	score delta = -pst(p.self(), piece, m.source());
 
 	if( m.castle() ) {
-		delta += pst[p.self()][pieces::king][m.target()];
+		delta += pst(p.self(), pieces::king, m.target());
 
 		unsigned char row = p.white() ? 0 : 56;
 		if( m.target() % 8 == 6 ) {
 			// Kingside
 			uint64_t rook = bitscan_reverse(p.castle[p.c]);
-			delta += pst[p.self()][pieces::rook][row + 5] - pst[p.self()][pieces::rook][row + rook];
+			delta += pst(p.self(), pieces::rook, row + 5) - pst(p.self(), pieces::rook, row + rook);
 		}
 		else {
 			// Queenside
 			uint64_t rook = bitscan(p.castle[p.c]);
-			delta += pst[p.self()][pieces::rook][row + 3] - pst[p.self()][pieces::rook][row + rook];
+			delta += pst(p.self(), pieces::rook, row + 3) - pst(p.self(), pieces::rook, row + rook);
 		}
 	}
 	else {
@@ -117,20 +117,20 @@ short evaluate_move( position const& p, move const& m )
 		if( captured_piece != pieces::none ) {
 			if( m.enpassant() ) {
 				unsigned char ep = (m.target() & 0x7) | (m.source() & 0x38);
-				delta += eval_values::material_values[pieces::pawn] + pst[p.other()][pieces::pawn][ep];
+				delta += eval_values::material_values[pieces::pawn] + pst(p.other(), pieces::pawn, ep);
 			}
 			else {
-				delta += eval_values::material_values[captured_piece] + pst[p.other()][captured_piece][m.target()];
+				delta += eval_values::material_values[captured_piece] + pst(p.other(), captured_piece, m.target());
 			}
 		}
 
 		if( m.promotion() ) {
 			pieces::type promotion_piece = m.promotion_piece();
 			delta -= eval_values::material_values[pieces::pawn];
-			delta += eval_values::material_values[promotion_piece] + pst[p.self()][promotion_piece][m.target()];
+			delta += eval_values::material_values[promotion_piece] + pst(p.self(), promotion_piece, m.target());
 		}
 		else {
-			delta += pst[p.self()][piece][m.target()];
+			delta += pst(p.self(), piece, m.target());
 		}
 	}
 
