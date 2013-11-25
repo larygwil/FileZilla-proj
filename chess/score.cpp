@@ -10,7 +10,7 @@ score::score()
 }
 
 
-score::score( short mg, short eg )
+score::score( value_type mg, value_type eg )
 	: mg_(mg)
 	, eg_(eg)
 {
@@ -33,7 +33,7 @@ score& score::operator=( score const& rhs )
 }
 
 
-short score::scale( short material ) const
+short score::scale( value_type material ) const
 {
 	if( material >= eval_values::phase_transition_material_begin ) {
 		return mg_;
@@ -116,7 +116,7 @@ std::ostream& operator<<(std::ostream& stream, score const& s)
 }
 
 
-score score::operator*( short m ) const
+score score::operator*( value_type m ) const
 {
 	ASSERT( static_cast<int>(mg_) * m < 32768 );
 	ASSERT( static_cast<int>(mg_) * m >= -32768 );
@@ -138,7 +138,7 @@ score score::operator*( score const& m ) const
 }
 
 
-score& score::operator*=( short m )
+score& score::operator*=( value_type m )
 {
 	ASSERT( static_cast<int>(mg_) * m < 32768 );
 	ASSERT( static_cast<int>(mg_) * m >= -32768 );
@@ -152,7 +152,7 @@ score& score::operator*=( short m )
 }
 
 
-score score::operator/( short m ) const
+score score::operator/( value_type m ) const
 {
 	ASSERT( m != 0 );
 	return score( mg_ / m, eg_ / m );

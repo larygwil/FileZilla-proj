@@ -19,11 +19,13 @@
 class score
 {
 public:
+	typedef short value_type;
+
 	score();
-	score( short mg, short eg );
+	score( value_type mg, value_type eg );
 	score( score const& rhs );
 
-	short scale( short material ) const;
+	short scale( value_type material ) const;
 
 	score operator+( score const& rhs ) const;
 	score operator-( score const& rhs ) const;
@@ -35,28 +37,28 @@ public:
 
 	score& operator=( score const& rhs );
 
-	short mg() const { return mg_; }
-	short eg() const { return eg_; }
+	value_type mg() const { return mg_; }
+	value_type eg() const { return eg_; }
 
-	short& mg() { return mg_; }
-	short& eg() { return eg_; }
+	value_type& mg() { return mg_; }
+	value_type& eg() { return eg_; }
 
-	typedef short&(score::*phase_ref)();
+	typedef value_type&(score::*phase_ref)();
 
 	bool operator==( score const& rhs ) const;
 	bool operator!=( score const& rhs ) const;
 
-	score operator*( short m ) const;
+	score operator*( value_type m ) const;
 	score operator*( score const& m ) const;
 
-	score& operator*=( short m );
+	score& operator*=( value_type m );
 
-	score operator/( short m ) const;
+	score operator/( value_type m ) const;
 	score operator/( score const& m ) const;
 
 private:
-	short mg_;
-	short eg_;
+	value_type mg_;
+	value_type eg_;
 };
 
 std::ostream& operator<<(std::ostream&, score const&);
