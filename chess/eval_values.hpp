@@ -80,7 +80,7 @@ namespace eval_values {
 	extern score candidate_passed_pawn[8];
 	extern score backward_pawn[2][8];
 
-	extern score mobility[6][28];
+	extern score mobility[6][32];
 
 	extern score king_attack[200];
 

@@ -80,7 +80,7 @@ score connected_pawn[2][8];
 score candidate_passed_pawn[8];
 score backward_pawn[2][8];
 
-score mobility[6][28];
+score mobility[6][32];
 
 score king_attack[200];
 
@@ -321,7 +321,7 @@ bool sane_base( bool& changed )
 {
 	auto check_mobility = [&changed]( int count, score& min, score& duration ) {
 		
-		auto check_mobility_phase = [&changed]( int count, short& min, short& duration ) {
+		auto check_mobility_phase = [&changed]( int count, score::value_type& min, score::value_type& duration ) {
 
 			if( min >= count ) {
 				min = count - 1;
