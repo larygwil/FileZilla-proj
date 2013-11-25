@@ -129,7 +129,7 @@ int main( int argc, char const* argv[] )
 	std::cerr << std::endl;
 
 	init_magic();
-	init_pst();
+	pst.init();
 	eval_values::init();
 
 	init_zobrist_tables();
