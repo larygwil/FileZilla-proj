@@ -20,8 +20,6 @@ enum piece_masks : uint64_t {
 	max         =  1ull << (bits_per_piece * 10)
 };
 
-extern uint64_t const light_squared_bishop_mask = 0x55aa55aa55aa55aaull;
-
 short evaluate_KNBvK( position const& p, color::type c )
 {
 	// This is a very favorable position
@@ -29,7 +27,7 @@ short evaluate_KNBvK( position const& p, color::type c )
 
 	// This drives enemy king first to the edge of the board, then into the right corner
 	int corner_distance;
-	if( p.bitboards[c][bb_type::bishops] & light_squared_bishop_mask ) {
+	if( is_light_mask( p.bitboards[c][bb_type::bishops] ) ) {
 		corner_distance = std::min( king_distance[p.king_pos[1-c]][7], king_distance[p.king_pos[1-c]][56] );
 	}
 	else {
@@ -189,7 +187,7 @@ bool evaluate_KBPvKP_sides( position const& p, color::type c, short& result )
 	}
 
 	bool promotion_square_is_light = (pawn % 8) == 0;
-	bool is_light_squared_bishop = (p.bitboards[c][bb_type::bishops] & light_squared_bishop_mask) != 0;
+	bool is_light_squared_bishop = is_light_mask( p.bitboards[c][bb_type::bishops] );
 	if( promotion_square_is_light == is_light_squared_bishop ) {
 		return false;
 	}
@@ -328,6 +326,27 @@ bool evaluate_KRPvKR( position const& p, short& result )
 	}
 }
 
+template<color::type c>
+bool evaluate_KBPvKN( position const& p, short& result )
+{
+	// As per Wikipedia: This is a draw if the defending king is in front of the pawn or sufficiently close.
+	// The defending king can occupy a square in front of the pawn of the opposite color, as the bishop and
+	// cannot be driven away. Otherwise the attacker can win (Fine & Benko 2003:206).
+	// 2k5/8/3P4/3K3n/8/8/7B/8 b - -
+
+	uint64_t pawn = bitscan( p.bitboards[c][bb_type::pawns] );
+	if( !((1ull << p.king_pos[1-c]) & doubled_pawns[c][pawn]) ) {
+		return false;
+	}
+
+	if( is_light( p.king_pos[1-c] ) == is_light_mask( p.bitboards[c][bb_type::bishops] ) ) {
+		return false;
+	}
+
+	result = 0;
+	return true;
+}
+
 bool evaluate_endgame( position const& p, short& result )
 {
 	switch( p.piece_sum ) {
@@ -405,7 +424,7 @@ bool evaluate_endgame( position const& p, short& result )
 			uint64_t enemy_king_mask = (pawn % 8) ? 0xc0c0000000000000ull : 0x0303000000000000ull;
 			if( enemy_king_mask & p.bitboards[color::black][bb_type::king] ) {
 				bool promotion_square_is_light = (pawn % 8) == 0;
-				bool is_light_squared_bishop = (p.bitboards[color::white][bb_type::bishops] & light_squared_bishop_mask) != 0;
+				bool is_light_squared_bishop = is_light_mask( p.bitboards[color::white][bb_type::bishops] );
 				if( promotion_square_is_light != is_light_squared_bishop ) {
 					result = 0;
 					return true;
@@ -419,7 +438,7 @@ bool evaluate_endgame( position const& p, short& result )
 			uint64_t enemy_king_mask = (pawn % 8) ? 0xc0c0ull : 0x0303ull;
 			if( enemy_king_mask & p.bitboards[color::white][bb_type::king] ) {
 				bool promotion_square_is_light = (pawn % 8) == 7;
-				bool is_light_squared_bishop = (p.bitboards[color::black][bb_type::bishops] & light_squared_bishop_mask) != 0;
+				bool is_light_squared_bishop = is_light_mask(p.bitboards[color::black][bb_type::bishops]);
 				if( promotion_square_is_light != is_light_squared_bishop ) {
 					result = 0;
 					return true;
@@ -432,8 +451,8 @@ bool evaluate_endgame( position const& p, short& result )
 	case white_bishop + black_bishop + white_pawn:
 	case white_bishop + black_bishop + black_pawn:
 		{
-			bool is_light_squared_white_bishop = ((p.bitboards[color::white][bb_type::bishops] & light_squared_bishop_mask) != 0);
-			bool is_light_squared_black_bishop = ((p.bitboards[color::black][bb_type::bishops] & light_squared_bishop_mask) != 0);
+			bool is_light_squared_white_bishop = is_light_mask(p.bitboards[color::white][bb_type::bishops]);
+			bool is_light_squared_black_bishop = is_light_mask(p.bitboards[color::black][bb_type::bishops]);
 			if( is_light_squared_white_bishop != is_light_squared_black_bishop ) {
 				result = (p.base_eval.eg() - p.material[0].eg() + p.material[1].eg()) / 5;
 				return true;
@@ -461,6 +480,10 @@ bool evaluate_endgame( position const& p, short& result )
 		return evaluate_KRPvKR<color::white>( p, result );
 	case white_rook + black_rook + black_pawn:
 		return evaluate_KRPvKR<color::black>( p, result );
+	case white_bishop + white_pawn + black_knight:
+		return evaluate_KBPvKN<color::white>( p, result );
+	case black_bishop + black_pawn + white_knight:
+		return evaluate_KBPvKN<color::black>( p, result );
 	default:
 		break;
 	}

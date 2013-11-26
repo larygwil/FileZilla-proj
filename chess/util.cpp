@@ -231,7 +231,7 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 
 		if( p.castle[p.self()] & (1ull << second_col)  ) {
 
-			bool kingside = static_cast<unsigned int>(second_col) > p.king_pos[p.self()] % 8;
+			bool kingside = second_col > static_cast<int>(p.king_pos[p.self()] % 8);
 			uint64_t target = second_row * 8 + (kingside ? 6 : 2);
 
 			for( move_info* it = moves; it != pm; ++it ) {
@@ -613,7 +613,7 @@ void apply_move( position& p, move const& m )
 	score delta = -pst(p.self(), piece, m.source());
 
 	if( m.castle() ) {
-		p.king_pos[p.self()] = m.target();
+		p.king_pos[p.self()] = static_cast<square::type>(m.target());
 		delta += pst(p.self(), pieces::king, m.target());
 
 		p.hash_ ^= get_piece_hash( piece, p.self(), m.target() );
@@ -746,7 +746,7 @@ void apply_move( position& p, move const& m )
 	else if( piece == pieces::king ) {
 		p.hash_ ^= zobrist::castle[p.self()][p.castle[p.self()]];
 		p.castle[p.self()] = 0;
-		p.king_pos[p.self()] = m.target();
+		p.king_pos[p.self()] = static_cast<square::type>(m.target());
 	}
 
 	if( piece == pieces::pawn && (m.source() ^ m.target()) == 16) {

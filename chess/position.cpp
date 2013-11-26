@@ -8,6 +8,18 @@
 
 #include <iostream>
 
+extern uint64_t const light_squares = 0x55aa55aa55aa55aaull;
+
+bool is_light( square::type sq )
+{
+	return is_light_mask( 1ull << sq );
+}
+
+bool is_light_mask( uint64_t mask )
+{
+	return (mask & light_squares) == mask;
+}
+
 position::position()
 {
 	reset();
@@ -43,7 +55,7 @@ void position::update_derived()
 			bitboards[i][bb_type::pawn_control] |= pawn_control[i][pawn];
 		}
 
-		king_pos[i] = static_cast<int>(bitscan( bitboards[i][bb_type::king] ));
+		king_pos[i] = static_cast<square::type>(bitscan( bitboards[i][bb_type::king] ));
 	}
 
 	init_board();

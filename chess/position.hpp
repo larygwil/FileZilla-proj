@@ -20,6 +20,10 @@ enum type {
 };
 }
 
+extern uint64_t const light_squares;
+bool is_light( square::type sq );
+bool is_light_mask( uint64_t mask );
+
 /*
  * Class to represent a complete chess position, sans repetition history.
  *
@@ -59,7 +63,7 @@ public:
 
 	bitboard bitboards[2][bb_type::value_max];
 
-	unsigned int king_pos[2];
+	square::type king_pos[2];
 
 	bool is_occupied_square( uint64_t square ) const;
 	uint64_t get_occupancy( uint64_t mask = 0xffffffffffffffffull ) const;

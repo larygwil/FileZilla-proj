@@ -44,6 +44,9 @@ public:
 
 #if USE_STATISTICS >= 2
 	void add_cutoff( int processed );
+
+	static atomic_uint64_t full_eval_;
+	static atomic_uint64_t endgame_eval_;
 #endif
 
 private:

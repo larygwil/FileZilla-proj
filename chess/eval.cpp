@@ -6,6 +6,7 @@
 #include "magic.hpp"
 #include "pawn_structure_hash_table.hpp"
 #include "util.hpp"
+#include "statistics.hpp"
 #include "tables.hpp"
 
 #include <iomanip>
@@ -875,8 +876,6 @@ score sum_up( position const& p, eval_results const& results ) {
 }
 }
 
-extern uint64_t const light_squared_bishop_mask;
-
 namespace {
 static void scale_by_material( position const& p, short& ev )
 {
@@ -884,8 +883,8 @@ static void scale_by_material( position const& p, short& ev )
 	if( p.material[0].mg() == eval_values::material_values[pieces::bishop].mg() &&
 		p.material[1].mg() == eval_values::material_values[pieces::bishop].mg() )
 	{
-		bool white_is_light = (p.bitboards[0][bb_type::bishops] & light_squared_bishop_mask) != 0;
-		bool black_is_light = (p.bitboards[1][bb_type::bishops] & light_squared_bishop_mask) != 0;
+		bool white_is_light = is_light_mask( p.bitboards[0][bb_type::bishops] );
+		bool black_is_light = is_light_mask( p.bitboards[1][bb_type::bishops] );
 		if( white_is_light != black_is_light ) {
 			ev /= 2;
 		}
@@ -1025,8 +1024,15 @@ short evaluate_full( pawn_structure_hash_table& pawn_tt, position const& p )
 		if( !p.white() ) {
 			eval = -eval;
 		}
+#if USE_STATISTICS >= 2
+		add_relaxed(statistics::endgame_eval_, 1);
+#endif
 		return eval;
 	}
+
+#if USE_STATISTICS >= 2
+	add_relaxed(statistics::full_eval_, 1);
+#endif
 
 	eval_results results;
 	do_evaluate<false>( pawn_tt, p, results );

@@ -11,6 +11,11 @@
 
 #if USE_STATISTICS
 
+#if USE_STATISTICS >= 2
+atomic_uint64_t statistics::full_eval_ = atomic_uint64_t();
+atomic_uint64_t statistics::endgame_eval_ = atomic_uint64_t();
+#endif
+
 statistics::statistics()
 	: quiescence_nodes()
 	, total_full_width_nodes()
@@ -115,6 +120,17 @@ void statistics::print( context& ctx, duration const& elapsed )
 	if( cutoffs_ > 0 ) {
 		ss_ << "Moves per cutoff: " << static_cast<double>(processed_) / cutoffs_ << "\n\n";
 	}
+
+	ss_ << "Evaluation counts:\n";
+	ss_ << "  Full: " << full_eval_;
+	if( full_eval_ + endgame_eval_ > 0 ) {
+		ss_ << " (" << 100 * static_cast<double>(full_eval_) / (full_eval_ + endgame_eval_) << "%)";
+	}
+	ss_ << "\n  Endgame: " << endgame_eval_;
+	if( full_eval_ + endgame_eval_ > 0 ) {
+		ss_ << " (" << 100 * static_cast<double>(endgame_eval_) / (full_eval_ + endgame_eval_) << "%)";
+	}
+	ss_ << "\n\n";
 #endif
 
 	dlog() << ss_.str();
@@ -177,6 +193,9 @@ void statistics::reset( bool total )
 #if USE_STATISTICS >= 2
 	cutoffs_ = 0;
 	processed_ = 0;
+
+	full_eval_ = 0;
+	endgame_eval_ = 0;
 #endif
 
 	if( total ) {
