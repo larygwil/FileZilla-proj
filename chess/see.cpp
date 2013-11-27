@@ -61,6 +61,7 @@ int see( position const& p, move const& m )
 	}
 
 	int depth = 1;
+	color::type c = p.other();
 
 	// Can "do", as we always have at least one.
 	do {
@@ -71,9 +72,10 @@ int see( position const& p, move const& m )
 		}
 
 		// We have verified that there's already at least one attacker, so this works.
-		uint64_t attacker_mask = least_valuable_attacker( p, static_cast<color::type>(p.self() ^ (depth & 1)), attackers, attacker_piece );
+		uint64_t attacker_mask = least_valuable_attacker( p, c, attackers, attacker_piece );
 
 		++depth;
+		c = static_cast<color::type>(c ^ 1);
 
 		// Remove old attacker
 		all_pieces ^= attacker_mask;
@@ -83,7 +85,7 @@ int see( position const& p, move const& m )
 						((bishop_magic( target, all_pieces )) & all_bishops);
 		attackers &= all_pieces;
 
-		if( !(attackers & p.bitboards[p.self() ^ (depth & 1)][bb_type::all_pieces]) ) {
+		if( !(attackers & p.bitboards[c][bb_type::all_pieces]) ) {
 			break;
 		}
 
