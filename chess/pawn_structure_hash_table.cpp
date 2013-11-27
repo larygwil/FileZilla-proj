@@ -1,4 +1,5 @@
 #include "pawn_structure_hash_table.hpp"
+#include "assert.hpp"
 
 #include <string.h>
 #include <stdlib.h>
