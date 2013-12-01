@@ -1,13 +1,23 @@
 #include "seen_positions.hpp"
-
-#include <string.h>
+#include "assert.hpp"
 
 seen_positions::seen_positions( uint64_t root_hash )
 	: root_position()
 	, null_move_position()
+	, pos()
 {
-	memset( pos, 0, (100 + MAX_DEPTH + MAX_QDEPTH + 10)*8 );
 	pos[0] = root_hash;
+}
+
+
+void seen_positions::clone_from( seen_positions const& s, int ply )
+{
+	ASSERT( this != &s );
+	root_position = s.root_position;
+	null_move_position = s.null_move_position;
+	for( unsigned int i = null_move_position; i <= root_position + ply; ++i ) {
+		pos[i] = s.pos[i];
+	}
 }
 
 

@@ -18,6 +18,8 @@ public:
 	void pop_root( unsigned int count = 1 );
 	void reset_root( uint64_t hash );
 
+	void clone_from( seen_positions const& s, int ply );
+
 private:
 	friend class null_move_block;
 

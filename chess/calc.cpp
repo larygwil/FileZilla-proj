@@ -497,7 +497,7 @@ void worker_thread::process_work( scoped_lock& l )
 				l.unlock();
 
 				state.move_ptr = state.moves;
-				state.seen = w->master_state_.seen;
+				state.seen.clone_from( w->master_state_.seen, w->ply_ );
 
 				short value = state.inner_step( w->depth_, w->ply_, w->p_, w->check_, alpha, w->beta_, w->full_eval_
 					, w->last_ply_was_capture_, w->pv_node_, m, processed, phase, best_value );
