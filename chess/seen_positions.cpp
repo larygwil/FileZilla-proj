@@ -2,9 +2,9 @@
 #include "assert.hpp"
 
 seen_positions::seen_positions( uint64_t root_hash )
-	: root_position()
+	: pos()
+	, root_position()
 	, null_move_position()
-	, pos()
 {
 	pos[0] = root_hash;
 }
