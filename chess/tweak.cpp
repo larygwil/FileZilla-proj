@@ -62,7 +62,7 @@ static calc_result tweak_calc( context& ctx, position& p, duration const& move_t
 		}
 	}
 	else {
-		result.best_move = moves[(rand() + rng.get_uint64()) % moves.size()];
+		result.best_move = moves[rng.get_uint64() % moves.size()];
 	}
 
 	return result;
@@ -349,7 +349,7 @@ struct individual
 	{
 		for( unsigned int i = 0; i < values_.size(); ++i ) {
 			gene_t const& gene = genes[i];
-			values_[i] = gene.min_ + (rand() % (gene.max_ - gene.min_ + 1));
+			values_[i] = gene.min_ + (rng.get_uint64() % (gene.max_ - gene.min_ + 1));
 		}
 	}
 
@@ -500,7 +500,7 @@ void mutate( pawn_structure_hash_table& pawn_tt, population& pop, std::set<indiv
 			individual const& ref = *pop[i];
 			{
 				// Randomly mutate a field, decreasing it by one
-				unsigned int fi = rand() % genes.size();
+				unsigned int fi = rng.get_uint64() % genes.size();
 				gene_t const& gene = genes[fi];
 				if( ref.values_[fi] > gene.min_ ) {
 					individual* mut = new individual( ref );
@@ -510,7 +510,7 @@ void mutate( pawn_structure_hash_table& pawn_tt, population& pop, std::set<indiv
 			}
 			{
 				// Randomly mutate a field, increasing it by one
-				unsigned int fi = rand() % genes.size();
+				unsigned int fi = rng.get_uint64() % genes.size();
 				gene_t const& gene = genes[fi];
 				if( ref.values_[fi] < gene.max_ ) {
 					individual* mut = new individual( ref );
@@ -520,10 +520,10 @@ void mutate( pawn_structure_hash_table& pawn_tt, population& pop, std::set<indiv
 			}
 			{
 				// Randomly mutate a field using a random value
-				unsigned int fi = rand() % genes.size();
+				unsigned int fi = rng.get_uint64() % genes.size();
 				gene_t const& gene = genes[fi];
 
-				short v = gene.min_ + (rand() % (gene.max_ - gene.min_ + 1));
+				short v = gene.min_ + (rng.get_uint64() % (gene.max_ - gene.min_ + 1));
 				if( v != ref.values_[fi] ) {
 					individual* mut = new individual( ref );
 					mut->values_[fi] = v;
@@ -551,7 +551,7 @@ void combine( pawn_structure_hash_table& pawn_tt, population& pop, std::set<indi
 	for( std::size_t r1 = 0; r1 < orig_count; ++r1 ) {
 		std::size_t r2 = r1;
 		while( r1 == r2 ) {
-			r2 = (rng.get_uint64() + rand()) % orig_count;
+			r2 = rng.get_uint64() % orig_count;
 		}
 
 		individual const& i1 = *pop[r1];
@@ -559,7 +559,7 @@ void combine( pawn_structure_hash_table& pawn_tt, population& pop, std::set<indi
 
 		individual* child( new individual(i1) );
 		for( std::size_t i = 0; i < genes.size(); ++i ) {
-			int r = rand() % 3;
+			int r = rng.get_uint64() % 3;
 			if( !r ) {
 				child->values_[i] = (i1.values_[i] + i2.values_[i]) / 2;
 			}
@@ -607,7 +607,7 @@ void select( population& pop, std::set<individual>& seen )
 
 	std::size_t limit = pop.size() - n;
 	while( out.size() < max_size ) {
-		std::size_t r = (rng.get_uint64() + rand()) % limit;
+		std::size_t r = rng.get_uint64() % limit;
 
 		out.push_back( pop[n + r] );
 		pop[n + r] = pop[n + limit - 1];
@@ -779,6 +779,7 @@ void add_random( pawn_structure_hash_table& pawn_tt, population & pop, std::set<
 
 void tweak_evaluation( context& ctx )
 {
+	rng.seed();
 	ctx.pawn_tt_.init( ctx.conf_.pawn_hash_table_size(), true );
 	std::vector<reference_data> data = load_data( ctx );
 
@@ -818,6 +819,7 @@ void tweak_evaluation( context& ctx )
 			pop.resize(1);
 			seen.clear();
 			seen.insert( *pop[0] );
+			rng.seed();
 		}
 	}
 }
