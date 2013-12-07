@@ -166,7 +166,7 @@ void position::init_board()
 
 unsigned char position::do_null_move( unsigned char old_enpassant )
 {
-	c = static_cast<color::type>(1-c);
+	c = ::other(c);
 
 	unsigned char enpassant = can_en_passant;
 	can_en_passant = old_enpassant;

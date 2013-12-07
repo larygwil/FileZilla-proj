@@ -19,7 +19,7 @@ enum type : unsigned char {
 
 
 namespace color {
-enum type {
+enum type : bool {
 	white = 0,
 	black = 1
 };
@@ -31,6 +31,10 @@ inline std::string to_string(type c) {
 		return "black";
 	}
 }
+}
+
+inline color::type other( color::type c ) {
+	return static_cast<color::type>(c^1);
 }
 
 

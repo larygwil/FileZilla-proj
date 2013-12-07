@@ -6,19 +6,19 @@
 bool detect_check_knights( position const& p, color::type c, uint64_t king )
 {
 	uint64_t knights = possible_knight_moves[ king ];
-	knights &= p.bitboards[1-c][bb_type::knights];
+	knights &= p.bitboards[other(c)][bb_type::knights];
 
 	return knights != 0;
 }
 
 bool detect_check( position const& p, color::type c, uint64_t king,uint64_t ignore )
 {
-	uint64_t blockers = p.bitboards[1-c][bb_type::all_pieces] | p.bitboards[c][bb_type::all_pieces];
+	uint64_t blockers = p.bitboards[other(c)][bb_type::all_pieces] | p.bitboards[c][bb_type::all_pieces];
 	blockers &= ~(1ull << ignore);
 
-	uint64_t rooks_and_queens = p.bitboards[1-c][bb_type::rooks] | p.bitboards[1-c][bb_type::queens];
-	uint64_t bishops_and_queens = p.bitboards[1-c][bb_type::bishops] | p.bitboards[1-c][bb_type::queens];
-	bishops_and_queens |= pawn_control[c][king] & p.bitboards[1-c][bb_type::pawns];
+	uint64_t rooks_and_queens = p.bitboards[other(c)][bb_type::rooks] | p.bitboards[other(c)][bb_type::queens];
+	uint64_t bishops_and_queens = p.bitboards[other(c)][bb_type::bishops] | p.bitboards[other(c)][bb_type::queens];
+	bishops_and_queens |= pawn_control[c][king] & p.bitboards[other(c)][bb_type::pawns];
 
 	uint64_t rooks_and_queens_check = rook_magic( king, blockers ) & rooks_and_queens;
 	uint64_t bishops_and_queens_check = bishop_magic( king, blockers ) & bishops_and_queens;

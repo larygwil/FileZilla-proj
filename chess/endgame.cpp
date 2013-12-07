@@ -28,14 +28,14 @@ short evaluate_KNBvK( position const& p, color::type c )
 	// This drives enemy king first to the edge of the board, then into the right corner
 	int corner_distance;
 	if( is_light_mask( p.bitboards[c][bb_type::bishops] ) ) {
-		corner_distance = std::min( king_distance[p.king_pos[1-c]][7], king_distance[p.king_pos[1-c]][56] );
+		corner_distance = std::min( king_distance[p.king_pos[other(c)]][7], king_distance[p.king_pos[other(c)]][56] );
 	}
 	else {
-		corner_distance = std::min( king_distance[p.king_pos[1-c]][0], king_distance[p.king_pos[1-c]][63] );
+		corner_distance = std::min( king_distance[p.king_pos[other(c)]][0], king_distance[p.king_pos[other(c)]][63] );
 	}
 
-	int x = p.king_pos[1-c] % 8;
-	int y = p.king_pos[1-c] / 8;
+	int x = p.king_pos[other(c)] % 8;
+	int y = p.king_pos[other(c)] / 8;
 	if( x > 3 ) {
 		x = 7 - x;
 	}
@@ -48,8 +48,8 @@ short evaluate_KNBvK( position const& p, color::type c )
 	eval += 55 * (3 - edge_distance );
 
 	// Reward closeness of own king and knight to enemy king
-	eval += 5 * (7 - king_distance[p.king_pos[c]][p.king_pos[1-c]]);
-	eval += 7 - king_distance[bitscan(p.bitboards[c][bb_type::knights])][p.king_pos[1-c]];
+	eval += 5 * (7 - king_distance[p.king_pos[c]][p.king_pos[other(c)]]);
+	eval += 7 - king_distance[bitscan(p.bitboards[c][bb_type::knights])][p.king_pos[other(c)]];
 
 	return eval;
 }
@@ -92,14 +92,14 @@ bool evaluate_KPvK( position const& p, color::type c, short& result )
 	// Drawn if pawn on a or h file, enemy king in front
 	uint64_t pawn = bitscan(p.bitboards[c][bb_type::pawns]);
 	if( p.bitboards[c][bb_type::pawns] & 0x8181818181818181ull ) {
-		if( passed_pawns[c][pawn] & p.bitboards[1-c][bb_type::king] ) {
+		if( passed_pawns[c][pawn] & p.bitboards[other(c)][bb_type::king] ) {
 			result = result::draw;
 			return true;
 		}
 	}
 
 	// Won if enemy king cannot catch pawn
-	uint64_t unstoppable = p.bitboards[c][bb_type::pawns] & ~rule_of_the_square[1-c][p.c][p.king_pos[1-c]];
+	uint64_t unstoppable = p.bitboards[c][bb_type::pawns] & ~rule_of_the_square[other(c)][p.c][p.king_pos[other(c)]];
 	if( unstoppable ) {
 		if( c == color::black ) {
 			result = result::loss_threshold - 7 + static_cast<short>(pawn / 8);
@@ -111,10 +111,10 @@ bool evaluate_KPvK( position const& p, color::type c, short& result )
 	}
 
 	if( !c ) {
-		return evaluate_KPvK_infront( p.king_pos[c], p.king_pos[1-c], bitscan( p.bitboards[c][bb_type::pawns] ), p.c, result );
+		return evaluate_KPvK_infront( p.king_pos[c], p.king_pos[other(c)], bitscan( p.bitboards[c][bb_type::pawns] ), p.c, result );
 	}
 	else {
-		return evaluate_KPvK_infront( 63-p.king_pos[c], 63-p.king_pos[1-c], 63-bitscan( p.bitboards[c][bb_type::pawns] ), static_cast<color::type>(1-p.c), result );
+		return evaluate_KPvK_infront( 63-p.king_pos[c], 63-p.king_pos[other(c)], 63-bitscan( p.bitboards[c][bb_type::pawns] ), other(p.c), result );
 	}
 }
 
@@ -140,11 +140,11 @@ bool evaluate_KBPvKP_opposed( position const& p, color::type c, short& result )
 	else {
 		other_pawn += 8;
 	}
-	if( p.bitboards[1-c][bb_type::pawns] != (1ull << other_pawn) ) {
+	if( p.bitboards[other(c)][bb_type::pawns] != (1ull << other_pawn) ) {
 		return false;
 	}
 
-	int king_pos = p.king_pos[1-c];
+	int king_pos = p.king_pos[other(c)];
 	if( king_pos / 8 != (c ? 0 : 7 ) ) {
 		return false;
 	}
@@ -182,7 +182,7 @@ bool evaluate_KBPvKP_sides( position const& p, color::type c, short& result )
 	else {
 		enemy_king_mask |= (pawn % 8) ? 0x000000000000c0c0ull : 0x0000000000000303ull;
 	}
-	if( !(enemy_king_mask & p.bitboards[1-c][bb_type::king]) ) {
+	if( !(enemy_king_mask & p.bitboards[other(c)][bb_type::king]) ) {
 		return false;
 	}
 
@@ -192,7 +192,7 @@ bool evaluate_KBPvKP_sides( position const& p, color::type c, short& result )
 		return false;
 	}
 
-	uint64_t enemy_pawn = bitscan( p.bitboards[1-c][bb_type::pawns] );
+	uint64_t enemy_pawn = bitscan( p.bitboards[other(c)][bb_type::pawns] );
 
 	if( c ) {
 		if( (pawn / 8) >= (enemy_pawn / 8) ) {
@@ -205,7 +205,7 @@ bool evaluate_KBPvKP_sides( position const& p, color::type c, short& result )
 		}
 	}
 
-	if( !(rule_of_the_square[c][p.c][p.king_pos[c]] & p.bitboards[1-c][bb_type::pawns]) && !(p.bitboards[c][bb_type::all_pieces] & doubled_pawns[1-c][enemy_pawn]) ) {
+	if( !(rule_of_the_square[c][p.c][p.king_pos[c]] & p.bitboards[other(c)][bb_type::pawns]) && !(p.bitboards[c][bb_type::all_pieces] & doubled_pawns[other(c)][enemy_pawn]) ) {
 		return false;
 	}
 
@@ -240,11 +240,11 @@ bool evaluate_KPvKP( position const& p, color::type c, short& result )
 	else {
 		other_pawn += 8;
 	}
-	if( p.bitboards[1-c][bb_type::pawns] != (1ull << other_pawn) ) {
+	if( p.bitboards[other(c)][bb_type::pawns] != (1ull << other_pawn) ) {
 		return false;
 	}
 
-	int king_pos = p.king_pos[1-c];
+	int king_pos = p.king_pos[other(c)];
 	if( king_pos / 8 != (c ? 0 : 7 ) ) {
 		return false;
 	}
@@ -313,16 +313,16 @@ bool evaluate_KRPvKR( position const& p, short& result )
 {
 	// Flip if necessary
 	if( c == color::white ) {
-		return do_evaluate_KRPvKR( p.king_pos[c], p.king_pos[1-c]
-					, bitscan(p.bitboards[1-c][bb_type::rooks])
+		return do_evaluate_KRPvKR( p.king_pos[c], p.king_pos[other(c)]
+					, bitscan(p.bitboards[other(c)][bb_type::rooks])
 					, bitscan(p.bitboards[c][bb_type::pawns])
 					, p.c, result );
 	}
 	else {
-		return do_evaluate_KRPvKR( 63-p.king_pos[c], 63-p.king_pos[1-c]
-					, 63-bitscan(p.bitboards[1-c][bb_type::rooks])
+		return do_evaluate_KRPvKR( 63-p.king_pos[c], 63-p.king_pos[other(c)]
+					, 63-bitscan(p.bitboards[other(c)][bb_type::rooks])
 					, 63-bitscan(p.bitboards[c][bb_type::pawns])
-					, static_cast<color::type>(1-p.c), result );
+					, other(p.c), result );
 	}
 }
 
@@ -335,11 +335,11 @@ bool evaluate_KBPvKN( position const& p, short& result )
 	// 2k5/8/3P4/3K3n/8/8/7B/8 b - -
 
 	uint64_t pawn = bitscan( p.bitboards[c][bb_type::pawns] );
-	if( !((1ull << p.king_pos[1-c]) & doubled_pawns[c][pawn]) ) {
+	if( !((1ull << p.king_pos[other(c)]) & doubled_pawns[c][pawn]) ) {
 		return false;
 	}
 
-	if( is_light( p.king_pos[1-c] ) == is_light_mask( p.bitboards[c][bb_type::bishops] ) ) {
+	if( is_light( p.king_pos[other(c)] ) == is_light_mask( p.bitboards[c][bb_type::bishops] ) ) {
 		return false;
 	}
 

@@ -54,7 +54,7 @@ public:
 	score material[2];
 
 	inline color::type self() const { return c; }
-	inline color::type other() const { return static_cast<color::type>(1-c); }
+	inline color::type other() const { return ::other(c); }
 	inline bool white() const { return c == color::white; }
 	inline bool black() const { return c == color::black; }
 

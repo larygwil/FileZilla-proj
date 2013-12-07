@@ -75,7 +75,7 @@ int see( position const& p, move const& m )
 		uint64_t attacker_mask = least_valuable_attacker( p, c, attackers, attacker_piece );
 
 		++depth;
-		c = static_cast<color::type>(c ^ 1);
+		c = other(c);
 
 		// Remove old attacker
 		all_pieces ^= attacker_mask;

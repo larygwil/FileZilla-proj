@@ -254,7 +254,7 @@ private:
 bool xboard_state::handle_edit_mode( std::string const& cmd )
 {
 	if( cmd == "c" ) {
-		p.c = static_cast<color::type>(1-p.c);
+		p.c = other(p.c);
 	}
 	else if( cmd == "#" ) {
 		p.clear_bitboards();

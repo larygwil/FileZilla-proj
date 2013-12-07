@@ -807,7 +807,7 @@ bool process_command( context& ctx, book& b, std::string const& cmd, std::string
 		print_pos( state.history, moves, state.view );
 	}
 	else if( cmd == "flip" ) {
-		state.view = static_cast<color::type>(1 - state.view);
+		state.view = other(state.view);
 
 		std::vector<book_entry> moves = b.get_entries( state.p, state.history );
 		print_pos( state.history, moves, state.view );

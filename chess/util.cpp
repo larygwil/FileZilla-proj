@@ -486,15 +486,15 @@ std::string move_to_san( position const& p, move const& m )
 			break;
 		case pieces::bishop:
 			ret += 'B';
-			add_disambiguation( p, m, bishop_magic( m.target(), p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::all_pieces] ), ret );
+			add_disambiguation( p, m, bishop_magic( m.target(), p.bitboards[c][bb_type::all_pieces] | p.bitboards[other(c)][bb_type::all_pieces] ), ret );
 			break;
 		case pieces::rook:
 			ret += 'R';
-			add_disambiguation( p, m, rook_magic( m.target(), p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::all_pieces] ), ret );
+			add_disambiguation( p, m, rook_magic( m.target(), p.bitboards[c][bb_type::all_pieces] | p.bitboards[other(c)][bb_type::all_pieces] ), ret );
 			break;
 		case pieces::queen:
 			ret += 'Q';
-			add_disambiguation( p, m, bishop_magic( m.target(), p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::all_pieces] ) | rook_magic( m.target(), p.bitboards[c][bb_type::all_pieces] | p.bitboards[1-c][bb_type::all_pieces] ), ret );
+			add_disambiguation( p, m, bishop_magic( m.target(), p.bitboards[c][bb_type::all_pieces] | p.bitboards[other(c)][bb_type::all_pieces] ) | rook_magic( m.target(), p.bitboards[c][bb_type::all_pieces] | p.bitboards[other(c)][bb_type::all_pieces] ), ret );
 			break;
 		case pieces::king:
 			ret += 'K';
@@ -511,7 +511,7 @@ std::string move_to_san( position const& p, move const& m )
 				ret += 'a' + m.target() % 8;
 
 				uint64_t target_file = 0x0101010101010101ull << (m.target() % 8);
-				if( popcount(p.bitboards[c][bb_type::pawn_control] & target_file & p.bitboards[1-c][bb_type::all_pieces]) > 1 ) {
+				if( popcount(p.bitboards[c][bb_type::pawn_control] & target_file & p.bitboards[other(c)][bb_type::all_pieces]) > 1 ) {
 					ret += '1' + m.target() / 8;
 				}
 			}
