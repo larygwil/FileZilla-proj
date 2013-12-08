@@ -131,6 +131,8 @@ void statistics::print( context& ctx, duration const& elapsed )
 		ss_ << " (" << 100 * static_cast<double>(endgame_eval_) / (full_eval_ + endgame_eval_) << "%)";
 	}
 	ss_ << "\n\n";
+#else
+	(void)ctx;
 #endif
 
 	dlog() << ss_.str();
