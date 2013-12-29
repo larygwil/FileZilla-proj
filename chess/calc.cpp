@@ -1436,7 +1436,7 @@ calc_result calc_manager::calc( position const& p, int max_depth, timestamp cons
 	result.forecast = ev;
 	result.best_move = sorted.front().m.m;
 
-	new_best_cb.on_new_best_move( 1, p, 1, 0, ev, 0, duration(), sorted.front().pv );
+	new_best_cb.on_new_best_move( 1, p, 1, 1, ev, 0, duration(), sorted.front().pv );
 
 	if( moves + 1 >= pm && !ponder ) {
 		result.forecast = ev;
