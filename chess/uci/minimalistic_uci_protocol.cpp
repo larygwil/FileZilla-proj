@@ -281,11 +281,13 @@ void minimalistic_uci_protocol::tell_best_move( std::string const& move, std::st
 }
 
 void minimalistic_uci_protocol::tell_info( info const& i ) {
-	std::cout << "info ";
-	for( info::const_iterator it = i.begin(); it != i.end(); ++it ) {
-		std::cout << it->first << ' ' << it->second << ' ';
+	if( !i.empty() ) {
+		std::cout << "info";
+		for( info::const_iterator it = i.begin(); it != i.end(); ++it ) {
+			std::cout << ' ' << it->first << ' ' << it->second;
+		}
+		std::cout << std::endl;
 	}
-	std::cout << std::endl;
 }
 
 }

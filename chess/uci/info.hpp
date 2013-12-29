@@ -37,8 +37,10 @@ public:
 	
 	void nodes_per_second( uint );
 
-	const_iterator begin() const { return values_.begin(); };
-	const_iterator end() const { return values_.end(); };
+	bool empty() const { return values_.empty(); }
+
+	const_iterator begin() const { return values_.begin(); }
+	const_iterator end() const { return values_.end(); }
 
 	void multipv( unsigned int mpv );
 private:

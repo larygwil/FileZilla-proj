@@ -343,6 +343,30 @@ bool octochess_uci::impl::pick_pv_move()
 	std::pair<move,move> m = pv_move_picker_.can_use_move_from_pv( pos_ );
 	if( !m.first.empty() ) {
 		ret = true;
+
+		// From the UCI specs:
+		// * bestmove[ponder]
+		//	the engine has stopped searching and found the move  best in this position.
+		//  [..]
+		//  Directly before that the engine should send a final "info" command with the final search information,
+		//  then the GUI has the complete statistics about the last search.
+		info i;
+		i.depth(0);
+		i.selective_depth(0);
+		i.multipv(1);
+		i.node_count(0);
+		i.time_spent( duration() );
+
+		{
+			move pv[2];
+			get_pv_from_tt(ctx_.tt_, pv, pos_, 1);
+			if( !pv[0].empty() ) {
+				i.principal_variation( pv_to_string( ctx_.conf_, pv, pos_, true ) );
+			}
+		}
+
+		gui_interface_->tell_info(i);
+
 		gui_interface_->tell_best_move( move_to_long_algebraic( ctx_.conf_, pos_, m.first ), move_to_long_algebraic( ctx_.conf_, pos_, m.second ) );
 	}
 
