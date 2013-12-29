@@ -358,8 +358,8 @@ bool octochess_uci::impl::pick_pv_move()
 		i.time_spent( duration() );
 
 		{
-			move pv[2];
-			get_pv_from_tt(ctx_.tt_, pv, pos_, 1);
+			move pv[3];
+			get_pv_from_tt(ctx_.tt_, pv, pos_, 2);
 			if( !pv[0].empty() ) {
 				i.principal_variation( pv_to_string( ctx_.conf_, pv, pos_, true ) );
 			}
