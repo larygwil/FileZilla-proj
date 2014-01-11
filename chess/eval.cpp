@@ -564,9 +564,9 @@ static void evaluate_king_attack( position const& p, color::type c, eval_results
 	int64_t signed_attack = static_cast<int64_t>(attack);
 	signed_attack -= (results.pawn_shield[other(c)] * 10) / eval_values::king_attack_pawn_shield;
 
-	// 5% bonus if attacker is the one to move
+	// 6.25% bonus if attacker is the one to move
 	if( p.self() == c ) {
-		signed_attack += signed_attack / (100 / 5);
+		signed_attack += signed_attack >> 4;
 	}
 
 	if( signed_attack < 0 ) {
