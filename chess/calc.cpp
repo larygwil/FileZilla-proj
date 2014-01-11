@@ -43,8 +43,6 @@ int const NULLMOVE_VERIFICATION_DEPTH = cutoff + depth_factor * 5;
 
 int const delta_pruning = 50;
 
-short const ASPIRATION = 40;
-
 null_new_best_move_callback null_new_best_move_cb;
 
 void sort_moves( move_info* begin, move_info* end, position const& p )
@@ -637,29 +635,46 @@ void master_worker_thread::process_root( scoped_lock& l )
 
 			// Search using aspiration window:
 			value = result::loss;
-			if( root_alpha == result::loss && d.m.sort != result::loss ) {
-				short alpha = std::max( root_alpha, static_cast<short>(d.m.sort - ASPIRATION) );
-				short beta = std::min( root_beta, static_cast<short>(d.m.sort + ASPIRATION) );
+			if( root_alpha == result::loss && d.m.sort != result::loss && max_depth_ > 4 ) {
 
-				if( alpha < beta ) {
-					short aspiration_value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -beta, -alpha, false );
-					if( aspiration_value > alpha && aspiration_value < beta ) {
-						// Aspiration search found something sensible
-						value = aspiration_value;
+				int aspiration = 10;
+				short alpha = std::max( static_cast<short>(result::loss), static_cast<short>(d.m.sort - aspiration) );
+				short beta = std::min( static_cast<short>(result::win), static_cast<short>(d.m.sort + aspiration) );
+
+				while( value == result::loss ) {
+					short value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -beta, -alpha, false );
+					if( value >= beta ) {
+						if( result::win - aspiration > beta ) {
+							beta += aspiration;
+						}
+						else {
+							beta = result::win;
+						}
 					}
+					else if( value <= alpha ) {
+						if( result::loss + aspiration < alpha ) {
+							alpha -= aspiration;
+						}
+						else {
+							alpha = result::loss;
+						}
+					}
+					else {
+						break;
+					}
+					aspiration += aspiration / 2;
 				}
 			}
 
+			if( root_alpha != result::loss && value == result::loss ) {
+				short v = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_alpha-1, -root_alpha, false );
+				if( v <= root_alpha ) {
+					value = v;
+				}
+			}
+			
 			if( value == result::loss ) {
-				if( root_alpha != result::loss ) {
-					value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_alpha-1, -root_alpha, false );
-					if( value > root_alpha ) {
-						value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_beta, -root_alpha, false );
-					}
-				}
-				else {
-					value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_beta, -root_alpha, false );
-				}
+				value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_beta, -root_alpha, false );
 			}
 		}
 
