@@ -614,7 +614,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 			state.time_remaining -= stop - state.last_go_time;
 			state.time_remaining += state.time_increment;
 			++state.moves_between_updates;
-			dlog() << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
+			dlog() << "Elapsed (book move): " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 			return;
 		}
 	}
@@ -633,7 +633,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 		state.time_remaining -= stop - state.last_go_time;
 		state.time_remaining += state.time_increment;
 		++state.moves_between_updates;
-		dlog() << "Elapsed: " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
+		dlog() << "Elapsed (easy pv move): " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 		return;
 	}
 
