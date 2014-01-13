@@ -347,6 +347,34 @@ bool evaluate_KBPvKN( position const& p, short& result )
 	return true;
 }
 
+template<color::type c>
+bool evaluate_KBBvK( position const& p, short& result )
+{
+	// It's a draw if bishops are of same color
+	uint64_t masked = p.bitboards[c][bb_type::bishops] & light_squares;
+	if( !masked || masked == p.bitboards[c][bb_type::bishops] ) {
+		result = 0;
+		return true;
+	}
+
+	// Normal eval can handle this
+	return false;
+}
+
+template<color::type c>
+bool evaluate_KBBvKN( position const& p, short& result )
+{
+	// It's a draw if bishops are of same color
+	uint64_t masked = p.bitboards[c][bb_type::bishops] & light_squares;
+	if( !masked || masked == p.bitboards[c][bb_type::bishops] ) {
+		result = 0;
+		return true;
+	}
+
+	// Surprisingly, normal eval can handle this
+	return false;
+}
+
 bool evaluate_endgame( position const& p, short& result )
 {
 	switch( p.piece_sum ) {
@@ -484,6 +512,30 @@ bool evaluate_endgame( position const& p, short& result )
 		return evaluate_KBPvKN<color::white>( p, result );
 	case black_bishop + black_pawn + white_knight:
 		return evaluate_KBPvKN<color::black>( p, result );
+
+	// Good as draw
+	case 2 * white_bishop + black_bishop:
+		result = 2;
+		return true;
+	case 2 * black_bishop + white_bishop:
+		result = -2;
+		return true;
+	case 2 * white_bishop + black_bishop + black_pawn:
+		result = 1;
+		return true;
+	case 2 * black_bishop + white_bishop + white_pawn:
+		result = -1;
+		return true;
+
+	// Drawn if both bishops are of same color
+	case 2 * white_bishop:
+		return evaluate_KBBvK<color::white>( p, result );
+	case 2 * black_bishop:
+		return evaluate_KBBvK<color::black>( p, result );
+	case 2 * white_bishop + black_knight:
+		return evaluate_KBBvKN<color::white>( p, result );
+	case 2 * black_bishop + white_knight:
+		return evaluate_KBBvKN<color::black>( p, result );
 	default:
 		break;
 	}
