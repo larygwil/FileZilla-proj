@@ -160,7 +160,7 @@ inline static void evaluate_pawns_mobility( position const& p, color::type c, ev
 	while( pawns ) {
 		uint64_t pawn = bitscan_unset( pawns );
 
-		add_score<detail, eval_detail::king_tropism>( results, c, eval_values::tropism[pieces::pawn] * proximity[pawn][p.king_pos[other(c)]] );
+		add_score<detail, eval_detail::king_tropism>( results, c, eval_values::tropism[pieces::pawn] * (4 - king_distance[pawn][p.king_pos[other(c)]]) );
 
 		uint64_t pc = pawn_control[c][pawn];
 
@@ -225,7 +225,7 @@ inline static void evaluate_knights( position const& p, color::type c, eval_resu
 	while( knights ) {
 		uint64_t knight = bitscan_unset( knights );
 
-		add_score<detail, eval_detail::king_tropism>( results, c, eval_values::tropism[pieces::knight] * proximity[knight][p.king_pos[other(c)]] );
+		add_score<detail, eval_detail::king_tropism>( results, c, eval_values::tropism[pieces::knight] * (4 - king_distance[knight][p.king_pos[other(c)]]) );
 
 		evaluate_knight_mobility<detail>( p, c, knight, results );
 		evaluate_knight_outpost<detail>( p, c, knight, results );
@@ -293,7 +293,7 @@ inline static void evaluate_bishops( position const& p, color::type c, eval_resu
 	while( bishops ) {
 		uint64_t bishop = bitscan_unset( bishops );
 
-		add_score<detail, eval_detail::king_tropism>( results, c, eval_values::tropism[pieces::bishop] * proximity[bishop][p.king_pos[other(c)]] );
+		add_score<detail, eval_detail::king_tropism>( results, c, eval_values::tropism[pieces::bishop] * (4 - king_distance[bishop][p.king_pos[other(c)]]) );
 
 		evaluate_bishop_mobility<detail>( p, c, bishop, results );
 		evaluate_bishop_pin<detail>( p, c, bishop, results );
@@ -412,7 +412,7 @@ inline static void evaluate_rooks( position const& p, color::type c, eval_result
 	while( rooks ) {
 		uint64_t rook = bitscan_unset( rooks );
 
-		add_score<detail, eval_detail::king_tropism>( results, c, eval_values::tropism[pieces::rook] * proximity[rook][p.king_pos[other(c)]] );
+		add_score<detail, eval_detail::king_tropism>( results, c, eval_values::tropism[pieces::rook] * (4 - king_distance[rook][p.king_pos[other(c)]]) );
 
 		evaluate_rook_mobility<detail>( p, c, rook, results);
 		evaluate_rook_pin<detail>( p, c, rook, results );
@@ -470,7 +470,7 @@ inline static void evaluate_queens( position const& p, color::type c, eval_resul
 	while( queens ) {
 		uint64_t queen = bitscan_unset( queens );
 
-		add_score<detail, eval_detail::king_tropism>( results, c, eval_values::tropism[pieces::queen] * proximity[queen][p.king_pos[other(c)]] );
+		add_score<detail, eval_detail::king_tropism>( results, c, eval_values::tropism[pieces::queen] * (4 - king_distance[queen][p.king_pos[other(c)]]) );
 
 		evaluate_queen_mobility<detail>( p, c, queen, results );
 		evaluate_queen_pin<detail>( p, c, queen, results );

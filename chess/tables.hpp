@@ -14,7 +14,6 @@ extern uint64_t const ray_se[64];
 extern uint64_t const ray_sw[64];
 extern uint64_t const ray_nw[64];
 
-extern short const proximity[64][64];
 extern short const king_distance[64][64];
 
 extern uint64_t const pawn_control[2][64];
