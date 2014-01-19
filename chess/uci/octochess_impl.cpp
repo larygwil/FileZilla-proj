@@ -4,15 +4,12 @@
 #include "time_calculation.hpp"
 
 #include "../chess.hpp"
-#include "../seen_positions.hpp"
 #include "../simple_book.hpp"
 #include "../calc.hpp"
 #include "../eval.hpp"
 #include "../fen.hpp"
 #include "../hash.hpp"
 #include "../pawn_structure_hash_table.hpp"
-#include "../pv_move_picker.hpp"
-#include "../random.hpp"
 #include "../state_base.hpp"
 #include "../util/logger.hpp"
 #include "../util/mutex.hpp"
@@ -63,8 +60,6 @@ public:
 
 	simple_book book_;
 
-	pv_move_picker pv_move_picker_;
-
 	int depth_;
 	bool wait_for_stop_;
 	bool ponder_;
@@ -72,8 +67,6 @@ public:
 	calc_result result_;
 
 	timestamp start_;
-
-	randgen rng_;
 };
 
 octochess_uci::octochess_uci( context& ctx,  gui_interface_ptr const& p ) 

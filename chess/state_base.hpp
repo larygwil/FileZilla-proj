@@ -3,6 +3,8 @@
 
 #include "move.hpp"
 #include "position.hpp"
+#include "pv_move_picker.hpp"
+#include "random.hpp"
 #include "seen_positions.hpp"
 
 #include <set>
@@ -29,6 +31,8 @@ public:
 	bool started_from_root() const { return started_from_root_; }
 
 	std::set<move> searchmoves_;
+	pv_move_picker pv_move_picker_;
+	randgen rng_;
 protected:
 	position p_;
 	std::vector<std::pair<position, move>> history_;

@@ -7,8 +7,6 @@
 #include "fen.hpp"
 #include "hash.hpp"
 #include "pawn_structure_hash_table.hpp"
-#include "pv_move_picker.hpp"
-#include "random.hpp"
 #include "see.hpp"
 #include "selftest.hpp"
 #include "state_base.hpp"
@@ -142,10 +140,6 @@ struct xboard_state : public state_base
 	// communication overhead.
 	duration level_cmd_differences;
 	uint64_t level_cmd_count;
-
-	pv_move_picker pv_move_picker_;
-
-	randgen rng_;
 };
 
 
