@@ -37,8 +37,6 @@ struct xboard_state : public state_base
 		, mode_(mode::force)
 		, self(color::black)
 		, post(true)
-		, communication_overhead( duration::milliseconds(10) )
-		, last_go_color()
 		, moves_between_updates()
 		, level_cmd_count()
 	{
@@ -90,13 +88,11 @@ struct xboard_state : public state_base
 				comm_overhead = duration();
 			}
 
-			if( communication_overhead > duration::milliseconds( 500 ) ) {
-				communication_overhead = duration::milliseconds( 500 );
-			}
+			set_min( comm_overhead, duration::milliseconds( 500 ) );
 
-			if( comm_overhead != communication_overhead ) {
-				dlog() << "Updating communication overhead from " << communication_overhead.milliseconds() << " ms to " << comm_overhead.milliseconds() << " ms " << std::endl;
-				communication_overhead = comm_overhead;
+			if( comm_overhead != times_.communication_overhead_ ) {
+				dlog() << "Updating communication overhead from " << times_.communication_overhead_.milliseconds() << " ms to " << comm_overhead.milliseconds() << " ms " << std::endl;
+				times_.communication_overhead_ = comm_overhead;
 			}
 		}
 
@@ -108,11 +104,6 @@ struct xboard_state : public state_base
 
 	bool post;
 
-	// If we receive time updates between moves, communication_overhead is the >=0 difference between two timer updates
-	// and the calculated time consumption.
-	duration communication_overhead;
-
-	color::type last_go_color;
 	unsigned int moves_between_updates;
 
 	// Level command is in seconds only. Hence we need to accumulate data before we can update the
@@ -448,7 +439,6 @@ void xboard_thread::on_new_best_move( unsigned int, position const& p, int depth
 void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_time )
 {
 	state.times_.set_start(cmd_recv_time);
-	state.last_go_color = state.p().self();
 
 	// Do a step
 	move m = state.get_book_move();

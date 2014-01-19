@@ -1,4 +1,5 @@
 #include "time_calculation.hpp"
+#include "util.hpp"
 
 #include "util/logger.hpp"
 
@@ -77,12 +78,8 @@ std::pair<duration, duration> time_calculation::update( bool current_clock, unsi
 	deadline -= overhead;
 
 	// Any less time makes no sense.
-	if( limit_ < duration::milliseconds(10) ) {
-		limit_ = duration::milliseconds(10);
-	}
-	if( deadline < duration::milliseconds(10) ) {
-		deadline = duration::milliseconds(10);
-	}
+	set_max( limit_, duration::milliseconds(10) );
+	set_max( deadline, duration::milliseconds(10) );
 
 	return std::make_pair( limit_, deadline );
 }
