@@ -331,6 +331,11 @@ bool parse_move( position const& p, std::string const& line, move& m, std::strin
 		return false;
 	}
 
+	if( p.get_captured_piece( match ) == pieces::king ) {
+		error = "Illegal move (cannot capture king)";
+		return false;
+	}
+
 	m = match;
 
 	return true;
