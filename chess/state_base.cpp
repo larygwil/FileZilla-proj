@@ -3,8 +3,10 @@
 #include "assert.hpp"
 #include "util.hpp"
 
-state_base::state_base()
-	: clock_()
+state_base::state_base( context& ctx )
+	: ctx_(ctx)
+	, book_( ctx.conf_.self_dir )
+	, clock_()
 	, started_from_root_()
 {
 	reset();
@@ -70,4 +72,26 @@ bool state_base::undo( unsigned int count )
 	searchmoves_.clear();
 
 	return true;
+}
+
+move state_base::get_book_move()
+{
+	move ret;
+
+	if( ctx_.conf_.use_book && book_.is_open() && clock() < 30 && started_from_root_ ) {
+		std::vector<simple_book_entry> moves = book_.get_entries( p() );
+		if( !moves.empty() ) {
+			short best = moves.front().forecast;
+			int count_best = 1;
+			for( std::vector<simple_book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
+				if( it->forecast > -30 && it->forecast + 15 >= best ) {
+					++count_best;
+				}
+			}
+
+			ret = moves[rng_.get_uint64() % count_best].m;
+		}
+	}
+
+	return ret;
 }

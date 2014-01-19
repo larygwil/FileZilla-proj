@@ -26,10 +26,9 @@ namespace uci {
 class octochess_uci::impl : public new_best_move_callback_base, public thread, public state_base {
 public:
 	impl( context& ctx, gui_interface_ptr const& p )
-		: ctx_(ctx)
+		: state_base(ctx)
 		, gui_interface_(p)
 		, calc_manager_(ctx)
-		, book_( ctx.conf_.self_dir )
 		, depth_(-1)
 		, wait_for_stop_(false)
 		, ponder_()
@@ -48,8 +47,6 @@ public:
 	bool pick_pv_move();
 
 public:
-	context& ctx_;
-
 	gui_interface_ptr gui_interface_;
 
 	calc_manager calc_manager_;
@@ -57,8 +54,6 @@ public:
 	time_calculation times_;
 
 	mutex mutex_;
-
-	simple_book book_;
 
 	int depth_;
 	bool wait_for_stop_;
@@ -259,27 +254,12 @@ void octochess_uci::impl::on_new_best_move( unsigned int multipv, position const
 
 
 bool octochess_uci::impl::do_book_move() {
-	bool ret = false;
-
-	if( ctx_.conf_.use_book && book_.is_open() && clock() < 30 && started_from_root_ ) {
-		std::vector<simple_book_entry> moves = book_.get_entries( p() );
-		if( !moves.empty() ) {
-			ret = true;
-
-			short best = moves.front().forecast;
-			int count_best = 1;
-			for( std::vector<simple_book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
-				if( it->forecast > -30 && it->forecast + 15 >= best ) {
-					++count_best;
-				}
-			}
-
-			simple_book_entry best_move = moves[rng_.get_uint64() % count_best];
-			gui_interface_->tell_best_move( move_to_long_algebraic( ctx_.conf_, p(), best_move.m ), "" );
-		}
+	move m = get_book_move();
+	if( !m.empty() ) {
+		gui_interface_->tell_best_move( move_to_long_algebraic( ctx_.conf_, p(), m ), "" );
 	}
 
-	return ret;
+	return !m.empty();
 }
 
 

@@ -1,7 +1,6 @@
 #include "assert.hpp"
 #include "chess.hpp"
 #include "xboard.hpp"
-#include "simple_book.hpp"
 #include "calc.hpp"
 #include "eval.hpp"
 #include "fen.hpp"
@@ -34,8 +33,7 @@ enum type {
 struct xboard_state : public state_base
 {
 	xboard_state( context& ctx )
-		: ctx_(ctx)
-		, book_( ctx.conf_.self_dir )
+	: state_base( ctx )
 		, mode_(mode::force)
 		, self(color::black)
 		, time_control()
@@ -112,8 +110,6 @@ struct xboard_state : public state_base
 		moves_between_updates = 0;
 	}
 
-	context& ctx_;
-	simple_book book_;
 	duration time_remaining;
 	duration bonus_time;
 	mode::type mode_;
@@ -545,37 +541,22 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 	state.last_go_color = state.p().self();
 
 	// Do a step
-	if( state.ctx_.conf_.use_book && state.book_.is_open() && state.clock() < 30 && state.started_from_root() ) {
-		std::vector<simple_book_entry> moves = state.book_.get_entries( state.p() );
-		if( !moves.empty() ) {
-			short best = moves.front().forecast;
-			int count_best = 1;
-			for( std::vector<simple_book_entry>::const_iterator it = moves.begin() + 1; it != moves.end(); ++it ) {
-				if( it->forecast > -30 && it->forecast + 15 >= best ) {
-					++count_best;
-				}
-			}
+	move m = state.get_book_move();
+	if( !m.empty() ) {
+		xboard_output_move( state.ctx_.conf_, state.p(), m );
+		state.apply( m );
 
-			simple_book_entry best_move = moves[state.rng_.get_uint64() % count_best];
-			ASSERT( !best_move.m.empty() );
-
-			xboard_output_move( state.ctx_.conf_, state.p(), best_move.m );
-
-			state.apply( best_move.m );
-
-			timestamp stop;
-			state.time_remaining -= stop - state.last_go_time;
-			state.time_remaining += state.time_increment;
-			++state.moves_between_updates;
-			dlog() << "Elapsed (book move): " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
-			return;
-		}
+		timestamp stop;
+		state.time_remaining -= stop - state.last_go_time;
+		state.time_remaining += state.time_increment;
+		++state.moves_between_updates;
+		dlog() << "Elapsed (book move): " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
+		return;
 	}
 
 	std::pair<move,move> pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p() );
 	if( !pv_move.first.empty() ) {
 		xboard_output_move( state.ctx_.conf_, state.p(), pv_move.first );
-
 		state.apply( pv_move.first );
 
 		timestamp stop;

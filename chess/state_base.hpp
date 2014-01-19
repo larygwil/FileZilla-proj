@@ -6,6 +6,7 @@
 #include "pv_move_picker.hpp"
 #include "random.hpp"
 #include "seen_positions.hpp"
+#include "simple_book.hpp"
 
 #include <set>
 #include <vector>
@@ -13,7 +14,7 @@
 class state_base
 {
 public:
-	state_base();
+	state_base( context& ctx);
 
 	virtual void reset( position const& p = position() );
 
@@ -28,12 +29,16 @@ public:
 
 	seen_positions const& seen() const { return seen_; }
 
-	bool started_from_root() const { return started_from_root_; }
+	move get_book_move();
+
+	context& ctx_;
+	simple_book book_;
 
 	std::set<move> searchmoves_;
 	pv_move_picker pv_move_picker_;
 	randgen rng_;
 protected:
+
 	position p_;
 	std::vector<std::pair<position, move>> history_;
 	seen_positions seen_;
