@@ -36,10 +36,7 @@ struct xboard_state : public state_base
 	: state_base( ctx )
 		, mode_(mode::force)
 		, self(color::black)
-		, time_control()
-		, time_increment()
 		, post(true)
-		, internal_overhead( duration::milliseconds(50) )
 		, communication_overhead( duration::milliseconds(10) )
 		, last_go_color()
 		, moves_between_updates()
@@ -51,10 +48,6 @@ struct xboard_state : public state_base
 	virtual void reset( position const& p = position() )
 	{
 		state_base::reset( p );
-
-		time_remaining = duration::infinity();
-		bonus_time = duration();
-		fixed_move_time = duration();
 
 		if( mode_ != mode::analyze ) {
 			mode_ = mode::normal;
@@ -85,8 +78,8 @@ struct xboard_state : public state_base
 	{
 		duration threshold = (from_level ? duration::seconds(2) : duration::milliseconds(500)) * moves_between_updates;
 
-		if( moves_between_updates && time_remaining != duration::infinity() && new_remaining != duration::infinity() && (time_remaining - new_remaining).absolute() < threshold ) {
-			level_cmd_differences += time_remaining - new_remaining;
+		if( moves_between_updates && times_.remaining(0) != duration::infinity() && new_remaining != duration::infinity() && (times_.remaining(0) - new_remaining).absolute() < threshold ) {
+			level_cmd_differences += times_.remaining(0) - new_remaining;
 			level_cmd_count += moves_between_updates;
 
 			duration comm_overhead;
@@ -110,24 +103,14 @@ struct xboard_state : public state_base
 		moves_between_updates = 0;
 	}
 
-	duration time_remaining;
-	duration bonus_time;
 	mode::type mode_;
 	color::type self;
-	uint64_t time_control;
-	duration time_increment;
-	duration fixed_move_time;
 
 	bool post;
-
-	// If we calculate move time of x but consume y > x amount of time, internal overhead if y - x.
-	// This is measured locally between receiving the go and sending out the reply.
-	duration internal_overhead;
 
 	// If we receive time updates between moves, communication_overhead is the >=0 difference between two timer updates
 	// and the calculated time consumption.
 	duration communication_overhead;
-	timestamp last_go_time;
 
 	color::type last_go_color;
 	unsigned int moves_between_updates;
@@ -356,124 +339,51 @@ void xboard_thread::onRun()
 {
 	if( !ponder_ ) {
 		// Calcualte the time available for this move
-		duration time_limit;
-		duration deadline;
-		if( !state.fixed_move_time.empty() ) {
-			time_limit = duration::infinity();
-			deadline = state.fixed_move_time;
-		}
-		else {
-			if( state.bonus_time > state.time_remaining ) {
-				state.bonus_time = duration();
-			}
-
-			uint64_t remaining_moves = std::max( 20u, (82u - state.clock()) / 2 );
-			if( state.time_control ) {
-				uint64_t remaining = ((state.time_control * 2) - (state.clock() % (state.time_control * 2)) + 2) / 2;
-				if( remaining < remaining_moves ) {
-					remaining_moves = remaining;
-				}
-			}
-
-			time_limit = (state.time_remaining - state.bonus_time) / remaining_moves + state.bonus_time;
-
-			if( !state.time_increment.empty() && state.time_remaining > (time_limit + state.time_increment) ) {
-				time_limit += state.time_increment;
-			}
-
-			deadline = state.time_remaining;
-
-			// Spend less time if the PV suggests a recapture 
-			if( !state.history().empty() ) {
-				position const& old = state.history().back().first;
-				move const& m = state.history().back().second;
-				if( old.get_captured_piece( m ) != pieces::none ) {
-					short tmp;
-					move best;
-					state.ctx_.tt_.lookup( state.p().hash_, 0, 0, result::loss, result::win, tmp, best, tmp );
-					if( !best.empty() && best.target( ) == m.target() ) {
-						time_limit /= 2;
-					}
-				}
-			}
-		}
-
-		duration const overhead = state.internal_overhead + state.communication_overhead;
-		time_limit -= overhead;
-		deadline -= overhead;
-
-		// Any less time makes no sense.
-		if( time_limit < duration::milliseconds(10) ) {
-			time_limit = duration::milliseconds(10);
-		}
-		if( deadline < duration::milliseconds(10) ) {
-			deadline = duration::milliseconds(10);
-		}
-
-
-		calc_result result = cmgr_.calc( state.p(), depth_, state.last_go_time, time_limit, deadline, state.clock(), state.seen(), *this, state.searchmoves_ );
+		std::pair<duration, duration> times = state.times_.update( 0, state.clock() );
+		
+		calc_result result = cmgr_.calc( state.p(), depth_, state.times_.start(), times.first, times.second, state.clock(), state.seen(), *this, state.searchmoves_ );
 
 		scoped_lock l( mtx );
 
-		if( abort ) {
-			return;
-		}
-		cmgr_.clear_abort();
+		if( !abort ) {
+			cmgr_.clear_abort();
 
-		if( !result.best_move.empty() ) {
+			if( !result.best_move.empty() ) {
 
-			xboard_output_move( state.ctx_.conf_, state.p(), result.best_move );
+				xboard_output_move( state.ctx_.conf_, state.p(), result.best_move );
 
-			state.apply( result.best_move );
+				state.apply( result.best_move );
 
-			{
-				score base_eval = state.p().white() ? state.p().base_eval : -state.p().base_eval;
-				dlog() << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << result.forecast << std::endl;
-			}
+				{
+					score base_eval = state.p().white() ? state.p().base_eval : -state.p().base_eval;
+					dlog() << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << result.forecast << std::endl;
+				}
 
-			ponder_ = state.ctx_.conf_.ponder;
-		}
-		else {
-			if( result.forecast == result::win ) {
-				std::cout << "1-0 (White wins)" << std::endl;
-			}
-			else if( result.forecast == result::loss ) {
-				std::cout << "0-1 (Black wins)" << std::endl;
+				ponder_ = state.ctx_.conf_.ponder;
 			}
 			else {
-				std::cout << "1/2-1/2 (Draw)" << std::endl;
-			}
-		}
-		duration elapsed = timestamp() - state.last_go_time;
-
-		dlog() << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
-		if( time_limit.is_infinity() || elapsed < duration() ) {
-			state.bonus_time.clear();
-		}
-		else if( time_limit > elapsed ) {
-			state.bonus_time = (time_limit - elapsed) / 2;
-		}
-		else {
-			state.bonus_time.clear();
-
-			if( time_limit + result.used_extra_time < elapsed ) {
-				duration actual_overhead = elapsed - time_limit - result.used_extra_time;
-				if( actual_overhead > state.internal_overhead ) {
-					dlog() << "Updating internal overhead from " << state.internal_overhead.milliseconds() << " ms to " << actual_overhead.milliseconds() << " ms " << std::endl;
-					state.internal_overhead = actual_overhead;
+				if( result.forecast == result::win ) {
+					std::cout << "1-0 (White wins)" << std::endl;
+				}
+				else if( result.forecast == result::loss ) {
+					std::cout << "0-1 (Black wins)" << std::endl;
+				}
+				else {
+					std::cout << "1/2-1/2 (Draw)" << std::endl;
 				}
 			}
+			++state.moves_between_updates;
+
+			// We applied it already.
+			best_move.clear();
 		}
-		if( elapsed > duration() ) {
-			state.time_remaining -= elapsed;
-		}
-		state.time_remaining += state.time_increment;
-		++state.moves_between_updates;
+
+		state.times_.update_after_move( result.used_extra_time, !abort, !abort );
 	}
 
 	if( ponder_ ) {
 		dlog() << "Pondering..." << std::endl;
-		cmgr_.calc( state.p(), -1, state.last_go_time, duration::infinity(), duration::infinity(), state.clock(), state.seen(), *this, state.searchmoves_ );
+		cmgr_.calc( state.p(), -1, state.times_.start(), duration::infinity(), duration::infinity(), state.clock(), state.seen(), *this, state.searchmoves_ );
 	}
 }
 
@@ -537,7 +447,7 @@ void xboard_thread::on_new_best_move( unsigned int, position const& p, int depth
 
 void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_time )
 {
-	state.last_go_time = cmd_recv_time;
+	state.times_.set_start(cmd_recv_time);
 	state.last_go_color = state.p().self();
 
 	// Do a step
@@ -546,11 +456,8 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 		xboard_output_move( state.ctx_.conf_, state.p(), m );
 		state.apply( m );
 
-		timestamp stop;
-		state.time_remaining -= stop - state.last_go_time;
-		state.time_remaining += state.time_increment;
+		state.times_.update_after_move( duration(), true, false );
 		++state.moves_between_updates;
-		dlog() << "Elapsed (book move): " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 		return;
 	}
 
@@ -559,11 +466,8 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 		xboard_output_move( state.ctx_.conf_, state.p(), pv_move.first );
 		state.apply( pv_move.first );
 
-		timestamp stop;
-		state.time_remaining -= stop - state.last_go_time;
-		state.time_remaining += state.time_increment;
+		state.times_.update_after_move( duration(), true, false );
 		++state.moves_between_updates;
-		dlog() << "Elapsed (easy pv move): " << (stop - state.last_go_time).milliseconds() << " ms" << std::endl;
 		return;
 	}
 
@@ -574,7 +478,7 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 void resume( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_time )
 {
 	if( state.mode_ == mode::analyze ) {
-		state.last_go_time = cmd_recv_time;
+		state.times_.set_start( cmd_recv_time );
 		thread.start( true );
 	}
 	else if( state.mode_ == mode::normal && state.p().self() == state.self ) {
@@ -710,6 +614,7 @@ skip_getline:
 		}
 		else if( cmd == "new" ) {
 			state.reset();
+			state.times_.reset(true);
 			thread.set_depth( -1 );
 		}
 		else if( cmd == "force" ) {
@@ -749,14 +654,11 @@ skip_getline:
 				std::cout << "Error (command not legal now): remove" << std::endl;
 			}
 		}
-		else if( cmd == "otim" ) {
-			// Ignore
-		}
 		else if( cmd == "playother" ) {
 			state.self = state.p( ).other();
 			state.mode_ = mode::normal;
 		}
-		else if( cmd == "time" ) {
+		else if( cmd == "time" || cmd == "otim" ) {
 			std::stringstream ss;
 			ss.flags(std::stringstream::skipws);
 			ss.str(args);
@@ -769,7 +671,7 @@ skip_getline:
 			else {
 				duration new_remaining = duration::milliseconds( t * 10 );
 				state.update_comm_overhead( new_remaining, false );
-				state.time_remaining = new_remaining;
+				state.times_.set_remaining( (cmd == "time") ? 0 : 1, new_remaining);
 			}
 		}
 		else if( cmd == "level" ) {
@@ -820,10 +722,12 @@ skip_getline:
 
 			state.update_comm_overhead( duration::minutes(minutes) + duration::seconds(seconds), true );
 
-			state.time_control = control;
-			state.time_remaining = duration::minutes(minutes) + duration::seconds(seconds);
-			state.time_increment = duration::seconds(increment);
-			state.fixed_move_time = duration();
+			state.times_.set_moves_to_go(control);
+			state.times_.set_movetime( duration() );
+			for( int i = 0; i < 2; ++i ) {
+				state.times_.set_remaining(i, duration::minutes(minutes) + duration::seconds(seconds));
+				state.times_.set_increment(i, duration::seconds(increment));
+			}
 		}
 		else if( cmd == "go" ) {
 			state.mode_ = mode::normal;
@@ -845,7 +749,7 @@ skip_getline:
 		else if( cmd == "st" ) {
 			int64_t t;
 			if( to_int<int64_t>( args, t, 1 ) ) {
-				state.fixed_move_time = duration::seconds(t);
+				state.times_.set_movetime(duration::seconds(t));
 			}
 			else {
 				std::cout << "Error (bad command): Not a valid st command" << std::endl;

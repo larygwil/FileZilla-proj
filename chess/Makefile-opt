@@ -59,6 +59,7 @@ CHESS_SOURCE_FILES = $(UTIL_SOURCE_FILES) $(GENERIC_SOURCE_FILES) \
 	chess.cpp \
 	epd.cpp \
 	state_base.cpp \
+	time_calculation.cpp \
 	tweak.cpp \
 	xboard.cpp \
 	uci/info.cpp \

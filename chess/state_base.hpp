@@ -7,6 +7,7 @@
 #include "random.hpp"
 #include "seen_positions.hpp"
 #include "simple_book.hpp"
+#include "time_calculation.hpp"
 
 #include <set>
 #include <vector>
@@ -37,6 +38,8 @@ public:
 	std::set<move> searchmoves_;
 	pv_move_picker pv_move_picker_;
 	randgen rng_;
+
+	time_calculation times_;
 protected:
 
 	position p_;

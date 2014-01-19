@@ -25,6 +25,8 @@ void state_base::reset( position const& p )
 	started_from_root_ = p_.hash_ == root_hash;
 
 	searchmoves_.clear();
+
+	times_.reset();
 }
 
 void state_base::apply( move const& m )

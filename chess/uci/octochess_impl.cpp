@@ -1,7 +1,7 @@
 
 #include "octochess_impl.hpp"
 #include "info.hpp"
-#include "time_calculation.hpp"
+#include "uci_time_calculation.hpp"
 
 #include "../chess.hpp"
 #include "../simple_book.hpp"
@@ -51,8 +51,6 @@ public:
 
 	calc_manager calc_manager_;
 
-	time_calculation times_;
-
 	mutex mutex_;
 
 	int depth_;
@@ -60,8 +58,6 @@ public:
 	bool ponder_;
 
 	calc_result result_;
-
-	timestamp start_;
 };
 
 octochess_uci::octochess_uci( context& ctx,  gui_interface_ptr const& p ) 
@@ -128,7 +124,7 @@ void octochess_uci::calculate( timestamp const& start, calculate_mode_type mode,
 
 	impl_->result_.best_move.clear();
 	impl_->calc_manager_.clear_abort();
-	impl_->start_ = start;
+	impl_->times_.set_start(start);
 
 	if( mode == calculate_mode::ponderhit ) {
 		impl_->ponder_ = false;
@@ -149,8 +145,15 @@ void octochess_uci::calculate( timestamp const& start, calculate_mode_type mode,
 			}
 		}
 
-		impl_->times_.update( t, impl_->p().black(), impl_->clock() );
-		if( ponder || impl_->times_.time_for_this_move().is_infinity() || impl_->wait_for_stop_ || !impl_->searchmoves_.empty() ) {
+		impl_->times_.set_moves_to_go( t.moves_to_go() );
+		impl_->times_.set_movetime( t.movetime() );
+		for( int i = 0; i < 2; ++i ) {
+			impl_->times_.set_remaining( i, t.time_left(i) );
+			impl_->times_.set_increment( i, t.increment(i) );
+		}
+
+		std::pair<duration, duration> times = impl_->times_.update( impl_->p().black(), impl_->clock() );
+		if( ponder || times.first.is_infinity() || impl_->wait_for_stop_ || !impl_->searchmoves_.empty() ) {
 			impl_->spawn();
 		}
 		else {
@@ -186,7 +189,7 @@ void octochess_uci::impl::onRun() {
 	//the function initiating all the calculating
 	if( ponder_ ) {
 		std::cerr << "Pondering..." << std::endl;
-		calc_result result = calc_manager_.calc( p(), -1, start_, duration::infinity(), duration::infinity()
+		calc_result result = calc_manager_.calc( p(), -1, times_.start(), duration::infinity(), duration::infinity()
 			, clock(), seen(), *this, searchmoves_ );
 
 		scoped_lock lock(mutex_);
@@ -196,7 +199,8 @@ void octochess_uci::impl::onRun() {
 		}
 	}
 	else {
-		calc_result result = calc_manager_.calc( p(), depth_, start_, times_.time_for_this_move(), std::max( duration(), times_.total_remaining() - times_.overhead() )
+		std::pair<duration, duration> times = times_.update( p().black(), clock() );
+		calc_result result = calc_manager_.calc( p(), depth_, times_.start(), times.first, times.second
 			, clock(), seen(), *this, searchmoves_ );
 
 		scoped_lock lock(mutex_);
@@ -210,12 +214,7 @@ void octochess_uci::impl::onRun() {
 			else {
 				result_ = result;
 			}
-
-			timestamp stop;
-			duration elapsed = stop - start_;
-
-			std::cerr << "Elapsed: " << elapsed.milliseconds() << " ms" << std::endl;
-			times_.after_move_update( elapsed, result.used_extra_time );
+			times_.update_after_move( result.used_extra_time, true, true );
 		}
 	}
 }

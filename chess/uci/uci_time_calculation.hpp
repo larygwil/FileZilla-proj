@@ -9,12 +9,8 @@ namespace uci {
 
 class position_time {
 public:
-	position_time()
-		: moves_to_go_()
-	{
-		left_[0] = left_[1] = duration::infinity();
-	}
-
+	position_time();
+	
 	void set_time( bool c, duration const& t ) { left_[c] = t; }
 	void set_increment( bool c, duration const& t ) { inc_[c] = t; }
 	void set_movetime( duration const& t ) { movetime_ = t; }
@@ -30,28 +26,6 @@ private:
 	duration inc_[2];
 	duration movetime_;
 	uint64_t moves_to_go_;
-};
-
-class time_calculation {
-public:
-	time_calculation();
-
-	void set_infinite_time();
-	void update(position_time const&, bool is_black, int half_moves);
-	void after_move_update( duration const& elapsed_time, duration const& used_extra_time );
-
-	duration time_for_this_move() const { return time_limit_; }
-
-	// Without overhead
-	duration total_remaining() const { return time_remaining_; }
-
-	// Per-move overhead
-	duration overhead() const { return internal_overhead_; }
-private:
-	duration time_limit_;
-	duration time_remaining_;
-	duration bonus_time_;
-	duration internal_overhead_;
 };
 
 }
