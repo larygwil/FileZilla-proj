@@ -9,7 +9,7 @@
 #define VERIFY_IS_VALID_MOVE 0
 #define CHECK_TYPE_1_COLLISION 0
 #define VERIFY_FEN 0
-#define VERIFY_PAWN_HASH_TABLE 0
+#define VERIFY_PAWN_HASH_TABLE 0 // Only works single-threaded
 #define VERIFY_KILLERS 0
 
 #if USE_ASSERT
