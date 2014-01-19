@@ -11,6 +11,7 @@
 #include "random.hpp"
 #include "see.hpp"
 #include "selftest.hpp"
+#include "state_base.hpp"
 #include "statistics.hpp"
 #include "util/logger.hpp"
 #include "util/mutex.hpp"
@@ -27,45 +28,33 @@ namespace mode {
 enum type {
 	force,
 	normal,
-	analyze,
-	edit
+	analyze
 };
 }
 
 
-struct xboard_state
+struct xboard_state : public state_base
 {
 	xboard_state( context& ctx )
 		: ctx_(ctx)
-		, clock()
 		, book_( ctx.conf_.self_dir )
 		, mode_(mode::force)
 		, self(color::black)
 		, time_control()
 		, time_increment()
-		, history()
 		, post(true)
-		, started_from_root()
 		, internal_overhead( duration::milliseconds(50) )
 		, communication_overhead( duration::milliseconds(10) )
 		, last_go_color()
 		, moves_between_updates()
 		, level_cmd_count()
-		, searchmoves_()
 	{
 		reset();
 	}
 
-	void reset()
+	virtual void reset( position const& p = position() )
 	{
-		p.reset();
-
-		move_history_.clear();
-		history.clear();
-
-		clock = 1;
-
-		seen.reset_root( p.hash_ );
+		state_base::reset( p );
 
 		time_remaining = duration::infinity();
 		bonus_time = duration();
@@ -75,66 +64,23 @@ struct xboard_state
 			mode_ = mode::normal;
 		}
 		self = color::black;
-
-		started_from_root = true;
-
-		searchmoves_.clear();
-
 		moves_between_updates = 0;
 	}
 
-	void apply( move const& m )
+	virtual void apply( move const& m )
 	{
-		history.push_back( p );
-		bool reset_seen = false;
-		pieces::type piece = p.get_piece( m );
-		pieces::type captured_piece = p.get_captured_piece( m );
-		if( piece == pieces::pawn || captured_piece ) {
-			reset_seen = true;
-		}
+		state_base::apply( m );
 
-		apply_move( p, m );
-		++clock;
-
-		if( !reset_seen ) {
-			seen.push_root( p.hash_ );
-		}
-		else {
-			seen.reset_root( p.hash_ );
-		}
-
-		if( seen.depth() >= 110 ) {
+		if( seen_.depth() >= 110 ) {
 			std::cout << "1/2-1/2 (Draw)" << std::endl;
 		}
-
-		move_history_.push_back( m );
-
-		searchmoves_.clear();
 	}
 
-	bool undo( unsigned int count )
+	virtual bool undo( unsigned int count )
 	{
-		if( !count || count > history.size() ) {
-			return false;
+		if( state_base::undo( count ) ) {
+			moves_between_updates = 0;
 		}
-
-		ASSERT( history.size() == move_history_.size() );
-		clock -= count;
-
-		// This isn't exactly correct, if popping past root we would need to restore old seen state prior to a reset.
-		seen.pop_root( count );
-
-		while( --count ) {
-			history.pop_back();
-			move_history_.pop_back();
-		}
-		p = history.back();
-		history.pop_back();
-		move_history_.pop_back();
-
-		searchmoves_.clear();
-
-		moves_between_updates = 0;
 
 		return true;
 	}
@@ -168,13 +114,7 @@ struct xboard_state
 		moves_between_updates = 0;
 	}
 
-	// Returns false if program should quit.
-	bool handle_edit_mode( std::string const& cmd );
-
 	context& ctx_;
-	position p;
-	int clock;
-	seen_positions seen;
 	simple_book book_;
 	duration time_remaining;
 	duration bonus_time;
@@ -184,12 +124,7 @@ struct xboard_state
 	duration time_increment;
 	duration fixed_move_time;
 
-	std::list<position> history;
-	std::vector<move> move_history_;
-
 	bool post;
-
-	bool started_from_root;
 
 	// If we calculate move time of x but consume y > x amount of time, internal overhead if y - x.
 	// This is measured locally between receiving the go and sending out the reply.
@@ -209,8 +144,6 @@ struct xboard_state
 	uint64_t level_cmd_count;
 
 	pv_move_picker pv_move_picker_;
-
-	std::set<move> searchmoves_;
 
 	randgen rng_;
 };
@@ -251,125 +184,140 @@ private:
 };
 
 
-bool xboard_state::handle_edit_mode( std::string const& cmd )
+bool handle_edit_mode( position& p, bool frc )
 {
-	if( cmd == "c" ) {
-		p.c = other(p.c);
-	}
-	else if( cmd == "#" ) {
-		p.clear_bitboards();
-	}
-	else if( cmd == "." ) {
-		p.c = static_cast<color::type>(clock);
-		p.update_derived();
-		p.can_en_passant = 0;
+	color::type piece_color = color::white;
 
-		for( int c = 0; c < 2; ++c ) {
-			uint64_t row = c ? 56 : 0;
+	while( true ) {
+		std::string line;
+		std::getline( std::cin, line );
 
-			p.castle[c] = 0;
+		if( !std::cin ) {
+			dlog() << "EOF" << std::endl;
+			return false;
+		}
+		if( line.empty() ) {
+			continue;
+		}
 
-			if( !ctx_.conf_.fischer_random ) {
-				if( p.king_pos[c] == row + 4 ) {
-					if( p.bitboards[c][bb_type::rooks] & (1ull << (row + 7)) ) {
-						p.castle[c] |= 128u;
-					}
-					if( p.bitboards[c][bb_type::rooks] & (1ull << row)) {
-						p.castle[c] |= 1u;
+		std::string args;
+		std::string cmd = split( line, args );
+
+		logger::log_input( line );
+
+		if( cmd == "c" ) {
+			piece_color = other(piece_color);
+		}
+		else if( cmd == "#" ) {
+			p.clear_bitboards();
+		}
+		else if( cmd == "." ) {
+			p.update_derived();
+			p.can_en_passant = 0;
+
+			for( int c = 0; c < 2; ++c ) {
+				uint64_t row = c ? 56 : 0;
+
+				p.castle[c] = 0;
+
+				if( !frc ) {
+					if( p.king_pos[c] == row + 4 ) {
+						if( p.bitboards[c][bb_type::rooks] & (1ull << (row + 7)) ) {
+							p.castle[c] |= 128u;
+						}
+						if( p.bitboards[c][bb_type::rooks] & (1ull << row)) {
+							p.castle[c] |= 1u;
+						}
 					}
 				}
+				else {
+					if( p.king_pos[c] > row && p.king_pos[c] < row + 8 ) {
+						uint64_t q_rook = bitscan(p.bitboards[c][bb_type::rooks] & (0xffull << row));
+						if( q_rook < p.king_pos[c] ) {
+							p.castle[c] |= 1ull << (q_rook % 8);
+						}
+						uint64_t k_rook = bitscan_reverse(p.bitboards[c][bb_type::rooks] & (0xffull << row));
+						if( k_rook > p.king_pos[c] ) {
+							p.castle[c] |= 1ull << (k_rook % 8);
+						}
+					}
+				}
+			}
+			p.hash_ = p.init_hash();
+
+			if( !p.verify() ) {
+				// Specs say to tell user error until next edit/new/setboard command. Since we cannot do that yet, refuse to leave edit mode.
+				std::cout << "Error (invalid position): Cannot leave edit mode while the position is not valid." << std::endl;
 			}
 			else {
-				if( p.king_pos[c] > row && p.king_pos[c] < row + 8 ) {
-					uint64_t q_rook = bitscan(p.bitboards[c][bb_type::rooks] & (0xffull << row));
-					if( q_rook < p.king_pos[c] ) {
-						p.castle[c] |= 1ull << (q_rook % 8);
-					}
-					uint64_t k_rook = bitscan_reverse(p.bitboards[c][bb_type::rooks] & (0xffull << row));
-					if( k_rook > p.king_pos[c] ) {
-						p.castle[c] |= 1ull << (k_rook % 8);
-					}
-				}
+				break;
 			}
 		}
-		p.hash_ = p.init_hash();
-
-		move_history_.clear();
-		history.clear();
-		seen.reset_root( p.hash_ );
-		started_from_root = false;
-
-		if( !p.verify() ) {
-			// Specs say to tell user error until next edit/new/setboard command. Since we cannot do that yet, refuse to leave edit mode.
-			std::cout << "Error (invalid position): Cannot leave edit mode while the position is not valid." << std::endl;
+		else if( cmd == "quit" ) {
+			return false;
 		}
 		else {
-			clock = 1;
-			// Not quite correct, but fits the idiom used by Win/XBoard
-			mode_ = mode::force;
-		}
-	}
-	else if( cmd == "quit" ) {
-		return false;
-	}
-	else {
-		if( cmd.size() == 3 ) {
-			int rank = -1;
-			int file = -1;
-			if( cmd[1] >= 'a' && cmd[1] <= 'h' ) {
-				file = cmd[1] - 'a';
-			}
-			else if( cmd[1] >= 'A' && cmd[1] <= 'H' ) {
-				file = cmd[1] - 'H';
-			}
-			if( cmd[2] >= '1' && cmd[2] <= '8' ) {
-				rank = cmd[2] - '1';
-			}
-			int piece = -1;
-			switch( cmd[0] ) {
-			case 'x':
-			case 'X':
-				piece = pieces::none;
-				break;
-			case 'p':
-			case 'P':
-				piece = pieces::pawn;
-				break;
-			case 'n':
-			case 'N':
-				piece = pieces::knight;
-				break;
-			case 'b':
-			case 'B':
-				piece = pieces::bishop;
-				break;
-			case 'r':
-			case 'R':
-				piece = pieces::rook;
-				break;
-			case 'q':
-			case 'Q':
-				piece = pieces::queen;
-				break;
-			case 'k':
-			case 'K':
-				piece = pieces::king;
-				break;
-			default:
-				break;
-			}
-
-			if( piece != -1 && rank != -1 && file != -1 ) {
-				int sq = static_cast<uint64_t>(file + rank * 8);
-				for( int pi = bb_type::pawns; pi <= bb_type::king; ++pi ) {
-					p.bitboards[p.self()][pi] &= ~(1ull << sq);
+			if( cmd.size() == 3 ) {
+				int rank = -1;
+				int file = -1;
+				if( cmd[1] >= 'a' && cmd[1] <= 'h' ) {
+					file = cmd[1] - 'a';
 				}
-				p.bitboards[p.self()][piece] |= 1ull << sq;
-				return true;
+				else if( cmd[1] >= 'A' && cmd[1] <= 'H' ) {
+					file = cmd[1] - 'H';
+				}
+				if( cmd[2] >= '1' && cmd[2] <= '8' ) {
+					rank = cmd[2] - '1';
+				}
+				int piece = -1;
+				switch( cmd[0] ) {
+				case 'x':
+				case 'X':
+					piece = pieces::none;
+					break;
+				case 'p':
+				case 'P':
+					piece = pieces::pawn;
+					break;
+				case 'n':
+				case 'N':
+					piece = pieces::knight;
+					break;
+				case 'b':
+				case 'B':
+					piece = pieces::bishop;
+					break;
+				case 'r':
+				case 'R':
+					piece = pieces::rook;
+					break;
+				case 'q':
+				case 'Q':
+					piece = pieces::queen;
+					break;
+				case 'k':
+				case 'K':
+					piece = pieces::king;
+					break;
+				default:
+					break;
+				}
+
+				if( piece != -1 && rank != -1 && file != -1 ) {
+					int sq = static_cast<uint64_t>(file + rank * 8);
+					for( int pi = bb_type::pawns; pi <= bb_type::king; ++pi ) {
+						p.bitboards[piece_color][pi] &= ~(1ull << sq);
+					}
+					if( piece > 0 ) {
+						p.bitboards[piece_color][piece] |= 1ull << sq;
+					}
+					continue;
+				}
 			}
+			std::cout << "Error (bad command): Not a valid command in edit mode." << std::endl;
 		}
-		std::cout << "Error (bad command): Not a valid command in edit mode." << std::endl;
 	}
+
 	return true;
 }
 
@@ -417,6 +365,7 @@ void xboard_output_move( config& conf, position const& p,move const& m )
 void xboard_thread::onRun()
 {
 	if( !ponder_ ) {
+		// Calcualte the time available for this move
 		duration time_limit;
 		duration deadline;
 		if( !state.fixed_move_time.empty() ) {
@@ -428,9 +377,9 @@ void xboard_thread::onRun()
 				state.bonus_time = duration();
 			}
 
-			uint64_t remaining_moves = std::max( 20, (82 - state.clock) / 2 );
+			uint64_t remaining_moves = std::max( 20u, (82u - state.clock()) / 2 );
 			if( state.time_control ) {
-				uint64_t remaining = ((state.time_control * 2) - (state.clock % (state.time_control * 2)) + 2) / 2;
+				uint64_t remaining = ((state.time_control * 2) - (state.clock() % (state.time_control * 2)) + 2) / 2;
 				if( remaining < remaining_moves ) {
 					remaining_moves = remaining;
 				}
@@ -443,6 +392,20 @@ void xboard_thread::onRun()
 			}
 
 			deadline = state.time_remaining;
+
+			// Spend less time if the PV suggests a recapture 
+			if( !state.history().empty() ) {
+				position const& old = state.history().back().first;
+				move const& m = state.history().back().second;
+				if( old.get_captured_piece( m ) != pieces::none ) {
+					short tmp;
+					move best;
+					state.ctx_.tt_.lookup( state.p().hash_, 0, 0, result::loss, result::win, tmp, best, tmp );
+					if( !best.empty() && best.target( ) == m.target() ) {
+						time_limit /= 2;
+					}
+				}
+			}
 		}
 
 		duration const overhead = state.internal_overhead + state.communication_overhead;
@@ -458,7 +421,7 @@ void xboard_thread::onRun()
 		}
 
 
-		calc_result result = cmgr_.calc( state.p, depth_, state.last_go_time, time_limit, deadline, state.clock, state.seen, *this, state.searchmoves_ );
+		calc_result result = cmgr_.calc( state.p(), depth_, state.last_go_time, time_limit, deadline, state.clock(), state.seen(), *this, state.searchmoves_ );
 
 		scoped_lock l( mtx );
 
@@ -469,12 +432,12 @@ void xboard_thread::onRun()
 
 		if( !result.best_move.empty() ) {
 
-			xboard_output_move( state.ctx_.conf_, state.p, result.best_move );
+			xboard_output_move( state.ctx_.conf_, state.p(), result.best_move );
 
 			state.apply( result.best_move );
 
 			{
-				score base_eval = state.p.white() ? state.p.base_eval : -state.p.base_eval;
+				score base_eval = state.p().white() ? state.p().base_eval : -state.p().base_eval;
 				dlog() << "  ; Current base evaluation: " << base_eval << " centipawns, forecast " << result.forecast << std::endl;
 			}
 
@@ -520,7 +483,7 @@ void xboard_thread::onRun()
 
 	if( ponder_ ) {
 		dlog() << "Pondering..." << std::endl;
-		cmgr_.calc( state.p, -1, state.last_go_time, duration::infinity(), duration::infinity(), state.clock, state.seen, *this, state.searchmoves_ );
+		cmgr_.calc( state.p(), -1, state.last_go_time, duration::infinity(), duration::infinity(), state.clock(), state.seen(), *this, state.searchmoves_ );
 	}
 }
 
@@ -585,11 +548,11 @@ void xboard_thread::on_new_best_move( unsigned int, position const& p, int depth
 void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_time )
 {
 	state.last_go_time = cmd_recv_time;
-	state.last_go_color = state.p.self();
+	state.last_go_color = state.p().self();
 
 	// Do a step
-	if( state.ctx_.conf_.use_book && state.book_.is_open() && state.clock < 30 && state.started_from_root ) {
-		std::vector<simple_book_entry> moves = state.book_.get_entries( state.p );
+	if( state.ctx_.conf_.use_book && state.book_.is_open() && state.clock() < 30 && state.started_from_root() ) {
+		std::vector<simple_book_entry> moves = state.book_.get_entries( state.p() );
 		if( !moves.empty() ) {
 			short best = moves.front().forecast;
 			int count_best = 1;
@@ -602,13 +565,9 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 			simple_book_entry best_move = moves[state.rng_.get_uint64() % count_best];
 			ASSERT( !best_move.m.empty() );
 
-			xboard_output_move( state.ctx_.conf_, state.p, best_move.m );
+			xboard_output_move( state.ctx_.conf_, state.p(), best_move.m );
 
-			state.history.push_back( state.p );
-
-			apply_move( state.p, best_move.m );
-			++state.clock;
-			state.move_history_.push_back( best_move.m );
+			state.apply( best_move.m );
 
 			timestamp stop;
 			state.time_remaining -= stop - state.last_go_time;
@@ -619,15 +578,11 @@ void go( xboard_thread& thread, xboard_state& state, timestamp const& cmd_recv_t
 		}
 	}
 
-	std::pair<move,move> pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p );
+	std::pair<move,move> pv_move = state.pv_move_picker_.can_use_move_from_pv( state.p() );
 	if( !pv_move.first.empty() ) {
-		xboard_output_move( state.ctx_.conf_, state.p, pv_move.first );
+		xboard_output_move( state.ctx_.conf_, state.p(), pv_move.first );
 
-		state.history.push_back( state.p );
-
-		apply_move( state.p, pv_move.first );
-		++state.clock;
-		state.move_history_.push_back( pv_move.first );
+		state.apply( pv_move.first );
 
 		timestamp stop;
 		state.time_remaining -= stop - state.last_go_time;
@@ -647,7 +602,7 @@ void resume( xboard_thread& thread, xboard_state& state, timestamp const& cmd_re
 		state.last_go_time = cmd_recv_time;
 		thread.start( true );
 	}
-	else if( state.mode_ == mode::normal && state.p.self() == state.self ) {
+	else if( state.mode_ == mode::normal && state.p().self() == state.self ) {
 		go( thread, state, cmd_recv_time );
 	}
 }
@@ -660,12 +615,8 @@ bool parse_setboard( xboard_state& state, std::string const& args, std::string& 
 		return false;
 	}
 
-	state.reset();
-	state.p = new_pos;
-	state.seen.reset_root( state.p.hash_ );
-	state.started_from_root = false;
-	state.searchmoves_.clear();
-	state.self = state.p.other();
+	state.reset( new_pos );
+	state.self = state.p().other();
 
 	return true;
 }
@@ -710,16 +661,6 @@ skip_getline:
 
 		{
 			scoped_lock l( thread.mtx );
-
-			if( state.mode_ == mode::edit ) {
-				if( !state.handle_edit_mode( cmd ) ) {
-					break;
-				}
-				else {
-					continue;
-				}
-			}
-
 			// The following commands do not stop the thread.
 			if( cmd == "hard" ) {
 				ctx.conf_.ponder = true;
@@ -745,10 +686,10 @@ skip_getline:
 			else if( cmd == "hint" ) {
 				short tmp;
 				move m;
-				ctx.tt_.lookup( state.p.hash_, 0, 0, result::loss, result::win, tmp, m, tmp );
+				ctx.tt_.lookup( state.p().hash_, 0, 0, result::loss, result::win, tmp, m, tmp );
 				if( !m.empty() ) {
 					std::cout << "Hint: ";
-					xboard_output_move_raw( ctx.conf_, state.p, m );
+					xboard_output_move_raw( ctx.conf_, state.p(), m );
 				}
 				continue;
 			}
@@ -766,7 +707,7 @@ skip_getline:
 		}
 		else if( cmd == "?" ) {
 			if( !best_move.empty() ) {
-				xboard_output_move( ctx.conf_, state.p, best_move );
+				xboard_output_move( ctx.conf_, state.p(), best_move );
 				state.apply( best_move );
 			}
 			else {
@@ -784,6 +725,8 @@ skip_getline:
 			std::cout << "feature smp=1\n";
 			std::cout << "feature option=\"MultiPV -spin 1 1 99\"\n";
 			std::cout << "feature exclude=1\n";
+			std::cout << "feature playother=1\n";
+			std::cout << "feature colors=0\n";
 
 			std::cout << "feature done=1" << std::endl;
 		}
@@ -816,12 +759,10 @@ skip_getline:
 			// Ignore
 		}
 		else if( cmd == "white" ) {
-			state.p.c = color::white;
-			state.self = color::black;
+			state.self = color::white;
 		}
 		else if( cmd == "black" ) {
-			state.p.c = color::black;
-			state.self = color::white;
+			state.self = color::black;
 		}
 		else if( cmd == "undo" ) {
 			if( !state.undo(1) ) {
@@ -835,6 +776,10 @@ skip_getline:
 		}
 		else if( cmd == "otim" ) {
 			// Ignore
+		}
+		else if( cmd == "playother" ) {
+			state.self = state.p( ).other();
+			state.mode_ = mode::normal;
 		}
 		else if( cmd == "time" ) {
 			std::stringstream ss;
@@ -907,7 +852,7 @@ skip_getline:
 		}
 		else if( cmd == "go" ) {
 			state.mode_ = mode::normal;
-			state.self = state.p.self();
+			state.self = state.p().self();
 		}
 		else if( cmd == "analyze" ) {
 			state.mode_ = mode::analyze;
@@ -961,16 +906,17 @@ skip_getline:
 			}
 		}
 		else if( cmd == "edit" ) {
-			state.mode_ = mode::edit;
-			// We need to keep track of side to play
-			state.clock = state.p.c;
-			state.p.c = color::white;
-			state.searchmoves_.clear();
+			position p = state.p();
+			if( !handle_edit_mode( p, state.ctx_.conf_.fischer_random ) ) {
+				break;
+			}
+			state.reset( p );
+			state.mode_ = mode::force;
 		}
 		else if( cmd == "usermove" ) {
 			move m;
 			std::string error;
-			if( parse_move( state.p, args, m, error ) ) {
+			if( parse_move( state.p(), args, m, error ) ) {
 				state.apply( m );
 			}
 			else {
@@ -1017,10 +963,10 @@ skip_getline:
 					state.searchmoves_.insert( move() );
 				}
 			}
-			else if( parse_move( state.p, args, m, error ) ) {
+			else if( parse_move( state.p(), args, m, error ) ) {
 				if( exclude ) {
 					if( state.searchmoves_.empty() ) {
-						auto moves = calculate_moves<movegen_type::all>( state.p );
+						auto moves = calculate_moves<movegen_type::all>( state.p() );
 						state.searchmoves_.insert( moves.begin(), moves.end() );
 					}
 					state.searchmoves_.erase( m );
@@ -1042,33 +988,33 @@ skip_getline:
 		// Octochess-specific commands mainly for testing and debugging
 		else if( cmd == "moves" ) {
 			std::cout << "Possible moves:" << std::endl;
-			for( auto const& m : calculate_moves<movegen_type::all>( state.p ) ) {
+			for( auto const& m : calculate_moves<movegen_type::all>( state.p() ) ) {
 				if( args == "long" ) {
 					std::cout << " ";
-					xboard_output_move_raw( ctx.conf_, state.p, m );
+					xboard_output_move_raw( ctx.conf_, state.p(), m );
 				}
 				else if( args == "full" ) {
-					std::cout << " " << move_to_string( state.p, m ) << std::endl;
+					std::cout << " " << move_to_string( state.p(), m ) << std::endl;
 				}
 				else {
-					std::cout << " " << move_to_san( state.p, m ) << std::endl;
+					std::cout << " " << move_to_san( state.p(), m ) << std::endl;
 				}
 			}
 		}
 		else if( cmd == "fen" ) {
-			std::cout << position_to_fen_noclock( ctx.conf_, state.p ) << std::endl;
+			std::cout << position_to_fen_noclock( ctx.conf_, state.p() ) << std::endl;
 		}
 		else if( cmd == "score" || cmd == "eval" ) {
-			std::cout << explain_eval( ctx.pawn_tt_, state.p ) << std::endl;
+			std::cout << explain_eval( ctx.pawn_tt_, state.p() ) << std::endl;
 		}
 		else if( cmd == "hash" ) {
-			std::cout << state.p.hash_ << std::endl;
+			std::cout << state.p().hash_ << std::endl;
 		}
 		else if( cmd == "see" ) {
 			move m;
 			std::string error;
-			if( parse_move( state.p, args, m, error ) ) {
-				int see_score = see( state.p, m );
+			if( parse_move( state.p(), args, m, error ) ) {
+				int see_score = see( state.p(), m );
 				std::cout << "See score: " << see_score << std::endl;
 			}
 			else {
@@ -1076,20 +1022,20 @@ skip_getline:
 			}
 		}
 		else if( cmd == "board" ) {
-			std::cout << board_to_string( state.p, color::white );
+			std::cout << board_to_string( state.p(), color::white );
 		}
 		else if( cmd == "perft" ) {
-			perft( state.p );
+			perft( state.p() );
 		}
 		else if( cmd == "pv" ) {
 			move pv[13];
-			get_pv_from_tt( state.ctx_.tt_, pv, state.p, 12 );
-			std::cout << pv_to_string( state.ctx_.conf_, pv, state.p ) << std::endl;
+			get_pv_from_tt( state.ctx_.tt_, pv, state.p(), 12 );
+			std::cout << pv_to_string( state.ctx_.conf_, pv, state.p() ) << std::endl;
 		}
 		else {
 			move m;
 			std::string error;
-			if( parse_move( state.p, line, m, error ) ) {
+			if( parse_move( state.p(), line, m, error ) ) {
 				state.apply( m );
 			}
 			else {

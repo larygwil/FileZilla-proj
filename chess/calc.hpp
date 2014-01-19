@@ -79,7 +79,7 @@ public:
 	calc_result calc( position const& p, int depth,
 		   timestamp const& start,
 		   duration const& move_time_limit, duration const& deadline, int clock,
-		   seen_positions& seen,
+		   seen_positions const& seen,
 		   new_best_move_callback_base& new_best_cb,
 		   std::set<move> const& searchmoves = std::set<move>() );
 

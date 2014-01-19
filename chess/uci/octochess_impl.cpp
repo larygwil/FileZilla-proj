@@ -13,6 +13,7 @@
 #include "../pawn_structure_hash_table.hpp"
 #include "../pv_move_picker.hpp"
 #include "../random.hpp"
+#include "../state_base.hpp"
 #include "../util/logger.hpp"
 #include "../util/mutex.hpp"
 #include "../util/string.hpp"
@@ -25,14 +26,12 @@
 namespace octochess {
 namespace uci {
 
-class octochess_uci::impl : public new_best_move_callback_base, public thread {
+class octochess_uci::impl : public new_best_move_callback_base, public thread, public state_base {
 public:
 	impl( context& ctx, gui_interface_ptr const& p )
 		: ctx_(ctx)
 		, gui_interface_(p)
 		, calc_manager_(ctx)
-		, half_moves_played_()
-		, started_from_root_()
 		, book_( ctx.conf_.self_dir )
 		, depth_(-1)
 		, wait_for_stop_(false)
@@ -48,8 +47,6 @@ public:
 	virtual void onRun();
 	void on_new_best_move( unsigned int multipv, position const& p, int depth, int selective_depth, int evaluation, uint64_t nodes, duration const& elapsed, move const* pv ) override;
 
-	void apply_move( move const& m );
-
 	bool do_book_move();
 	bool pick_pv_move();
 
@@ -58,15 +55,9 @@ public:
 
 	gui_interface_ptr gui_interface_;
 
-	position pos_;
-	seen_positions seen_positions_;
-
 	calc_manager calc_manager_;
 
 	time_calculation times_;
-
-	int half_moves_played_;
-	bool started_from_root_;
 
 	mutex mutex_;
 
@@ -74,13 +65,9 @@ public:
 
 	pv_move_picker pv_move_picker_;
 
-	std::vector<move> move_history_;
-
 	int depth_;
 	bool wait_for_stop_;
 	bool ponder_;
-
-	std::set<move> searchmoves_;
 
 	calc_result result_;
 
@@ -101,39 +88,26 @@ octochess_uci::octochess_uci( context& ctx,  gui_interface_ptr const& p )
 void octochess_uci::new_game() {
 	impl_->calc_manager_.abort();
 	impl_->join();
-	impl_->pos_.reset();
-	impl_->seen_positions_.reset_root( impl_->pos_.hash_);
+	impl_->reset();
 	impl_->times_ = time_calculation();
-	impl_->half_moves_played_ = 0;
-	impl_->started_from_root_ = true;
-	impl_->move_history_.clear();
 }
 
 void octochess_uci::set_position( std::string const& fen ) {
 	impl_->calc_manager_.abort();
 	impl_->join();
-	impl_->pos_.reset();
-	impl_->move_history_.clear();
-	bool success = false;
-	if( fen.empty() ) {
-		impl_->started_from_root_ = true;
-		success = true;
-	}
-	else {
-		if( parse_fen( impl_->ctx_.conf_, fen, impl_->pos_, 0 ) ) {
-			impl_->started_from_root_ = false;
-			success = true;
+	impl_->reset();
+
+	if( !fen.empty() ) {
+		position p;
+		if( parse_fen( impl_->ctx_.conf_, fen, p, 0 ) ) {
+			impl_->reset(p);
 		}
 		else {
 			std::cerr << "failed to set position" << std::endl;
 		}
 	}
 
-	if( success ) {
-		impl_->seen_positions_.reset_root( impl_->pos_.hash_ );
-		impl_->half_moves_played_ = 0;
-		impl_->ctx_.tt_.init( impl_->ctx_.conf_.memory );
-	}
+	impl_->ctx_.tt_.init( impl_->ctx_.conf_.memory );
 }
 
 void octochess_uci::make_moves( std::string const& moves ) {
@@ -146,8 +120,8 @@ void octochess_uci::make_moves( std::vector<std::string> const& moves )
 	for( std::vector<std::string>::const_iterator it = moves.begin(); !done && it != moves.end(); ++it ) {
 		move m;
 		std::string error;
-		if( parse_move( impl_->pos_, *it, m, error ) ) {
-			impl_->apply_move( m );
+		if( parse_move( impl_->p(), *it, m, error ) ) {
+			impl_->apply( m );
 		} else {
 			std::cerr << error << ": " << *it << std::endl;
 			done = true;
@@ -182,12 +156,12 @@ void octochess_uci::calculate( timestamp const& start, calculate_mode_type mode,
 			std::string error;
 
 			move m;
-			if( parse_move( impl_->pos_, ms, m, error ) ) {
+			if( parse_move( impl_->p(), ms, m, error ) ) {
 				impl_->searchmoves_.insert( m );
 			}
 		}
 
-		impl_->times_.update( t, impl_->pos_.white(), impl_->half_moves_played_ );
+		impl_->times_.update( t, impl_->p().white(), impl_->clock() );
 		if( ponder || impl_->times_.time_for_this_move().is_infinity() || impl_->wait_for_stop_ || !impl_->searchmoves_.empty() ) {
 			impl_->spawn();
 		}
@@ -210,8 +184,8 @@ void octochess_uci::stop()
 
 	if( !impl_->result_.best_move.empty() ) {
 		impl_->gui_interface_->tell_best_move(
-			move_to_long_algebraic( impl_->ctx_.conf_, impl_->pos_, impl_->result_.best_move ),
-			move_to_long_algebraic( impl_->ctx_.conf_, impl_->pos_, impl_->result_.ponder_move ) );
+			move_to_long_algebraic( impl_->ctx_.conf_, impl_->p(), impl_->result_.best_move ),
+			move_to_long_algebraic( impl_->ctx_.conf_, impl_->p(), impl_->result_.ponder_move ) );
 		impl_->result_.best_move.clear();
 	}
 }
@@ -224,8 +198,8 @@ void octochess_uci::impl::onRun() {
 	//the function initiating all the calculating
 	if( ponder_ ) {
 		std::cerr << "Pondering..." << std::endl;
-		calc_result result = calc_manager_.calc( pos_, -1, start_, duration::infinity(), duration::infinity()
-			, half_moves_played_, seen_positions_, *this, searchmoves_ );
+		calc_result result = calc_manager_.calc( p(), -1, start_, duration::infinity(), duration::infinity()
+			, clock(), seen(), *this, searchmoves_ );
 
 		scoped_lock lock(mutex_);
 
@@ -234,15 +208,15 @@ void octochess_uci::impl::onRun() {
 		}
 	}
 	else {
-		calc_result result = calc_manager_.calc( pos_, depth_, start_, times_.time_for_this_move(), std::max( duration(), times_.total_remaining() - times_.overhead() )
-			, half_moves_played_, seen_positions_, *this, searchmoves_ );
+		calc_result result = calc_manager_.calc( p(), depth_, start_, times_.time_for_this_move(), std::max( duration(), times_.total_remaining() - times_.overhead() )
+			, clock(), seen(), *this, searchmoves_ );
 
 		scoped_lock lock(mutex_);
 
 		if( !result.best_move.empty() ) {
 
 			if( !wait_for_stop_ ) {
-				gui_interface_->tell_best_move( move_to_long_algebraic( ctx_.conf_, pos_, result.best_move ), move_to_long_algebraic( ctx_.conf_, pos_, result.ponder_move ) );
+				gui_interface_->tell_best_move( move_to_long_algebraic( ctx_.conf_, p(), result.best_move ), move_to_long_algebraic( ctx_.conf_, p(), result.ponder_move ) );
 				result_.best_move.clear();
 			}
 			else {
@@ -291,32 +265,11 @@ void octochess_uci::impl::on_new_best_move( unsigned int multipv, position const
 }
 
 
-void octochess_uci::impl::apply_move( move const& m )
-{
-	bool reset_seen = false;
-	pieces::type piece = pos_.get_piece( m );
-	pieces::type captured_piece = pos_.get_captured_piece( m );
-	if( piece == pieces::pawn || captured_piece ) {
-		reset_seen = true;
-	}
-	::apply_move( pos_, m );
-	++half_moves_played_;
-
-	if( !reset_seen ) {
-		seen_positions_.push_root( pos_.hash_ );
-	} else {
-		seen_positions_.reset_root( pos_.hash_ );
-	}
-
-	move_history_.push_back( m );
-}
-
-
 bool octochess_uci::impl::do_book_move() {
 	bool ret = false;
 
-	if( ctx_.conf_.use_book && book_.is_open() && half_moves_played_ < 30 && started_from_root_ ) {
-		std::vector<simple_book_entry> moves = book_.get_entries( pos_ );
+	if( ctx_.conf_.use_book && book_.is_open() && clock() < 30 && started_from_root_ ) {
+		std::vector<simple_book_entry> moves = book_.get_entries( p() );
 		if( !moves.empty() ) {
 			ret = true;
 
@@ -329,7 +282,7 @@ bool octochess_uci::impl::do_book_move() {
 			}
 
 			simple_book_entry best_move = moves[rng_.get_uint64() % count_best];
-			gui_interface_->tell_best_move( move_to_long_algebraic( ctx_.conf_, pos_, best_move.m ), "" );
+			gui_interface_->tell_best_move( move_to_long_algebraic( ctx_.conf_, p(), best_move.m ), "" );
 		}
 	}
 
@@ -340,7 +293,7 @@ bool octochess_uci::impl::do_book_move() {
 bool octochess_uci::impl::pick_pv_move()
 {
 	bool ret = false;
-	std::pair<move,move> m = pv_move_picker_.can_use_move_from_pv( pos_ );
+	std::pair<move,move> m = pv_move_picker_.can_use_move_from_pv( p() );
 	if( !m.first.empty() ) {
 		ret = true;
 
@@ -359,15 +312,15 @@ bool octochess_uci::impl::pick_pv_move()
 
 		{
 			move pv[3];
-			get_pv_from_tt(ctx_.tt_, pv, pos_, 2);
+			get_pv_from_tt(ctx_.tt_, pv, p(), 2);
 			if( !pv[0].empty() ) {
-				i.principal_variation( pv_to_string( ctx_.conf_, pv, pos_, true ) );
+				i.principal_variation( pv_to_string( ctx_.conf_, pv, p(), true ) );
 			}
 		}
 
 		gui_interface_->tell_info(i);
 
-		gui_interface_->tell_best_move( move_to_long_algebraic( ctx_.conf_, pos_, m.first ), move_to_long_algebraic( ctx_.conf_, pos_, m.second ) );
+		gui_interface_->tell_best_move( move_to_long_algebraic( ctx_.conf_, p(), m.first ), move_to_long_algebraic( ctx_.conf_, p(), m.second ) );
 	}
 
 	return ret;
@@ -448,7 +401,7 @@ bool octochess_uci::is_move( std::string const& ms )
 	std::string error;
 
 	move m;
-	if( parse_move( impl_->pos_, ms, m, error ) ) {
+	if( parse_move( impl_->p(), ms, m, error ) ) {
 		ret = true;
 	}
 

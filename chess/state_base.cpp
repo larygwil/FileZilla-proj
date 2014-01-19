@@ -1,0 +1,73 @@
+#include "state_base.hpp"
+
+#include "assert.hpp"
+#include "util.hpp"
+
+state_base::state_base()
+	: clock_()
+	, started_from_root_()
+{
+	reset();
+}
+
+void state_base::reset( position const& p )
+{
+	p_ = p;
+	history_.clear();
+
+	clock_ = 1;
+
+	seen_.reset_root( p.hash_ );
+
+	static uint64_t root_hash = position().hash_;
+	started_from_root_ = p_.hash_ == root_hash;
+
+	searchmoves_.clear();
+}
+
+void state_base::apply( move const& m )
+{
+	ASSERT( is_valid_move( p_, m, check_map(p_) ) );
+
+	bool reset_seen = false;
+	pieces::type piece = p_.get_piece( m );
+	pieces::type captured_piece = p_.get_captured_piece( m );
+	if( piece == pieces::pawn || captured_piece ) {
+		reset_seen = true;
+	}
+
+	history_.push_back( std::make_pair( p_, m ) );
+	apply_move( p_, m );
+	
+	if( !reset_seen ) {
+		seen_.push_root( p_.hash_ );
+	}
+	else {
+		seen_.reset_root( p_.hash_ );
+	}
+
+	++clock_;
+	searchmoves_.clear();
+}
+
+bool state_base::undo( unsigned int count )
+{
+	if( !count || count > history_.size() ) {
+		return false;
+	}
+
+	ASSERT( clock_ >= count );
+	clock_ -= count;
+
+	// This isn't exactly correct, if popping past root we would need to restore old seen state prior to a reset.
+	seen_.pop_root( count );
+
+	while( --count ) {
+		history_.pop_back();
+	}
+	p_ = history_.back().first;
+	history_.pop_back();
+	searchmoves_.clear();
+
+	return true;
+}

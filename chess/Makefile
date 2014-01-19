@@ -55,6 +55,7 @@ OBJECT_FILES = \
 
 CHESS_FILES = \
 	chess.o \
+	state_base.o \
 	xboard.o \
 	uci/info.o \
 	uci/minimalistic_uci_protocol.o \

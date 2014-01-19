@@ -1352,7 +1352,7 @@ calc_manager::~calc_manager()
 }
 
 
-calc_result calc_manager::calc( position const& p, int max_depth, timestamp const& start, duration const& move_time_limit, duration const& deadline, int clock, seen_positions& seen
+calc_result calc_manager::calc( position const& p, int max_depth, timestamp const& start, duration const& move_time_limit, duration const& deadline, int clock, seen_positions const& seen
 		  , new_best_move_callback_base& new_best_cb
 		  , std::set<move> const& searchmoves )
 {
