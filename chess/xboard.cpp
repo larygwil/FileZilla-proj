@@ -865,6 +865,7 @@ skip_getline:
 			ASSERT( state.searchmoves_.find( move() ) == state.searchmoves_.end() || state.searchmoves_.size() == 1 );
 		}
 		// Octochess-specific commands mainly for testing and debugging
+#if DEVELOPMENT
 		else if( cmd == "moves" ) {
 			std::cout << "Possible moves:" << std::endl;
 			for( auto const& m : calculate_moves<movegen_type::all>( state.p() ) ) {
@@ -911,6 +912,7 @@ skip_getline:
 			get_pv_from_tt( state.ctx_.tt_, pv, state.p(), 12 );
 			std::cout << pv_to_string( state.ctx_.conf_, pv, state.p() ) << std::endl;
 		}
+#endif
 		else {
 			move m;
 			std::string error;
