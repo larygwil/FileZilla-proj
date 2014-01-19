@@ -10,30 +10,24 @@ namespace uci {
 class position_time {
 public:
 	position_time()
-		: white_left_( duration::infinity() )
-		, black_left_( duration::infinity() )
-		, moves_to_go_()
-	{}
+		: moves_to_go_()
+	{
+		left_[0] = left_[1] = duration::infinity();
+	}
 
-	void set_white_time( duration const& t ) { white_left_ = t; }
-	void set_black_time( duration const& t ) { black_left_ = t; }
-	void set_white_increment( duration const& t ) { white_inc_ = t; }
-	void set_black_increment( duration const& t ) { black_inc_ = t; }
+	void set_time( bool c, duration const& t ) { left_[c] = t; }
+	void set_increment( bool c, duration const& t ) { inc_[c] = t; }
 	void set_movetime( duration const& t ) { movetime_ = t; }
 	void set_moves_to_go( uint64_t const& moves_to_go ) { moves_to_go_ = moves_to_go; }
 
-	duration white_time_left() const { return white_left_; }
-	duration black_time_left() const { return black_left_; }
-	duration white_increment() const { return white_inc_; }
-	duration black_increment() const { return black_inc_; }
+	duration time_left( bool c ) const { return left_[c]; }
+	duration increment( bool c ) const { return inc_[c]; }
 	duration movetime() const { return movetime_; }
 	uint64_t moves_to_go() const { return moves_to_go_; }
 
 private:
-	duration white_left_;
-	duration black_left_;
-	duration white_inc_;
-	duration black_inc_;
+	duration left_[2];
+	duration inc_[2];
 	duration movetime_;
 	uint64_t moves_to_go_;
 };
@@ -43,7 +37,7 @@ public:
 	time_calculation();
 
 	void set_infinite_time();
-	void update(position_time const&, bool is_white, int half_moves);
+	void update(position_time const&, bool is_black, int half_moves);
 	void after_move_update( duration const& elapsed_time, duration const& used_extra_time );
 
 	duration time_for_this_move() const { return time_limit_; }

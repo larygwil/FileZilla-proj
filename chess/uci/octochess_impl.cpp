@@ -149,7 +149,7 @@ void octochess_uci::calculate( timestamp const& start, calculate_mode_type mode,
 			}
 		}
 
-		impl_->times_.update( t, impl_->p().white(), impl_->clock() );
+		impl_->times_.update( t, impl_->p().black(), impl_->clock() );
 		if( ponder || impl_->times_.time_for_this_move().is_infinity() || impl_->wait_for_stop_ || !impl_->searchmoves_.empty() ) {
 			impl_->spawn();
 		}

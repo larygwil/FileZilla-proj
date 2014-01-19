@@ -19,7 +19,7 @@ void time_calculation::set_infinite_time() {
 	time_remaining_ = duration::infinity();
 }
 
-void time_calculation::update(position_time const& t, bool is_white, int half_moves) {
+void time_calculation::update(position_time const& t, bool is_black, int half_moves) {
 
 	if( t.movetime().empty() ) {
 		uint64_t remaining_moves = std::max( 20, (82 - half_moves) / 2 );
@@ -28,14 +28,8 @@ void time_calculation::update(position_time const& t, bool is_white, int half_mo
 		}
 
 		duration inc;
-		if( is_white ) {
-			time_remaining_ = t.white_time_left();
-			inc = t.white_increment();
-		}
-		else {
-			time_remaining_ = t.black_time_left();
-			inc = t.black_increment();
-		}
+		time_remaining_ = t.time_left( is_black );
+		inc = t.increment( is_black );
 
 		if( bonus_time_ > time_remaining_ ) {
 			bonus_time_.clear();

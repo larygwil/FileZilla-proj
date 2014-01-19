@@ -222,13 +222,13 @@ void minimalistic_uci_protocol::handle_go( std::string const& params )
 	while( in >> cmd ) {
 loop:
 		if( cmd == "wtime" ) {
-			t.set_white_time( duration::milliseconds(extract<uint>(in)) );
+			t.set_time( 0, duration::milliseconds(extract<uint>(in)) );
 		} else if( cmd == "btime" ) {
-			t.set_black_time( duration::milliseconds(extract<uint>(in)) );
+			t.set_time( 1, duration::milliseconds(extract<uint>(in)) );
 		} else if( cmd == "winc" ) {
-			t.set_white_increment( duration::milliseconds(extract<uint>(in)) );
+			t.set_increment( 0, duration::milliseconds(extract<uint>(in)) );
 		} else if( cmd == "binc" ) {
-			t.set_black_increment( duration::milliseconds(extract<uint>(in)) );
+			t.set_increment( 1, duration::milliseconds(extract<uint>(in)) );
 		} else if( cmd == "movetime" ) {
 			t.set_movetime( duration::milliseconds(extract<uint>(in)) );
 		} else if( cmd == "movestogo" ) {
