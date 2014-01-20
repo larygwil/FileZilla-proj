@@ -24,8 +24,10 @@ std::string pv_to_string( config const& conf, move const* pv, position p, bool u
 	return ss.str();
 }
 
-void get_pv_from_tt( hash& tt, move* pv, position p, int max_depth )
+short get_pv_from_tt( hash& tt, move* pv, position p, int max_depth )
 {
+	short ret = result::none;
+
 	ASSERT( pv );
 	
 	int depth = 0;
@@ -54,9 +56,15 @@ void get_pv_from_tt( hash& tt, move* pv, position p, int max_depth )
 
 		*pv = best;
 		++pv;
+
+		if( ret == result::none ) {
+			ret = ev;
+		}
 	}
 
 	pv->clear();
+
+	return ret;
 }
 
 void push_pv_to_tt( hash& tt, move const* pv, position p, int clock )

@@ -276,17 +276,20 @@ bool octochess_uci::impl::pick_pv_move()
 		//  Directly before that the engine should send a final "info" command with the final search information,
 		//  then the GUI has the complete statistics about the last search.
 		info i;
-		i.depth(0);
-		i.selective_depth(0);
+		i.depth(1);
+		i.selective_depth(1);
 		i.multipv(1);
 		i.node_count(0);
 		i.time_spent( duration() );
 
 		{
 			move pv[3];
-			get_pv_from_tt(ctx_.tt_, pv, p(), 2);
+			short ev = get_pv_from_tt(ctx_.tt_, pv, p(), 2);
 			if( !pv[0].empty() ) {
 				i.principal_variation( pv_to_string( ctx_.conf_, pv, p(), true ) );
+			}
+			if( ev != result::loss ) {
+				i.score( ev );
 			}
 		}
 
