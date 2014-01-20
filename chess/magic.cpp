@@ -28,7 +28,7 @@ uint64_t expand( uint64_t value, uint64_t mask )
 	return ret;
 }
 
-uint64_t* init_magic( uint64_t* offsets, uint64_t const* shifts, uint64_t const* masks, uint64_t const* multipliers, uint64_t (*attacks)(uint64_t, uint64_t) ) {
+uint64_t* init_magic( uint64_t* offsets, uint64_t const* shifts, uint64_t const* masks, uint64_t const* multipliers, uint64_t (*attacks)(uint64_t, uint64_t, uint64_t const (&)[8][64]), uint64_t const (&rays)[8][64] ) {
 	uint64_t offset = 0;
 	
 	for( unsigned int pi = 0; pi < 64; ++pi ) {
@@ -48,7 +48,7 @@ uint64_t* init_magic( uint64_t* offsets, uint64_t const* shifts, uint64_t const*
 			uint64_t key = occ * multipliers[pi];
 			key >>= shifts[pi];
 
-			uint64_t const attack = attacks( pi, occ );
+			uint64_t const attack = attacks( pi, occ, rays );
 			ASSERT( !values[offset + key] || values[offset + key] == attack );
 			values[offset + key] = attack;
 		}
@@ -62,8 +62,11 @@ uint64_t* init_magic( uint64_t* offsets, uint64_t const* shifts, uint64_t const*
 
 void init_magic()
 {
-	rook_magic_values = init_magic( rook_magic_offsets, rook_magic_shift, rook_magic_mask, rook_magic_multiplier, rook_attacks );
-	bishop_magic_values = init_magic( bishop_magic_offsets, bishop_magic_shift, bishop_magic_mask, bishop_magic_multiplier, bishop_attacks );
+	uint64_t rays[8][64];
+	init_rays( rays );
+
+	rook_magic_values = init_magic( rook_magic_offsets, rook_magic_shift, rook_magic_mask, rook_magic_multiplier, rook_attacks, rays );
+	bishop_magic_values = init_magic( bishop_magic_offsets, bishop_magic_shift, bishop_magic_mask, bishop_magic_multiplier, bishop_attacks, rays );
 }
 
 uint64_t rook_magic( uint64_t pi, uint64_t occ )

@@ -70,7 +70,7 @@ uint64_t gen_mask( uint64_t pi, uint64_t attack )
 	return mask;
 }
 
-void calc_magic( std::string const& name, uint64_t (*attack_gen)(uint64_t, uint64_t) )
+void calc_magic( std::string const& name, uint64_t (*attack_gen)(uint64_t, uint64_t, uint64_t const (&)[8][64]), uint64_t const (&rays)[8][64] )
 {
 	std::cerr << "Generating " << name << " magics..." << std::endl;
 
@@ -79,7 +79,7 @@ void calc_magic( std::string const& name, uint64_t (*attack_gen)(uint64_t, uint6
 	uint64_t magic_multiplier[64];
 
 	for( uint64_t pi = 0; pi < 64; ++pi ) {
-		uint64_t const attacks = attack_gen( pi, 0 );
+		uint64_t const attacks = attack_gen( pi, 0, rays );
 		uint64_t mask = gen_mask(pi, attacks);
 		magic_mask[pi] = mask;
 		uint64_t mask_bits = popcount( mask );
@@ -90,7 +90,7 @@ void calc_magic( std::string const& name, uint64_t (*attack_gen)(uint64_t, uint6
 		uint64_t acc[4096] = {0};
 		for( unsigned int i = 0; i < count; ++i ) {
 			occ[i] = expand( i, mask );
-			acc[i] = attack_gen( pi, occ[i] );
+			acc[i] = attack_gen( pi, occ[i], rays );
 		}
 
 		uint64_t magic_shift = mask_bits;
@@ -157,6 +157,8 @@ int main()
 {
 	engine.seed(static_cast<unsigned long>(time(0)));
 
-	calc_magic( "rook", rook_attacks );
-	calc_magic( "bishop", bishop_attacks );
+	uint64_t rays[8][64];
+	init_rays( rays );
+	calc_magic( "rook", rook_attacks, rays );
+	calc_magic( "bishop", bishop_attacks, rays );
 }

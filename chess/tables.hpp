@@ -3,17 +3,6 @@
 
 #include "util/platform.hpp"
 
-extern uint64_t const visibility_bishop[64];
-extern uint64_t const visibility_rook[64];
-extern uint64_t const ray_n[64];
-extern uint64_t const ray_e[64];
-extern uint64_t const ray_s[64];
-extern uint64_t const ray_w[64];
-extern uint64_t const ray_ne[64];
-extern uint64_t const ray_se[64];
-extern uint64_t const ray_sw[64];
-extern uint64_t const ray_nw[64];
-
 extern short const king_distance[64][64];
 
 extern uint64_t const pawn_control[2][64];
