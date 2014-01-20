@@ -1,13 +1,24 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "octochess", "chess.vcxproj", "{A6C58728-DDEA-4526-BFD4-1666FEDAB2D1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8B05DC85-6F69-4097-9837-D893BDF3AEF3} = {8B05DC85-6F69-4097-9837-D893BDF3AEF3}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tables_gen", "tables_gen.vcxproj", "{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bookgen", "bookgen.vcxproj", "{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8B05DC85-6F69-4097-9837-D893BDF3AEF3} = {8B05DC85-6F69-4097-9837-D893BDF3AEF3}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "octochesslib", "octochesslib.vcxproj", "{8B05DC85-6F69-4097-9837-D893BDF3AEF3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D} = {4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,7 +40,6 @@ Global
 		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Release|x64.ActiveCfg = Debug|x64
 		{4B73B174-1BE9-40BB-842D-DCD54C1ADE8D}.Release|x64.Build.0 = Debug|x64
 		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Debug|x64.ActiveCfg = Debug|x64
-		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Debug|x64.Build.0 = Debug|x64
 		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Development|x64.ActiveCfg = Development|x64
 		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Development|x64.Build.0 = Development|x64
 		{6C7B8ADD-1711-41E4-A5A9-4F33AA823AA3}.Release|x64.ActiveCfg = Release|x64
