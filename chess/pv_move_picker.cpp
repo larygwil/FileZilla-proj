@@ -13,7 +13,6 @@ std::pair<move,move> pv_move_picker::can_use_move_from_pv( position const& p )
 	std::pair<move,move> ret;
 
 	if( p.hash_ == next_pos_.hash_ ) {
-
 		// Recapture
 		if( previous_pos_.get_captured_piece(previous_) != pieces::none && next_pos_.get_captured_piece(next_) != pieces::none && previous_.target() == next_.target() ) {
 			ret.first = next_;
