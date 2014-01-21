@@ -62,7 +62,7 @@ CHESS_FILES = \
 	uci/minimalistic_uci_protocol.o \
 	uci/octochess_impl.o \
 	uci/runner.o \
-	uci/time_calculation.o
+	uci/uci_time_calculation.o
 
 BOOKGEN_FILES = \
 	book.o \
