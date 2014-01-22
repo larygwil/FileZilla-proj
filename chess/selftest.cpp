@@ -233,6 +233,8 @@ static void test_move_generation( context& ctx )
 						"c4-c3 Bh4-d8 Bh4-e1 Bh4-e7 Bh4-f2 Bh4-f6 Bh4-g3 Bh4-g5 Ke4-d3 Ke4-d5 Ke4xe3 Rg6-a6 Rg6-b6 Rg6-c6 Rg6-d6 Rg6-e6 Rg6-f6 Rg6-g1 Rg6-g2 Rg6-g3 Rg6-g4 Rg6-g5 Rg6-h6");
 	test_move_generation( ctx, "8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1",
 						"c5-c6 Kb3-a2 Kb3-a3 Kb3-a4 Kb3-b2 Kb3-b4 Kb3-c2 Kb3-c3" );
+	test_move_generation( ctx, "r1b1k2r/ppq2ppp/4pn2/1p1pP3/3P4/2N2P2/PPP3PK/R1BQ1R2 w kq d6 0 1",
+						"a2-a3 a2-a4 b2-b3 b2-b4 e5xd6 f3-f4 g2-g3 g2-g4 Bc1-d2 Bc1-e3 Bc1-f4 Bc1-g5 Bc1-h6 Kh2-g1 Kh2-g3 Kh2-h1 Kh2-h3 Nc3-a4 Nc3-b1 Nc3-e2 Nc3-e4 Nc3xb5 Nc3xd5 Qd1-d2 Qd1-d3 Qd1-e1 Qd1-e2 Ra1-b1 Rf1-e1 Rf1-f2 Rf1-g1 Rf1-h1" );
 
 	pass();
 }
