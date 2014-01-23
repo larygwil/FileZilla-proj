@@ -41,7 +41,7 @@ std::pair<duration, duration> time_calculation::update( bool current_clock, unsi
 			bonus_ = duration();
 		}
 
-		uint64_t remaining_moves = std::max( 20u, (82u - halfmoves_played) / 2 );
+		uint64_t remaining_moves = std::max( 20, (82 - static_cast<int>(halfmoves_played)) / 2 );
 		if( moves_to_go_ ) {
 			uint64_t remaining = ((moves_to_go_ * 2) - (halfmoves_played % (moves_to_go_ * 2)) + 2) / 2;
 			if( remaining < remaining_moves ) {
