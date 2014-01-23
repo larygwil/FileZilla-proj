@@ -145,7 +145,7 @@ void octochess_uci::calculate( timestamp const& start, calculate_mode_type mode,
 			}
 		}
 
-		impl_->times_.set_moves_to_go( t.moves_to_go() );
+		impl_->times_.set_moves_to_go( t.moves_to_go(), true );
 		impl_->times_.set_movetime( t.movetime() );
 		for( int i = 0; i < 2; ++i ) {
 			impl_->times_.set_remaining( i, t.time_left(i) );

@@ -117,7 +117,7 @@ class xboard_thread : public thread, public new_best_move_callback_base
 {
 public:
 	xboard_thread( xboard_state& s );
-	~xboard_thread();
+	virtual ~xboard_thread();
 
 	virtual void onRun();
 
@@ -712,7 +712,7 @@ skip_getline:
 
 			state.update_comm_overhead( duration::minutes(minutes) + duration::seconds(seconds), true );
 
-			state.times_.set_moves_to_go(control);
+			state.times_.set_moves_to_go(control, false);
 			state.times_.set_movetime( duration() );
 			for( int i = 0; i < 2; ++i ) {
 				state.times_.set_remaining(i, duration::minutes(minutes) + duration::seconds(seconds));

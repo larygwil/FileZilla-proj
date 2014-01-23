@@ -6,6 +6,7 @@
 time_calculation::time_calculation() 
 : current_clock_(1)
 , moves_to_go_()
+, abs_to_go_()
 , internal_overhead_( duration::milliseconds(50) )
 {
 	reset(true);
@@ -43,7 +44,14 @@ std::pair<duration, duration> time_calculation::update( bool current_clock, unsi
 
 		uint64_t remaining_moves = std::max( 20, (82 - static_cast<int>(halfmoves_played)) / 2 );
 		if( moves_to_go_ ) {
-			uint64_t remaining = ((moves_to_go_ * 2) - (halfmoves_played % (moves_to_go_ * 2)) + 2) / 2;
+			uint64_t remaining;
+			if( abs_to_go_ ) {
+				remaining = moves_to_go_;
+			}
+			else {
+				remaining = ((moves_to_go_ * 2) - (halfmoves_played % (moves_to_go_ * 2)) + 2) / 2;
+			}
+
 			if( remaining < remaining_moves ) {
 				remaining_moves = remaining;
 			}
@@ -126,7 +134,8 @@ void time_calculation::set_movetime( duration const& t )
 	movetime_ = t;
 }
 
-void time_calculation::set_moves_to_go( uint64_t to_go )
+void time_calculation::set_moves_to_go( uint64_t to_go, bool abs_to_go )
 {
 	moves_to_go_ = to_go;
+	abs_to_go_ = abs_to_go;
 }
