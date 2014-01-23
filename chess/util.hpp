@@ -32,17 +32,21 @@ bool is_valid_move( position const& p, move const& m, check_map const& check );
 std::string board_to_string( position const& p, color::type view );
 
 template<typename T>
-void set_max( T& lhs, T const& rhs ){
+bool set_max( T& lhs, T const& rhs ) {
 	if( lhs < rhs ) {
 		lhs = rhs;
+		return true;
 	}
+	return false;
 }
 
 template<typename T>
-void set_min( T& lhs, T const& rhs ){
+bool set_min( T& lhs, T const& rhs ) {
 	if( rhs < lhs ) {
 		lhs = rhs;
+		return true;
 	}
+	return false;
 }
 
 #endif
