@@ -709,7 +709,7 @@ void evaluate_pawns( pawn_structure_hash_table& pawn_tt, position const& p, eval
 	add_score<detail, eval_detail::pawn_structure>( results, s );
 	pawn_tt.store( p.pawn_hash, s, results.passed_pawns );
 }
-
+}
 
 /* Pawn shield for king
  *
@@ -718,12 +718,11 @@ void evaluate_pawns( pawn_structure_hash_table& pawn_tt, position const& p, eval
  * Idea is that pawns closer to king score more than pawns away from king. Also,
  * for a good score, king needs to be on home rank.
  */
-template<bool detail, color::type c>
-void evaluate_pawn_shield_side( position const& p, eval_results& results )
+score evaluate_pawn_shield( position const& p, color::type c )
 {
 	int king_pos = p.king_pos[c];
 	if( c ? king_pos < 24 : king_pos >= 40 ) {
-		return;
+		return score();
 	}
 
 	// If king is at sides, shift it closer to middle.
@@ -743,16 +742,25 @@ void evaluate_pawn_shield_side( position const& p, eval_results& results )
 		s -= eval_values::pawn_shield_attack[i] * static_cast<short>(popcount(enemy_pawns & k) );
 		k = c ? k >> 8 : k << 8;
 	}
+	return s;
+}
+
+
+namespace {
+template<bool detail>
+void evaluate_pawn_shield_side( position const& p, color::type c, eval_results& results )
+{
+	score s = evaluate_pawn_shield( p, c );
 	add_score<detail, eval_detail::pawn_shield>( results, c, s );
 	results.pawn_shield[c] = s.mg();
 }
 
 
 template<bool detail>
-void evaluate_pawn_shield( position const& p, eval_results& results )
+void evaluate_pawn_shields( position const& p, eval_results& results )
 {
-	evaluate_pawn_shield_side<detail, color::white>( p, results );
-	evaluate_pawn_shield_side<detail, color::black>( p, results );
+	evaluate_pawn_shield_side<detail>( p, color::white, results );
+	evaluate_pawn_shield_side<detail>( p, color::black, results );
 }
 
 
@@ -859,7 +867,7 @@ static void do_evaluate( pawn_structure_hash_table& pawn_tt, position const& p, 
 
 	evaluate_imbalance<detail>( p, results );
 
-	evaluate_pawn_shield<detail>( p, results );
+	evaluate_pawn_shields<detail>( p, results );
 
 	add_score<detail, eval_detail::side_to_move>( results, p.self(), eval_values::side_to_move );
 

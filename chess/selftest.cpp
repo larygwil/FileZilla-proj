@@ -344,6 +344,41 @@ static bool test_lazy_eval( context& ctx, std::string const& fen, short& max_dif
 }
 
 
+static void check_pawn_shield()
+{
+	// In all positions, white has a pawn shield _at least_ as good as black.
+	std::string fens[] = {
+		"6k1/5p1p/8/8/8/8/5PPP/6K1 w - - 0 1",
+		"6k1/5p1p/6p1/8/8/8/5PPP/6K1 w - - 0 1",
+		"6k1/7p/5pp1/8/8/6P1/5P1P/6K1 w - - 0 1",
+		"6k1/7p/5pp1/8/8/8/5PPP/6K1 w - - 0 1",
+		"6k1/6pp/5p2/8/8/8/5PPP/6K1 w - - 0 1",
+		"6k1/8/5ppp/8/8/6PP/5P2/6K1 w - - 0 1",
+		"6k1/8/5ppp/8/8/5P1P/6P1/6K1 w - - 0 1",
+		"6k1/5p2/6pp/8/8/6P1/5P1P/6K1 w - - 0 1",
+		"6k1/5p2/6pp/8/8/7P/5PP1/6K1 w - - 0 1",
+		"8/5pkp/6p1/8/8/6P1/5P1P/6K1 w - - 0 1",
+		"1k6/p1p5/1p6/1P4p1/8/6P1/5P1P/6K1 w - - 0 1"
+	};
+
+	for( auto const& fen : fens ) {
+		position p;
+		if( !parse_fen( config(), fen, p ) ) {
+			abort();
+		}
+
+		score w = evaluate_pawn_shield( p, color::white );
+		score b = evaluate_pawn_shield( p, color::black );
+		if( w.mg() < b.mg() || w.mg() < b.mg() ) {
+			std::cerr << "White pawn shield is smaller than black's: " << w << " " << b << "\n";
+			std::cerr << fen << "\n";
+			abort();
+		}
+
+	}
+}
+
+
 static void check_eval()
 {
 	checking("evaluation");
@@ -360,6 +395,8 @@ static void check_eval()
 		std::cerr << "Evaluation values not normalized" << std::endl;
 		abort();
 	}
+
+	check_pawn_shield();
 
 	pass();
 }
