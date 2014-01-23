@@ -17,7 +17,10 @@ public:
 	void set_start( timestamp const& t );
 
 	void set_movetime( duration const& t );
-	void set_moves_to_go( uint64_t to_go );
+
+	// In full moves. If abs_to_go it's an absolute number, otherwise
+	// number of moves since last time control.
+	void set_moves_to_go( uint64_t to_go, bool abs_to_go );
 
 	duration remaining( bool c ) const { return remaining_[c]; }
 	void set_remaining( bool c, duration const& t ) { remaining_[c] = t; }
@@ -41,6 +44,7 @@ private:
 	timestamp start_;
 	duration movetime_;
 	uint64_t moves_to_go_;
+	bool abs_to_go_;
 
 	// If we calculate move time of x but consume y > x amount of time, internal overhead if y - x.
 	// This is measured locally between receiving the go and sending out the reply.
