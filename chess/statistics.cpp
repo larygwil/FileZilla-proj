@@ -55,67 +55,76 @@ void statistics::print( context& ctx, duration const& elapsed )
 		full += full_width_nodes[i];
 	}
 
-	ss_ << std::endl;
-	ss_ << "Node stats:" << std::endl;
-	ss_ << "  Total:             " << std::setw(11) << std::setfill(' ') << full + quiescence_nodes << std::endl;
-	ss_ << "  Full-width:        " << std::setw(11) << std::setfill(' ') << full << std::endl;
-	ss_ << "  Busiest/max depth: " << std::setw(6) << std::setfill(' ') << busiest_depth << " / " << std::setw(2) << max_depth << std::endl;
-	ss_ << "  Quiescence:        " << std::setw(11) << std::setfill(' ') << quiescence_nodes << std::endl;
+	ss_ << "\n";
+	ss_ << "Node stats:\n";
+	ss_ << "  Total:             " << std::setw(11) << std::setfill(' ') << full + quiescence_nodes << "\n";
+	ss_ << "  Full-width:        " << std::setw(11) << std::setfill(' ') << full << "\n";
+	ss_ << "  Busiest/max depth: " << std::setw(6) << std::setfill(' ') << busiest_depth << " / " << std::setw(2) << max_depth << "\n";
+	ss_ << "  Quiescence:        " << std::setw(11) << std::setfill(' ') << quiescence_nodes << "\n";
 
 	if( full || quiescence_nodes ) {
 		if( !elapsed.empty() ) {
-			ss_ << "  Nodes per second:  " << std::setw(11) << std::setfill(' ') << elapsed.get_items_per_second(full + quiescence_nodes) << std::endl;
+			ss_ << "  Nodes per second:  " << std::setw(11) << std::setfill(' ') << elapsed.get_items_per_second(full + quiescence_nodes) << "\n";
 		}
-		ss_ << "  Time per node:     " << std::setw(8) << elapsed.nanoseconds() / (full + quiescence_nodes) << " ns" << std::endl;
+		ss_ << "  Time per node:     " << std::setw(8) << elapsed.nanoseconds() / (full + quiescence_nodes) << " ns\n";
 	}
 
-	ss_ << std::endl;
+	ss_ << "\n";
 
 #if USE_STATISTICS >= 2
-	ss_ << "Transposition table stats:" << std::endl;
+	ss_ << "Transposition table stats:\n";
 	hash::stats s = ctx.tt_.get_stats( true );
 
-	ss_ << "- Number of entries: " << std::setw(11) << s.entries << " (";
+	ss_ << "- Number of entries: " << std::setw(11) << s.entries;
 	uint64_t max_hash_entry_count = ctx.tt_.max_hash_entry_count();
 	if( max_hash_entry_count ) {
 		if( s.entries > max_hash_entry_count ) {
 			s.entries = max_hash_entry_count;
 		}
-		ss_ << 100 * static_cast<double>(s.entries) / max_hash_entry_count << "%)";
+		ss_ << " (" << 100 * static_cast<double>(s.entries) / max_hash_entry_count << "%)";
 	}
-	ss_ << std::endl;
+	ss_ << "\n";
 
 	ss_ << "- Lookup misses:     " << std::setw(11) << s.misses;
 	if( s.misses + s.hits + s.best_move ) {
 		ss_ << " (" << static_cast<double>(s.misses) / (s.misses + s.hits + s.best_move) * 100 << "%)";
 	}
-	ss_ << std::endl;
+	ss_ << "\n";
 	ss_ << "- Lookup hits:       " << std::setw(11) << s.hits;
 	if( s.misses + s.hits + s.best_move ) {
 		ss_ << " (" << static_cast<double>(s.hits) / (s.misses + s.hits + s.best_move) * 100 << "%)";
 	}
-	ss_ << std::endl;
+	ss_ << "\n";
 	ss_ << "- Lookup best moves: " << std::setw(11) << s.best_move;
 	if( s.misses + s.hits + s.best_move ) {
 		ss_ << " (" << static_cast<double>(s.best_move) / (s.misses + s.hits + s.best_move) * 100 << "%)";
 	}
-	ss_ << std::endl;
-	ss_ << "- Index collisions:  " << std::setw(11) << s.index_collisions << std::endl;
+	ss_ << "\n";
+	ss_ << "- Index collisions:  " << std::setw(11) << s.index_collisions << "\n";
 
 	pawn_structure_hash_table::stats ps = ctx.pawn_tt_.get_stats(true);
 
-	ss_ << std::endl;
-	ss_ << "Pawn structure hash table stats:" << std::endl;
-	ss_ << "- Hits:     " << std::setw(11) << ps.hits;
+	ss_ << "\n";
+	ss_ << "Pawn structure hash table stats:\n";
+	ss_ << "- Entries:    " << std::setw(11) << ps.fill;
+	uint64_t max_pawn_hash_entry_count = ctx.tt_.max_hash_entry_count();
+	if( max_pawn_hash_entry_count ) {
+		if( ps.fill > max_hash_entry_count ) {
+			ps.fill = max_hash_entry_count;
+		}
+		ss_ << " (" << 100 * static_cast<double>(ps.fill) / max_pawn_hash_entry_count << "%)";
+	}
+	ss_ << "\n";
+	ss_ << "- Hits:       " << std::setw(11) << ps.hits;
 	if( ps.hits + ps.misses ) {
 		ss_ << " (" << 100 * static_cast<double>(ps.hits) / (ps.hits + ps.misses) << "%)";
 	}
-	ss_ << std::endl;
-	ss_ << "- Misses:   " << std::setw(11) << ps.misses;
+	ss_ << "\n";
+	ss_ << "- Misses:     " << std::setw(11) << ps.misses;
 	if( ps.hits + ps.misses ) {
 		ss_ << " (" << 100 * static_cast<double>(ps.misses) / (ps.hits + ps.misses) << "%)";
 	}
-	ss_ << std::endl << std::endl;
+	ss_ << "\n- Collisions: " << std::setw(11) << ps.collision << "\n\n";
 
 	if( cutoffs_ > 0 ) {
 		ss_ << "Moves per cutoff: " << static_cast<double>(processed_) / cutoffs_ << "\n\n";
@@ -142,20 +151,20 @@ void statistics::print_total()
 {
 	ss_.str( std::string() );
 
-	ss_ << std::endl;
-	ss_ << "Node stats:" << std::endl;
-	ss_ << "  Total:            " << std::setw(14) << total_full_width_nodes + total_quiescence_nodes << std::endl;
-	ss_ << "  Full-width:       " << std::setw(14) << total_full_width_nodes << std::endl;
-	ss_ << "  Quiescence:       " << std::setw(14) << total_quiescence_nodes << std::endl;
+	ss_ << "\n";
+	ss_ << "Node stats:\n";
+	ss_ << "  Total:            " << std::setw(14) << total_full_width_nodes + total_quiescence_nodes << "\n";
+	ss_ << "  Full-width:       " << std::setw(14) << total_full_width_nodes << "\n";
+	ss_ << "  Quiescence:       " << std::setw(14) << total_quiescence_nodes << "\n";
 
 	if( total_full_width_nodes || total_quiescence_nodes ) {
 		if( !total_elapsed.empty() ) {
-			ss_ << "  Nodes per second: " << std::setw(14) << std::setfill(' ') << total_elapsed.get_items_per_second(total_full_width_nodes + total_quiescence_nodes) << std::endl;
+			ss_ << "  Nodes per second: " << std::setw(14) << std::setfill(' ') << total_elapsed.get_items_per_second(total_full_width_nodes + total_quiescence_nodes) << "\n";
 		}
-		ss_ << "  Time per node:    " << std::setw(11) << total_elapsed.nanoseconds() / (total_full_width_nodes + total_quiescence_nodes) << " ns" << std::endl;
+		ss_ << "  Time per node:    " << std::setw(11) << total_elapsed.nanoseconds() / (total_full_width_nodes + total_quiescence_nodes) << " ns\n";
 	}
 
-	ss_ << std::endl;
+	ss_ << "\n";
 
 	dlog() << ss_.str();
 }
@@ -259,7 +268,7 @@ void statistics::print_details()
 		uint64_t nodes = full_width_nodes[i];
 		if( nodes ) {
 			ss_ << std::setw(2) << std::setfill(' ') << i << " ";
-			ss_ << std::setw(11) << nodes << std::endl;
+			ss_ << std::setw(11) << nodes << "\n";
 		}
 	}
 

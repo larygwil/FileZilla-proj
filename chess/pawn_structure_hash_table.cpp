@@ -33,13 +33,17 @@ bool pawn_structure_hash_table::init( uint64_t size_in_mib, bool reset )
 		aligned_free( data_ );
 		data_ = 0;
 		init_size_ = size_in_mib;
+#if USE_STATISTICS >= 2
+		stats_.fill = 0;
+#endif
 	}
 
 	while( !data_ && size_in_mib > 0 ) {
-		uint64_t size = size_in_mib * 1024 * 1024;
+		uint64_t size = 4;
 		while( size * 2 <= size_in_mib ) {
 			size *= 2;
 		}
+		size *= 1024 * 1024;
 
 		data_ = reinterpret_cast<entry*>(page_aligned_malloc( size ) );
 		if( data_ ) {
@@ -130,6 +134,14 @@ void pawn_structure_hash_table::store( uint64_t key, score const* eval, uint64_t
 
 	uint64_t v2 = passed;
 
+#if USE_STATISTICS >= 2
+	if( !entry->key ) {
+		++stats_.fill;
+	}
+	else {
+		++stats_.collision;
+	}
+#endif
 	entry->data1 = v1.p;
 	entry->data2 = v2;
 	entry->key = v1.p ^ v2 ^ key;
@@ -152,8 +164,14 @@ pawn_structure_hash_table::stats pawn_structure_hash_table::get_stats( bool rese
 	stats ret = stats_;
 	if( reset ) {
 		stats_ = stats();
+		stats_.fill = ret.fill;
 	}
 
 	return ret;
+}
+
+uint64_t pawn_structure_hash_table::max_hash_entry_count() const
+{
+	return (key_mask_ >> 5) + 1;
 }
 #endif

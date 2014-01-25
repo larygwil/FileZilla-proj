@@ -35,11 +35,15 @@ public:
 		stats()
 			: hits()
 			, misses()
+			, fill()
+			, collision()
 		{
 		}
 
 		uint64_t hits;
 		uint64_t misses;
+		uint64_t fill;
+		uint64_t collision;
 	};
 #endif
 
@@ -56,6 +60,7 @@ public:
 
 #if USE_STATISTICS >= 2
 	stats get_stats( bool reset );
+	uint64_t max_hash_entry_count() const;
 #endif
 
 	void clear( uint64_t key );
