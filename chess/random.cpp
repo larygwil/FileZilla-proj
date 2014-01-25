@@ -14,10 +14,11 @@ randgen::randgen( uint64_t s )
 }
 
 
-void randgen::seed( uint64_t s )
+uint64_t randgen::seed( uint64_t s )
 {
 	scoped_lock l( m_ ) ;
 	engine_.seed( static_cast<unsigned long>(s) );
+	return s;
 }
 
 

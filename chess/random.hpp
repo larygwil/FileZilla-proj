@@ -15,7 +15,7 @@ public:
 	unsigned char get_unsigned_char();
 	uint64_t get_uint64();
 
-	void seed( uint64_t s = get_time() );
+	uint64_t seed( uint64_t s = get_time() );
 
 private:
 	mutex m_;
