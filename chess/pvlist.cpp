@@ -10,12 +10,15 @@
 std::string pv_to_string( config const& conf, move const* pv, position p, bool use_long_algebraic_notation )
 {
 	std::stringstream ss;
+	move const*const start = pv;
 	while( pv && !pv->empty() ) {
+		if( pv != start ) {
+			ss << " ";
+		}
 		ss << 
 			( use_long_algebraic_notation ?
 				move_to_long_algebraic( conf, p, *pv )
-				: move_to_string( p, *pv ) ) 
-		   << " ";
+				: move_to_string( p, *pv ) );
 
 		apply_move( p, *pv );
 

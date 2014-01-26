@@ -20,6 +20,7 @@ void time_calculation::reset(bool all)
 		inc_[0] = inc_[1] = duration();
 		movetime_.clear();
 		moves_to_go_ = 0;
+		remaining_set_at_[0] = remaining_set_at_[1] = 9999999;
 	}
 }
 
@@ -65,8 +66,16 @@ std::pair<duration, duration> time_calculation::update( bool current_clock, unsi
 
 		deadline = remaining_[current_clock];
 
+		// Easy moves are not worth to spend much time on
 		if( easy_move ) {
 			limit_ /= 2;
+		}
+
+		// If we've got more time to think than our opponent, use some extra time.
+		if( remaining_set_at_[1 - current_clock] == halfmoves_played || remaining_set_at_[1 - current_clock] == halfmoves_played - 1 ) {
+			if( remaining_[current_clock] > remaining_[1-current_clock] + limit_ * 2 ) {
+				limit_ += limit_ / 4;
+			}
 		}
 	}
 

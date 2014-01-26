@@ -24,7 +24,7 @@ public:
 	void set_moves_to_go( uint64_t to_go, bool abs_to_go );
 
 	duration remaining( bool c ) const { return remaining_[c]; }
-	void set_remaining( bool c, duration const& t ) { remaining_[c] = t; }
+	void set_remaining( bool c, duration const& t, unsigned int halfmoves_played ) { remaining_[c] = t; remaining_set_at_[c] = halfmoves_played; }
 	void set_increment( bool c, duration const& t ) { inc_[c] = t; }
 
 	// If we receive time updates between moves, communication_overhead is the >=0 difference between two timer updates
@@ -33,6 +33,7 @@ public:
 
 private:
 	duration remaining_[2];
+	unsigned int remaining_set_at_[2];
 	duration inc_[2];
 	bool current_clock_;
 

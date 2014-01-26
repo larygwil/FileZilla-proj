@@ -148,7 +148,7 @@ void octochess_uci::calculate( timestamp const& start, calculate_mode_type mode,
 		impl_->times_.set_moves_to_go( t.moves_to_go(), true );
 		impl_->times_.set_movetime( t.movetime() );
 		for( int i = 0; i < 2; ++i ) {
-			impl_->times_.set_remaining( i, t.time_left(i) );
+			impl_->times_.set_remaining( i, t.time_left(i), impl_->clock() );
 			impl_->times_.set_increment( i, t.increment(i) );
 		}
 
@@ -278,18 +278,18 @@ bool octochess_uci::impl::pick_pv_move()
 		info i;
 		i.depth(1);
 		i.selective_depth(1);
+		i.node_count(1);
 		i.multipv(1);
-		i.node_count(0);
 		i.time_spent( duration() );
 
 		{
 			move pv[3];
 			short ev = get_pv_from_tt(ctx_.tt_, pv, p(), 2);
-			if( !pv[0].empty() ) {
-				i.principal_variation( pv_to_string( ctx_.conf_, pv, p(), true ) );
-			}
 			if( ev != result::loss ) {
 				i.score( ev );
+			}
+			if( !pv[0].empty() ) {
+				i.principal_variation( pv_to_string( ctx_.conf_, pv, p(), true ) );
 			}
 		}
 

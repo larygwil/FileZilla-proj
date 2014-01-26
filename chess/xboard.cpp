@@ -661,7 +661,7 @@ skip_getline:
 			else {
 				duration new_remaining = duration::milliseconds( t * 10 );
 				state.update_comm_overhead( new_remaining, false );
-				state.times_.set_remaining( (cmd == "time") ? 0 : 1, new_remaining);
+				state.times_.set_remaining( (cmd == "time") ? 0 : 1, new_remaining, state.clock() );
 			}
 		}
 		else if( cmd == "level" ) {
@@ -715,7 +715,7 @@ skip_getline:
 			state.times_.set_moves_to_go(control, false);
 			state.times_.set_movetime( duration() );
 			for( int i = 0; i < 2; ++i ) {
-				state.times_.set_remaining(i, duration::minutes(minutes) + duration::seconds(seconds));
+				state.times_.set_remaining(i, duration::minutes(minutes) + duration::seconds(seconds), state.clock() );
 				state.times_.set_increment(i, duration::seconds(increment));
 			}
 		}
