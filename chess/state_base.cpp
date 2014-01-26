@@ -97,3 +97,23 @@ move state_base::get_book_move()
 
 	return ret;
 }
+
+bool state_base::recapture() const
+{
+	bool ret = false;
+	
+	if( !history().empty() ) {
+		position const& old = history().back().first;
+		move const& m = history().back().second;
+		if( old.get_captured_piece( m ) != pieces::none ) {
+			short tmp;
+			move best;
+			ctx_.tt_.lookup( p().hash_, 0, 0, result::loss, result::win, tmp, best, tmp );
+			if( !best.empty() && best.target( ) == m.target() ) {
+				ret = true;
+			}
+		}
+	}
+
+	return ret;
+}

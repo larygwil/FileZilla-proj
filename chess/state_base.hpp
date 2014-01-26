@@ -32,6 +32,9 @@ public:
 
 	move get_book_move();
 
+	// Returns true if last move was capture and transposition table suggests recapture
+	bool recapture() const;
+
 	context& ctx_;
 	simple_book book_;
 

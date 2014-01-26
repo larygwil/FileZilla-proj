@@ -152,7 +152,7 @@ void octochess_uci::calculate( timestamp const& start, calculate_mode_type mode,
 			impl_->times_.set_increment( i, t.increment(i) );
 		}
 
-		std::pair<duration, duration> times = impl_->times_.update( impl_->p().black(), impl_->clock() );
+		std::pair<duration, duration> times = impl_->times_.update( impl_->p().black(), impl_->clock(), impl_->recapture() );
 		if( ponder || times.first.is_infinity() || impl_->wait_for_stop_ || !impl_->searchmoves_.empty() ) {
 			impl_->spawn();
 		}
@@ -199,7 +199,7 @@ void octochess_uci::impl::onRun() {
 		}
 	}
 	else {
-		std::pair<duration, duration> times = times_.update( p().black(), clock() );
+		std::pair<duration, duration> times = times_.update( p().black(), clock(), recapture() );
 		calc_result result = calc_manager_.calc( p(), depth_, times_.start(), times.first, times.second
 			, clock(), seen(), *this, searchmoves_ );
 

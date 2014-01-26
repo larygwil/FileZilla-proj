@@ -330,7 +330,7 @@ void xboard_thread::onRun()
 {
 	if( !ponder_ ) {
 		// Calcualte the time available for this move
-		std::pair<duration, duration> times = state.times_.update( 0, state.clock() );
+		std::pair<duration, duration> times = state.times_.update( 0, state.clock(), state.recapture() );
 		
 		calc_result result = cmgr_.calc( state.p(), depth_, state.times_.start(), times.first, times.second, state.clock(), state.seen(), *this, state.searchmoves_ );
 

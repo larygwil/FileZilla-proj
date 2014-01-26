@@ -9,7 +9,8 @@ public:
 
 	void reset( bool all = false );
 
-	std::pair<duration, duration> update( bool current_clock, unsigned int halfmoves_played );
+	// Easy moves are recaptures for example
+	std::pair<duration, duration> update( bool current_clock, unsigned int halfmoves_played, bool easy_move );
 
 	void update_after_move( duration const& used_extra, bool add_increment,  bool keep_bonus );
 

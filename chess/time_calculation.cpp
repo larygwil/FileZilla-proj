@@ -23,7 +23,7 @@ void time_calculation::reset(bool all)
 	}
 }
 
-std::pair<duration, duration> time_calculation::update( bool current_clock, unsigned int halfmoves_played )
+std::pair<duration, duration> time_calculation::update( bool current_clock, unsigned int halfmoves_played, bool easy_move )
 {
 	current_clock_ = current_clock;
 	duration elapsed = timestamp() - start_;
@@ -65,20 +65,9 @@ std::pair<duration, duration> time_calculation::update( bool current_clock, unsi
 
 		deadline = remaining_[current_clock];
 
-		/*
-		// Spend less time if the PV suggests a recapture 
-		if( !history().empty() ) {
-			position const& old = history().back().first;
-			move const& m = history().back().second;
-			if( old.get_captured_piece( m ) != pieces::none ) {
-				short tmp;
-				move best;
-				ctx_.tt_.lookup( p().hash_, 0, 0, result::loss, result::win, tmp, best, tmp );
-				if( !best.empty() && best.target( ) == m.target() ) {
-					time_limit /= 2;
-				}
-			}
-		}*/
+		if( easy_move ) {
+			limit_ /= 2;
+		}
 	}
 
 	duration const overhead = internal_overhead_ + communication_overhead_;
