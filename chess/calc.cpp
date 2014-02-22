@@ -28,9 +28,9 @@
 int const check_extension = 6;
 int const pawn_push_extension = 6;
 int const recapture_extension = 6;
-int const cutoff = depth_factor + MAX_QDEPTH + 1;
+int const cutoff = DEPTH_FACTOR + MAX_QDEPTH + 1;
 
-int const lmr_min_depth = cutoff + depth_factor * 2;
+int const lmr_min_depth = cutoff + DEPTH_FACTOR * 2;
 
 short const razor_pruning[] = { 220, 250, 290 };
 
@@ -39,7 +39,7 @@ short const futility_pruning[] = { 110, 130, 170, 210 };
 
 #define NULL_MOVE_REDUCTION 3
 
-int const NULLMOVE_VERIFICATION_DEPTH = cutoff + depth_factor * 5;
+int const NULLMOVE_VERIFICATION_DEPTH = cutoff + DEPTH_FACTOR * 5;
 
 int const delta_pruning = 50;
 
@@ -642,7 +642,7 @@ void master_worker_thread::process_root( scoped_lock& l )
 				short beta = std::min( static_cast<short>(result::win), static_cast<short>(d.m.sort + aspiration) );
 
 				while( value == result::loss ) {
-					short value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -beta, -alpha, false );
+					short value = -state.step( max_depth_ * DEPTH_FACTOR + MAX_QDEPTH + 1, 1, new_pos, check, -beta, -alpha, false );
 					if( value >= beta ) {
 						if( result::win - aspiration > beta ) {
 							beta += aspiration;
@@ -667,14 +667,14 @@ void master_worker_thread::process_root( scoped_lock& l )
 			}
 
 			if( root_alpha != result::loss && value == result::loss ) {
-				short v = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_alpha-1, -root_alpha, false );
+				short v = -state.step( max_depth_ * DEPTH_FACTOR + MAX_QDEPTH + 1, 1, new_pos, check, -root_alpha-1, -root_alpha, false );
 				if( v <= root_alpha ) {
 					value = v;
 				}
 			}
 			
 			if( value == result::loss ) {
-				value = -state.step( max_depth_ * depth_factor + MAX_QDEPTH + 1, 1, new_pos, check, -root_beta, -root_alpha, false );
+				value = -state.step( max_depth_ * DEPTH_FACTOR + MAX_QDEPTH + 1, 1, new_pos, check, -root_beta, -root_alpha, false );
 			}
 		}
 
@@ -1035,7 +1035,7 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 		}
 	}
 
-	int plies_remaining = (depth - cutoff) / depth_factor;
+	int plies_remaining = (depth - cutoff) / DEPTH_FACTOR;
 
 	if( !pv_node && !check.check /*&& plies_remaining < 4*/ && full_eval == result::win ) {
 		full_eval = evaluate_full( *pawn_tt_, p );
@@ -1059,9 +1059,9 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 	if( !pv_node && !check.check &&
 		full_eval >= beta && !last_was_null &&
 		beta > result::loss_threshold && beta < result::win_threshold &&
-		depth >= (cutoff + depth_factor) && p.material[p.self()].mg() )
+		depth >= (cutoff + DEPTH_FACTOR) && p.material[p.self()].mg() )
 	{
-		short new_depth = depth - (NULL_MOVE_REDUCTION + 1) * depth_factor;
+		short new_depth = depth - (NULL_MOVE_REDUCTION + 1) * DEPTH_FACTOR;
 		short value;
 
 		{
@@ -1094,9 +1094,9 @@ short calc_state::step( int depth, int ply, position& p, check_map const& check,
 	}
 #endif
 
-	if( tt_move.empty() && depth > ( depth_factor * 4 + cutoff) ) {
+	if( tt_move.empty() && depth > ( DEPTH_FACTOR * 4 + cutoff) ) {
 
-		step( depth - 2 * depth_factor, ply, p, check, alpha, beta, true, full_eval, last_ply_was_capture );
+		step( depth - 2 * DEPTH_FACTOR, ply, p, check, alpha, beta, true, full_eval, last_ply_was_capture );
 
 		short eval;
 		tt_->lookup( p.hash_, depth, ply, alpha, beta, eval, tt_move, full_eval );
@@ -1192,7 +1192,7 @@ short calc_state::inner_step( int const depth, int const ply, position const& p,
 
 		bool extended = false;
 
-		int new_depth = depth - depth_factor;
+		int new_depth = depth - DEPTH_FACTOR;
 
 		// Check extension
 		if( new_check.check ) {
@@ -1243,7 +1243,7 @@ short calc_state::inner_step( int const depth, int const ply, position const& p,
 				!dangerous_pawn_move &&
 				( best_value == result::loss || best_value > result::loss_threshold ) )
 			{
-				int plies_remaining = (depth - cutoff) / depth_factor;
+				int plies_remaining = (depth - cutoff) / DEPTH_FACTOR;
 				if( plies_remaining < static_cast<int>(sizeof(futility_pruning)/sizeof(short))) {
 					value = full_eval + futility_pruning[plies_remaining];
 					if( value <= alpha ) {
@@ -1251,7 +1251,7 @@ short calc_state::inner_step( int const depth, int const ply, position const& p,
 					}
 				}
 
-				if( new_depth < cutoff + depth_factor && see( p, m ) < 0 ) {
+				if( new_depth < cutoff + DEPTH_FACTOR && see( p, m ) < 0 ) {
 					return result::none;
 				}
 			}
@@ -1262,7 +1262,7 @@ short calc_state::inner_step( int const depth, int const ply, position const& p,
 			if( !extended && processed_moves >= (pv_node ? 5u : 3u) && phase >= phases::noncapture &&
 				!check.check && depth >= lmr_min_depth )
 			{
-				int red = pv_node ? (depth_factor) : (depth_factor * 2);
+				int red = pv_node ? (DEPTH_FACTOR) : (DEPTH_FACTOR * 2);
 
 				red += (processed_moves - (pv_node?3:3)) / 5;
 				int lmr_depth = new_depth - red;

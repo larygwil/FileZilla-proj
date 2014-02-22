@@ -8,10 +8,13 @@
 
 // Upper limits, cannot go higher without recompilation.
 #ifndef MAX_DEPTH 
-#define MAX_DEPTH  60
+#define MAX_DEPTH 75
 #endif
 #ifndef MAX_QDEPTH
 #define MAX_QDEPTH 40
+#endif
+#ifndef DEPTH_FACTOR
+#define DEPTH_FACTOR 6
 #endif
 
 class config
@@ -47,7 +50,6 @@ private:
 	void init_self_dir( std::string self );
 
 	int depth_;
-	unsigned int pawn_hash_table_size_; // In MiB
 };
 
 #endif

@@ -1161,6 +1161,11 @@ void check_tt( context& ctx)
 {
 	checking("transposition table");
 
+	if( hash::max_depth() < (MAX_DEPTH * DEPTH_FACTOR + MAX_QDEPTH ) ) {
+		std::cerr << "Max depth cannot be stored in transition table" << std::endl;
+		std::cerr << hash::max_depth() << " < " << (MAX_DEPTH * DEPTH_FACTOR + MAX_QDEPTH ) << std::endl;
+		abort();
+	}
 	randgen rng;
 
 	uint64_t hash = rng.get_uint64();

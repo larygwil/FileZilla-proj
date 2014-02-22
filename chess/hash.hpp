@@ -151,6 +151,7 @@ public:
 
 	uint64_t max_hash_entry_count() const;
 
+	static unsigned short max_depth();
 private:
 #if USE_STATISTICS >= 2
 	stats stats_;

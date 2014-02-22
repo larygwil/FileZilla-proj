@@ -2,6 +2,7 @@
 #define __DEFINITIONS_H__
 
 #include "util/platform.hpp"
+#include "config.hpp"
 
 #include <string>
 
@@ -103,6 +104,9 @@ enum type {
 	loss_threshold = loss + 1500,
 	none = loss - 1
 };
+
+static_assert((win - win_threshold) > (MAX_DEPTH * DEPTH_FACTOR + MAX_QDEPTH), "Mate at max distance to root cannot be represented as mate score");
+static_assert((loss_threshold - loss) > (MAX_DEPTH * DEPTH_FACTOR + MAX_QDEPTH), "Mate at max distance to root cannot be represented as mate score");
 }
 
 #endif

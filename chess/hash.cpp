@@ -243,6 +243,12 @@ uint64_t hash::max_hash_entry_count() const
 }
 
 
+unsigned short hash::max_depth()
+{
+	return field_masks::depth - 1;
+}
+
+
 #if USE_STATISTICS >= 2
 hash::stats hash::get_stats(bool reset)
 {
@@ -291,4 +297,6 @@ hash::stats& hash::stats::operator=( stats const& s )
 
 	return *this;
 }
+
+
 #endif
