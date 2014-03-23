@@ -1,9 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # encoding: utf-8
 #
 # #############################################################################
 #
-#  Copyright (c) 2010 Peter Körner
+#  Copyright (c) 2010-2014 Peter Körner
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -17,7 +17,7 @@
 #  3. The name of the author may not be used to endorse or promote products
 #     derived from this software without specific prior written permission.
 #
-#  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+#  THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR
 #  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
 #  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
 #  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
@@ -30,9 +30,9 @@
 #
 # #############################################################################
 #
-# Version: 0.8.0
+# Version: 0.9.0
 # Author:  Peter Körner <18427@gmx.net>
-# Date:    2010-12-05T14:30+01:00
+# Date:    2014-03-23T21:05+01:00
 #
 # Check PO files' translation strings for mismatched format string specifiers,
 #  escape sequences etc.
@@ -53,20 +53,20 @@ import math
 import re
 import sys
 
-version = (0, 8, 0, "")
+version = (0, 9, 0, "")
 
 
 # Available checks
-#  Each check has got
-#   * [key] a unique one-character ID (corresponding to the command line
-#     option character)
-#   * a long description
-#   * a short description (displayed in help and outfile header)
-#   * a type of "match" (items found must match in both original string and
-#     translation), "match_count" (same number of items must be in original
-#     and translation) or "search" (only search the translation for items)
-#   * an item name which is displayed in the output
-#   * a setting if the check shall be enabled by default
+# Each check has got
+#  * [key] a unique one-character ID (corresponding to the command line
+#    option character)
+#  * a long description
+#  * a short description (displayed in help and outfile header)
+#  * a type of "match" (items found must match in both original string and
+#    translation), "match_count" (same number of items must be in original
+#    and translation) or "search" (only search the translation for items)
+#  * an item name which is displayed in the output
+#  * a setting if the check shall be enabled by default
 available_checks = {
         "f" : {"description" : "Find mismatched format specifiers (%<arbitrary character>)",
                "description_short" : "mismatched format specifiers (%<arbitrary character>)",
@@ -85,14 +85,11 @@ available_checks = {
                               "plural" : "escape sequences",
                               "unknown" : "escape sequence(s)"},
                "default_enabled" : False},
-        # <ellipsis>: \u2026; don't use non-ASCII characters in help output
+        # <ellipsis>: …; don't use non-ASCII characters in help output
         "i" : {"description" : "Find mismatched trailing ellipses (..., <ellipsis>",
                "description_short" : "mismatched trailing ellipses (..., <ellipsis>)",
                "type" : "match_count",
-               # \u2026 (in this case) is replaced regardless of the string
-               #  being a raw string; see
-               #  http://docs.python.org/release/2.6.5/reference/lexical_analysis.html#string-literals
-               "regex" : re.compile(ur"(\.\.\.|\u2026)$"),
+               "regex" : re.compile(r"(\.\.\.|…)$"),
                "item_name" : {"singular" : "trailing ellipsis",
                               "plural" : "trailing ellipses",
                               "unknown" : "trailing ellipsis/ellipses"},
@@ -140,15 +137,22 @@ available_checks = {
 }
 
 
-# Try to adhere to stdout's encoding if it's set (normal call of the script),
-#  use UTF-8 otherwise (redirection to a file, pipe, ...).
-encoding = sys.stdout.encoding if sys.stdout.encoding is not None else "UTF-8"
+
+# Try to adhere to stdout's encoding if it's set and the output is not
+# redirected; use UTF-8 otherwise.
+if sys.stdout.isatty():
+    encoding = sys.stdout.encoding if sys.stdout.encoding is not None else "UTF-8"
+else:
+    encoding = "UTF-8"
 
 
 def exit_with_error(message, show_help_message):
     """Print a message, optionally the help text, then exit."""
 
-    print >> sys.stderr, message
+    # Dont't show error message before output potentially having caused
+    # problems -> flush()
+    sys.stdout.flush()
+    print(message, file=sys.stderr)
     if show_help_message:
         print_help()
     sys.exit(1)
@@ -157,7 +161,7 @@ def exit_with_error(message, show_help_message):
 def print_help():
     """Print the help text."""
 
-    help_text = """Usage: %s [OPTION ...] FILE ...
+    help_text = """Usage: {} [OPTION ...] FILE ...
 
 Arguments:
   PO file(s) to check (file encoding: UTF-8)
@@ -171,14 +175,13 @@ File checking options:
   Default if none of -a, -e, -d is given: perform checks marked with *.
   -a, -e and -d are mutually exclusive.
 
-  Available checks: Find...\n"""  % sys.argv[0]
+  Available checks: Find...\n""".format(sys.argv[0])
 
     for check_id in sorted(available_checks.keys()):
         check = available_checks[check_id]
-        help_text += "   %s%s %s\n" % (
-                        check_id,
-                        "*" if check["default_enabled"] else " ",
-                        check["description_short"])
+        help_text += "   {}{} {}\n".format(check_id,
+                                           "*" if check["default_enabled"] else " ",
+                                           check["description_short"])
 
     help_text += """
   Miscellaneous options:
@@ -189,20 +192,21 @@ General options:
   -h, --help                Display this help text
   -v, --version             Display version information"""
 
-    print help_text
+    print(help_text)
 
 
 def print_version():
     """Print version information."""
 
-    print sys.argv[0], "%d.%d.%d%s" % version
+    print(sys.argv[0], "{0[0]}.{0[1]}.{0[2]}{0[3]}".format(version))
 
 
 def print_enc(text, encoding):
     """Print a unicode string using the specified encoding."""
 
     try:
-        sys.stdout.write(text.encode(encoding))
+        # http://docs.python.org/3.3/library/sys.html#sys.stdout
+        sys.stdout.buffer.write(text.encode(encoding))
     except UnicodeEncodeError:
         exit_with_error("\nError: Your terminal's encoding cannot represent "
             + "some of the characters to be displayed. You may switch it "
@@ -221,26 +225,29 @@ def print_finding(check, path, message, string_pair, items_found, items_expected
 
     # Print items found
     if check["type"] == "match":
-        print_enc(u"\n%s: -- Potential mismatch: %s - expected [%s], got [%s]\n" % (
-                  path,
-                  message,
-                  u", ".join([u"\"%s\"" % x for x in items_expected]),
-                  u", ".join([u"\"%s\"" % x for x in items_found])), encoding)
+        print_enc("\n{}: -- Potential mismatch: {} - expected [{}], got [{}]\n"
+                  .format(path,
+                          message,
+                          ", ".join(["\"{}\"".format(x) for x in items_expected]),
+                          ", ".join(["\"{}\"".format(x) for x in items_found])),
+                  encoding)
     elif check["type"] == "match_count":
-        print_enc(u"\n%s: -- Potential mismatch: %s - expected %d, got %d\n" % (
-                  path,
-                  message,
-                  len(items_expected),
-                  len(items_found)), encoding)
+        print_enc("\n{}: -- Potential mismatch: {} - expected {}, got {}\n"
+                  .format(path,
+                          message,
+                          len(items_expected),
+                          len(items_found)),
+                  encoding)
     else:
-        print_enc(u"\n%s: -- %s: [%s]\n" % (
-                  path,
-                  message,
-                  u", ".join([u"\"%s\"" % x for x in items_found])), encoding)
+        print_enc("\n{}: -- {}: [{}]\n"
+                  .format(path,
+                          message,
+                          ", ".join(["\"{}\"".format(x) for x in items_found])),
+                  encoding)
 
     # Print original string and the translation which has been checked
-    print_enc(u"%s:%d: %s\n" % (path, string_pair[0][0], string_pair[0][1]), encoding)
-    print_enc(u"%s:%d: %s\n" % (path, string_pair[1][0], string_pair[1][1]), encoding)
+    print_enc("{0}:{1[0]}: {1[1]}\n".format(path, string_pair[0]), encoding)
+    print_enc("{0}:{1[0]}: {1[1]}\n".format(path, string_pair[1]), encoding)
 
 
 def print_summary(available_checks, check_ids, data, lines_between_headers):
@@ -301,8 +308,8 @@ def print_summary(available_checks, check_ids, data, lines_between_headers):
 
 
     # Calculate total number of findings for each check as well as the sum for
-    #  all checks; use a dictionary structured like the data dictionary to be
-    #  able to use generate_path_line() later on
+    # all checks; use a dictionary structured like the data dictionary to be
+    # able to use generate_path_line() later on
     total_findings = {"sum" : collections.defaultdict(int)}
     for findings in data.values():
         if findings is not None:
@@ -312,8 +319,8 @@ def print_summary(available_checks, check_ids, data, lines_between_headers):
 
 
     # Get column widths;
-    #  sum column needs to be at least three characters wide (for the heading);
-    #  also add some padding
+    # sum column needs to be at least three characters wide (for the heading);
+    # also add some padding
     widths = {"path" : 1, "findings" : 1, "sum" : 5}
     for path in data.keys():
         widths["path"] = max(widths["path"], len(path))
@@ -329,60 +336,60 @@ def print_summary(available_checks, check_ids, data, lines_between_headers):
     # Get and calculate numbers of files processed/checked/skipped
     file_count = {}
     file_count["total"] = len(data.keys())
-    file_count["skipped"] = len(filter(lambda x: x is None, data.values()))
+    file_count["skipped"] = len([x for x in data.values() if x is None])
     file_count["checked"] = file_count["total"] - file_count["skipped"]
 
 
     # Summary heading
-    print "\n# Summary"
-    print "# ======="
-    print "#"
+    print("\n# Summary")
+    print("# =======")
+    print("#")
 
 
     # Findings table heading
-    print "# Findings per check and file"
-    print "# ---------------------------"
+    print("# Findings per check and file")
+    print("# ---------------------------")
 
     # Column headers, file paths and actual numbers;
-    #  insert an empty line and column headers every lines_between_headers
-    #  printed lines; make sure the first one is printed even if
-    #  lines_between_headers == 0, i.e. intermediate headers are disabled
+    # insert an empty line and column headers every lines_between_headers
+    # printed lines; make sure the first one is printed even if
+    # lines_between_headers == 0, i.e. intermediate headers are disabled
     if lines_between_headers == 0:
         lines_between_headers = len(data.keys())
     for line_number, path in enumerate(sorted(data.keys())):
         if (line_number % lines_between_headers) == 0:
-            print "#"
-            print generate_header_line(check_ids, widths)
-            print "#"
-        print generate_path_line(path, check_ids, data, widths)
-    print "#"
+            print("#")
+            print(generate_header_line(check_ids, widths))
+            print("#")
+        print(generate_path_line(path, check_ids, data, widths))
+    print("#")
     # Only display totals line if more than one file has been checked
     if len(data.keys()) > 1:
-        print generate_header_line(check_ids, widths)
-        print "#"
-        print generate_path_line("sum", check_ids, total_findings, widths)
-        print "#"
+        print(generate_header_line(check_ids, widths))
+        print("#")
+        print(generate_path_line("sum", check_ids, total_findings, widths))
+        print("#")
 
 
     # Legend
-    print "# Legend:"
+    print("# Legend:")
     for check_id in sorted(check_ids):
-        print "#  %s: %s" % (check_id, available_checks[check_id]["description_short"])
-    print "#"
+        print("#  {}: {}".format(check_id, available_checks[check_id]["description_short"]))
+    print("#")
 
     # Note on reliability
-    print "# Note: All of the above numbers/findings may include false"
-    print "#       positives/negatives."
-    print "#"
-    print "#"
+    print("# Note: All of the above numbers/findings may include false")
+    print("#       positives/negatives.")
+    print("#")
+    print("#")
 
     # Number of files processed/checked/skipped
-    print "# Files processed"
-    print "# ---------------"
-    print "#"
-    print "# Processed %d file(s) (checked %d, skipped %d)" % (
-            file_count["total"], file_count["checked"], file_count["skipped"])
-    print "#"
+    print("# Files processed")
+    print("# ---------------")
+    print("#")
+    print("# Processed {} file(s) (checked {}, skipped {})"
+          .format(file_count["total"], file_count["checked"], file_count["skipped"]))
+    print("#")
 
 
 def check_for_mismatch(check, items_found, items_expected):
@@ -395,14 +402,14 @@ def check_for_mismatch(check, items_found, items_expected):
     message = ""
 
     if len(items_expected) > len(items_found):
-        message = u"too few %s" % check["item_name"]["plural"]
+        message = "too few {}".format(check["item_name"]["plural"])
         mismatch_found = True
     elif len(items_expected) < len(items_found):
-        message = u"too many %s" % check["item_name"]["plural"]
+        message = "too many {}".format(check["item_name"]["plural"])
         mismatch_found = True
     # Don't check for exact matches if not needed
     elif check["type"] != "match_count" and items_expected != items_found:
-        message = u"unexpected %s" % check["item_name"]["unknown"]
+        message = "unexpected {}".format(check["item_name"]["unknown"])
         mismatch_found = True
 
     return mismatch_found, message
@@ -427,27 +434,27 @@ def check_file(path, checks, ignore_bom):
 
     # Get the PO file's lines
     try:
-        f = codecs.open(path, encoding="utf-8", mode="r")
-    except IOError, (errno, strerror):
-        exit_with_error("\nError: Cannot read file \"%s\" (%s)" % (path, strerror), False)
+        f = open(path, encoding="utf-8", mode="r")
+    except OSError as e:
+        exit_with_error("\nError: Cannot read file \"{}\" ({})".format(path, e.strerror), False)
     else:
         lines = f.read().splitlines()
         f.close()
 
 
     # Search for byte order mark and handle it appropriately, depending on if
-    #  it's to be ignored or not
+    # it's to be ignored or not
     if lines[0].startswith(codecs.BOM_UTF8.decode("utf-8")):
         if ignore_bom:
-            print "\n%s: W  Warning: Byte order mark (BOM) found." % path
-            print "%s:    Please save the .po file UTF-8 encoded, without BOM." % path
-            print "%s:    Ignoring the BOM for now (called with -b)." % path
+            print("\n{}: W  Warning: Byte order mark (BOM) found.".format(path))
+            print("{}:    Please save the .po file UTF-8 encoded, without BOM.".format(path))
+            print("{}:    Ignoring the BOM for now (called with -b).".format(path))
             lines[0] = lines[0][1:]
         else:
-            print "\n%s: E  Error: Byte order mark (BOM) found." % path
-            print "%s:    Please save the .po file UTF-8 encoded, without BOM." % path
-            print "%s:    To temporarily ignore the BOM, call this script with -b." % path
-            print "%s:    Skipping this file." % path
+            print("\n{}: E  Error: Byte order mark (BOM) found.".format(path))
+            print("{}:    Please save the .po file UTF-8 encoded, without BOM.".format(path))
+            print("{}:    To temporarily ignore the BOM, call this script with -b.".format(path))
+            print("{}:    Skipping this file.".format(path))
             return True, None
 
 
@@ -457,10 +464,10 @@ def check_file(path, checks, ignore_bom):
 
     # Join lines
     joined_lines = []
-    current_line = u""
+    current_line = ""
     current_line_number = 0
     for line_number, line in lines:
-        if line.startswith(u"\""):
+        if line.startswith("\""):
             current_line = current_line[:-1] + line[1:]
         else:
             joined_lines.append([current_line_number, current_line])
@@ -482,59 +489,58 @@ def check_file(path, checks, ignore_bom):
     entries = []
     current_entry = []
     # Use a DFA for extracting the interesting elements which belong to
-    #  an entry.
+    # an entry.
     # Takes the beginning (and the rest, in case of fuzzy) of the line into
-    #  account to decide on the transition and additional action to perform.
+    # account to decide on the transition and additional action to perform.
     # Note: This DFA does *not* validate the file's syntax - it's simplified
-    #  quite a bit; also there seems to be no real specification of PO files...
+    # quite a bit; also there seems to be no real specification of PO files...
     #
     # Accepted syntax:
-    #  (comment* fuzzy? comment* (msgctxt? msgid+ msgstr+ | obsolete obsolete+))*
+    # (comment* fuzzy? comment* (msgctxt? msgid+ msgstr+ | obsolete obsolete+))*
     #
     # Requiring two or more obsolete (#~) elements in succession is one of the
-    #  simplifications - the actual type (ctxt, id, str) is not checked in
-    #  this case.
+    # simplifications - the actual type (ctxt, id, str) is not checked in this
+    # case.
     #
     # Loosely based on examples at
-    #  http://www.gnu.org/software/gettext/manual/gettext.html#PO-Files
+    # http://www.gnu.org/software/gettext/manual/gettext.html#PO-Files
     #
     # Note: Dropping "msgid_plural"s and the likes is done by just doing a
-    #  transition, but no further action for the respective line.
+    # transition, but no further action for the respective line.
     #
     # DFA transitions:
+    # line_type  line content
+    #         0  comment:   #\n|(# |#.|#:|#\|)<substring>\n|#,<substring not containing "fuzzy">\n
+    #         1  fuzzy:     #,<substring containing "fuzzy">\n
+    #         2  obsolete:  #~<substring>\n
+    #         3  msgctxt:   msgctxt<substring>\n
+    #         4  msgid:     msgid<substring>\n
+    #         5  msgstr:    msgstr<substring>\n
     #
-    #  line_type  line content
-    #          0  comment:   #\n|(# |#.|#:|#\|)<substring>\n|#,<substring not containing "fuzzy">\n
-    #          1  fuzzy:     #,<substring containing "fuzzy">\n
-    #          2  obsolete:  #~<substring>\n
-    #          3  msgctxt:   msgctxt<substring>\n
-    #          4  msgid:     msgid<substring>\n
-    #          5  msgstr:    msgstr<substring>\n
+    # (Actual line ending is not checked - only the beginning of the line is
+    # used -, but the lines are already split up, so effectively there's an
+    # \n.)
     #
-    #  (Actual line ending is not checked - only the beginning of the line is
-    #   used -, but the lines are already split up, so effectively there's an
-    #   \n.)
+    # State |  comment     fuzzy   obsolete    msgctxt msgid   msgstr
+    # ------+--------------------------------------------------------
+    #     0 |  0           4       8           1       2 *     10
+    #     1 |  10          10      10          10      2 *     10
+    #     2 |  10          10      10          10      2       3 *
+    #     3 |  0           4       8           1       2 *     3 *
+    #     4 |  4           10      8           5       6       10
+    # ------+--------------------------------------------------------
+    #     5 |  10          10      10          10      6       10
+    #     6 |  10          10      10          10      6       7
+    #     7 |  0           4       8           1       2 *     7
+    #     8 |  10          10      9           10      10      10
+    #     9 |  0           4       9           1       2 *     10
+    # ------+--------------------------------------------------------
+    #  E/10 |  10          10      10          10      10      10
     #
-    #  State |  comment     fuzzy   obsolete    msgctxt msgid   msgstr
-    #  ------+--------------------------------------------------------
-    #      0 |  0           4       8           1       2 *     10
-    #      1 |  10          10      10          10      2 *     10
-    #      2 |  10          10      10          10      2       3 *
-    #      3 |  0           4       8           1       2 *     3 *
-    #      4 |  4           10      8           5       6       10
-    #  ------+--------------------------------------------------------
-    #      5 |  10          10      10          10      6       10
-    #      6 |  10          10      10          10      6       7
-    #      7 |  0           4       8           1       2 *     7
-    #      8 |  10          10      9           10      10      10
-    #      9 |  0           4       9           1       2 *     10
-    #  ------+--------------------------------------------------------
-    #   E/10 |  10          10      10          10      10      10
-    #
-    #  *: handle corresponding line
+    # *: handle corresponding line
     #
     # Transitions to actually use;
-    #  first tuple entry: next state, second entry: perform action?
+    # first tuple entry: next state, second entry: perform action?
     transitions = [
         [ (0, False),  (4, False),  (8, False),  (1, False),  (2, True),  (10, False)],
         [(10, False), (10, False), (10, False), (10, False),  (2, True),  (10, False)],
@@ -554,21 +560,21 @@ def check_file(path, checks, ignore_bom):
     for line_number, line in lines:
 
         # Determine the current line's type
-        #  Reordered for better performance
-        if line.startswith((u"#:", u"# ", u"#.", u"#|")) or line == u"#":
+        # Reordered for better performance
+        if line.startswith(("#:", "# ", "#.", "#|")) or line == "#":
             line_type = 0
-        elif line.startswith(u"#,"):
-            if u"fuzzy" in line:
+        elif line.startswith("#,"):
+            if "fuzzy" in line:
                 line_type = 1
             else:
                 line_type = 0
-        elif line.startswith(u"msgid"):
+        elif line.startswith("msgid"):
             line_type = 4
-        elif line.startswith(u"msgstr"):
+        elif line.startswith("msgstr"):
             line_type = 5
-        elif line.startswith(u"msgctxt"):
+        elif line.startswith("msgctxt"):
             line_type = 3
-        elif line.startswith(u"#~"):
+        elif line.startswith("#~"):
             line_type = 2
         else:
             line_type = 0
@@ -580,9 +586,9 @@ def check_file(path, checks, ignore_bom):
         # Could be nicer...
         if transition[1]:
             # Strip prefix ("msgid \"" etc.) and suffix ("\"") and append both
-            #  original and the resulting string to the current translation
-            #  entry.
-            #  Assumes that the strings are properly enclosed in quotation marks
+            # original and the resulting string to the current translation
+            # entry.
+            # Assumes that the strings are properly enclosed in quotation marks
             content_start = line.find("\"") + 1
             if line_type == 4:
                 entries.append(current_entry[:])
@@ -595,8 +601,8 @@ def check_file(path, checks, ignore_bom):
 
         # Has the error state been reached?
         if state == 10:
-            print_enc(u"\n%s: E  Parsing error. Invalid PO file?\n" % path, encoding)
-            print_enc(u"%s:%d: %s\n" % (path, line_number, line), encoding)
+            print_enc("\n{}: E  Parsing error. Invalid PO file?\n".format(path), encoding)
+            print_enc("{}:{}: {}\n".format(path, line_number, line), encoding)
             return True, None
 
 
@@ -621,7 +627,7 @@ def check_file(path, checks, ignore_bom):
             continue
 
         # Dictionary for collecting the expected items; keys: check IDs,
-        #  values: lists of expected items per check
+        # values: lists of expected items per check
         items_expected = {}
 
         # Extract specifiers, escape sequences, ... from first string ...
@@ -635,7 +641,7 @@ def check_file(path, checks, ignore_bom):
                 continue
 
             # Extract specifiers, escape sequences, ... from translation, check
-            #  for mismatches and output them if needed
+            # for mismatches and output them if needed
             for check_id, check in checks["match*"]:
                 items_found = check["regex"].findall(translation_stripped)
                 mismatch_found, message = check_for_mismatch(check,
@@ -679,7 +685,7 @@ if __name__ == "__main__":
     # Parse command line
     try:
         (options, arguments) = getopt.gnu_getopt(sys.argv[1:], short_options, long_options)
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         exit_with_error("Error: " + str(e), True)
 
     # Sets of IDs of the enabled/disabled checks
@@ -736,7 +742,7 @@ if __name__ == "__main__":
                         True)
 
     # If checks shall be disabled, subtract the to-be-disabled ones from the
-    #  available checks; if none of -a, -e or -d is given, enable default checks
+    # available checks; if none of -a, -e or -d is given, enable default checks
     if len(disabled_check_ids) > 0:
         enabled_check_ids = set(available_checks.keys()) - disabled_check_ids
     elif not len(enabled_check_ids) > 0:
@@ -748,23 +754,26 @@ if __name__ == "__main__":
         exit_with_error("Error: no checks to be processed", True)
 
     # Done collecting enabled checks' IDs into enabled_checks_ids.
-    #  Now create a dictionary containing two lists of checks and their IDs -
-    #  one for "match"-like checks, one for "search" checks. The actual checks
-    #  are sorted by their IDs to generate a "stable" output, i.e. perform them
-    #  in the same order every time the script is executed (apart from checks
-    #  being enabled/disabled and thus their output being added/removed).
+    # Now create a dictionary containing two lists of checks and their IDs -
+    # one for "match"-like checks, one for "search" checks. The actual checks
+    # are sorted by their IDs to generate a "stable" output, i.e. perform them
+    # in the same order every time the script is executed (apart from checks
+    # being enabled/disabled and thus their output being added/removed).
     enabled_checks_all = [(x, available_checks[x]) for x in sorted(enabled_check_ids)]
     enabled_checks = {"match*" : [x for x in enabled_checks_all if x[1]["type"] in ("match", "match_count")],
                       "search" : [x for x in enabled_checks_all if x[1]["type"] == "search"]}
 
 
     # Print the encoding and enabled checks
-    print "# Encoding: %s" % encoding
-    print "#"
-    print "# Enabled checks: Find..."
+    print("# Encoding: {}".format(encoding))
+    print("#")
+    print("# Enabled checks: Find...")
     for check_id in sorted(list(enabled_check_ids)):
-        print "#  %s: %s" % (check_id, available_checks[check_id]["description_short"])
-    print "#"
+        print("#  {}: {}".format(check_id, available_checks[check_id]["description_short"]))
+    print("#")
+
+    # Make sure header is printed before check output
+    sys.stdout.flush()
 
     # Was there any error or have any mismatches/... been found?
     problems_found = False
