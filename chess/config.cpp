@@ -14,8 +14,7 @@ config::config()
   ponder(),
   use_book(true),
   fischer_random(),
-  depth_(-1),
-  pawn_hash_table_size_(0)
+  depth_(-1)
 {
 	if( sizeof(void*) < 8 ) {
 		// Limit default to 1GB on 32bit compile
@@ -181,10 +180,5 @@ void config::set_max_search_depth( int depth )
 
 unsigned int config::pawn_hash_table_size() const
 {
-	unsigned int ret = pawn_hash_table_size_;
-	if( !ret ) {
-		ret = std::min( 64, get_system_memory() / 8 );
-	}
-
-	return ret;
+	return std::min( 64, get_system_memory() / 8 );
 }
