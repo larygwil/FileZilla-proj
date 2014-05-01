@@ -5,7 +5,7 @@
 fixupdatecheck()
 {
   echo "Updating information for the automated update checks"
-  
+
   local LATEST="/var/www/nightlies/latest.php"
   local WWWDIR="http://filezilla-project.org/nightlies"
 
@@ -17,9 +17,9 @@ fixupdatecheck()
     if ! [ -f "$OUTPUTDIR/$TARGET/successful" ]; then
       continue;
     fi
-    
+
     # Successful build
-    
+
     cd "$OUTPUTDIR/$TARGET"
     for FILE in *; do
       if [ $FILE = "successful" ]; then
@@ -37,6 +37,7 @@ fixupdatecheck()
 
       SUM=`sha512sum "$FILE"`
       SUM=${SUM% *}
+      SIZE=`stat -c%s "$FILE"`
 
       if ! [ -f "$LATEST" ]; then
         echo '<?php' > $LATEST.new
@@ -48,6 +49,7 @@ fixupdatecheck()
       echo "\$nightlies['$TARGET']['date'] = '$DATE';" >> $LATEST.new
       echo "\$nightlies['$TARGET']['file'] = '$WWWDIR/$DATE/$TARGET/$FILE';" >> $LATEST.new
       echo "\$nightlies['$TARGET']['sha512'] = '$SUM';" >> $LATEST.new
+      echo "\$nightlies['$TARGET']['size'] = '$SIZE';" >> $LATEST.new
       echo "?>" >> $LATEST.new
       mv $LATEST.new $LATEST
     done

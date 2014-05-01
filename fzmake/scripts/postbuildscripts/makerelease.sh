@@ -7,7 +7,7 @@ makerelease()
   rm -rf "$RELEASEDIR" > /dev/null 2>&1
   mkdir -p "$RELEASEDIR"
 
-  local CONFIGUREIN="$WORKDIR/source/FileZilla3/configure.in"
+  local CONFIGUREIN="$WORKDIR/source/FileZilla3/configure.ac"
 
   local version=
 
