@@ -28,7 +28,7 @@ all_failure()
     echo -e "Build started: $START\n" >> $TARGETLOG
 
     echo -e "Failed to upload required files" >> $TARGETLOG
-    
+
     touch "$OUTPUTDIR/$TARGET/failed"
     rm -f "$OUTPUTDIR/$TARGET/running"
     rm -f "$OUTPUTDIR/$TARGET/pending"
@@ -37,7 +37,7 @@ all_failure()
   done
 
   spawn_cleanup
-  
+
   return 1
 }
 
@@ -45,7 +45,7 @@ spawn_cleanup()
 {
   if [ "$CLEANUP_DONE" = "true" ]; then
     return 1;
-  fi 
+  fi
 
   export CLEANUP_DONE=true
   logprint "$TARGETS: Performing cleanup"
@@ -60,6 +60,8 @@ buildspawn()
   TARGETS=$4
   PACKAGES=$5
 
+  echo "buildspawn: ID=$ID, HOST=$HOST, HOSTPREFIX=$HOSTPREFIX TARGETS=$TARGETS PACKAGES=$PACKAGES"
+
   CLEANUP_DONE=false
 
   PORT=${HOST#*:}
@@ -67,8 +69,8 @@ buildspawn()
     PORT=22
   else
     HOST=${HOST%:*}
-  fi 
-  
+  fi
+
   logprint "$TARGETS: Uploading packages"
   filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; mkdir -p "$HOSTPREFIX/packages"; cd $HOSTPREFIX/packages && rsync -a --delete \"$UPDATESERVER\" ." 2>&1 || all_failure || return 1
 
@@ -79,7 +81,7 @@ buildspawn()
   filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; rm -rf clientscripts; tar -xjf clientscripts.tar.bz2;" 2>&1 || all_failure || return 1
 
   logprint "$TARGETS: Building targets, check target specific logs for details"
-  
+
   for i in $TARGETS; do
     export TARGET=$i
     export TARGETLOG="$OUTPUTDIR/$i/build.log"
@@ -89,10 +91,10 @@ buildspawn()
     START=`date "+%Y-%m-%d %H:%M:%S"`
     export STARTSECONDS=`date '+%s'`
     targetlogprint "Build started: $START\n"
-    
+
     touch "$OUTPUTDIR/$i/running"
     rm "$OUTPUTDIR/$i/pending"
-    
+
     targetlogprint "Invoking remote build script"
     if [ -z "$SUBHOST" ]; then
       filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; clientscripts/build.sh \"$HOSTPREFIX\" \"$i\" \"$PACKAGES\"" >> $TARGETLOG || failure || continue
