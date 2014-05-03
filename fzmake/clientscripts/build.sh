@@ -28,7 +28,7 @@ safe_prepend()
     fi
 
     OLD=${OLD#*:}
-  done 
+  done
 
   eval export $VAR=$VALUE\${$VAR:+:}\$$VAR
 }
@@ -57,6 +57,7 @@ if [ ! -z "$HOME" ]; then
     safe_prepend CPPFLAGS "-I$HOME/prefix-$TARGET/include"
     safe_prepend LDFLAGS "-L$HOME/prefix-$TARGET/lib"
     safe_prepend LD_LIBRARY_PATH "$HOME/prefix-$TARGET/lib"
+    safe_prepend PKG_CONFIG_PATH "$HOME/prefix-$TARGET/lib/pkgconfig"
 
     if [ -x "$HOME/prefix-$TARGET/profile" ]; then
       . "$HOME/prefix-$TARGET/profile"
