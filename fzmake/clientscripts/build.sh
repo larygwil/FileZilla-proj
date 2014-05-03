@@ -17,20 +17,24 @@ safe_prepend()
 {
   local VAR=$1
   local VALUE=$2
+  local SEPARATOR=$3
   local OLD
 
-  eval OLD=\$$VAR:
+  # Make sure it's terminated by a separator
+  eval OLD=\"\$$VAR$SEPARATOR\"
   while [ ! -z "$OLD" ]; do
 
-    FIRST=${OLD%%:*}
+    # Get first segment
+    FIRST="${OLD%%$SEPARATOR*}"
     if [ "$FIRST" = "$VALUE" ]; then
       return
     fi
 
-    OLD=${OLD#*:}
+    # Strip first
+    OLD="${OLD#*$SEPARATOR}"
   done
 
-  eval export $VAR=$VALUE\${$VAR:+:}\$$VAR
+  eval export $VAR=\"$VALUE\${$VAR:+$SEPARATOR}\$$VAR\"
 }
 
 if ! [ -d "$PREFIX" ]; then
@@ -53,22 +57,16 @@ if [ ! -z "$HOME" ]; then
       fi
     fi
 #   export CXXFLAGS="-O0 -g3 -ggdb"
-    safe_prepend PATH "$HOME/prefix-$TARGET/bin"
-    safe_prepend CPPFLAGS "-I$HOME/prefix-$TARGET/include"
-    safe_prepend LDFLAGS "-L$HOME/prefix-$TARGET/lib"
-    safe_prepend LD_LIBRARY_PATH "$HOME/prefix-$TARGET/lib"
-    safe_prepend PKG_CONFIG_PATH "$HOME/prefix-$TARGET/lib/pkgconfig"
 
     if [ -x "$HOME/prefix-$TARGET/profile" ]; then
       . "$HOME/prefix-$TARGET/profile"
     fi
 
-    if [ -f "$HOME/prefix-$TARGET/CFLAGS" ]; then
-      safe_prepend CFLAGS "`cat \"$HOME/prefix-$TARGET/CFLAGS\"`"
-    fi
-    if [ -f "$HOME/prefix-$TARGET/CXXFLAGS" ]; then
-      safe_prepend CXXFLAGS "`cat \"$HOME/prefix-$TARGET/CXXFLAGS\"`"
-    fi
+    safe_prepend PATH "$HOME/prefix-$TARGET/bin" ':'
+    safe_prepend CPPFLAGS "-I$HOME/prefix-$TARGET/include" ' '
+    safe_prepend LDFLAGS "-L$HOME/prefix-$TARGET/lib" ' '
+    safe_prepend LD_LIBRARY_PATH "$HOME/prefix-$TARGET/lib" ':'
+    safe_prepend PKG_CONFIG_PATH "$HOME/prefix-$TARGET/lib/pkgconfig" ':'
   fi
 fi
 
