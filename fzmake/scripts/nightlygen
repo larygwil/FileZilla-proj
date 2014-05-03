@@ -108,9 +108,12 @@ echo "export STRIP=$STRIP" >> "$PREFIX/clientscripts/parameters"
 
 clean_files()
 {
-  rm -rf "$WORKDIR/FileZilla3"
-  rm -rf "$WORKDIR/clientscripts"
-  rm -f "$WORKDIR/clientscripts.tar.bz2"
+  if [ -d "$WORKDIR" ]; then
+    cd "$WORKDIR" #To get out of a subdir
+    rm -rf "$WORKDIR/FileZilla3"
+    rm -rf "$WORKDIR/clientscripts"
+    rm -f "$WORKDIR/clientscripts.tar.bz2"
+  fi
 }
 
 buildfailure()
