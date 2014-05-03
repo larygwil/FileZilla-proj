@@ -8,8 +8,7 @@ packages_loaded=
 
 printpackage()
 {
-  echo "Package read:"
-  echo "  Package: $PACKAGE"
+  echo "Found configuration for package \"$PACKAGE\""
   echo "  Package flags: $PACKAGE_FLAGS"
 }
 
