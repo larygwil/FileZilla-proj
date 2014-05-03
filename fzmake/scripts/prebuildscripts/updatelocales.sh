@@ -4,6 +4,8 @@
 
 # This function updates the locales page
 
+. ../util.sh
+
 updatelocales()
 {
   local WWWLOCALES="/var/www/locales"
@@ -11,7 +13,7 @@ updatelocales()
   echo "Updating locales page"
   
   cd "$WORKDIR/FileZilla3/locales"
-  make >> $LOG 2>&1 || return 1
+  nice make -j`cpu_count` >> $LOG 2>&1 || return 1
 
   echo "Copying locales"
 

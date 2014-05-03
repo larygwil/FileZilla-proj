@@ -2,6 +2,7 @@
 
 PACKAGES_FILE="$SCRIPTS/packages"
 . "$SCRIPTS/readpackages"
+. "$SCRIPTS/util.sh"
 
 export TARGET=$1
 
@@ -23,12 +24,11 @@ makepackage()
 
   eval "$PREFIX/packages/$PACKAGE/configure" "'--prefix=$WORKDIR/prefix/$PACKAGE'" "'--host=$TARGET'" $FLAGS || return 1
   if [ -z "$MAKE" ]; then
-    make || return 1
-    make install || return 1
-  else
-    "$MAKE" || return 1
-    "$MAKE" install || return 1
+    MAKE=make
   fi
+
+  nice "$MAKE" -j`cpu_count` || return 1
+  nice "$MAKE" install || return 1
 
   if [ -z "$NOINST" ]; then
     echo "Running postbuild script"

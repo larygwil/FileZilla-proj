@@ -214,6 +214,7 @@ prebuild >> $LOG 2>&1 || buildfailure || exit 1
 packageClientscripts()
 {
   cp -r "$CLIENTSCRIPTS" "$WORKDIR"
+  cp "$SCRIPTS/util.sh" "$WORKDIR/clientscripts/"
   cp "$SCRIPTS/readpackages" "$WORKDIR/clientscripts/"
   cp "$CONFDIR/packages" "$WORKDIR/clientscripts/"
 
