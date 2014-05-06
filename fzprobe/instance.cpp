@@ -45,7 +45,7 @@ void CInstance::Close()
 
 bool CInstance::Send(const char* str)
 { 
-	printf(str);
+	printf("%s", str);
 	if (write(sock, str, strlen(str)) != strlen(str))
 	{
 		printf("Failed to write to socket: %d", errno);
@@ -402,7 +402,9 @@ void CInstance::Main()
 			}
 			if (port != dataport)
 			{
-				Send("502 Port mismatch. Tainted by router or firewall.");
+				char tmp[150];
+				sprintf(tmp, "502 Port mismatch. Received arguments contained port %d. Command has been tained by router or firewall.", port);
+				Send(tmp);
 				Close();
 			}
 
@@ -511,7 +513,7 @@ void CInstance::printf(const char* fmt, ...)
 	sprintf(buff, "% 4d: %s\n", id, fmt);
 
 	va_start(ap, fmt);
-	log.Log(buff, ap);
+	log.Logv(buff, ap);
 	va_end(ap);
 	delete [] buff;
 }
