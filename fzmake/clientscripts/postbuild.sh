@@ -79,7 +79,7 @@ if echo "$TARGET" | grep "mingw"; then
   sha512sum --binary "FileZilla_3_setup.exe" > "FileZilla_3_setup.exe.sha512" || exit 1
   sha512sum --binary "FileZilla.zip" > "FileZilla.zip.sha512" || exit 1
 
-elif [ \( "$TARGET" = "i686-apple-darwin9" -o "$TARGET" = "powerpc-apple-darwin9" \) -a "$PACKAGE" = "FileZilla3" ]; then
+elif echo "$TARGET" | grep apple-darwin 2>&1 > /dev/null; then
 
   cd "$WORKDIR/$PACKAGE"
   [ "$STRIP" != "false" ] && "$STRIP" -S -x FileZilla.app/Contents/MacOS/filezilla

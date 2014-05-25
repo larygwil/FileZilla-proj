@@ -44,7 +44,7 @@ makerelease()
 
       locale platform=
       case "$TARGET" in
-        i586-mingw32msvc)
+        *mingw*)
           platform=win32
 	  if [ "$lext" = "exe" ]; then
 	    platform="${platform}-setup"
