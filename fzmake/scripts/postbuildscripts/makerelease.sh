@@ -50,6 +50,9 @@ makerelease()
 	    platform="${platform}-setup"
 	  fi
           ;;
+        *6-apple*)
+          platform="macosx-x86"
+          ;;
         *)
           platform="$TARGET"
           ;;
