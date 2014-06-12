@@ -202,8 +202,8 @@ while getPackage; do
   PACKAGE=${PACKAGE#-}
   cd "$WORKDIR/source/$PACKAGE"
   if [ ! -e configure ]; then
-    echo "Running autogen.sh for package $PACKAGE" >> $LOG
-    ./autogen.sh >> $LOG 2>&1 || buildfailure || exit 1
+    echo "Running autoreconf -i for package $PACKAGE" >> $LOG
+    autoreconf -i >> $LOG 2>&1 || buildfailure || exit 1
   fi
 done
 
