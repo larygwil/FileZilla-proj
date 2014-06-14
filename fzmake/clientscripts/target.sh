@@ -22,7 +22,8 @@ makepackage()
   mkdir -p "$WORKDIR/$PACKAGE"
   cd "$WORKDIR/$PACKAGE"
 
-  eval "$PREFIX/packages/$PACKAGE/configure" "'--prefix=$WORKDIR/prefix/$PACKAGE'" "'--host=$TARGET'" $FLAGS || return 1
+  HOST=`"$SCRIPTS/configure_target.sh" "$TARGET"`
+  eval "$PREFIX/packages/$PACKAGE/configure" "'--prefix=$WORKDIR/prefix/$PACKAGE'" $HOST $FLAGS || return 1
   if [ -z "$MAKE" ]; then
     MAKE=make
   fi
