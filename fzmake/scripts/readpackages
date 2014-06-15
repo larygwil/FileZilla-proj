@@ -48,6 +48,8 @@ getPackage()
       export PACKAGE="$REPLY"
     elif [ -z "$PACKAGE_FLAGS" ]; then
       export PACKAGE_FLAGS="$REPLY"
+    elif echo "$PACKAGE_FLAGS" | grep '\\$' 2>&1 > /dev/null; then
+      export PACKAGE_FLAGS="${PACKAGE_FLAGS%*\\} $REPLY"
     else
       echo "Unexpected line: $REPLY"
       return 1
