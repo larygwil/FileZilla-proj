@@ -8,7 +8,7 @@ normalize()
 }
 
 BUILD=`"${SCRIPTS:-.}/config.guess"`
-COMP=`${CC:-cc} -dumpmachine`
+COMP=`${CC:-cc} $CFLAGS -dumpmachine`
 TARGET="${1:-$BUILD}"
 
 NTARGET=`normalize "$TARGET"`
@@ -40,7 +40,7 @@ normalize_version()
 NTARGET=`normalize_version "$NTARGET" "$NBUILD"`
 NCOMP=`normalize_version "$NCOMP" "$NBUILD"`
 
-if [ "$NTARGET" = "$NBUILD" ]; then
+if [ "$NTARGET" = "$NCOMP" ]; then
   if [ "$NBUILD" != "$NCOMP" ]; then
     echo "Warning: Native compiler ($COMP) does not match build system ($BUILD)" >&2
   fi
