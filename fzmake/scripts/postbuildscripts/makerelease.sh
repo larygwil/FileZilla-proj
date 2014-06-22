@@ -16,8 +16,8 @@ makerelease()
   exec 4<"$CONFIGUREIN" || return 1
   read <&4 -r version || return 1
 
-  version="${version#*, }"
-  version="${version%,*}"
+  version="${version#*,[}"
+  version="${version%%],*}"
 
   echo "Version: $version"
 
