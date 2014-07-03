@@ -23,7 +23,10 @@ makepackage()
   cd "$WORKDIR/$PACKAGE"
 
   HOST=`"$SCRIPTS/configure_target.sh" "$TARGET"`
-  eval "$PREFIX/packages/$PACKAGE/configure" "'--prefix=$WORKDIR/prefix/$PACKAGE'" $HOST $FLAGS || return 1
+  if ! eval "$PREFIX/packages/$PACKAGE/configure" "'--prefix=$WORKDIR/prefix/$PACKAGE'" $HOST $FLAGS; then
+    cat config.log
+    return 1
+  fi
   if [ -z "$MAKE" ]; then
     MAKE=make
   fi
