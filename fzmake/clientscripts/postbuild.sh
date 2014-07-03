@@ -85,6 +85,12 @@ elif echo "$TARGET" | grep apple-darwin 2>&1 > /dev/null; then
   [ "$STRIP" != "false" ] && "$STRIP" -S -x FileZilla.app/Contents/MacOS/filezilla
   [ "$STRIP" != "false" ] && "$STRIP" -S -x FileZilla.app/Contents/MacOS/fzputtygen
   [ "$STRIP" != "false" ] && "$STRIP" -S -x FileZilla.app/Contents/MacOS/fzsftp
+
+  if [ -x "$HOME/prefix-$TARGET/sign.sh" ]; then
+    echo "Signing bundle"
+    "$HOME/prefix-$TARGET/sign.sh"
+  fi
+
   tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.app.tar.bz2" FileZilla.app
 
   cd "$OUTPUTDIR/$TARGET" || exit 1
