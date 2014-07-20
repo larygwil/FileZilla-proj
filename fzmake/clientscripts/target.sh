@@ -31,6 +31,7 @@ makepackage()
     MAKE=make
   fi
 
+  echo "Build command: nice \"$MAKE\" -j`cpu_count`"
   nice "$MAKE" -j`cpu_count` || return 1
   nice "$MAKE" install || return 1
 
