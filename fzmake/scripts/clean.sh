@@ -1,6 +1,6 @@
 #! /bin/sh
 
-DAYS=3		# Minumum number of days to keep nightlies from
+DAYS=4		# Minumum number of days to keep nightlies from
 
 DATES=`ls "$WWWDIR" | grep "[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}" | sort -r`
 
