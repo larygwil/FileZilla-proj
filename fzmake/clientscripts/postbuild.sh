@@ -25,15 +25,25 @@ else
   fi
 fi
 
-libtool_strip()
+do_strip()
 {
   if [ "$STRIP" = "false" ]; then
     return
   fi
 
-  if ! "$STRIP" "$1/$2"; then
-    echo "Stripping of \"$1/$2\" failed."
-    exit 1
+  if [ -d "$3" ]; then
+    if [ -f "$1/.libs/$2" ]; then
+      cp "$1/.libs/$2" "$3/$2"
+    else
+      cp "$1/$2" "$3/$2"
+    fi
+  fi
+
+  if [ -f "$1/$2" ]; then
+    if ! "$STRIP" "$1/$2"; then
+      echo "Stripping of \"$1/$2\" failed."
+      exit 1
+    fi
   fi
   if [ -f "$1/.libs/$2" ]; then
     if ! "$STRIP" "$1/.libs/$2"; then
@@ -43,14 +53,14 @@ libtool_strip()
   fi
 }
 
-if echo "$TARGET" | grep "mingw"; then
-  libtool_strip "$WORKDIR/$PACKAGE/src/interface" "filezilla.exe"
-  libtool_strip "$WORKDIR/$PACKAGE/src/putty" "fzputtygen.exe"
-  libtool_strip "$WORKDIR/$PACKAGE/src/putty" "fzsftp.exe"
-  # libtool_strip "$WORKDIR/$PACKAGE/src/fzshellext" "libfzshellext-0.dll"
+rm -rf "$WORKDIR/debug"
+mkdir "$WORKDIR/debug"
 
-  # We don't need debug information for this file. Since it runs in the context of Explorer, it's pretty undebuggable anyhow.
-  [ "$STRIP" != "false" ] && "$STRIP" "$WORKDIR/$PACKAGE/src/fzshellext/.libs/libfzshellext-0.dll"
+if echo "$TARGET" | grep "mingw"; then
+  do_strip "$WORKDIR/$PACKAGE/src/interface" "filezilla.exe" "$WORKDIR/debug"
+  do_strip "$WORKDIR/$PACKAGE/src/putty" "fzputtygen.exe" "$WORKDIR/debug"
+  do_strip "$WORKDIR/$PACKAGE/src/putty" "fzsftp.exe" "$WORKDIR/debug"
+  do_strip "$WORKDIR/$PACKAGE/src/fzshellext" "libfzshellext-0.dll" "$WORKDIR/debug"
 
   echo "Making installer"
   cd "$WORKDIR/$PACKAGE/data"
@@ -82,9 +92,9 @@ if echo "$TARGET" | grep "mingw"; then
 elif echo "$TARGET" | grep apple-darwin 2>&1 > /dev/null; then
 
   cd "$WORKDIR/$PACKAGE"
-  [ "$STRIP" != "false" ] && "$STRIP" -S -x FileZilla.app/Contents/MacOS/filezilla
-  [ "$STRIP" != "false" ] && "$STRIP" -S -x FileZilla.app/Contents/MacOS/fzputtygen
-  [ "$STRIP" != "false" ] && "$STRIP" -S -x FileZilla.app/Contents/MacOS/fzsftp
+  do_strip "FileZilla.app/Contents/MacOS" filezilla "$WORKDIR/debug"
+  do_strip "FileZilla.app/Contents/MacOS" fzputtygen "$WORKDIR/debug"
+  do_strip "FileZilla.app/Contents/MacOS" fzsftp "$WORKDIR/debug"
 
   if [ -x "$HOME/prefix-$TARGET/sign.sh" ]; then
     echo "Signing bundle"
@@ -99,12 +109,19 @@ elif echo "$TARGET" | grep apple-darwin 2>&1 > /dev/null; then
 else
 
   cd "$WORKDIR/prefix"
-  [ "$STRIP" != "false" ] && "$STRIP" -g "$PACKAGE/bin/filezilla"
-  [ "$STRIP" != "false" ] && "$STRIP" -g "$PACKAGE/bin/fzsftp"
-  [ "$STRIP" != "false" ] && "$STRIP" -g "$PACKAGE/bin/fzputtygen"
+  do_strip "$PACKAGE/bin" filezilla "$WORKDIR/debug"
+  do_strip "$PACKAGE/bin" fzputtygen "$WORKDIR/debug"
+  do_strip "$PACKAGE/bin" fzsftp "$WORKDIR/debug"
   tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.tar.bz2" $PACKAGE || exit 1
   cd "$OUTPUTDIR/$TARGET" || exit 1
   sha512sum --binary "$PACKAGE.tar.bz2" > "$PACKAGE.tar.bz2.sha512" || exit 1
 
 fi
+
+if [ "$STRIP" != "false" ]; then
+  echo "Creating debug package"
+  cd "$WORKDIR" || exit 1
+  tar cjf "$OUTPUTDIR/$TARGET/${PACKAGE}_debug.tar.bz2" "debug" || exit 1
+fi
+rm -rf "$WORKDIR/debug"
 

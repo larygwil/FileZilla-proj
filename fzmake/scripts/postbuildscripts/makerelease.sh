@@ -6,6 +6,7 @@ makerelease()
 
   rm -rf "$RELEASEDIR" > /dev/null 2>&1
   mkdir -p "$RELEASEDIR"
+  mkdir -p "$RELEASEDIR/debug"
 
   local CONFIGUREIN="$WORKDIR/source/FileZilla3/configure.ac"
 
@@ -42,7 +43,14 @@ makerelease()
         continue
       fi
 
-      locale platform=
+      if echo "$i" | grep debug > /dev/null; then
+        local name="FileZilla_${version}_${TARGET}_debug.tar.bz2"
+
+        cp "$i" "${RELEASEDIR}/debug/${name}"
+        continue;
+      fi
+
+      local platform=
       case "$TARGET" in
         *mingw*)
           platform=win32
@@ -59,15 +67,15 @@ makerelease()
       esac
 
       local name="FileZilla_${version}_${platform}.$lext"
-      echo $name
 
       cp "$i" "${RELEASEDIR}/${name}"
+
+      pushd "${RELEASEDIR}" > /dev/null
+      sha512sum --binary "${name}" >> "FileZilla_${version}.sha512"
+      popd
     done
   done
 
-  cd ${RELEASEDIR}
-
-  sha512sum --binary * > "FileZilla_${version}.sha512"
 }
 
 makerelease
