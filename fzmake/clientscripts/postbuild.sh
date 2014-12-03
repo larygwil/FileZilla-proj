@@ -98,9 +98,10 @@ elif echo "$TARGET" | grep apple-darwin 2>&1 > /dev/null; then
 
   if [ -x "$HOME/prefix-$TARGET/sign.sh" ]; then
     echo "Signing bundle"
-    "$HOME/prefix-$TARGET/sign.sh"
+    "$HOME/prefix-$TARGET/sign.sh" || exit 1
   fi
 
+  echo "Creating ${PACKAGE}.app.tar.bz2 tarball"
   tar -cjf "$OUTPUTDIR/$TARGET/$PACKAGE.app.tar.bz2" FileZilla.app
 
   cd "$OUTPUTDIR/$TARGET" || exit 1
