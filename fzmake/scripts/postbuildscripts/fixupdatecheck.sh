@@ -34,6 +34,9 @@ fixupdatecheck()
       if [ ${FILE: -7} = ".sha512" ]; then
         continue;
       fi
+      if echo ${FILE} | grep debug > /dev/null 2>&1; then
+        continue;
+      fi
 
       SUM=`sha512sum "$FILE"`
       SUM=${SUM% *}
