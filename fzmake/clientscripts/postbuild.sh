@@ -53,6 +53,20 @@ do_strip()
   fi
 }
 
+do_sign()
+{
+  if ! [ -x "$HOME/prefix-$TARGET/sign.sh" ]; then
+    return
+  fi
+
+  echo "Signing $1/$2"
+  if [ -f "$1/.libs/$2" ]; then
+    "$HOME/prefix-$TARGET/sign.sh" "$1/.libs/$2" || exit 1
+  else
+    "$HOME/prefix-$TARGET/sign.sh" "$1/$2" || exit 1
+  fi
+}
+
 rm -rf "$WORKDIR/debug"
 mkdir "$WORKDIR/debug"
 
@@ -61,6 +75,11 @@ if echo "$TARGET" | grep "mingw"; then
   do_strip "$WORKDIR/$PACKAGE/src/putty" "fzputtygen.exe" "$WORKDIR/debug"
   do_strip "$WORKDIR/$PACKAGE/src/putty" "fzsftp.exe" "$WORKDIR/debug"
   do_strip "$WORKDIR/$PACKAGE/src/fzshellext" "libfzshellext-0.dll" "$WORKDIR/debug"
+
+  do_sign "$WORKDIR/$PACKAGE/src/interface" "filezilla.exe"
+  do_sign "$WORKDIR/$PACKAGE/src/putty" "fzputtygen.exe"
+  do_sign "$WORKDIR/$PACKAGE/src/putty" "fzsftp.exe"
+  do_sign "$WORKDIR/$PACKAGE/src/fzshellext" "libfzshellext-0.dll"
 
   echo "Making installer"
   cd "$WORKDIR/$PACKAGE/data"
@@ -78,6 +97,8 @@ if echo "$TARGET" | grep "mingw"; then
 
   # makensis install.nsi
   wine /home/nightlybuild/NSIS_unicode/makensis.exe install.nsi
+
+  do_sign "$WORKDIR/$PACKAGE/data" "FileZilla_3_setup.exe"
 
   chmod 775 FileZilla_3_setup.exe
   mv FileZilla_3_setup.exe "$OUTPUTDIR/$TARGET"
