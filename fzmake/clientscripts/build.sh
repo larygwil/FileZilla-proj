@@ -94,6 +94,9 @@ echo "Making tarball of output files"
 cd "$OUTPUTDIR"
 tar -cf "$PREFIX/output.tar" * || exit 1
 
+SIZE=`ls -nl "$PREFIX/output.tar" | awk '{print $5}'`
+echo "Size of output: $SIZE bytes"
+
 echo "Cleanup"
 rm -rf "$WORKDIR"
 
