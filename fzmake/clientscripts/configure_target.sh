@@ -43,6 +43,7 @@ NCOMP=`normalize_version "$NCOMP" "$NBUILD"`
 if [ "$NTARGET" = "$NCOMP" ]; then
   if [ "$NBUILD" != "$NCOMP" ]; then
     echo "Warning: Native compiler ($COMP) does not match build system ($BUILD)" >&2
+    echo "--build=$TARGET --host=$TARGET"
   fi
 else
   echo "Configuring with --host=$TARGET" >&2
