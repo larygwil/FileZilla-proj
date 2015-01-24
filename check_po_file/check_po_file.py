@@ -3,7 +3,7 @@
 #
 # #############################################################################
 #
-#  Copyright (c) 2010-2014 Peter Körner
+#  Copyright (c) 2010-2015 Peter Körner
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -30,9 +30,9 @@
 #
 # #############################################################################
 #
-# Version: 0.9.0
+# Version: 0.9.1
 # Author:  Peter Körner <18427@gmx.net>
-# Date:    2014-03-23T21:05+01:00
+# Date:    2015-01-25T00:15+01:00
 #
 # Check PO files' translation strings for mismatched format string specifiers,
 #  escape sequences etc.
@@ -86,13 +86,21 @@ available_checks = {
                               "unknown" : "escape sequence(s)"},
                "default_enabled" : False},
         # <ellipsis>: …; don't use non-ASCII characters in help output
-        "i" : {"description" : "Find mismatched trailing ellipses (..., <ellipsis>",
+        "i" : {"description" : "Find mismatched trailing ellipses (..., <ellipsis>)",
                "description_short" : "mismatched trailing ellipses (..., <ellipsis>)",
                "type" : "match_count",
                "regex" : re.compile(r"(\.\.\.|…)$"),
                "item_name" : {"singular" : "trailing ellipsis",
                               "plural" : "trailing ellipses",
                               "unknown" : "trailing ellipsis/ellipses"},
+               "default_enabled" : False},
+        "p" : {"description" : "Find mismatched trailing periods (.)",
+               "description_short" : "mismatched trailing periods (.)",
+               "type" : "match_count",
+               "regex" : re.compile(r"\.$"),
+               "item_name" : {"singular" : "trailing period",
+                              "plural" : "trailing periods",
+                              "unknown" : "trailing period/periods"},
                "default_enabled" : False},
         "w" : {"description" : "Find mismatched leading/trailing whitespace (space, tab)",
                "description_short" : "mismatched leading/trailing whitespace (space, tab)",

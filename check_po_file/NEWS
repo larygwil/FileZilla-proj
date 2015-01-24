@@ -6,6 +6,18 @@ This file contains a list of changes for each released version of
 check_po_file.py.
 
 
+0.9.1 (2015-01-25)
+==================
+
+New features:
+
+- Add check for mismatched trailing periods
+
+Bugfixes:
+
+- Fix typo in check description
+
+
 0.9.0 (2014-03-23)
 ==================
 

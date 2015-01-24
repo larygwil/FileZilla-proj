@@ -186,6 +186,24 @@ Example::
  de.po:442: msgstr "&Herunterladen"
 
 
+[p] mismatched trailing periods (.)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type:    Check for mismatch in number of items
+:Default: No
+
+Checks that a translation contains a trailing period if the original string
+does contain one.
+
+Mismatches should be fixed.
+
+Example::
+
+ de.po: -- Potential mismatch: too many trailing periods - expected 0, got 1
+ de.po:4644: msgid "Invalid chunk size"
+ de.po:4645: msgstr "Ungültige Datenpaketgröße."
+
+
 [l] space-linebreak escape sequence combinations ( <\\n or \\r>)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
