@@ -32,7 +32,7 @@
 #
 # Version: 0.9.1
 # Author:  Peter Körner <18427@gmx.net>
-# Date:    2015-01-25T00:15+01:00
+# Date:    2015-01-25T00:47+01:00
 #
 # Check PO files' translation strings for mismatched format string specifiers,
 #  escape sequences etc.
@@ -53,7 +53,7 @@ import math
 import re
 import sys
 
-version = (0, 9, 0, "")
+version = (0, 9, 1, "")
 
 
 # Available checks
