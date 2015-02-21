@@ -58,7 +58,8 @@ makerelease()
 	    platform="${platform}-setup"
 	  fi
           ;;
-        *6-apple*)
+        *64-apple*)
+        *86-apple*)
           platform="macosx-x86"
           ;;
         *)
