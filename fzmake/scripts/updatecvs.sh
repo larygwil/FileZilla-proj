@@ -2,9 +2,9 @@
 
 updatecvs()
 {
-  logprint "Updating CVS and SVN repositories"
-  logprint "---------------------------------"
-  
+  logprint "Updating source repositories"
+  logprint "----------------------------"
+
   resetPackages || return 1
   while getPackage; do
     PACKAGE=${PACKAGE#-}
@@ -19,8 +19,9 @@ updatecvs()
     if [ -d "CVS" ]; then
       cvs -q -z3 update -dP >> $LOG 2>&1 || return 1
     elif [ -d ".svn" ]; then
-      svn update >> $LOG 2>&1 && continue
       svn update >> $LOG 2>&1 || return 1
+    elif [ -d ".git" ]; then
+      git pull --rebase >> $LOG 2>&1 || return 1
     else
       logprint "Unknown repository type for package $PACKAGE"
       return 1
