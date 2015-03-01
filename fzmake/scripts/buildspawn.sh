@@ -1,7 +1,7 @@
 #! /bin/sh
 
 export SSH="ssh -o PreferredAuthentications=publickey -o StrictHostKeyChecking=yes -o BatchMode=yes -q"
-export SCP="scp -o PreferredAuthentications=publickey -o StrictHostKeyChecking=yes -o BatchMode=yes -q -B"
+export SCP="scp -o PreferredAuthentications=publickey -o StrictHostKeyChecking=yes -o BatchMode=yes -q -B -C"
 
 failure()
 {
