@@ -33,6 +33,9 @@ makepackage()
 
   echo "Build command: nice \"$MAKE\" -j`cpu_count`"
   nice "$MAKE" -j`cpu_count` || return 1
+  if grep '^check:' Makefile >/dev/null 2>&1; then
+    nice "$MAKE" -j`cpu_count` check || return 1
+  fi
   nice "$MAKE" install || return 1
 
   if [ -z "$NOINST" ]; then
