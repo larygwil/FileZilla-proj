@@ -74,12 +74,14 @@ if echo "$TARGET" | grep "mingw"; then
   do_strip "$WORKDIR/$PACKAGE/src/interface" "filezilla.exe" "$WORKDIR/debug"
   do_strip "$WORKDIR/$PACKAGE/src/putty" "fzputtygen.exe" "$WORKDIR/debug"
   do_strip "$WORKDIR/$PACKAGE/src/putty" "fzsftp.exe" "$WORKDIR/debug"
-  do_strip "$WORKDIR/$PACKAGE/src/fzshellext" "libfzshellext-0.dll" "$WORKDIR/debug"
+  do_strip "$WORKDIR/$PACKAGE/src/fzshellext/32" "libfzshellext-0.dll" "$WORKDIR/debug"
+  do_strip "$WORKDIR/$PACKAGE/src/fzshellext/64" "libfzshellext-0.dll" "$WORKDIR/debug"
 
   do_sign "$WORKDIR/$PACKAGE/src/interface" "filezilla.exe"
   do_sign "$WORKDIR/$PACKAGE/src/putty" "fzputtygen.exe"
   do_sign "$WORKDIR/$PACKAGE/src/putty" "fzsftp.exe"
-  do_sign "$WORKDIR/$PACKAGE/src/fzshellext" "libfzshellext-0.dll"
+  do_sign "$WORKDIR/$PACKAGE/src/fzshellext/32" "libfzshellext-0.dll"
+  do_sign "$WORKDIR/$PACKAGE/src/fzshellext/64" "libfzshellext-0.dll"
 
   echo "Making installer"
   cd "$WORKDIR/$PACKAGE/data"
