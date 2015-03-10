@@ -52,7 +52,13 @@ makerelease()
 
       local platform=
       case "$TARGET" in
-        *mingw*)
+        x86_64*mingw*)
+          platform=win64
+	  if [ "$lext" = "exe" ]; then
+	    platform="${platform}-setup"
+	  fi
+          ;;
+        i?86*mingw*)
           platform=win32
 	  if [ "$lext" = "exe" ]; then
 	    platform="${platform}-setup"
