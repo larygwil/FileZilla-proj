@@ -98,7 +98,7 @@ if echo "$TARGET" | grep "mingw"; then
   cat "$PREFIX/packages/FileZilla3/COPYING" | iconv -f utf8 -t utf16 > COPYING
 
   # makensis install.nsi
-  wine /home/nightlybuild/NSIS_unicode/makensis.exe install.nsi
+  WINEARCH=win32 WINEPREFIX=~/.wine32 wine32 /home/nightlybuild/NSIS_unicode/makensis.exe install.nsi
 
   do_sign "$WORKDIR/$PACKAGE/data" "FileZilla_3_setup.exe"
 
