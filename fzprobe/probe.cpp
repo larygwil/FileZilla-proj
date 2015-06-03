@@ -33,7 +33,7 @@ int create_socket(unsigned int port)
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = INADDR_ANY;
-	
+
 	if (bind(sock, (sockaddr *)&addr, sizeof(addr)) < 0)
 	{
 		close(sock);
@@ -82,7 +82,7 @@ bool accept_and_spawn(int sock)
 
 	if (!instance->Run())
 		return false;
-	
+
 	return true;
 }
 
@@ -90,7 +90,7 @@ bool quit = false;
 
 void sigterm(int signal)
 {
-	quit = true;	
+	quit = true;
 }
 
 void sigusr1(int signal)
@@ -156,7 +156,7 @@ int main()
 	close(sock);
 
 	log.Log("Goodbye\n");
-	
+
 	return 0;
 }
 

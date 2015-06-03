@@ -44,7 +44,7 @@ void CInstance::Close()
 }
 
 bool CInstance::Send(const char* str)
-{ 
+{
 	printf("%s", str);
 	if (write(sock, str, strlen(str)) != strlen(str))
 	{
@@ -113,11 +113,9 @@ void CInstance::Main()
 	bool gotVersion = false;
 	bool gotPreport = false;
 	bool gotList = false;
-	
-	for (;;)
-	{
-		if ((time(0) - totalstart) > TOTALTIME)
-		{
+
+	for (;;) {
+		if ((time(0) - totalstart) > TOTALTIME) {
 			Send("500 You're too slow");
 			Close();
 		}
@@ -125,79 +123,68 @@ void CInstance::Main()
 		if (!pos)
 			starttime = time(0);
 
-		if ((time(0) - starttime) > TIMEOUT)
-		{
+		if ((time(0) - starttime) > TIMEOUT) {
 			Send("500 You're too slow");
 			Close();
 		}
-		
+
 		timeval timeout = {0};
 		timeout.tv_sec = TIMEOUT;
-		
+
 		int n = sock;
 		fd_set rd;
 		fd_set wrt;
 		FD_ZERO(&rd);
 		FD_ZERO(&wrt);
 		FD_SET(sock, &rd);
-		if (datasock != -1)
-		{
+		if (datasock != -1) {
 			FD_SET(datasock, &wrt);
 			n = max(n, datasock);
 		}
 		int res = select(n + 1, &rd, &wrt, 0, &timeout);
-		if (res == -1)
-		{
+		if (res == -1) {
 			if (errno == EINTR)
 				continue;
 			if (!quit)
 				printf("Select failed");
 			break;
 		}
-		else if (res == 0)
-		{
+		else if (res == 0) {
 			printf("Timeout");
 			break;
 		}
 
-		if (datasock != -1 && FD_ISSET(datasock, &wrt))
-		{
+		if (datasock != -1 && FD_ISSET(datasock, &wrt)) {
 			DataSocketEvent();
 			if (!FD_ISSET(sock, &rd))
 				continue;
 		}
 
-		if (!FD_ISSET(sock, &rd))
-		{
+		if (!FD_ISSET(sock, &rd)) {
 			printf("socket not ready");
 			Close();
 		}
 
 		int len = read(sock, buffer + pos, BUFFERLEN - pos);
-		if (len == -1)
-		{
+		if (len == -1) {
 			if (errno = EAGAIN)
 				continue;
 			printf("recv failed");
 			Close();
 		}
-		else if (!len)
-		{
+		else if (!len) {
 			Close();
 		}
 
-		for (int i = pos; i < pos + (len - 2); i++)
-		{
-			if (buffer[i] == '\r' || buffer[i] == '\n')
-			{
+		for (int i = pos; i < pos + (len - 2); ++i) {
+			if (buffer[i] == '\r' || buffer[i] == '\n') {
 				printf("Invalid command");
 				Close();
 			}
 		}
 		pos += len;
-		
-		if (buffer[pos - 1] != '\n' || buffer[pos - 2] != '\r')
-		{
+
+		if (buffer[pos - 1] != '\n' || buffer[pos - 2] != '\r') {
 			if (pos >= (BUFFERLEN - 1))
 			{
 				printf("Command too long");
@@ -209,18 +196,14 @@ void CInstance::Main()
 		buffer[pos - 2] = 0;
 		printf("Command: %s", buffer);
 
-		if (pos > 5 && !memcmp(buffer, "USER ", 5))
-		{
+		if (pos > 5 && !memcmp(buffer, "USER ", 5)) {
 			Send("331 Give any password.");
 		}
-		else if (pos > 5 && !memcmp(buffer, "PASS ", 5))
-		{
+		else if (pos > 5 && !memcmp(buffer, "PASS ", 5)) {
 			Send("230 logged on.");
 		}
-		else if (pos > 8 && !memcmp(buffer, "VERSION ", 8))
-		{
-			if (gotVersion)
-			{
+		else if (pos > 8 && !memcmp(buffer, "VERSION ", 8)) {
+			if (gotVersion) {
 				Send("550 don't repeat yourself");
 				Close();
 			}
@@ -229,34 +212,29 @@ void CInstance::Main()
 
 			Send("200 Please perform your test");
 		}
-		else if (pos > 5 && !memcmp(buffer, "IP ", 3))
-		{
-			if (gotIP)
-			{
+		else if (pos > 5 && !memcmp(buffer, "IP ", 3)) {
+			if (gotIP) {
 				Send("550 don't repeat yourself");
 				Close();
 			}
 			gotIP = true;
-			
+
 			// Get real IP address
 			unsigned int ip = addr.sin_addr.s_addr;
 			int written = snprintf(clientip, 16, "%d.%d.%d.%d", ip % 256, (ip >> 8) % 256, (ip >> 16) % 256, ip >> 24);
-			if (written < 0 || written >= 16)
-			{
+			if (written < 0 || written >= 16) {
 				Send("550 Internal probe error.");
 				Close();
 			}
 
 			// Convert to our special hex format
 			char realHex[100];
-			for (char *p = clientip, *q = realHex; ; p++, q++)
-			{
-				if (!*p)
-				{
+			for (char *p = clientip, *q = realHex; ; p++, q++) {
+				if (!*p) {
 					*q = 0;
 					break;
 				}
-				
+
 				if (*p == '.')
 					*q = '-';
 				else
@@ -266,71 +244,58 @@ void CInstance::Main()
 
 			char* incIP = buffer + 3;
 			char* incHex;
-			if ((incHex = strchr(incIP, ' ')))
-			{
+			if ((incHex = strchr(incIP, ' '))) {
 				*incHex = 0;
 				incHex++;
 			}
-			else
-			{
+			else {
 				Send("500 Syntax error");
 				Close();
 			}
-			if (!strcmp(incHex, realHex))
-			{
+			if (!strcmp(incHex, realHex)) {
 				if (!strcmp(incIP, clientip))
 					Send("200 OK");
 				else
 					Send("501 Mismatch. Router tainted the address.");
 			}
-			else
-			{
+			else {
 				char hexifiedIP[100];
-				for (char *p = incIP, *q = hexifiedIP; ; p++, q++)
-				{
-					if (!*p)
-					{
+				for (char *p = incIP, *q = hexifiedIP; ; p++, q++) {
+					if (!*p) {
 						*q = 0;
 						break;
 					}
-					
+
 					if (*p == '.')
 						*q = '-';
 					else
 						*q = *p - '0' + 'a';
 				}
-				if (!strcmp(incHex, hexifiedIP))
-				{
+				if (!strcmp(incHex, hexifiedIP)) {
 					sprintf(buffer, "510 Mismatch. Your IP is %s, %s", clientip, realHex);
 					Send(buffer);
 				}
-				else
-				{
+				else {
 					sprintf(buffer, "511 Mismatch. Tainted by router or firewall. Your IP is: %s %s", clientip, realHex);
 					Send(buffer);
 				}
 			}
 		}
-		else if (pos > 5 && !memcmp(buffer, "PREP ", 5))
-		{
-			if (gotPreport)
-			{
+		else if (pos > 5 && !memcmp(buffer, "PREP ", 5)) {
+			if (gotPreport) {
 				Send("550 Don't repeat yourself");
 				Close();
 			}
 			gotPreport = true;
 			int port = 0;
-			for (char* p = buffer + 5; *p; p++)
-			{
-				if (*p < '0' || *p > '9')
-				{
+			for (char* p = buffer + 5; *p; p++) {
+				if (*p < '0' || *p > '9') {
 					Send("550 Syntax error");
 					Close();
 				}
 				port = port * 10 + *p - '0';
 			}
-			if (port < 1 || port > 65535)
-			{
+			if (port < 1 || port > 65535) {
 				Send("550 Syntax error, port out of range");
 				Close();
 			}
@@ -340,15 +305,12 @@ void CInstance::Main()
 			sprintf(buffer, "200 Using port %d, data token %d", port, data);
 			Send(buffer);
 		}
-		else if (pos > 5 && !memcmp(buffer, "PORT ", 5))
-		{
-			if (!gotIP || !gotPreport)
-			{
+		else if (pos > 5 && !memcmp(buffer, "PORT ", 5)) {
+			if (!gotIP || !gotPreport) {
 				Send("503 Bad sequence of commands");
 				Close();
 			}
-			if (gotPort)
-			{
+			if (gotPort) {
 				Send("550 Don't repeat yourself");
 				Close();
 			}
@@ -356,23 +318,18 @@ void CInstance::Main()
 
 			char* strport = 0;
 			unsigned char dotcount = 0;
-			for (char* p = buffer + 5; *p; p++)
-			{
-				if ((*p < '0' || *p > '9') && *p != ',')
-				{
+			for (char* p = buffer + 5; *p; p++) {
+				if ((*p < '0' || *p > '9') && *p != ',') {
 					Send("550 Syntax error");
 					Close();
 				}
-				if (*p == ',')
-				{
-					if (*p == *(p - 1))
-					{
+				if (*p == ',') {
+					if (*p == *(p - 1)) {
 						Send("550 Syntax error");
 						Close();
 					}
-					dotcount++;
-					if (dotcount == 4)
-					{
+					++dotcount;
+					if (dotcount == 4) {
 						*p = 0;
 						strport = p + 1;
 					}
@@ -380,28 +337,24 @@ void CInstance::Main()
 						*p = '.';
 				}
 			}
-			if (dotcount != 5)
-			{
+			if (dotcount != 5) {
 				Send("550 Syntax error");
 				Close();
 			}
 
-			if (strcmp(clientip, buffer + 5))
-			{
+			if (strcmp(clientip, buffer + 5)) {
 				Send("501 IP Mismatch. Tainted by router or firewall.");
 				Close();
 			}
-			
+
 			int port = 0;
-			for (char* p = strport; *p; p++)
-			{
+			for (char* p = strport; *p; p++) {
 				if (*p == '.')
 					port *= 256;
 				else
 					port = port - (port % 256) + (port % 256) * 10 + *p - '0';
 			}
-			if (port != dataport)
-			{
+			if (port != dataport) {
 				char tmp[150];
 				sprintf(tmp, "502 Port mismatch. Received arguments contained port %d. Command has been tained by router or firewall.", port);
 				Send(tmp);
@@ -410,15 +363,12 @@ void CInstance::Main()
 
 			Send("200 PORT command successful");
 		}
-		else if (pos > 4 && !memcmp(buffer, "LIST", 4))
-		{
-			if (!gotPort)
-			{
+		else if (pos > 4 && !memcmp(buffer, "LIST", 4)) {
+			if (!gotPort) {
 				Send("503 Bad sequence of commands");
 				Close();
 			}
-			if (gotList)
-			{
+			if (gotList) {
 				Send("550 Don't repeat yourself");
 				Close();
 			}
@@ -426,57 +376,48 @@ void CInstance::Main()
 
 			struct sockaddr_in connectaddr;
 			connectaddr.sin_family = AF_INET;
-			if (inet_aton(clientip, &connectaddr.sin_addr) == 0)
-			{
+			if (inet_aton(clientip, &connectaddr.sin_addr) == 0) {
 				printf(clientip);
 				Send("501 Invalid IP-address");
 				Close();
 			}
 			connectaddr.sin_port = htons(dataport);
-			
+
 			datasock = socket(AF_INET, SOCK_STREAM, 0);
-			if (datasock == -1)
-			{
+			if (datasock == -1) {
 				Send("502 Failed to create socket");
 				Close();
 			}
-			if (fcntl(datasock, F_SETFL, fcntl(sock, F_GETFL) | O_NONBLOCK) < 0)
-			{
+			if (fcntl(datasock, F_SETFL, fcntl(sock, F_GETFL) | O_NONBLOCK) < 0) {
 				Send("502 Failed to create socket");
 				Close();
 			}
 
-			if (connect(datasock, (struct sockaddr *)&connectaddr, sizeof(connectaddr)) == -1 && errno != EINPROGRESS)
-			{
+			if (connect(datasock, (struct sockaddr *)&connectaddr, sizeof(connectaddr)) == -1 && errno != EINPROGRESS) {
 				Send("503 Failed to establish data connection.");
 				Close();
 			}
-			
+
 			Send("150 opening data connection");
 		}
-		else if (pos > 4 && !memcmp(buffer, "PASV", 4))
-		{
+		else if (pos > 4 && !memcmp(buffer, "PASV", 4)) {
 			Send("557 PASV not permitted, you have malicious router or firewall");
 			Close();
 		}
-		else if (pos > 4 && !memcmp(buffer, "QUIT", 4))
-		{
+		else if (pos > 4 && !memcmp(buffer, "QUIT", 4)) {
 			Send("200 goodbye!");
 			Close();
 		}
-		else
-		{
+		else {
 			Send("500 invalid command, goodbye!");
-			Close();	
+			Close();
 		}
 
 		pos = 0;
-
-		
 	}
 
 	Close();
-	
+
 	return;
 }
 
