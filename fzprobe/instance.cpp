@@ -175,25 +175,24 @@ void CInstance::Main()
 		else if (!len) {
 			Close();
 		}
-
-		for (int i = pos; i < pos + (len - 2); ++i) {
-			if (buffer[i] == '\r' || buffer[i] == '\n') {
-				printf("Invalid command");
-				Close();
-			}
-		}
 		pos += len;
 
-		if (buffer[pos - 1] != '\n' || buffer[pos - 2] != '\r') {
-			if (pos >= (BUFFERLEN - 1))
-			{
+		if (pos < 2 || buffer[pos - 1] != '\n' || buffer[pos - 2] != '\r') {
+			if (pos >= (BUFFERLEN - 1)) {
 				printf("Command too long");
 				Close();
 			}
 			continue;
 		}
-
 		buffer[pos - 2] = 0;
+
+		for (int i = 0; i < (pos - 2); ++i) {
+			if (buffer[i] < ' ' || buffer[i] >= 127) {
+				printf("Invalid character in command");
+				Close();
+			}
+		}
+
 		printf("Command: %s", buffer);
 
 		if (pos > 5 && !memcmp(buffer, "USER ", 5)) {
@@ -409,7 +408,9 @@ void CInstance::Main()
 			Close();
 		}
 		else {
-			Send("500 invalid command, goodbye!");
+			char tmp[100 + BUFFERLEN];
+			sprintf(tmp, "500 invalid command, goodbye! We did receive this from you: %s", buffer);
+			Send(tmp);
 			Close();
 		}
 
