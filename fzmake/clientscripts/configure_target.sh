@@ -9,7 +9,7 @@ normalize()
 
 BUILD=`"${SCRIPTS:-.}/config.guess"`
 COMP=`${CC:-cc} $CFLAGS -dumpmachine`
-TARGET="${1:-$BUILD}"
+TARGET="${2:-${1:-$BUILD}}"
 
 NTARGET=`normalize "$TARGET"`
 NBUILD=`normalize "$BUILD"`
