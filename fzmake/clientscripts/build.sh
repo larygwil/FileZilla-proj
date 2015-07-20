@@ -56,7 +56,6 @@ if [ ! -z "$HOME" ]; then
         exit $?
       fi
     fi
-#   export CXXFLAGS="-O0 -g3 -ggdb"
 
     if [ -x "$HOME/prefix-$TARGET/profile" ]; then
       . "$HOME/prefix-$TARGET/profile"
