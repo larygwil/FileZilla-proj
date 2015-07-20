@@ -22,8 +22,8 @@ makepackage()
   mkdir -p "$WORKDIR/$PACKAGE"
   cd "$WORKDIR/$PACKAGE"
 
-  HOST=`"$SCRIPTS/configure_target.sh" "$TARGET"`
-  if ! eval "$PREFIX/packages/$PACKAGE/configure" "'--prefix=$WORKDIR/prefix/$PACKAGE'" $HOST $FLAGS; then
+  HOSTARG=`"$SCRIPTS/configure_target.sh" "$TARGET" "$HOST"`
+  if ! eval "$PREFIX/packages/$PACKAGE/configure" "'--prefix=$WORKDIR/prefix/$PACKAGE'" $HOSTARG $FLAGS; then
     cat config.log
     return 1
   fi
