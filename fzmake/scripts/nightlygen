@@ -136,7 +136,11 @@ applypatch()
 
   logprint "Applying $PATCH to $PACKAGE"
   cd $WORKDIR/source/$PACKAGE
-  patch -p0 -i $PATCHDIR/$PATCH -f >> $LOG 2>&1 || buildfailure || exit 1
+  if patch -p0 -i $PATCHDIR/$PATCH -f --dry-run >> $LOG 2>&1; then
+    patch -p0 -i $PATCHDIR/$PATCH -f >> /dev/null 2>&1
+  else
+    logprint "$PATCH does not apply, skipping..."
+  fi
 }
 
 applypatches()
