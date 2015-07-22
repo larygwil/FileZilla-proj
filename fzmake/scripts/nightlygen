@@ -136,8 +136,8 @@ applypatch()
 
   logprint "Applying $PATCH to $PACKAGE"
   cd $WORKDIR/source/$PACKAGE
-  if patch -p0 -i $PATCHDIR/$PATCH -f --dry-run >> $LOG 2>&1; then
-    patch -p0 -i $PATCHDIR/$PATCH -f >> /dev/null 2>&1
+  if patch -p0 -i $PATCHDIR/$PATCH -r - --dry-run >> $LOG 2>&1; then
+    patch -p0 -i $PATCHDIR/$PATCH -r - >> /dev/null 2>&1
   else
     logprint "$PATCH does not apply, skipping..."
   fi
