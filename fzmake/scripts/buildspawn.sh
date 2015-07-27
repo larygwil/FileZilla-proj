@@ -108,6 +108,10 @@ buildspawn()
     cd "$WORKDIR"
     tar -xf "$WORKDIR/output-$TARGET.tar" >> $TARGETLOG 2>&1 || failure || continue
 
+    BUILDENDSECONDS=`date '+%s'`
+    local span=$((BUILDENDSECONDS - STARTSECONDS))
+    echo "Build time: $span seconds" >> "$TARGETLOG"
+
     if [ ! -d "$TARGET" ]; then
       targetlogprint "Downloaded file does not contain target specific files"
       failure || continue
@@ -126,8 +130,11 @@ buildspawn()
     targetlogprint "Build successful"
 
     ENDSECONDS=`date '+%s'`
+    local span=$((ENDSECONDS - BUILDENDSECONDS))
+    echo "Download time: $span seconds" >> "$TARGETLOG"
+
     local span=$((ENDSECONDS - STARTSECONDS))
-    echo "Build time: $span seconds" >> "$TARGETLOG"
+    echo "Total time: $span seconds" >> "$TARGETLOG"
 
   done
 
