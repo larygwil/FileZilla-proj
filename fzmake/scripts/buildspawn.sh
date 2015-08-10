@@ -102,15 +102,15 @@ buildspawn()
       filter $SSH -i "$KEYFILE" -p $PORT "$HOST" "ssh $SUBHOST '. /etc/profile; cd $HOSTPREFIX; clientscripts/build.sh \"$HOSTPREFIX\" \"$i\" \"$PACKAGES\"'" >> $TARGETLOG || failure || continue
     fi
 
+    BUILDENDSECONDS=`date '+%s'`
+    local span=$((BUILDENDSECONDS - STARTSECONDS))
+    echo "Build time: $span seconds" >> "$TARGETLOG"
+
     targetlogprint "Downloading built files"
     filter $SCP -i "$KEYFILE" -P $PORT "$HOST:$HOSTPREFIX/output.tar" "$WORKDIR/output-$TARGET.tar" >> $TARGETLOG || failure || continue
 
     cd "$WORKDIR"
     tar -xf "$WORKDIR/output-$TARGET.tar" >> $TARGETLOG 2>&1 || failure || continue
-
-    BUILDENDSECONDS=`date '+%s'`
-    local span=$((BUILDENDSECONDS - STARTSECONDS))
-    echo "Build time: $span seconds" >> "$TARGETLOG"
 
     if [ ! -d "$TARGET" ]; then
       targetlogprint "Downloaded file does not contain target specific files"
