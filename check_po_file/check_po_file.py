@@ -71,7 +71,7 @@ available_checks = {
         "f" : {"description" : "Find mismatched format specifiers (%<arbitrary character>)",
                "description_short" : "mismatched format specifiers (%<arbitrary character>)",
                "type" : "match",
-               "regex" : re.compile(r"%."),
+               "regex" : re.compile(r"%(?:[0-9]+\$)?."),
                "item_name" : {"singular" : "format specifier",
                               "plural" : "format specifiers",
                               "unknown" : "format specifier(s)"},
