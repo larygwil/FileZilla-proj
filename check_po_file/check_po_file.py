@@ -30,9 +30,9 @@
 #
 # #############################################################################
 #
-# Version: 0.9.1
+# Version: 0.9.2
 # Author:  Peter Körner <18427@gmx.net>
-# Date:    2015-01-25T00:47+01:00
+# Date:    2015-08-15T10:15+00:00
 #
 # Check PO files' translation strings for mismatched format string specifiers,
 #  escape sequences etc.
@@ -53,7 +53,7 @@ import math
 import re
 import sys
 
-version = (0, 9, 1, "")
+version = (0, 9, 2, "")
 
 
 # Available checks
@@ -70,8 +70,8 @@ version = (0, 9, 1, "")
 available_checks = {
         "f" : {"description" : "Find mismatched format specifiers (%<arbitrary character>)",
                "description_short" : "mismatched format specifiers (%<arbitrary character>)",
-               "type" : "match",
-               "regex" : re.compile(r"%(?:[0-9]+\$)?."),
+               "type" : "match_format",
+               "regex" : re.compile(r"%(?:[0-9]+\$)?[0-9]*."),
                "item_name" : {"singular" : "format specifier",
                               "plural" : "format specifiers",
                               "unknown" : "format specifier(s)"},
@@ -239,6 +239,13 @@ def print_finding(check, path, message, string_pair, items_found, items_expected
                           ", ".join(["\"{}\"".format(x) for x in items_expected]),
                           ", ".join(["\"{}\"".format(x) for x in items_found])),
                   encoding)
+    if check["type"] == "match_format":
+        print_enc("\n{}: -- Potential mismatch: {} - reference [{}], got [{}]\n"
+                  .format(path,
+                          message,
+                          ", ".join(["\"{}\"".format(x) for x in items_expected]),
+                          ", ".join(["\"{}\"".format(x) for x in items_found])),
+                  encoding)
     elif check["type"] == "match_count":
         print_enc("\n{}: -- Potential mismatch: {} - expected {}, got {}\n"
                   .format(path,
@@ -399,6 +406,41 @@ def print_summary(available_checks, check_ids, data, lines_between_headers):
           .format(file_count["total"], file_count["checked"], file_count["skipped"]))
     print("#")
 
+def sort_format(items):
+
+    # Sorts the passed format specifies according to their positional index and returns
+    # the sorted specifiers
+
+    sorted = {}
+
+    for i, val in enumerate(items, 1):
+        m = re.match("%(?:([0-9]+)\$)?[0-9]*(.)", val)
+        if m.group(1) != None:
+            i = int(m.group(1))
+
+        sorted[i] = m.group(2)
+
+    return sorted
+
+def check_for_mismatch_format(check, items_found, items_expected):
+    """Check two format specifier lists for mismatches.
+
+    Return the result and a message describing the mismatch.
+    """
+
+    mismatch_found = False
+    message = ""
+
+    found = sort_format(items_found)
+    expected = sort_format(items_expected)
+
+    if found != expected:
+        message = "unexpected {}".format(check["item_name"]["unknown"])
+        mismatch_found = True
+        print(found)
+        print(expected)
+
+    return mismatch_found, message
 
 def check_for_mismatch(check, items_found, items_expected):
     """Check two item lists for mismatches.
@@ -416,6 +458,8 @@ def check_for_mismatch(check, items_found, items_expected):
         message = "too many {}".format(check["item_name"]["plural"])
         mismatch_found = True
     # Don't check for exact matches if not needed
+    elif check["type"] == "match_format":
+        mismatch_found, message = check_for_mismatch_format(check, items_found, items_expected)
     elif check["type"] != "match_count" and items_expected != items_found:
         message = "unexpected {}".format(check["item_name"]["unknown"])
         mismatch_found = True
@@ -768,7 +812,7 @@ if __name__ == "__main__":
     # in the same order every time the script is executed (apart from checks
     # being enabled/disabled and thus their output being added/removed).
     enabled_checks_all = [(x, available_checks[x]) for x in sorted(enabled_check_ids)]
-    enabled_checks = {"match*" : [x for x in enabled_checks_all if x[1]["type"] in ("match", "match_count")],
+    enabled_checks = {"match*" : [x for x in enabled_checks_all if x[1]["type"] in ("match", "match_count", "match_format")],
                       "search" : [x for x in enabled_checks_all if x[1]["type"] == "search"]}
 
 
