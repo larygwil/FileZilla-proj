@@ -12,6 +12,7 @@ check_po_file.py.
 New features:
 
 - Positional printf argument support
+- Added -q option for less output
 
 
 0.9.1 (2015-01-25)

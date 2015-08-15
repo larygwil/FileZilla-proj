@@ -32,7 +32,7 @@
 #
 # Version: 0.9.2
 # Author:  Peter Körner <18427@gmx.net>
-# Date:    2015-08-15T10:15+00:00
+# Date:    2015-08-15T10:30+00:00
 #
 # Check PO files' translation strings for mismatched format string specifiers,
 #  escape sequences etc.
@@ -195,6 +195,7 @@ File checking options:
   Miscellaneous options:
   -b, --ignore-bom          Do not abort checking if a BOM was found
   -s, --summary             Show summary
+  -q                        Be quiet, only print errors
 
 General options:
   -h, --help                Display this help text
@@ -731,8 +732,8 @@ if __name__ == "__main__":
 
     # Short and long command line options
     # ":" means "requires argument"
-    short_options =  "hvae:d:bs"
-    long_options = ["help", "version", "all-checks", "enable=", "disable=", "ignore-bom", "summary"]
+    short_options =  "hvae:d:bsq"
+    long_options = ["help", "version", "all-checks", "enable=", "disable=", "ignore-bom", "summary", "quiet"]
 
     # Parse command line
     try:
@@ -749,6 +750,9 @@ if __name__ == "__main__":
 
     # Show summary?
     show_summary = False
+
+    # Quiet?
+    quiet = False
 
     # Process specified options
     check_options_specified = set()
@@ -772,7 +776,8 @@ if __name__ == "__main__":
             ignore_bom = True
         elif option in ("-s", "--summary"):
             show_summary = True
-
+        elif option in ("-q", "--quiet"):
+            quiet = True
 
     # Still not exited -> files shall be processed ...
 
@@ -817,15 +822,16 @@ if __name__ == "__main__":
 
 
     # Print the encoding and enabled checks
-    print("# Encoding: {}".format(encoding))
-    print("#")
-    print("# Enabled checks: Find...")
-    for check_id in sorted(list(enabled_check_ids)):
-        print("#  {}: {}".format(check_id, available_checks[check_id]["description_short"]))
-    print("#")
+    if not quiet:
+        print("# Encoding: {}".format(encoding))
+        print("#")
+        print("# Enabled checks: Find...")
+        for check_id in sorted(list(enabled_check_ids)):
+            print("#  {}: {}".format(check_id, available_checks[check_id]["description_short"]))
+        print("#")
 
-    # Make sure header is printed before check output
-    sys.stdout.flush()
+        # Make sure header is printed before check output
+        sys.stdout.flush()
 
     # Was there any error or have any mismatches/... been found?
     problems_found = False
