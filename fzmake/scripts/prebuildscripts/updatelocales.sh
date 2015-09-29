@@ -4,7 +4,7 @@
 
 # This function updates the locales page
 
-. ../util.sh
+. "$SCRIPTS/util.sh"
 
 updatelocales()
 {
