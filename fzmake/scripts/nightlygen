@@ -196,7 +196,7 @@ fi
 
 logprint "Copying source"
 mkdir -p "$WORKDIR/source"
-rsync -av --delete --exclude .svn/ "$CVSDIR/" "$WORKDIR/source/" || buildfailure || exit 1
+rsync -av --delete --exclude .svn/ --exclude .git/ --chmod=o+r,Do+x "$CVSDIR/" "$WORKDIR/source/" || buildfailure || exit 1
 
 applypatches
 
