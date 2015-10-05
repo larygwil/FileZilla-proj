@@ -55,6 +55,7 @@ while getPackage; do
   PACKAGE=${PACKAGE#-}
 
   PATH="$WORKDIR/prefix/$PACKAGE/bin:$PATH"
-  LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$WORKDIR/prefix/$PACKAGE/lib"
+  LD_LIBRARY_PATH="$WORKDIR/prefix/$PACKAGE/lib:$LD_LIBRARY_PATH"
+  PKG_CONFIG_PATH="$WORKDIR/prefix/$PACKAGE/lib/pkgconfig:$PKG_CONFIG_PATH"
 done
 
