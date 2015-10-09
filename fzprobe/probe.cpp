@@ -23,8 +23,7 @@ int create_socket(unsigned int port)
 {
 	log.Log("Creating socket on port %d\n", port);
 	int sock = socket(PF_INET, SOCK_STREAM, 0);
-	if (sock == -1)
-	{
+	if (sock == -1) {
 		log.Log("Error creating socket: %d\n", errno);
 		return -1;
 	}
@@ -34,22 +33,19 @@ int create_socket(unsigned int port)
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = INADDR_ANY;
 
-	if (bind(sock, (sockaddr *)&addr, sizeof(addr)) < 0)
-	{
+	if (bind(sock, (sockaddr *)&addr, sizeof(addr)) < 0) {
 		close(sock);
 		log.Log("Error binding socket: %d\n", errno);
 		return -1;
 	}
 
-	if (listen(sock, 5) < 0)
-	{
+	if (listen(sock, 5) < 0) {
 		close(sock);
 		log.Log("Error listening: %d\n", errno);
 		return -1;
 	}
 
-	if (fcntl(sock, F_SETFL, fcntl(sock, F_GETFL) | O_NONBLOCK) < 0)
-	{
+	if (fcntl(sock, F_SETFL, fcntl(sock, F_GETFL) | O_NONBLOCK) < 0) {
 		close(sock);
 		log.Log("fcntl failed: %d\n", errno);
 		return -1;
@@ -63,8 +59,7 @@ bool accept_and_spawn(int sock)
 	sockaddr_in addr;
 	socklen_t len = sizeof(addr);
 	int fd = accept(sock, (sockaddr*)&addr, &len);
-	if (fd == -1)
-	{
+	if (fd == -1) {
 		log.Log("Error accepting: %d\n", errno);
 		return false;
 	}

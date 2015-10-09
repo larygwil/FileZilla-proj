@@ -46,14 +46,12 @@ void CInstance::Close()
 bool CInstance::Send(const char* str)
 {
 	printf("%s", str);
-	if (write(sock, str, strlen(str)) != strlen(str))
-	{
+	if (send(sock, str, strlen(str), MSG_NOSIGNAL) != strlen(str)) {
 		printf("Failed to write to socket: %d", errno);
 		Close();
 		return false;
 	}
-	if (write(sock, "\r\n", 2) != 2)
-	{
+	if (send(sock, "\r\n", 2, MSG_NOSIGNAL) != 2) {
 		printf("Failed to write to socket: %d", errno);
 		Close();
 		return false;
@@ -167,7 +165,7 @@ void CInstance::Main()
 
 		int len = read(sock, buffer + pos, BUFFERLEN - pos);
 		if (len == -1) {
-			if (errno = EAGAIN)
+			if (errno == EAGAIN || errno == EINTR)
 				continue;
 			printf("recv failed");
 			Close();
