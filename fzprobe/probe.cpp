@@ -14,9 +14,6 @@
 #include "log.h"
 #include "instance.h"
 
-// Number of currently active connections
-static int active = 0;
-
 static unsigned int idcounter = 0;
 
 int create_socket(unsigned int port)
@@ -83,12 +80,12 @@ bool accept_and_spawn(int sock)
 
 bool quit = false;
 
-void sigterm(int signal)
+void sigterm(int)
 {
 	quit = true;
 }
 
-void sigusr1(int signal)
+void sigusr1(int)
 {
 	log.Reopen();
 }

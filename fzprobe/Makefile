@@ -7,7 +7,7 @@ CXXFLAGS="-pthread"
 	$(CC) -O0 -g -c -o $@ $*
 
 %.o: %.cpp
-	$(CXX) -O0 -g $(CXXFLAGS) -c -o $@ $+
+	$(CXX) -O0 -g -Wall -Wextra $(CXXFLAGS) -c -o $@ $+
 
 fzprobe: probe.o instance.o log.o permissions.o
 	$(CXX) $(CXXFLAGS) -o $@ $+

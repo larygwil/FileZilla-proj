@@ -421,7 +421,7 @@ void CInstance::Main()
 }
 
 CInstance::CInstance(int id, int fd, sockaddr_in addr)
-	: id(id), sock(fd), datasock(-1), addr(addr)
+	: id_(id), sock(fd), datasock(-1), addr(addr)
 {
 }
 
@@ -437,6 +437,8 @@ bool CInstance::Run()
 
 	pthread_t id;
 	pthread_create(&id, &attr, ThreadProc, this);
+
+	return true;
 }
 
 void* CInstance::ThreadProc(void* data)
@@ -450,7 +452,7 @@ void CInstance::printf(const char* fmt, ...)
 	va_list ap;
 
 	char* buff = new char[strlen(fmt) + 10];
-	sprintf(buff, "% 4d: %s\n", id, fmt);
+	sprintf(buff, "% 4d: %s\n", id_, fmt);
 
 	va_start(ap, fmt);
 	log.Logv(buff, ap);

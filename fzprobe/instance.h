@@ -30,9 +30,9 @@ protected:
 	void printf(const char* fmt, ...);
 	void DataSocketEvent();
 
+	int id_;
 	int sock, datasock;
 	sockaddr_in addr;
-	int id;
 
 	char clientip[16];	// Filled by IP
 	int dataport;		// Filled by PREP
