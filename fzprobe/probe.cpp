@@ -25,7 +25,10 @@ int create_socket(unsigned int port)
 		return -1;
 	}
 
-	struct sockaddr_in addr = {0};
+	int optval = 1;
+	setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+
+	struct sockaddr_in addr{};
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = INADDR_ANY;
@@ -129,7 +132,7 @@ int main()
 		fd_set set;
 		FD_ZERO(&set);
 		FD_SET(sock, &set);
-		timeval tv = {0};
+		timeval tv{};
 		tv.tv_sec = 1;
 		if (select(sock + 1, &set, 0, 0, &tv) == -1)
 		{
