@@ -46,7 +46,7 @@ void CInstance::Close()
 bool CInstance::Send(const char* str)
 {
 	printf("%s", str);
-	if (send(sock, str, strlen(str), MSG_NOSIGNAL) != strlen(str)) {
+	if (send(sock, str, strlen(str), MSG_NOSIGNAL) != static_cast<ssize_t>(strlen(str))) {
 		printf("Failed to write to socket: %d", errno);
 		Close();
 		return false;
@@ -126,7 +126,7 @@ void CInstance::Main()
 			Close();
 		}
 
-		timeval timeout = {0};
+		timeval timeout{};
 		timeout.tv_sec = TIMEOUT;
 
 		int n = sock;
