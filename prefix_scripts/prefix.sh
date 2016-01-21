@@ -12,6 +12,8 @@ unset LDFLAGS
 export PATH="$OLDPATH"
 unset PKG_CONFIG_PATH
 unset CONFIGURE_ARGS
+unset WINEARCH
+unset WINEPREFIX
 
 if [ -z "$PREFIX" ]; then
   unset PREFIX
@@ -25,6 +27,7 @@ else
       PREFIX="$HOME/prefix-$PREFIX"
     else
       echo "Invalid prefix"
+      unset PREFIX
       return 1
     fi
   fi
@@ -32,6 +35,7 @@ else
 
   if [ ! -d "$PREFIX" ]; then
     echo "Invalid prefix"
+    unset PREFIX
     return 1
   fi
 
