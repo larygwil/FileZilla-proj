@@ -194,6 +194,10 @@ void CInstance::Main()
 		printf("Command: %s", buffer);
 
 		if (pos > 5 && !memcmp(buffer, "USER ", 5)) {
+			if (strcmp(buffer + 5, "FileZilla")) {
+				Send("550 Wrong username");
+				Close();
+			}
 			Send("331 Give any password.");
 		}
 		else if (pos > 5 && !memcmp(buffer, "PASS ", 5)) {
@@ -455,7 +459,7 @@ void CInstance::printf(const char* fmt, ...)
 	sprintf(buff, "% 4d: %s\n", id_, fmt);
 
 	va_start(ap, fmt);
-	log.Logv(buff, ap);
+	logger.Logv(buff, ap);
 	va_end(ap);
 	delete [] buff;
 }

@@ -2,7 +2,7 @@
 #include "permissions.h"
 #include <stdarg.h>
 
-CLog log;
+CLog logger;
 
 CLog::CLog()
 {

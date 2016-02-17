@@ -17,15 +17,17 @@ bool drop_root()
 {
   static const char* username = "nobody";
   struct passwd* pwd = getpwnam(username);
-  if (!pwd)
-  {
-    log.Log("Failed to drop root privileges, getpwnam failed: %d\n", errno);
+  if (!pwd) {
+    logger.Log("Failed to drop root privileges, getpwnam failed: %d\n", errno);
     return false;
   }
-  log.Log("Dropping root privileges to %s (%d)\n", username, pwd->pw_uid);
-  if (setuid(pwd->pw_uid) == -1)
-  {
-    log.Log("Failed to drop root privileges, setuid failed: %d\n", errno);
+  logger.Log("Dropping root privileges to %s (%d)\n", username, pwd->pw_uid);
+  if (setresgid(pwd->pw_uid, pwd->pw_uid, pwd->pw_uid) == -1) {
+    logger.Log("Failed to drop root privileges, setresgid failed: %d\n", errno);
+    return false;
+  }
+  if (setresuid(pwd->pw_uid, pwd->pw_uid, pwd->pw_uid) == -1) {
+    logger.Log("Failed to drop root privileges, setresuid failed: %d\n", errno);
     return false;
   }
   return true;

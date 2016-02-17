@@ -27,7 +27,7 @@ protected:
   FILE* m_logfile;
 };
 
-extern CLog log;
+extern CLog logger;
 
 #endif //__LOG_H__
 
