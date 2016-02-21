@@ -1,0 +1,25 @@
+0.4.0 (2016-02-21)
+
++ Added shared_optional and sparse_optional classes
+
+0.3.1 (2016-01-31)
+
+- Fixed compile errors affecting some platforms
+- Minor documentation fixes
+
+0.3.0 (2016-01-12)
+
++ Added functions to deal with IP address strings
+- Added testcase to verify string conversion functions. Some MinGW installations have broken wcsrtombs and mbsrtowcs implementations.
+
+0.2.0 (2015-11-19)
+
++ Added local_filesys class
++ Added recursive_remove class
++ Added to_utf8 function to string.hpp as counterpart to the to_(w)string_from_utf8 functions
++ Added missing libfilezilla/glue/wx.hpp header mentioned in the FAQ
+- Fixed compile errors
+
+0.1.0 (2015-11-02)
+
++ First public release of libfilezilla
