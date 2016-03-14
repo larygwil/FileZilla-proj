@@ -23,7 +23,10 @@ makepackage()
   cd "$WORKDIR/$PACKAGE"
 
   HOSTARG=`"$SCRIPTS/configure_target.sh" "$TARGET" "$HOST"`
-  if ! eval "$PREFIX/packages/$PACKAGE/configure" "'--prefix=$WORKDIR/prefix/$PACKAGE'" $HOSTARG $FLAGS; then
+
+  top_srcdir=$(relpath "$(pwd)" "$PREFIX/packages/$PACKAGE/")
+
+  if ! eval "${top_srcdir}/configure" "'--prefix=$WORKDIR/prefix/$PACKAGE'" $HOSTARG $FLAGS; then
     cat config.log
     return 1
   fi
