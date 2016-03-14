@@ -99,11 +99,15 @@ if echo "$TARGET" | grep "mingw"; then
 
   # makensis install.nsi
   WINEARCH=win32 WINEPREFIX=${WINEPREFIX32:-"$HOME/.wine32"} wine32 /home/nightlybuild/NSIS_unicode/makensis.exe install.nsi
+  WINEARCH=win32 WINEPREFIX=${WINEPREFIX32:-"$HOME/.wine32"} wine32 /home/nightlybuild/NSIS_unicode/makensis.exe /DENABLE_OFFERS install.nsi
 
   do_sign "$WORKDIR/$PACKAGE/data" "FileZilla_3_setup.exe"
+  do_sign "$WORKDIR/$PACKAGE/data" "FileZilla_3_setup_bundled.exe"
 
   chmod 775 FileZilla_3_setup.exe
   mv FileZilla_3_setup.exe "$OUTPUTDIR/$TARGET"
+  chmod 775 FileZilla_3_setup_bundled.exe
+  mv FileZilla_3_setup_bundled.exe "$OUTPUTDIR/$TARGET"
 
   sh makezip.sh "$WORKDIR/prefix/$PACKAGE" || exit 1
   mv FileZilla.zip "$OUTPUTDIR/$TARGET/FileZilla.zip"

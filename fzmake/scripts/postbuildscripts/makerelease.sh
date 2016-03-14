@@ -51,6 +51,8 @@ makerelease()
       fi
 
       local platform=
+      local suffix=
+      local hash=1
       case "$TARGET" in
         x86_64*mingw*)
           platform=win64
@@ -72,13 +74,20 @@ makerelease()
           ;;
       esac
 
-      local name="FileZilla_${version}_${platform}.$lext"
+      if echo "$i" | grep bundled > /dev/null; then
+        suffix="_bundled"
+        hash=0
+      fi
+
+      local name="FileZilla_${version}_${platform}${suffix}.$lext"
 
       cp "$i" "${RELEASEDIR}/${name}"
 
-      pushd "${RELEASEDIR}" > /dev/null
-      sha512sum --binary "${name}" >> "FileZilla_${version}.sha512"
-      popd
+      if [ "$hash" = "1" ]; then
+        pushd "${RELEASEDIR}" > /dev/null
+        sha512sum --binary "${name}" >> "FileZilla_${version}.sha512"
+        popd
+      fi
     done
   done
 

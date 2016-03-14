@@ -11,6 +11,11 @@ export OUTPUTDIR="$PREFIX/output"
 echo "Clientscript forked"
 echo "Making sure environment is sane"
 
+if which caffeinate > /dev/null 2>&1; then
+  # Prevent OS X from falling asleep
+  caffeinate -i -w $$ &
+fi
+
 . "$SCRIPTS/parameters"
 
 safe_prepend()
