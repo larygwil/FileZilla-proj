@@ -86,20 +86,8 @@ if echo "$TARGET" | grep "mingw"; then
   echo "Making installer"
   cd "$WORKDIR/$PACKAGE/data"
 
-  # Convert slashes into backslashes or makensis will complain
-  cat install.nsi | sed '/define top_srcdir/s/\//\\/g' > install.nsi2
-  cat install.nsi2 | sed '/define srcdir/s/\//\\/g' > install.nsi
-
-  # Prepare files for Unicode NSIS
-  # See http://www.scratchpaper.com/ for details
-  cat install.nsi | sed 's/${top_srcdir}\\COPYING/COPYING/' > install.nsi2
-  cat install.nsi2 | iconv -f utf8 -t utf16 > install.nsi
-  rm install.nsi2
-  cat "$PREFIX/packages/FileZilla3/COPYING" | iconv -f utf8 -t utf16 > COPYING
-
-  # makensis install.nsi
-  WINEARCH=win32 WINEPREFIX=${WINEPREFIX32:-"$HOME/.wine32"} wine32 /home/nightlybuild/NSIS_unicode/makensis.exe install.nsi
-  WINEARCH=win32 WINEPREFIX=${WINEPREFIX32:-"$HOME/.wine32"} wine32 /home/nightlybuild/NSIS_unicode/makensis.exe /DENABLE_OFFERS install.nsi
+  wine /home/nightlybuild/nsis-3.0b3/makensis.exe install.nsi
+  wine /home/nightlybuild/nsis-3.0b3/makensis.exe /DENABLE_OFFERS install.nsi
 
   do_sign "$WORKDIR/$PACKAGE/data" "FileZilla_3_setup.exe"
   do_sign "$WORKDIR/$PACKAGE/data" "FileZilla_3_setup_bundled.exe"
