@@ -11,7 +11,7 @@ updatelocales()
   local WWWLOCALES="/var/www/locales"
 
   echo "Updating locales page"
-  
+
   cd "$WORKDIR/FileZilla3/locales"
   nice make -j`cpu_count` >> $LOG 2>&1 || return 1
 
@@ -25,7 +25,7 @@ updatelocales()
 
   local total=
   for i in *.po.new; do
-  
+
     FILE=${i%%.*}
     PO=${i%.new}
 
@@ -33,7 +33,7 @@ updatelocales()
     chmod 775 $WWWLOCALES/$PO
     cp $FILE.mo $WWWLOCALES/
     chmod 775 $WWWLOCALES/$FILE.mo
-    
+
     cp $i $i~
 
     cat >> $i~ << "EOF"
@@ -82,15 +82,15 @@ EOF
 
     NAME=
     if [ ! -z "$LANGNAME" ]; then
-      NAME="$LANGNAME " 
+      NAME="$LANGNAME "
     fi
-     
+
     if [ ! -z "$COUNTRYNAME" ]; then
-      NAME="$NAME($COUNTRYNAME) " 
+      NAME="$NAME($COUNTRYNAME) "
     fi
 
     echo "$FILE $TR $FZ $UT $NAME" >> $WWWLOCALES/stats~
-    
+
   done
 
   chmod 775 $WWWLOCALES/stats~

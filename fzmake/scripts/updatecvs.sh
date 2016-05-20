@@ -21,7 +21,7 @@ updatecvs()
     elif [ -d ".svn" ]; then
       svn update >> $LOG 2>&1 || return 1
     elif [ -d ".git" ]; then
-      git pull --rebase >> $LOG 2>&1 || return 1
+      git pull  >> $LOG 2>&1 || return 1
     else
       logprint "Unknown repository type for package $PACKAGE"
       return 1
