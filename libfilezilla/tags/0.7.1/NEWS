@@ -1,0 +1,71 @@
+0.7.1 (2016-10-03)
+
+- OS X: Work around a nasty bug in XCode where programs explicitly compiled for older versions of OS X were silently pulling in features exclusive to the new version, resulting in crashes at runtime
+- MSW: Fix detection of thread creation failures
+
+0.7.0 (2016-09-24)
+
++ Add fz::base64_decode and fz::base64_encode
++ Add fz::strtok string tokenizer
++ Added non-throwing fz::to_integral
++ Implemented + (always sign) and - (left align) flags for fz::sprintf
+
+0.6.1 (2016-07-27)
+
+- Fix UTF-8 conversion functions and added a testcase
+
+0.6.0 (2016-07-20)
+
++ Add fz::sprintf, a safe replacement for for the C sprintf function
+
+0.5.3 (2016-06-20)
+
++ Add fz::replace_substrings to search and replace substrings in std::(w)string
+- Explicitly request large file support on 32bit systems
+
+0.5.2 (2016-05-20)
+
++ Add fz::shared_optional::is_same that checks whether two instances share the same underlying pointer value, like a shallow equal.
++ Add fz::int_to_hex_char as reverse to fz::hex_char_to_int
+
+0.5.1 (2016-05-09)
+
++ Add constructore to sparse_optional taking pointers
+- Fix compilation on systems where iconv's second argument is const
+
+0.5.0 (2016-04-15)
+
+- Handle timestamps where midnight is represented as 24:00:00.000 of the previous day
+- Fix inverted return value of fz::datetime::empty()
+- Increase performance of event loop if not using timers
+- Better compatibility with runtimes that change the src pointer passed to mbsrtowcs or wcsrtombs
+
+0.4.0.1 (2016-02-22)
+
+- Fix compile error in testcase
+
+0.4.0 (2016-02-21)
+
++ Added shared_optional and sparse_optional classes
+
+0.3.1 (2016-01-31)
+
+- Fixed compile errors affecting some platforms
+- Minor documentation fixes
+
+0.3.0 (2016-01-12)
+
++ Added functions to deal with IP address strings
+- Added testcase to verify string conversion functions. Some MinGW installations have broken wcsrtombs and mbsrtowcs implementations.
+
+0.2.0 (2015-11-19)
+
++ Added local_filesys class
++ Added recursive_remove class
++ Added to_utf8 function to string.hpp as counterpart to the to_(w)string_from_utf8 functions
++ Added missing libfilezilla/glue/wx.hpp header mentioned in the FAQ
+- Fixed compile errors
+
+0.1.0 (2015-11-02)
+
++ First public release of libfilezilla
