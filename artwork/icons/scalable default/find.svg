@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="16px"
+	 height="16px" viewBox="0 0 16 16" enable-background="new 0 0 16 16" xml:space="preserve">
+<g id="Layer_1">
+	<path opacity="0.1" d="M15.719,10.127l0.001-0.002l-1.881-4.484c-0.027-0.073-0.057-0.145-0.09-0.215l-0.042-0.1l-0.012,0.001
+		c-0.308-0.574-0.829-1.01-1.462-1.205l-0.288-1.02l-0.008-0.008C11.76,2.465,11.187,2,10.5,2C9.672,2,9,2.672,9,3.5v1.592
+		C8.843,5.036,8.677,5,8.5,5S8.157,5.036,8,5.092V3.5C8,2.672,7.328,2,6.5,2C5.813,2,5.24,2.465,5.063,3.095L5.055,3.103
+		l-0.288,1.02C4.134,4.317,3.612,4.753,3.305,5.327L3.293,5.326L3.251,5.427c-0.033,0.069-0.063,0.141-0.09,0.214L1.28,10.125
+		l0.001,0.002C1.101,10.549,1,11.013,1,11.5C1,13.433,2.567,15,4.5,15S8,13.433,8,11.5c0-0.209-0.026-0.412-0.062-0.61
+		C8.112,10.959,8.301,11,8.5,11s0.388-0.041,0.562-0.11C9.026,11.088,9,11.291,9,11.5c0,1.933,1.567,3.5,3.5,3.5s3.5-1.567,3.5-3.5
+		C16,11.013,15.899,10.549,15.719,10.127z"/>
+	<path fill="#4C4C4C" d="M5.5,1C4.813,1,4.24,1.465,4.063,2.095L4.055,2.103L3.403,4.409h1.464L4.5,6.016L7,7V2.5
+		C7,1.672,6.328,1,5.5,1z"/>
+	<path fill="#4C4C4C" d="M9.5,1c0.687,0,1.26,0.465,1.438,1.095l0.008,0.008l0.651,2.307h-1.464L10.5,6.016L8,7V2.5
+		C8,1.672,8.672,1,9.5,1z"/>
+	<circle fill="#686868" cx="3.5" cy="10.5" r="3.5"/>
+	<linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="10" y1="10" x2="11" y2="10">
+		<stop  offset="0" style="stop-color:#FFFFFF"/>
+		<stop  offset="1" style="stop-color:#000000"/>
+	</linearGradient>
+	<path fill="url(#SVGID_1_)" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="M10,10.5
+		c0-0.552,0.448-1,1-1"/>
+	<circle fill="#686868" cx="11.5" cy="10.5" r="3.5"/>
+	<circle fill="#686868" cx="10.5" cy="5.5" r="2.5"/>
+	<circle fill="#686868" cx="4.5" cy="5.5" r="2.5"/>
+	<circle fill="#686868" cx="7.5" cy="8.5" r="1.5"/>
+	<circle fill="#686868" cx="7.5" cy="5.5" r="1.5"/>
+	<polygon fill="#686868" points="2.293,4.326 0.28,9.125 1.287,12 5.349,12.175 6.459,10.5 6.383,9.5 7.688,9.063 7.688,6.229 
+		7,4.896 5.75,4.584 	"/>
+	<polygon fill="#686868" points="12.707,4.326 14.72,9.125 13.713,12 9.651,12.175 8.541,10.5 8.617,9.5 7.313,9.063 7.313,6.229 
+		8,4.896 9.25,4.584 	"/>
+	<circle fill="#FFBF0D" cx="11.5" cy="10.5" r="2.5"/>
+	<circle fill="#FFBF0D" cx="3.5" cy="10.5" r="2.5"/>
+	<linearGradient id="SVGID_2_" gradientUnits="userSpaceOnUse" x1="10.5" y1="10" x2="11.5" y2="10">
+		<stop  offset="0" style="stop-color:#FFFFFF"/>
+		<stop  offset="1" style="stop-color:#000000"/>
+	</linearGradient>
+	<path fill="url(#SVGID_2_)" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="
+		M10.5,10.5c0-0.552,0.448-1,1-1"/>
+	<linearGradient id="SVGID_3_" gradientUnits="userSpaceOnUse" x1="2.5" y1="10" x2="3.5" y2="10">
+		<stop  offset="0" style="stop-color:#FFFFFF"/>
+		<stop  offset="1" style="stop-color:#000000"/>
+	</linearGradient>
+	<path fill="url(#SVGID_3_)" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="M2.5,10.5
+		c0-0.552,0.448-1,1-1"/>
+	<circle fill="#E5E5E5" cx="7.5" cy="8.5" r="0.5"/>
+</g>
+<g id="Layer_2">
+</g>
+</svg>
