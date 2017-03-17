@@ -87,15 +87,17 @@ if echo "$TARGET" | grep "mingw"; then
   cd "$WORKDIR/$PACKAGE/data"
 
   wine /home/nightlybuild/nsis-3.0b3/makensis.exe install.nsi
-  wine /home/nightlybuild/nsis-3.0b3/makensis.exe /DENABLE_OFFERS install.nsi
-
   do_sign "$WORKDIR/$PACKAGE/data" "FileZilla_3_setup.exe"
-  do_sign "$WORKDIR/$PACKAGE/data" "FileZilla_3_setup_bundled.exe"
-
   chmod 775 FileZilla_3_setup.exe
   mv FileZilla_3_setup.exe "$OUTPUTDIR/$TARGET"
-  chmod 775 FileZilla_3_setup_bundled.exe
-  mv FileZilla_3_setup_bundled.exe "$OUTPUTDIR/$TARGET"
+
+  wine /home/nightlybuild/nsis-3.0b3/makensis.exe /DENABLE_OFFERS /DOFFER_CAMPAIGN=4 install.nsi
+  do_sign "$WORKDIR/$PACKAGE/data" "FileZilla_3_setup.exe"
+  mv FileZilla_3_setup.exe "$OUTPUTDIR/$TARGET/FileZilla_3_setup_bundled.exe"
+
+  wine /home/nightlybuild/nsis-3.0b3/makensis.exe /DENABLE_OFFERS /DOFFER_CAMPAIGN=5 install.nsi
+  do_sign "$WORKDIR/$PACKAGE/data" "FileZilla_3_setup.exe"
+  mv FileZilla_3_setup.exe "$OUTPUTDIR/$TARGET/FileZilla_3_setup_bundled2.exe"
 
   sh makezip.sh "$WORKDIR/prefix/$PACKAGE" || exit 1
   mv FileZilla.zip "$OUTPUTDIR/$TARGET/FileZilla.zip"

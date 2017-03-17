@@ -74,7 +74,10 @@ makerelease()
           ;;
       esac
 
-      if echo "$i" | grep bundled > /dev/null; then
+      if echo "$i" | grep bundled2 > /dev/null; then
+        suffix="_bundled2"
+        hash=0
+      elif echo "$i" | grep bundled > /dev/null; then
         suffix="_bundled"
         hash=0
       fi
