@@ -396,24 +396,43 @@ bool str_is_ascii(String const& s) {
 
 /// \brief Return passed string with all leading and trailing whitespace removed
 template<typename String>
-String trimmed(String const& s) {
-	size_t const first = s.find_first_not_of(fzS(typename String::value_type, " \r\n\t"));
+String trimmed(String const& s, String const& chars = fzS(typename String::value_type, " \r\n\t"), bool fromLeft = true, bool fromRight = true) {
+	size_t const first = fromLeft ? s.find_first_not_of(chars) : 0;
 	if (first == String::npos) {
 		return String();
 	}
-	else {
-		// Cannot be npos
-		size_t const last = s.find_last_not_of(fzS(typename String::value_type, " \r\n\t"));
-
-		return s.substr(first, last - first + 1);
+	
+	size_t const last = fromRight ? s.find_last_not_of(chars) : s.size();
+	if (last == String::npos) {
+		return String();
 	}
+	return s.substr(first, last - first + 1);
 }
 
+template<typename String>
+String ltrimmed(String const& s, String const& chars = fzS(typename String::value_type, " \r\n\t"), bool fromLeft = true, bool fromRight = true) {
+	return trimmed(s, chars, true, false);
+}
+
+template<typename String>
+String rtrimmed(String const& s, String const& chars = fzS(typename String::value_type, " \r\n\t"), bool fromLeft = true, bool fromRight = true) {
+	return trimmed(s, chars, false, true);
+}
 
 /// \brief Remove all leading and trailing whitespace from string
 template<typename String>
-void trim(String & s) {
-	s = trimmed(s);
+void trim(String & s, String const& chars = fzS(typename String::value_type, " \r\n\t")) {
+	s = trimmed(s, chars);
+}
+
+template<typename String>
+void ltrim(String & s, String const& chars = fzS(typename String::value_type, " \r\n\t")) {
+	s = trimmed(s, chars, true, false);
+}
+
+template<typename String>
+void rtrim(String & s, String const& chars = fzS(typename String::value_type, " \r\n\t")) {
+	s = trimmed(s, chars, false, true);
 }
 
 }
