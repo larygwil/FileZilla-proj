@@ -88,4 +88,26 @@ int64_t random_number(int64_t min, int64_t max)
 	return dist(rd);
 }
 
+std::vector<uint8_t> random_bytes(size_t size)
+{
+	std::vector<uint8_t> ret;
+	ret.resize(size);
+
+	std::random_device rd;
+
+	ret.resize(size);
+	size_t i;
+	for (i = 0; i + sizeof(std::random_device::result_type) <= ret.size(); i += sizeof(std::random_device::result_type)) {
+		*reinterpret_cast<std::random_device::result_type*>(&ret[i]) = rd();
+	}
+
+	if (i < size) {
+		auto v = rd();
+		memcpy(&ret[i], &v, size - i);
+	}
+
+	return ret;
+}
+
+
 }
