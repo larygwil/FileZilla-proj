@@ -5,6 +5,7 @@
 #include <random>
 
 #include <time.h>
+#include <string.h>
 
 #if defined(FZ_WINDOWS) && !defined(_MSC_VER)
 #include "libfilezilla/private/windows.hpp"
