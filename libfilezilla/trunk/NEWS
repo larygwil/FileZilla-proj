@@ -1,3 +1,10 @@
+0.9.2 (2017-05-25)
+
++ Added fz::random_bytes to obtain a vector of the passed size of uniformly distributed random bytes
++ Added fz::ltrim and fz::rtim
++ Added parameter to trim functions which characters to trim
++ It is now possible to detach threads from async_task
+
 0.9.1 (2017-02-20)
 
 + Added a small helper function to fz::file to get the current position in the file
