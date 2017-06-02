@@ -28,7 +28,7 @@ int64_t FZ_PUBLIC_SYMBOL random_number(int64_t min, int64_t max);
 
 /** \brief Get random uniformly distributed bytes
  */
-std::vector<uint8_t> random_bytes(size_t size);
+std::vector<uint8_t> FZ_PUBLIC_SYMBOL random_bytes(size_t size);
 
 }
 
