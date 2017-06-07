@@ -178,12 +178,20 @@ if test "$windows" = 1 > /dev/null 2>&1; then
   fi
 fi
 
+# Require pkg-config
+# ------------------
+PKG_PROG_PKG_CONFIG
+
+# Do not abort while not having runtime dependency
+#if test -z "$PKG_CONFIG"; then
+#  AC_MSG_ERROR([pkg-config not found. pkg-config is required to check for some dependencies.])
+#fi
+
 
 # CppUnit tests
 # -------------
 
-AM_PATH_CPPUNIT([1.10.2], [has_cppunit="yes"])
-
+PKG_CHECK_MODULES(CPPUNIT, [cppunit >= 1.13.0], [has_cppunit=yes],[:])
 
 # Doxygen
 # -------
@@ -195,7 +203,6 @@ DX_INIT_DOXYGEN(libfilezilla, Doxyfile)
 # ----------------------------
 
 AM_CONDITIONAL(USE_RESOURCEFILE, test "$use_resourcefile" = "true")
-AM_CONDITIONAL(HAS_CPPUNIT, [test "$has_cppunit" = "yes"])
 
 AC_CONFIG_FILES(
   Makefile
