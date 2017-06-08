@@ -2,6 +2,7 @@
 
 #include <pthread.h>
 #include <sys/time.h>
+#include <errno.h>
 
 class mutex::impl
 {
