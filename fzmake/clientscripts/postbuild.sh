@@ -27,8 +27,9 @@ fi
 
 do_strip()
 {
-  if [ "$STRIP" = "false" ]; then
-    return
+  if echo "$TARGET" | grep apple-darwin 2>&1 > /dev/null; then
+    echo "Creating debug symbols for \"$1/$2\""
+    dsymutil "$1/$2"
   fi
 
   if [ -d "$3" ]; then
@@ -37,6 +38,13 @@ do_strip()
     else
       cp "$1/$2" "$3/$2"
     fi
+    if [ -d "$1/$2.dSYM" ]; then
+      cp -r "$1/$2.dSYM" "$3/$2.dSYM"
+    fi
+  fi
+
+  if [ "$STRIP" = "false" ]; then
+    return
   fi
 
   if [ -f "$1/$2" ]; then
@@ -50,6 +58,10 @@ do_strip()
       echo "Stripping of \"$1/.libs/$2\" failed."
       exit 1
     fi
+  fi
+
+  if [ -d "$1/$2.dSYM" ]; then
+    rm -rf "$1/$2.dSYM"
   fi
 }
 
