@@ -151,7 +151,7 @@ applypatches()
   fi
   logprint "Applying patches"
   cd "$PATCHDIR"
-  local PATCHES=`find . -name "*.patch"`
+  local PATCHES=`find . -name "*.patch" -o -name "*.diff"`
   for i in $PATCHES; do
     local PATCH=${i#./}
     local PACKAGE=${PATCH%%/*}
