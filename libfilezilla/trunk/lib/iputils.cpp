@@ -1,4 +1,5 @@
 #include "libfilezilla/iputils.hpp"
+#include "libfilezilla/encode.hpp"
 
 #include <stddef.h>
 

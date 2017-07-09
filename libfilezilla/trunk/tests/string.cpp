@@ -1,3 +1,4 @@
+#include "libfilezilla/encode.hpp"
 #include "libfilezilla/string.hpp"
 
 #include "test_utils.hpp"

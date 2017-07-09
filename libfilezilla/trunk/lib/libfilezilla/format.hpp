@@ -1,6 +1,7 @@
 #ifndef LIBFILEZILLA_FORMAT_HEADER
 #define LIBFILEZILLA_FORMAT_HEADER
 
+#include "encode.hpp"
 #include "string.hpp"
 
 #include <cstdlib>
