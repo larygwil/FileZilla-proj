@@ -1,3 +1,11 @@
+0.10.0 (2017-07-09)
+
++ Added fz::percent_encode and fz::percent_encode
++ Added fz::uri and fz::query_string
++ Added fz::less_insensitive_ascii for case-insensitive strings in maps
+- Moved encoding functions from string.hpp to encode.hpp
+- Use pkg-config instead of cppunit-config to look for cppunit.
+
 0.9.2 (2017-05-25)
 
 + Added fz::random_bytes to obtain a vector of the passed size of uniformly distributed random bytes
