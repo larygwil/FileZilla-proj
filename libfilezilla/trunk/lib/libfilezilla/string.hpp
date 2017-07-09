@@ -118,6 +118,19 @@ String str_toupper_ascii(String const& s)
 	return ret;
 }
 
+/** \brief Comparator to be used for std::map for case-insentitive keys
+ *
+ * Comparision is done locale-agnostic.
+ * Useful for key-value pairs in protocols, e.g. HTTP headers.
+ */
+struct FZ_PUBLIC_SYMBOL less_insensitive_ascii final
+{
+	template<typename T>
+	bool operator()(T const& lhs, T const& rhs) const {
+		return fz::str_tolower_ascii(lhs) < fz::str_tolower_ascii(rhs);
+	}
+};
+
 /** \brief Converts from std::string in system encoding into std::wstring
  *
  * \return the converted string on success. On failure an empty string is returned.
@@ -322,7 +335,7 @@ String trimmed(String const& s, String const& chars = fzS(typename String::value
 	if (first == String::npos) {
 		return String();
 	}
-	
+
 	size_t const last = fromRight ? s.find_last_not_of(chars) : s.size();
 	if (last == String::npos) {
 		return String();
