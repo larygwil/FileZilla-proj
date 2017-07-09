@@ -82,7 +82,7 @@ private:
  *
  * Assumes the usual semantivs of key-value pairs separated by ampersands.
  */
-class query_string final
+class FZ_PUBLIC_SYMBOL query_string final
 {
 public:
 	explicit query_string() = default;
