@@ -15,6 +15,7 @@ libfilezilla_la_SOURCES = \
 	thread.cpp \
 	thread_pool.cpp \
 	time.cpp \
+	uri.hpp \
 	util.cpp \
 	version.cpp
 
@@ -38,6 +39,7 @@ nobase_include_HEADERS = \
 	libfilezilla/thread.hpp \
 	libfilezilla/thread_pool.hpp \
 	libfilezilla/time.hpp \
+	libfilezilla/uri.hpp \
 	libfilezilla/util.hpp \
 	libfilezilla/version.hpp \
 	libfilezilla/private/defs.hpp \
