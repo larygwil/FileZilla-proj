@@ -15,7 +15,7 @@ libfilezilla_la_SOURCES = \
 	thread.cpp \
 	thread_pool.cpp \
 	time.cpp \
-	uri.hpp \
+	uri.cpp \
 	util.cpp \
 	version.cpp
 
