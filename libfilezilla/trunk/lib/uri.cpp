@@ -171,7 +171,7 @@ std::string uri::get_authority(bool with_userinfo) const
 		ret += percent_encode(host_);
 		if (port_ != 0) {
 			ret += ":";
-			ret += to_string(port_);
+			ret += fz::to_string(port_);
 		}
 	}
 
