@@ -3,6 +3,8 @@
 
 #include "libfilezilla.hpp"
 
+#include <initializer_list>
+#include <map>
 #include <string>
 
 /** \file
@@ -73,6 +75,30 @@ public:
 	void resolve(uri const& base);
 private:
 	bool parse_authority(std::string && authority);
+};
+
+/**
+ * \brief Class for parsing a URI's query string.
+ *
+ * Assumes the usual semantivs of key-value pairs separated by ampersands.
+ */
+class query_string final
+{
+public:
+	explicit query_string() = default;
+	explicit query_string(std::string const& raw);
+	explicit query_string(std::pair<std::string, std::string> const& segment);
+	explicit query_string(std::initializer_list<std::pair<std::string, std::string>> const& segments);
+	bool set(std::string const& raw);
+
+	std::string to_string(bool encode_slashes) const;
+
+	void remove(std::string const& key);
+	std::string& operator[](std::string const& key);
+
+private:
+
+	std::map<std::string, std::string, fz::less_insensitive_ascii> segments_;
 };
 
 }

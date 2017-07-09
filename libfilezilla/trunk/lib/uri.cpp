@@ -219,4 +219,81 @@ bool uri::empty() const
 {
 	return host_.empty() && path_.empty();
 }
+
+
+query_string::query_string(std::string const& raw)
+{
+	set(raw);
+}
+
+query_string::query_string(std::pair<std::string, std::string> const& segment)
+{
+	segments_[segment.first] = segment.second;
+}
+
+query_string::query_string(std::initializer_list<std::pair<std::string, std::string>> const& segments)
+{
+	for (auto const& segment : segments) {
+		if (!segment.first.empty()) {
+			segments_[segment.first] = segment.second;
+		}
+	}
+}
+
+bool query_string::set(std::string const& raw)
+{
+	segments_.clear();
+
+	auto const tokens = fz::strtok(raw, "&");
+	for (auto const& token : tokens) {
+		size_t pos = token.find('=');
+		if (!pos) {
+			return false;
+		}
+
+		std::string key = fz::percent_decode(token.substr(0, pos));
+		if (key.empty()) {
+			return false;
+		}
+		std::string value;
+		if (pos != std::string::npos) {
+			value = fz::percent_decode(token.substr(pos + 1));
+			if (value.empty() && pos + 1 != token.size()) {
+				return false;
+			}
+		}
+		segments_[key] = value;
+	}
+
+	return true;
+}
+
+std::string& query_string::operator[](std::string const& key)
+{
+	return segments_[key];
+}
+
+void query_string::remove(std::string const& key)
+{
+	auto it = segments_.find(key);
+	if (it != segments_.end()) {
+		segments_.erase(key);
+	}
+}
+
+std::string query_string::to_string(bool encode_slashes) const
+{
+	std::string ret;
+	if (!segments_.empty()) {
+		for (auto const& segment : segments_) {
+			ret += fz::percent_encode(segment.first, !encode_slashes);
+			ret += '=';
+			ret += fz::percent_encode(segment.second, !encode_slashes);
+			ret += '&';
+		}
+		ret.pop_back();
+	}
+	return ret;
+}
+
 }
