@@ -32,21 +32,23 @@ local_filesys::~local_filesys()
 
 local_filesys::type local_filesys::get_file_type(native_string const& path, bool follow_links)
 {
-	if (path.size() > 1 && path.back() == '/') {
+	if (path.size() > 1 && is_separator(path.back())) {
 		native_string tmp = path;
 		tmp.pop_back();
 		return get_file_type(tmp);
 	}
 
 #ifdef FZ_WINDOWS
-	DWORD result = GetFileAttributes(path.c_str());
-	if (result == INVALID_FILE_ATTRIBUTES) {
+	WIN32_FIND_DATA data;
+	HANDLE hFind = FindFirstFile(path.c_str(), &data);
+	if (hFind == INVALID_HANDLE_VALUE) {
 		return unknown;
 	}
+	FindClose(hFind);
 
-	bool is_dir = (result & FILE_ATTRIBUTE_DIRECTORY) != 0;
+	bool is_dir = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-	if (result & FILE_ATTRIBUTE_REPARSE_POINT) {
+	if (data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT && IsReparseTagNameSurrogate(data.dwReserved0)) {
 		if (!follow_links) {
 			return link;
 		}
@@ -60,7 +62,7 @@ local_filesys::type local_filesys::get_file_type(native_string const& path, bool
 		BY_HANDLE_FILE_INFORMATION info{};
 		int ret = GetFileInformationByHandle(hFile, &info);
 		CloseHandle(hFile);
-		if (!ret || (info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+		if (!ret) {
 			return unknown;
 		}
 
@@ -98,18 +100,17 @@ local_filesys::type local_filesys::get_file_type(native_string const& path, bool
 
 local_filesys::type local_filesys::get_file_info(native_string const& path, bool &is_link, int64_t* size, datetime* modification_time, int *mode)
 {
-#ifdef FZ_WINDOWS
-	native_string fixed_path = path;
-
-	if (fixed_path.size() > 1 && is_separator(fixed_path.back())) {
-		fixed_path.pop_back();
+	if (path.size() > 1 && is_separator(path.back())) {
+		native_string tmp = path;
+		tmp.pop_back();
+		return get_file_info(tmp, is_link, size, modification_time, mode);
 	}
-
+#ifdef FZ_WINDOWS
 	is_link = false;
 
-	WIN32_FILE_ATTRIBUTE_DATA attributes;
-	BOOL result = GetFileAttributesEx(fixed_path.c_str(), GetFileExInfoStandard, &attributes);
-	if (!result) {
+	WIN32_FIND_DATA data;
+	HANDLE hFind = FindFirstFile(path.c_str(), &data);
+	if (hFind == INVALID_HANDLE_VALUE) {
 		if (size) {
 			*size = -1;
 		}
@@ -121,19 +122,19 @@ local_filesys::type local_filesys::get_file_info(native_string const& path, bool
 		}
 		return unknown;
 	}
+	FindClose(hFind);
 
-	bool is_dir = (attributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+	bool is_dir = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-	if (attributes.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+	if (data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT && IsReparseTagNameSurrogate(data.dwReserved0)) {
 		is_link = true;
 
-		HANDLE hFile = is_dir ? INVALID_HANDLE_VALUE : CreateFile(fixed_path.c_str(), FILE_READ_ATTRIBUTES | FILE_READ_EA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+		HANDLE hFile = is_dir ? INVALID_HANDLE_VALUE : CreateFile(path.c_str(), FILE_READ_ATTRIBUTES | FILE_READ_EA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 		if (hFile != INVALID_HANDLE_VALUE) {
 			BY_HANDLE_FILE_INFORMATION info{};
 			int ret = GetFileInformationByHandle(hFile, &info);
 			CloseHandle(hFile);
-			if (ret != 0 && !(info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
-
+			if (ret != 0) {
 				if (modification_time) {
 					if (!modification_time->set(info.ftLastWriteTime, datetime::milliseconds)) {
 						modification_time->set(info.ftCreationTime, datetime::milliseconds);
@@ -172,14 +173,14 @@ local_filesys::type local_filesys::get_file_info(native_string const& path, bool
 	}
 
 	if (modification_time) {
-		*modification_time = datetime(attributes.ftLastWriteTime, datetime::milliseconds);
+		*modification_time = datetime(data.ftLastWriteTime, datetime::milliseconds);
 		if (modification_time->empty()) {
-			*modification_time = datetime(attributes.ftCreationTime, datetime::milliseconds);
+			*modification_time = datetime(data.ftCreationTime, datetime::milliseconds);
 		}
 	}
 
 	if (mode) {
-		*mode = (int)attributes.dwFileAttributes;
+		*mode = (int)data.dwFileAttributes;
 	}
 
 	if (is_dir) {
@@ -190,17 +191,11 @@ local_filesys::type local_filesys::get_file_info(native_string const& path, bool
 	}
 	else {
 		if (size) {
-			*size = make_int64fzT(attributes.nFileSizeHigh, attributes.nFileSizeLow);
+			*size = make_int64fzT(data.nFileSizeHigh, data.nFileSizeLow);
 		}
 		return file;
 	}
 #else
-	if (path.size() > 1 && path.back() == '/') {
-		native_string tmp = path;
-		tmp.pop_back();
-		return get_file_info(tmp, is_link, size, modification_time, mode);
-	}
-
 	struct stat buf;
 	static_assert(sizeof(buf.st_size) >= 8, "The st_size member of struct stat must be 8 bytes or larger.");
 
@@ -412,8 +407,7 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 	}
 	do {
 		if (!m_find_data.cFileName[0]) {
-			m_found = FindNextFile(m_hFind, &m_find_data) != 0;
-			return true;
+			continue;
 		}
 		if (m_dirs_only && !(m_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 			continue;
@@ -426,7 +420,7 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 
 		is_dir = (m_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-		is_link = (m_find_data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0;
+		is_link = (m_find_data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0 && IsReparseTagNameSurrogate(m_find_data.dwReserved0);
 		if (is_link) {
 			// Follow the reparse point
 			HANDLE hFile = is_dir ? INVALID_HANDLE_VALUE : CreateFile((m_find_path + name).c_str(), FILE_READ_ATTRIBUTES | FILE_READ_EA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
@@ -434,7 +428,7 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 				BY_HANDLE_FILE_INFORMATION info{};
 				int ret = GetFileInformationByHandle(hFile, &info);
 				CloseHandle(hFile);
-				if (ret != 0 && !(info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+				if (ret != 0) {
 
 					if (modification_time) {
 						*modification_time = datetime(info.ftLastWriteTime, datetime::milliseconds);
