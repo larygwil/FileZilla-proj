@@ -291,12 +291,14 @@ bool local_filesys::begin_find_files(native_string path, bool dirs_only)
 	m_found = true;
 	return true;
 #else
-	if (path.size() > 1 && path.back() == '/')
+	if (path.size() > 1 && path.back() == '/') {
 		path.pop_back();
+	}
 
 	m_dir = opendir(path.c_str());
-	if (!m_dir)
+	if (!m_dir) {
 		return false;
+	}
 
 	m_raw_path = new char[path.size() + 2048 + 2];
 	m_buffer_length = path.size() + 2048 + 2;
@@ -305,8 +307,9 @@ bool local_filesys::begin_find_files(native_string path, bool dirs_only)
 		m_raw_path[path.size()] = '/';
 		m_file_part = m_raw_path + path.size() + 1;
 	}
-	else
+	else {
 		m_file_part = m_raw_path + path.size();
+	}
 
 	return true;
 #endif
@@ -334,19 +337,22 @@ void local_filesys::end_find_files()
 bool local_filesys::get_next_file(native_string& name)
 {
 #ifdef FZ_WINDOWS
-	if (!m_found)
+	if (!m_found) {
 		return false;
+	}
 	do {
 		name = m_find_data.cFileName;
 		if (name.empty()) {
 			m_found = FindNextFile(m_hFind, &m_find_data) != 0;
 			return true;
 		}
-		if (name == fzT(".") || name == fzT(".."))
+		if (name == fzT(".") || name == fzT("..")) {
 			continue;
+		}
 
-		if (m_dirs_only && !(m_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+		if (m_dirs_only && !(m_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 			continue;
+		}
 
 		m_found = FindNextFile(m_hFind, &m_find_data) != 0;
 		return true;
@@ -354,8 +360,9 @@ bool local_filesys::get_next_file(native_string& name)
 
 	return false;
 #else
-	if (!m_dir)
+	if (!m_dir) {
 		return false;
+	}
 
 	struct dirent* entry;
 	while ((entry = readdir(m_dir))) {
@@ -370,18 +377,21 @@ bool local_filesys::get_next_file(native_string& name)
 				bool wasLink;
 				alloc_path_buffer(entry->d_name);
 				strcpy(m_file_part, entry->d_name);
-				if (get_file_info(m_raw_path, wasLink, 0, 0, 0) != dir)
+				if (get_file_info(m_raw_path, wasLink, 0, 0, 0) != dir) {
 					continue;
+				}
 			}
-			else if (entry->d_type != DT_DIR)
+			else if (entry->d_type != DT_DIR) {
 				continue;
+			}
 #else
 			// Solaris doesn't have d_type
 			bool wasLink;
 			alloc_path_buffer(entry->d_name);
 			strcpy(m_file_part, entry->d_name);
-			if (get_file_info(m_raw_path, wasLink, 0, 0, 0) != dir)
+			if (get_file_info(m_raw_path, wasLink, 0, 0, 0) != dir) {
 				continue;
+			}
 #endif
 		}
 
@@ -397,18 +407,21 @@ bool local_filesys::get_next_file(native_string& name)
 bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_dir, int64_t* size, datetime* modification_time, int* mode)
 {
 #ifdef FZ_WINDOWS
-	if (!m_found)
+	if (!m_found) {
 		return false;
+	}
 	do {
 		if (!m_find_data.cFileName[0]) {
 			m_found = FindNextFile(m_hFind, &m_find_data) != 0;
 			return true;
 		}
-		if (m_dirs_only && !(m_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+		if (m_dirs_only && !(m_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 			continue;
+		}
 
-		if (m_find_data.cFileName[0] == '.' && (!m_find_data.cFileName[1] || (m_find_data.cFileName[1] == '.' && !m_find_data.cFileName[2])))
+		if (m_find_data.cFileName[0] == '.' && (!m_find_data.cFileName[1] || (m_find_data.cFileName[1] == '.' && !m_find_data.cFileName[2]))) {
 			continue;
+		}
 		name = m_find_data.cFileName;
 
 		is_dir = (m_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
@@ -430,8 +443,9 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 						}
 					}
 
-					if (mode)
+					if (mode) {
 						*mode = (int)info.dwFileAttributes;
+					}
 
 					is_dir = (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 					if (size) {
@@ -452,12 +466,15 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 				continue;
 			}
 
-			if (size)
+			if (size) {
 				*size = -1;
-			if (mode)
+			}
+			if (mode) {
 				*mode = 0;
-			if (modification_time)
+			}
+			if (modification_time) {
 				*modification_time = datetime();
+			}
 		}
 		else {
 			if (modification_time) {
@@ -467,8 +484,9 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 				}
 			}
 
-			if (mode)
+			if (mode) {
 				*mode = (int)m_find_data.dwFileAttributes;
+			}
 
 			if (size) {
 				if (is_dir) {
@@ -485,8 +503,9 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 
 	return false;
 #else
-	if (!m_dir)
+	if (!m_dir) {
 		return false;
+	}
 
 	struct dirent* entry;
 	while ((entry = readdir(m_dir))) {
@@ -501,8 +520,9 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 				alloc_path_buffer(entry->d_name);
 				strcpy(m_file_part, entry->d_name);
 				type t = get_file_info(m_raw_path, is_link, size, modification_time, mode);
-				if (t != dir)
+				if (t != dir) {
 					continue;
+				}
 
 				name = entry->d_name;
 				is_dir = true;
@@ -525,15 +545,19 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 			t = file;
 #endif
 			is_link = 0;
-			if (size)
+			if (size) {
 				*size = -1;
-			if (modification_time)
+			}
+			if (modification_time) {
 				*modification_time = datetime();
-			if (mode)
+			}
+			if (mode) {
 				*mode = 0;
+			}
 		}
-		if (m_dirs_only && t != dir)
+		if (m_dirs_only && t != dir) {
 			continue;
+		}
 
 		is_dir = t == dir;
 
@@ -568,16 +592,18 @@ datetime local_filesys::get_modification_time(native_string const& path)
 	datetime mtime;
 
 	bool tmp;
-	if (get_file_info(path, tmp, 0, &mtime, 0) == unknown)
+	if (get_file_info(path, tmp, 0, &mtime, 0) == unknown) {
 		mtime = datetime();
+	}
 
 	return mtime;
 }
 
 bool local_filesys::set_modification_time(native_string const& path, datetime const& t)
 {
-	if (t.empty())
+	if (t.empty()) {
 		return false;
+	}
 
 #ifdef FZ_WINDOWS
 	FILETIME ft = t.get_filetime();
@@ -586,8 +612,9 @@ bool local_filesys::set_modification_time(native_string const& path, datetime co
 	}
 
 	HANDLE h = CreateFile(path.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
-	if (h == INVALID_HANDLE_VALUE)
+	if (h == INVALID_HANDLE_VALUE) {
 		return false;
+	}
 
 	bool ret = SetFileTime(h, 0, &ft, &ft) == TRUE;
 	CloseHandle(h);
