@@ -64,10 +64,10 @@ template<typename Char = char, bool Lowercase = true>
 Char int_to_hex_char(int d)
 {
 	if (d > 9) {
-		return (Lowercase ? 'a' : 'A') + d - 10;
+		return static_cast<Char>((Lowercase ? 'a' : 'A') + d - 10);
 	}
 	else {
-		return '0' + d;
+		return static_cast<Char>('0' + d);
 	}
 }
 
