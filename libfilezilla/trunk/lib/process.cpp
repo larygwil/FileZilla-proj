@@ -362,6 +362,10 @@ public:
 			return false;
 		}
 
+		std::vector<std::unique_ptr<char[]>> argList;
+		std::unique_ptr<char *[]> argV;
+		get_argv(cmd, args, argList, argV);
+
 		int pid = fork();
 		if (pid < 0) {
 			return false;
@@ -381,10 +385,6 @@ public:
 			{
 				_exit(-1);
 			}
-
-			std::vector<std::unique_ptr<char[]>> argList;
-			std::unique_ptr<char *[]> argV;
-			get_argv(cmd, args, argList, argV);
 
 			// Execute process
 			execv(cmd.c_str(), argV.get()); // noreturn on success
