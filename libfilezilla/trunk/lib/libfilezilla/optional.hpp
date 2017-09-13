@@ -75,7 +75,7 @@ sparse_optional<T>::sparse_optional(sparse_optional<T> const& v)
 		v_ = new T(*v);
 	}
 	else {
-		v_ = 0;
+		v_ = nullptr;
 	}
 }
 
@@ -83,7 +83,7 @@ template<typename T>
 sparse_optional<T>::sparse_optional(sparse_optional<T> && v) noexcept
 {
 	v_ = v.v_;
-	v.v_ = 0;
+	v.v_ = nullptr;
 }
 
 template<typename T>
@@ -96,7 +96,7 @@ template<typename T>
 void sparse_optional<T>::clear()
 {
 	delete v_;
-	v_ = 0;
+	v_ = nullptr;
 }
 
 template<typename T>
@@ -108,7 +108,7 @@ sparse_optional<T>& sparse_optional<T>::operator=(sparse_optional<T> const& v)
 			v_ = new T(*v.v_);
 		}
 		else {
-			v_ = 0;
+			v_ = nullptr;
 		}
 	}
 
@@ -121,7 +121,7 @@ sparse_optional<T>& sparse_optional<T>::operator=(sparse_optional<T> && v) noexc
 	if (this != &v) {
 		delete v_;
 		v_ = v.v_;
-		v.v_ = 0;
+		v.v_ = nullptr;
 	}
 
 	return *this;
