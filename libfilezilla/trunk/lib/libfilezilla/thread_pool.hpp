@@ -36,7 +36,7 @@ public:
 	void join();
 
 	/// Check whether it's a spawned, unjoined task.
-	explicit operator bool() const { return impl_ != 0; }
+	explicit operator bool() const { return impl_ != nullptr; }
 
 	/// Detach the running thread from the task. Once done, the thread adds itself back into the pool
 	void detach();

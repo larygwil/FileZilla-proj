@@ -22,7 +22,7 @@ void sleep(duration const& d)
 	timespec ts{};
 	ts.tv_sec = d.get_seconds();
 	ts.tv_nsec = (d.get_milliseconds() % 1000) * 1000000;
-	nanosleep(&ts, 0);
+	nanosleep(&ts, nullptr);
 #endif
 }
 

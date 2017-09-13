@@ -143,7 +143,7 @@ datetime datetime::now()
 #else
 	datetime ret;
 	timeval tv = { 0, 0 };
-	if (gettimeofday(&tv, 0) == 0) {
+	if (gettimeofday(&tv, nullptr) == 0) {
 		ret.t_ = static_cast<int64_t>(tv.tv_sec) * 1000 + tv.tv_usec / 1000;
 		ret.a_ = milliseconds;
 	}

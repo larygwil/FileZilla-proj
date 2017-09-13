@@ -17,7 +17,7 @@ thread::thread()
 
 bool thread::joinable() const
 {
-	return impl_ == 0;
+	return impl_ == nullptr;
 }
 
 #ifdef USE_CUSTOM_THREADS
@@ -152,10 +152,10 @@ bool thread::run()
 	}
 	catch (std::exception const&) {
 		delete impl_;
-		impl_ = 0;
+		impl_ = nullptr;
 	}
 
-	return impl_ != 0;
+	return impl_ != nullptr;
 }
 
 void thread::join()
@@ -163,7 +163,7 @@ void thread::join()
 	if (impl_) {
 		impl_->t_.join();
 		delete impl_;
-		impl_ = 0;
+		impl_ = nullptr;
 	}
 }
 

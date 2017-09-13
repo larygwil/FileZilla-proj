@@ -321,11 +321,11 @@ void local_filesys::end_find_files()
 #else
 	if (m_dir) {
 		closedir(m_dir);
-		m_dir = 0;
+		m_dir = nullptr;
 	}
 	delete [] m_raw_path;
-	m_raw_path = 0;
-	m_file_part = 0;
+	m_raw_path = nullptr;
+	m_file_part = nullptr;
 #endif
 }
 
@@ -372,7 +372,7 @@ bool local_filesys::get_next_file(native_string& name)
 				bool wasLink;
 				alloc_path_buffer(entry->d_name);
 				strcpy(m_file_part, entry->d_name);
-				if (get_file_info(m_raw_path, wasLink, 0, 0, 0) != dir) {
+				if (get_file_info(m_raw_path, wasLink, nullptr, nullptr, nullptr) != dir) {
 					continue;
 				}
 			}
@@ -384,7 +384,7 @@ bool local_filesys::get_next_file(native_string& name)
 			bool wasLink;
 			alloc_path_buffer(entry->d_name);
 			strcpy(m_file_part, entry->d_name);
-			if (get_file_info(m_raw_path, wasLink, 0, 0, 0) != dir) {
+			if (get_file_info(m_raw_path, wasLink, nullptr, nullptr, nullptr) != dir) {
 				continue;
 			}
 #endif
@@ -586,7 +586,7 @@ datetime local_filesys::get_modification_time(native_string const& path)
 	datetime mtime;
 
 	bool tmp;
-	if (get_file_info(path, tmp, 0, &mtime, 0) == unknown) {
+	if (get_file_info(path, tmp, nullptr, &mtime, nullptr) == unknown) {
 		mtime = datetime();
 	}
 
@@ -625,7 +625,7 @@ int64_t local_filesys::get_size(native_string const& path, bool* is_link)
 {
 	int64_t ret = -1;
 	bool tmp{};
-	type t = get_file_info(path, is_link ? *is_link : tmp, &ret, 0, 0);
+	type t = get_file_info(path, is_link ? *is_link : tmp, &ret, nullptr, nullptr);
 	if (t != file) {
 		ret = -1;
 	}

@@ -80,7 +80,7 @@ void async_task::join()
 		impl_->task_cond_.wait(l);
 		impl_->f_ = std::function<void()>();
 		impl_->pool_.idle_.push_back(impl_);
-		impl_ = 0;
+		impl_ = nullptr;
 	}
 }
 
@@ -93,7 +93,7 @@ void async_task::detach()
 		}
 		else {
 			impl_->detached_ = true;
-			impl_ = 0;
+			impl_ = nullptr;
 		}
 	}
 }

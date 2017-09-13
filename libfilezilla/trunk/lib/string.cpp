@@ -90,7 +90,7 @@ std::wstring to_wstring(std::string const& in)
 	std::wstring ret;
 
 	char const* in_p = in.c_str();
-	size_t len = std::mbsrtowcs(0, &in_p, 0, &ps);
+	size_t len = std::mbsrtowcs(nullptr, &in_p, 0, &ps);
 	if (len != static_cast<size_t>(-1)) {
 		ret.resize(len);
 		wchar_t* out_p = &ret[0];
@@ -208,7 +208,7 @@ std::string to_string(std::wstring const& in)
 	std::string ret;
 
 	wchar_t const* in_p = in.c_str();
-	size_t len = std::wcsrtombs(0, &in_p, 0, &ps);
+	size_t len = std::wcsrtombs(nullptr, &in_p, 0, &ps);
 	if (len != static_cast<size_t>(-1)) {
 		ret.resize(len);
 		char* out_p = &ret[0];

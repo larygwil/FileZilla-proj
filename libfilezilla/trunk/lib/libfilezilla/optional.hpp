@@ -31,7 +31,7 @@ public:
 
 	void clear();
 
-	explicit operator bool() const { return v_ != 0; };
+	explicit operator bool() const { return v_ != nullptr; };
 
 	T& operator*() { return *v_; }
 	T const& operator*() const { return *v_; }
@@ -145,7 +145,7 @@ template<typename T>
 bool sparse_optional<T>::operator<(sparse_optional<T> const& cmp) const
 {
 	if (!v_ || !cmp.v_) {
-		return cmp.v_ != 0;
+		return cmp.v_ != nullptr;
 	}
 
 	return *v_ < *cmp.v_;

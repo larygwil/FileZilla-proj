@@ -74,7 +74,7 @@ public:
 
 	/// \brief Returns a unique pointer for the type such that can be used directly in derived_type.
 	static void const* type() {
-		static const char* f = 0;
+		static const char* f = nullptr;
 		return &f;
 	}
 

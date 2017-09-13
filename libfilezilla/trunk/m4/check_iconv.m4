@@ -8,7 +8,7 @@ m4_define([_CHECK_ICONV_testbody], [[
   #include <iconv.h>
 
   int main() {
-    iconv_t ret = iconv_open(0, 0);
+    iconv_t ret = iconv_open(nullptr, nullptr);
     return (ret == (iconv_t)-1) ? 1 : 0;
   }
 ]])

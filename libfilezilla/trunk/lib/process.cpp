@@ -349,7 +349,7 @@ public:
 		for (auto const& a : argList) {
 			*(v++) = a.get();
 		}
-		*v = 0;
+		*v = nullptr;
 	}
 
 	bool spawn(native_string const& cmd, std::vector<native_string> const& args)
@@ -413,7 +413,7 @@ public:
 
 			int ret;
 			do {
-			} while ((ret = waitpid(pid_, 0, 0)) == -1 && errno == EINTR);
+			} while ((ret = waitpid(pid_, nullptr, 0)) == -1 && errno == EINTR);
 
 			(void)ret;
 

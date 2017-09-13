@@ -62,7 +62,7 @@ public:
 	static type get_file_info(native_string const& path, bool &is_link, int64_t* size, datetime* modification_time, int* mode);
 
 	/// Gets size of file, returns -1 on error.
-	static int64_t get_size(native_string const& path, bool *is_link = 0);
+	static int64_t get_size(native_string const& path, bool *is_link = nullptr);
 
 	/// \brief Begins enumerating a directory.
 	///

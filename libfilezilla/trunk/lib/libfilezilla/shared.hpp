@@ -84,7 +84,7 @@ using shared_value = shared_optional<T, true>;
 
 
 template<typename T, bool Init> shared_optional<T, Init>::shared_optional()
-	: data_(Init ? std::make_shared<T>() : 0)
+	: data_(Init ? std::make_shared<T>() : nullptr)
 {
 }
 

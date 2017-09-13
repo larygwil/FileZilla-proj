@@ -157,7 +157,7 @@ bool event_loop::process_event(scoped_lock & l)
 	delete ev.second;
 	l.lock();
 
-	active_handler_ = 0;
+	active_handler_ = nullptr;
 
 	return true;
 }
@@ -243,7 +243,7 @@ bool event_loop::process_timers(scoped_lock & l, monotonic_clock & now)
 		(*handler)(timer_event(id));
 		l.lock();
 
-		active_handler_ = 0;
+		active_handler_ = nullptr;
 
 		return true;
 	}
