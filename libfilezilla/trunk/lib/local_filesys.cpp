@@ -54,7 +54,7 @@ local_filesys::type local_filesys::get_file_type(native_string const& path, bool
 		}
 
 		// Follow the reparse point
-		HANDLE hFile = is_dir ? INVALID_HANDLE_VALUE : CreateFile(path.c_str(), FILE_READ_ATTRIBUTES | FILE_READ_EA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+		HANDLE hFile = is_dir ? INVALID_HANDLE_VALUE : CreateFile(path.c_str(), FILE_READ_ATTRIBUTES | FILE_READ_EA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 		if (hFile == INVALID_HANDLE_VALUE) {
 			return unknown;
 		}
@@ -129,7 +129,7 @@ local_filesys::type local_filesys::get_file_info(native_string const& path, bool
 	if (data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT && IsReparseTagNameSurrogate(data.dwReserved0)) {
 		is_link = true;
 
-		HANDLE hFile = is_dir ? INVALID_HANDLE_VALUE : CreateFile(path.c_str(), FILE_READ_ATTRIBUTES | FILE_READ_EA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+		HANDLE hFile = is_dir ? INVALID_HANDLE_VALUE : CreateFile(path.c_str(), FILE_READ_ATTRIBUTES | FILE_READ_EA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 		if (hFile != INVALID_HANDLE_VALUE) {
 			BY_HANDLE_FILE_INFORMATION info{};
 			int ret = GetFileInformationByHandle(hFile, &info);
@@ -277,7 +277,7 @@ bool local_filesys::begin_find_files(native_string path, bool dirs_only)
 		path += fzT("\\*");
 	}
 
-	m_hFind = FindFirstFileEx(path.c_str(), FindExInfoStandard, &m_find_data, dirs_only ? FindExSearchLimitToDirectories : FindExSearchNameMatch, 0, 0);
+	m_hFind = FindFirstFileEx(path.c_str(), FindExInfoStandard, &m_find_data, dirs_only ? FindExSearchLimitToDirectories : FindExSearchNameMatch, nullptr, 0);
 	if (m_hFind == INVALID_HANDLE_VALUE) {
 		m_found = false;
 		return false;
@@ -423,7 +423,7 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 		is_link = (m_find_data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0 && IsReparseTagNameSurrogate(m_find_data.dwReserved0);
 		if (is_link) {
 			// Follow the reparse point
-			HANDLE hFile = is_dir ? INVALID_HANDLE_VALUE : CreateFile((m_find_path + name).c_str(), FILE_READ_ATTRIBUTES | FILE_READ_EA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+			HANDLE hFile = is_dir ? INVALID_HANDLE_VALUE : CreateFile((m_find_path + name).c_str(), FILE_READ_ATTRIBUTES | FILE_READ_EA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 			if (hFile != INVALID_HANDLE_VALUE) {
 				BY_HANDLE_FILE_INFORMATION info{};
 				int ret = GetFileInformationByHandle(hFile, &info);
@@ -605,12 +605,12 @@ bool local_filesys::set_modification_time(native_string const& path, datetime co
 		return false;
 	}
 
-	HANDLE h = CreateFile(path.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+	HANDLE h = CreateFile(path.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
 	if (h == INVALID_HANDLE_VALUE) {
 		return false;
 	}
 
-	bool ret = SetFileTime(h, 0, &ft, &ft) == TRUE;
+	bool ret = SetFileTime(h, nullptr, &ft, &ft) == TRUE;
 	CloseHandle(h);
 	return ret;
 #else
@@ -638,7 +638,7 @@ native_string local_filesys::get_link_target(native_string const& path)
 	native_string target;
 
 #ifdef FZ_WINDOWS
-	HANDLE hFile = CreateFile(path.c_str(), FILE_READ_ATTRIBUTES | FILE_READ_EA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	HANDLE hFile = CreateFile(path.c_str(), FILE_READ_ATTRIBUTES | FILE_READ_EA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (hFile != INVALID_HANDLE_VALUE) {
 		DWORD const size = 1024;
 		native_string::value_type out[size];

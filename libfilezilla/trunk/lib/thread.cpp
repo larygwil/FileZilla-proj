@@ -85,7 +85,7 @@ bool thread::run()
 
 	{
 		scoped_lock l(impl_->m_);
-		impl_->handle_ = reinterpret_cast<HANDLE>(_beginthreadex(0, 0, thread_proc, impl_, 0, 0));
+		impl_->handle_ = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, thread_proc, impl_, 0, nullptr));
 	}
 
 	// _beginthreadex returns 0 on error, whereas _beginthread returns -1
@@ -93,10 +93,10 @@ bool thread::run()
 	// so we check that as well.
 	if (!impl_->handle_ || impl_->handle_ == INVALID_HANDLE_VALUE) {
 		delete impl_;
-		impl_ = 0;
+		impl_ = nullptr;
 	}
 
-	return impl_ != 0;
+	return impl_ != nullptr;
 }
 
 void thread::join()
@@ -105,7 +105,7 @@ void thread::join()
 		WaitForSingleObject(impl_->handle_, INFINITE);
 		CloseHandle(impl_->handle_);
 		delete impl_;
-		impl_ = 0;
+		impl_ = nullptr;
 	}
 }
 

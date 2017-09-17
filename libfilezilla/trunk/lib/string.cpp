@@ -170,7 +170,7 @@ std::wstring to_wstring_from_utf8(char const* s, size_t len)
 	if (len != 0) {
 #if FZ_WINDOWS
 		char const* const in_p = s;
-		int out_len = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, in_p, static_cast<int>(len), 0, 0);
+		int out_len = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, in_p, static_cast<int>(len), nullptr, 0);
 		if (out_len > 0) {
 			ret.resize(out_len);
 			wchar_t* out_p = &ret[0];
@@ -232,11 +232,11 @@ std::string FZ_PUBLIC_SYMBOL to_utf8(std::wstring const& in)
 	if (!in.empty()) {
 #if FZ_WINDOWS
 		wchar_t const* const in_p = in.c_str();
-		int len = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, in_p, static_cast<int>(in.size()), 0, 0, 0, 0);
+		int len = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, in_p, static_cast<int>(in.size()), nullptr, 0, nullptr, nullptr);
 		if (len > 0) {
 			ret.resize(len);
 			char* out_p = &ret[0];
-			WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, in_p, static_cast<int>(in.size()), out_p, len, 0, 0);
+			WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, in_p, static_cast<int>(in.size()), out_p, len, nullptr, nullptr);
 		}
 #else
 		iconv_t cd = iconv_open("UTF-8", wchar_t_encoding());

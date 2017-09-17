@@ -48,7 +48,7 @@ bool file::open(native_string const& f, mode m, creation_flags d)
 		shareMode |= FILE_SHARE_WRITE;
 	}
 
-	hFile_ = CreateFile(f.c_str(), (m == reading) ? GENERIC_READ : GENERIC_WRITE, shareMode, 0, dispositionFlags, FILE_FLAG_SEQUENTIAL_SCAN, 0);
+	hFile_ = CreateFile(f.c_str(), (m == reading) ? GENERIC_READ : GENERIC_WRITE, shareMode, nullptr, dispositionFlags, FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
 
 	return hFile_ != INVALID_HANDLE_VALUE;
 }
@@ -104,7 +104,7 @@ int64_t file::read(void *buf, int64_t count)
 	int64_t ret = -1;
 
 	DWORD read = 0;
-	if (ReadFile(hFile_, buf, static_cast<DWORD>(count), &read, 0)) {
+	if (ReadFile(hFile_, buf, static_cast<DWORD>(count), &read, nullptr)) {
 		ret = static_cast<int64_t>(read);
 	}
 
@@ -116,7 +116,7 @@ int64_t file::write(void const* buf, int64_t count)
 	int64_t ret = -1;
 
 	DWORD written = 0;
-	if (WriteFile(hFile_, buf, static_cast<DWORD>(count), &written, 0)) {
+	if (WriteFile(hFile_, buf, static_cast<DWORD>(count), &written, nullptr)) {
 		ret = static_cast<int64_t>(written);
 	}
 

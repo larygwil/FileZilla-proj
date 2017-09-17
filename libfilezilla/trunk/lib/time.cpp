@@ -426,7 +426,7 @@ bool do_set(datetime & dt, SYSTEMTIME const& st, datetime::accuracy a, datetime:
 	FILETIME ft{};
 	if (a >= datetime::hours && z == datetime::local) {
 		SYSTEMTIME st2{};
-		if (!TzSpecificLocalTimeToSystemTime(0, &st, &st2)) {
+		if (!TzSpecificLocalTimeToSystemTime(nullptr, &st, &st2)) {
 			return false;
 		}
 		if (!SystemTimeToFileTime(&st2, &ft)) {
@@ -709,7 +709,7 @@ tm datetime::get_tm(zone z) const
 
 			if (a_ >= hours && z == local) {
 				SYSTEMTIME st2;
-				if (SystemTimeToTzSpecificLocalTime(0, &st, &st2)) {
+				if (SystemTimeToTzSpecificLocalTime(nullptr, &st, &st2)) {
 					st = st2;
 				}
 			}

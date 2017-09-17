@@ -124,7 +124,7 @@ public:
 		auto cmdline_buf = &cmdline[0];
 
 		DWORD const flags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NO_WINDOW;
-		BOOL res = CreateProcess(cmd.c_str(), cmdline_buf, 0, 0, TRUE, flags, 0, 0, &si, &pi);
+		BOOL res = CreateProcess(cmd.c_str(), cmdline_buf, nullptr, nullptr, TRUE, flags, nullptr, nullptr, &si, &pi);
 		if (!res) {
 			return false;
 		}
@@ -156,7 +156,7 @@ public:
 	int read(char* buffer, unsigned int len)
 	{
 		DWORD read = 0;
-		BOOL res = ReadFile(out_.read_, buffer, len, &read, 0);
+		BOOL res = ReadFile(out_.read_, buffer, len, &read, nullptr);
 		if (!res) {
 #if FZ_WINDOWS
 			// ERROR_BROKEN_PIPE indicated EOF.
@@ -173,7 +173,7 @@ public:
 	{
 		while (len > 0) {
 			DWORD written = 0;
-			BOOL res = WriteFile(in_.write_, buffer, len, &written, 0);
+			BOOL res = WriteFile(in_.write_, buffer, len, &written, nullptr);
 			if (!res || written == 0) {
 				return false;
 			}

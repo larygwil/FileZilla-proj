@@ -35,7 +35,7 @@ struct provider
 {
 	provider()
 	{
-		if (!CryptAcquireContextW(&h_, 0, 0, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
+		if (!CryptAcquireContextW(&h_, nullptr, nullptr, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
 			h_ = 0;
 		}
 		mt_.seed(datetime::now().get_time_t());
