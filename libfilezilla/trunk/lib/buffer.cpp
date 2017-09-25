@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include <string.h>
+
 namespace fz {
 
 buffer::buffer(size_t capacity)
@@ -38,7 +40,7 @@ unsigned char* buffer::get(size_t write_size)
 			pos_ = data_;
 		}
 		else {
-			capacity_ = std::max({ 1024u, capacity_ * 2, capacity_ + write_size });
+			capacity_ = std::max({ size_t(1024), capacity_ * 2, capacity_ + write_size });
 			unsigned char* data = new unsigned char[capacity_];
 			if (size_) {
 				memcpy(data, pos_, size_);
@@ -130,7 +132,7 @@ void buffer::reserve(size_t capacity)
 		return;
 	}
 
-	capacity_ = std::max(1024u, capacity);
+	capacity_ = std::max(size_t(1024), capacity);
 	unsigned char* data = new unsigned char[capacity_];
 	if (size_) {
 		memcpy(data, pos_, size_);
