@@ -186,6 +186,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="buffer.cpp" />
     <ClCompile Include="encode.cpp" />
     <ClCompile Include="event.cpp" />
     <ClCompile Include="event_handler.cpp" />
@@ -206,6 +207,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libfilezilla\apply.hpp" />
+    <ClInclude Include="libfilezilla\buffer.hpp" />
     <ClInclude Include="libfilezilla\encode.hpp" />
     <ClInclude Include="libfilezilla\event.hpp" />
     <ClInclude Include="libfilezilla\event_handler.hpp" />
