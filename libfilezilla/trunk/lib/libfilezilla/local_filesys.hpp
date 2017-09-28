@@ -92,18 +92,18 @@ private:
 #endif
 
 	// State for directory enumeration
-	bool m_dirs_only{};
+	bool dirs_only_{};
 
 #ifdef FZ_WINDOWS
 	WIN32_FIND_DATA m_find_data{};
 	HANDLE m_hFind{INVALID_HANDLE_VALUE};
-	bool m_found{};
+	bool has_next_{};
 	native_string m_find_path;
 #else
 	char* m_raw_path{};
 	char* m_file_part{}; // Points into m_raw_path past the trailing slash of the path part
 	int m_buffer_length{};
-	DIR* m_dir{};
+	DIR* dir_{};
 #endif
 };
 

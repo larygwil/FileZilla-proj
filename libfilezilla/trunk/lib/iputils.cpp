@@ -15,7 +15,7 @@ String do_get_ipv6_long_form(String short_address)
 	}
 	short_address = str_tolower_ascii(short_address);
 
-	Char buffer[40] = { '0', '0', '0', '0', ':',
+	Char buf[40] = { '0', '0', '0', '0', ':',
 		'0', '0', '0', '0', ':',
 		'0', '0', '0', '0', ':',
 		'0', '0', '0', '0', ':',
@@ -25,11 +25,12 @@ String do_get_ipv6_long_form(String short_address)
 		'0', '0', '0', '0', 0
 	};
 
-	Char* out = buffer;
+	Char* out = buf;
 
 	const size_t len = short_address.size();
-	if (len > 39)
+	if (len > 39) {
 		return String();
+	}
 
 	// First part, before possible ::
 	size_t i = 0;
@@ -56,7 +57,7 @@ String do_get_ipv6_long_form(String short_address)
 			if (!c) {
 				if (!*out) {
 					// ...on time
-					return buffer;
+					return buf;
 				}
 				else {
 					// ...premature
@@ -91,7 +92,7 @@ String do_get_ipv6_long_form(String short_address)
 	// Second half after ::
 
 	Char* end_first = out;
-	out = &buffer[38];
+	out = &buf[38];
 	size_t stop = i;
 	for (i = len - 1; i > stop; --i) {
 		if (out < end_first) {
@@ -135,7 +136,7 @@ String do_get_ipv6_long_form(String short_address)
 		return String();
 	}
 
-	return buffer;
+	return buf;
 }
 
 std::string get_ipv6_long_form(std::string const& short_address)

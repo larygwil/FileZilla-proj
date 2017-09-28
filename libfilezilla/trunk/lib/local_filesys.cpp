@@ -266,7 +266,7 @@ bool local_filesys::begin_find_files(native_string path, bool dirs_only)
 
 	end_find_files();
 
-	m_dirs_only = dirs_only;
+	dirs_only_ = dirs_only;
 #ifdef FZ_WINDOWS
 	if (is_separator(path.back())) {
 		m_find_path = path;
@@ -279,19 +279,19 @@ bool local_filesys::begin_find_files(native_string path, bool dirs_only)
 
 	m_hFind = FindFirstFileEx(path.c_str(), FindExInfoStandard, &m_find_data, dirs_only ? FindExSearchLimitToDirectories : FindExSearchNameMatch, nullptr, 0);
 	if (m_hFind == INVALID_HANDLE_VALUE) {
-		m_found = false;
+		has_next_ = false;
 		return false;
 	}
 
-	m_found = true;
+	has_next_ = true;
 	return true;
 #else
 	if (path.size() > 1 && path.back() == '/') {
 		path.pop_back();
 	}
 
-	m_dir = opendir(path.c_str());
-	if (!m_dir) {
+	dir_ = opendir(path.c_str());
+	if (!dir_) {
 		return false;
 	}
 
@@ -313,15 +313,15 @@ bool local_filesys::begin_find_files(native_string path, bool dirs_only)
 void local_filesys::end_find_files()
 {
 #ifdef FZ_WINDOWS
-	m_found = false;
+	has_next_ = false;
 	if (m_hFind != INVALID_HANDLE_VALUE) {
 		FindClose(m_hFind);
 		m_hFind = INVALID_HANDLE_VALUE;
 	}
 #else
-	if (m_dir) {
-		closedir(m_dir);
-		m_dir = nullptr;
+	if (dir_) {
+		closedir(dir_);
+		dir_ = nullptr;
 	}
 	delete [] m_raw_path;
 	m_raw_path = nullptr;
@@ -332,41 +332,41 @@ void local_filesys::end_find_files()
 bool local_filesys::get_next_file(native_string& name)
 {
 #ifdef FZ_WINDOWS
-	if (!m_found) {
+	if (!has_next_) {
 		return false;
 	}
 	do {
 		name = m_find_data.cFileName;
 		if (name.empty()) {
-			m_found = FindNextFile(m_hFind, &m_find_data) != 0;
+			has_next_ = FindNextFile(m_hFind, &m_find_data) != 0;
 			return true;
 		}
 		if (name == fzT(".") || name == fzT("..")) {
 			continue;
 		}
 
-		if (m_dirs_only && !(m_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+		if (dirs_only_ && !(m_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 			continue;
 		}
 
-		m_found = FindNextFile(m_hFind, &m_find_data) != 0;
+		has_next_ = FindNextFile(m_hFind, &m_find_data) != 0;
 		return true;
-	} while ((m_found = FindNextFile(m_hFind, &m_find_data) != 0));
+	} while ((has_next_ = FindNextFile(m_hFind, &m_find_data) != 0));
 
 	return false;
 #else
-	if (!m_dir) {
+	if (!dir_) {
 		return false;
 	}
 
 	struct dirent* entry;
-	while ((entry = readdir(m_dir))) {
+	while ((entry = readdir(dir_))) {
 		if (!entry->d_name[0] ||
 			!strcmp(entry->d_name, ".") ||
 			!strcmp(entry->d_name, ".."))
 			continue;
 
-		if (m_dirs_only) {
+		if (dirs_only_) {
 #if HAVE_STRUCT_DIRENT_D_TYPE
 			if (entry->d_type == DT_LNK) {
 				bool wasLink;
@@ -402,14 +402,14 @@ bool local_filesys::get_next_file(native_string& name)
 bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_dir, int64_t* size, datetime* modification_time, int* mode)
 {
 #ifdef FZ_WINDOWS
-	if (!m_found) {
+	if (!has_next_) {
 		return false;
 	}
 	do {
 		if (!m_find_data.cFileName[0]) {
 			continue;
 		}
-		if (m_dirs_only && !(m_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+		if (dirs_only_ && !(m_find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 			continue;
 		}
 
@@ -451,12 +451,12 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 						}
 					}
 
-					m_found = FindNextFile(m_hFind, &m_find_data) != 0;
+					has_next_ = FindNextFile(m_hFind, &m_find_data) != 0;
 					return true;
 				}
 			}
 
-			if (m_dirs_only && !is_dir) {
+			if (dirs_only_ && !is_dir) {
 				continue;
 			}
 
@@ -491,25 +491,25 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 				}
 			}
 		}
-		m_found = FindNextFile(m_hFind, &m_find_data) != 0;
+		has_next_ = FindNextFile(m_hFind, &m_find_data) != 0;
 		return true;
-	} while ((m_found = FindNextFile(m_hFind, &m_find_data) != 0));
+	} while ((has_next_ = FindNextFile(m_hFind, &m_find_data) != 0));
 
 	return false;
 #else
-	if (!m_dir) {
+	if (!dir_) {
 		return false;
 	}
 
 	struct dirent* entry;
-	while ((entry = readdir(m_dir))) {
+	while ((entry = readdir(dir_))) {
 		if (!entry->d_name[0] ||
 			!strcmp(entry->d_name, ".") ||
 			!strcmp(entry->d_name, ".."))
 			continue;
 
 #if HAVE_STRUCT_DIRENT_D_TYPE
-		if (m_dirs_only) {
+		if (dirs_only_) {
 			if (entry->d_type == DT_LNK) {
 				alloc_path_buffer(entry->d_name);
 				strcpy(m_file_part, entry->d_name);
@@ -549,7 +549,7 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 				*mode = 0;
 			}
 		}
-		if (m_dirs_only && t != dir) {
+		if (dirs_only_ && t != dir) {
 			continue;
 		}
 
