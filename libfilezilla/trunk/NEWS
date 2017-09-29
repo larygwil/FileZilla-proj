@@ -1,3 +1,8 @@
+0.11.0 (2017-09-29)
+
++ Add fz::buffer class
+- *nix: fz::process::spawn no longer calls async-signal-unsafe functions between forking and calling execv in the child.
+
 0.10.1 (2017-08-14)
 
 - MSW: Improve handling of reparse points in fz::local_filesys
