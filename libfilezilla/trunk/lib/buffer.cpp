@@ -1,6 +1,7 @@
 #include "libfilezilla/buffer.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 
 #include <string.h>
 
@@ -89,7 +90,7 @@ void buffer::add(size_t added)
 {
 	if (capacity_ - (pos_ - data_) - size_ < added) {
 		// Hang, draw and quarter the caller.
-		abort();
+		std::abort();
 	}
 	size_ += added;
 }
@@ -97,7 +98,7 @@ void buffer::add(size_t added)
 void buffer::consume(size_t consumed)
 {
 	if (consumed > size_) {
-		abort();
+		std::abort();
 	}
 	if (consumed == size_) {
 		pos_ = data_;
