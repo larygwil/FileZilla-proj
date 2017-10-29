@@ -251,7 +251,11 @@ bool remove_file(fz::native_string const& name)
 
 bool file::fsync()
 {
+#if defined(_POSIX_SYNCHRONIZED_IO) && _POSIX_SYNCHRONIZED_IO > 0
 	return fdatasync(fd_) == 0;
+#else
+	return fsync(fd_) == 0;
+#endif
 }
 
 #endif
