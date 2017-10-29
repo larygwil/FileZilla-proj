@@ -133,6 +133,11 @@ bool remove_file(fz::native_string const& name)
 	return DeleteFileW(name.c_str()) != 0;
 }
 
+bool file::fsync()
+{
+	return FlushFileBuffers(hFile_) != 0;
+}
+
 #else
 
 bool file::open(native_string const& f, mode m, creation_flags d)
@@ -242,6 +247,11 @@ bool file::opened() const
 bool remove_file(fz::native_string const& name)
 {
 	return unlink(name.c_str()) == 0;
+}
+
+bool file::fsync()
+{
+	return fdatasync(fd_) == 0;
 }
 
 #endif

@@ -127,6 +127,13 @@ public:
 	 */
 	int64_t write(void const* buf, int64_t count);
 
+	/** \brief Ensure data is flushed to disk
+	 *
+	 * \return true Data has been flushed to disk.
+	 * \return false Data could not be flushed to disk.
+	 */
+	bool fsync();
+
 private:
 #ifdef FZ_WINDOWS
 	HANDLE hFile_{INVALID_HANDLE_VALUE};
