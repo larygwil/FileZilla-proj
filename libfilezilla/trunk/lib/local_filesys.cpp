@@ -538,7 +538,7 @@ bool local_filesys::get_next_file(native_string& name, bool &is_link, bool &is_d
 #else
 			t = file;
 #endif
-			is_link = 0;
+			is_link = false;
 			if (size) {
 				*size = -1;
 			}
