@@ -1,7 +1,7 @@
 #include "libfilezilla/thread_pool.hpp"
 #include "libfilezilla/thread.hpp"
 
-#include <assert.h>
+#include <cassert>
 
 namespace fz {
 
@@ -11,7 +11,6 @@ public:
 	pooled_thread_impl(thread_pool & pool)
 		: m_(pool.m_)
 		, pool_(pool)
-	    , detached_()
 	{}
 
 	virtual ~pooled_thread_impl()
