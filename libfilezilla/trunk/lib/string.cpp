@@ -96,7 +96,7 @@ std::wstring to_wstring(std::string const& in)
 		wchar_t* out_p = &ret[0];
 
 		in_p = in.c_str(); // Some implementations of mbsrtowcs change src even on null dst
-		len = std::mbsrtowcs(out_p, &in_p, len + 1, &ps);
+		std::mbsrtowcs(out_p, &in_p, len + 1, &ps);
 	}
 
 	return ret;
