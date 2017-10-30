@@ -52,6 +52,9 @@ public:
 
 	size_t size() const { return size_; }
 
+	/**
+	 * Does not release the memory.
+	 */
 	void clear();
 
 	/** \brief Appends the passed data to the buffer.
