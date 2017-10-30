@@ -11,10 +11,6 @@
 
 namespace fz {
 
-file::file()
-{
-}
-
 file::file(native_string const& f, mode m, creation_flags d)
 {
 	open(f, m, d);

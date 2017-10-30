@@ -45,7 +45,7 @@ public:
 		empty
 	};
 
-	file();
+	file() = default;
 	file(native_string const& f, mode m, creation_flags d = existing);
 
 	~file();
