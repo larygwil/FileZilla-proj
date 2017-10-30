@@ -11,10 +11,6 @@
 
 namespace fz {
 
-thread::thread()
-{
-}
-
 bool thread::joinable() const
 {
 	return impl_ == nullptr;

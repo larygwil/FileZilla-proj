@@ -25,7 +25,7 @@ namespace fz {
 class FZ_PUBLIC_SYMBOL thread
 {
 public:
-	thread();
+	thread() = default;
 
 	/** \brief Calls \c std::abort if the thread has not been joined.
 	 *
