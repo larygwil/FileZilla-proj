@@ -48,9 +48,8 @@ getPackage()
       fi
       continue;
     fi
-
     if [ -z "$PACKAGE" ]; then
-      if [ "${REPLY:0:1}" = "-" ]; then
+      if [ "${REPLY#-}" != "$REPLY" ]; then
         export PACKAGE_TYPE="-"
         REPLY=${REPLY#-}
       fi
