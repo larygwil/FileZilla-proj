@@ -12,10 +12,9 @@ makepackage()
   FLAGS=$2
 
   NOINST=
-  if [ "$PACKAGE" != "${PACKAGE#-}" ]; then
+  if [ "${PACKAGE_TYPE}" = "-" ]; then
     NOINST="yes"
   fi
-  PACKAGE=${PACKAGE#-}
 
   echo "Building $PACKAGE for $TARGET"
 
@@ -54,8 +53,6 @@ makepackage()
 
 while getPackage; do
   makepackage $PACKAGE "$PACKAGE_FLAGS" || exit 1
-
-  PACKAGE=${PACKAGE#-}
 
   PATH="$WORKDIR/prefix/$PACKAGE/bin:$PATH"
   LD_LIBRARY_PATH="$WORKDIR/prefix/$PACKAGE/lib:$LD_LIBRARY_PATH"

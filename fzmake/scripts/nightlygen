@@ -138,6 +138,8 @@ applypatch()
   cd $WORKDIR/source/$PACKAGE
   if patch -p0 -i $PATCHDIR/$PATCH -r - --dry-run >> $LOG 2>&1; then
     patch -p0 -i $PATCHDIR/$PATCH -r - >> /dev/null 2>&1
+  elif patch -p1 -i $PATCHDIR/$PATCH -r - --dry-run >> $LOG 2>&1; then
+    patch -p1 -i $PATCHDIR/$PATCH -r - >> /dev/null 2>&1
   else
     logprint "$PATCH does not apply, skipping..."
   fi
@@ -196,14 +198,17 @@ fi
 
 logprint "Copying source"
 mkdir -p "$WORKDIR/source"
-rsync -av --delete --exclude .svn/ --exclude .git/ --chmod=o+r,Do+x "$CVSDIR/" "$WORKDIR/source/" || buildfailure || exit 1
+
+resetPackages || buildfailure || exit 1
+while getPackage; do
+  rsync -av --delete --exclude .svn/ --exclude .git/ --chmod=o+r,Do+x "$CVSDIR/${PACKAGE_REPO}" "$WORKDIR/source/${PACKAGE_REPO}" || buildfailure || exit 1
+done
 
 applypatches
 
 logprint "Generating configure files"
 resetPackages || buildfailure || exit 1
 while getPackage; do
-  PACKAGE=${PACKAGE#-}
   cd "$WORKDIR/source/$PACKAGE"
   if [ ! -e configure ]; then
     echo "Running autoreconf -i for package $PACKAGE" >> $LOG
@@ -245,7 +250,7 @@ done
 
 
 echo Waiting for clients
-wait 
+wait
 
 postbuild >> $LOG 2>&1
 

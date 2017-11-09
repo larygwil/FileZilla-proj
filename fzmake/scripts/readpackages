@@ -9,6 +9,9 @@ packages_loaded=
 printpackage()
 {
   echo "Found configuration for package \"$PACKAGE\""
+  if [ "$PACKAGE" != "$PACKAGE_REPO" ]; then
+    echo "  Package repository: $PACKAGE_REPO"
+  fi
   echo "  Package flags: $PACKAGE_FLAGS"
 }
 
@@ -33,19 +36,26 @@ getPackage()
 
   export PACKAGE=
   export PACKAGE_FLAGS=
+  export PACKAGE_REPO=
+  export PACKAGE_TYPE=
 
   while <&4 read -r REPLY; do
     REPLY=${REPLY##\#*}
     if [ -z "$REPLY" ]; then
       if ! [ -z "$PACKAGE" ]; then
         printpackage
-	return 0
+        return 0
       fi
       continue;
     fi
 
     if [ -z "$PACKAGE" ]; then
-      export PACKAGE="$REPLY"
+      if [ "${REPLY:0:1}" = "-" ]; then
+        export PACKAGE_TYPE="-"
+        REPLY=${REPLY#-}
+      fi
+      export PACKAGE="${REPLY%/*}"
+      export PACKAGE_REPO="${REPLY#*/}"
     elif [ -z "$PACKAGE_FLAGS" ]; then
       export PACKAGE_FLAGS="$REPLY"
     elif echo "$PACKAGE_FLAGS" | grep '\\$' 2>&1 > /dev/null; then

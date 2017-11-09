@@ -7,11 +7,10 @@ updatecvs()
 
   resetPackages || return 1
   while getPackage; do
-    PACKAGE=${PACKAGE#-}
     logprint "Updating package $PACKAGE"
 
-    if ! [ -d "$CVSDIR/$PACKAGE" ]; then
-      logprint "Error: $CVSDIR/$PACKAGE does not exist"
+    if ! [ -d "$CVSDIR/${PACKAGE_REPO}" ]; then
+      logprint "Error: $CVSDIR/${PACKAGE_REPO} does not exist"
       return 1
     fi
 

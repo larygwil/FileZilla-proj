@@ -58,9 +58,8 @@ buildspawn()
   HOST=$2
   HOSTPREFIX=$3
   TARGETS=$4
-  PACKAGES=$5
 
-  echo "buildspawn: ID=$ID, HOST=$HOST, HOSTPREFIX=$HOSTPREFIX TARGETS=$TARGETS PACKAGES=$PACKAGES"
+  echo "buildspawn: ID=$ID, HOST=$HOST, HOSTPREFIX=$HOSTPREFIX TARGETS=$TARGETS"
 
   CLEANUP_DONE=false
 
@@ -97,9 +96,9 @@ buildspawn()
 
     targetlogprint "Invoking remote build script"
     if [ -z "$SUBHOST" ]; then
-      filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; clientscripts/build.sh \"$HOSTPREFIX\" \"$i\" \"$PACKAGES\"" >> $TARGETLOG || failure || continue
+      filter $SSH -i "$KEYFILE" -p $PORT "$HOST" ". /etc/profile; cd $HOSTPREFIX; clientscripts/build.sh \"$HOSTPREFIX\" \"$i\"" >> $TARGETLOG || failure || continue
     else
-      filter $SSH -i "$KEYFILE" -p $PORT "$HOST" "ssh $SUBHOST '. /etc/profile; cd $HOSTPREFIX; clientscripts/build.sh \"$HOSTPREFIX\" \"$i\" \"$PACKAGES\"'" >> $TARGETLOG || failure || continue
+      filter $SSH -i "$KEYFILE" -p $PORT "$HOST" "ssh $SUBHOST '. /etc/profile; cd $HOSTPREFIX; clientscripts/build.sh \"$HOSTPREFIX\" \"$i\"'" >> $TARGETLOG || failure || continue
     fi
 
     BUILDENDSECONDS=`date '+%s'`
