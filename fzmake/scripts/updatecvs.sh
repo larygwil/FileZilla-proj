@@ -14,7 +14,7 @@ updatecvs()
       return 1
     fi
 
-    cd $CVSDIR/$PACKAGE
+    cd $CVSDIR/${PACKAGE_REPO}
     if [ -d "CVS" ]; then
       cvs -q -z3 update -dP >> $LOG 2>&1 || return 1
     elif [ -d ".svn" ]; then

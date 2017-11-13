@@ -201,7 +201,7 @@ mkdir -p "$WORKDIR/source"
 
 resetPackages || buildfailure || exit 1
 while getPackage; do
-  rsync -av --delete --exclude .svn/ --exclude .git/ --chmod=o+r,Do+x "$CVSDIR/${PACKAGE_REPO}" "$WORKDIR/source/${PACKAGE_REPO}" || buildfailure || exit 1
+  rsync -av --delete --exclude .svn/ --exclude .git/ --chmod=o+r,Do+x "$CVSDIR/${PACKAGE_REPO}/" "$WORKDIR/source/${PACKAGE_REPO}" || buildfailure || exit 1
 done
 
 applypatches
