@@ -50,6 +50,7 @@ import codecs
 import collections
 import getopt
 import math
+import os.path
 import re
 import sys
 
@@ -486,6 +487,9 @@ def check_file(path, checks, ignore_bom):
     """
 
     # Get the PO file's lines
+    if not os.path.isfile(path) and os.path.isfile(path + '.po'):
+        path = path + '.po'
+
     try:
         f = open(path, encoding="utf-8", mode="r")
     except OSError as e:
