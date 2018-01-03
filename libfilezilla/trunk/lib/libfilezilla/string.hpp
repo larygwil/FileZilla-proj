@@ -3,6 +3,7 @@
 
 #include "libfilezilla.hpp"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -367,6 +368,26 @@ void ltrim(String & s, String const& chars = fzS(typename String::value_type, " 
 template<typename String>
 void rtrim(String & s, String const& chars = fzS(typename String::value_type, " \r\n\t")) {
 	s = trimmed(s, chars, false, true);
+}
+
+// Remove once C++20 is minimum required standard to build libfilezilla
+template<typename String>
+bool starts_with(String const& s, String const& beginning)
+{
+	if (beginning.size() > s.size()) {
+		return false;
+	}
+	return std::equal(beginning.begin(), beginning.end(), s.begin());
+}
+
+// Remove once C++20 is minimum required standard to build libfilezilla
+template<typename String>
+bool ends_with(String const& s, String const& ending)
+{
+	if (ending.size() > s.size()) {
+		return false;
+	}
+	return std::equal(ending.rbegin(), ending.rend(), s.rbegin());
 }
 
 }
