@@ -27,7 +27,7 @@ public:
 	buffer(buffer const& buf);
 	buffer(buffer && buf);
 
-	~buffer() { delete data_; }
+	~buffer() { delete[] data_; }
 
 	buffer& operator=(buffer const& buf);
 	buffer& operator=(buffer && buf);
