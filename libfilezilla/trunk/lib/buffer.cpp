@@ -17,9 +17,9 @@ buffer::buffer(buffer const& buf)
 	if (buf.size_) {
 		data_ = new unsigned char[buf.capacity_];
 		memcpy(data_, buf.pos_, buf.size_);
-size_ = buf.size_;
-capacity_ = buf.capacity_;
-pos_ = data_;
+		size_ = buf.size_;
+		capacity_ = buf.capacity_;
+		pos_ = data_;
 	}
 }
 
@@ -58,30 +58,35 @@ unsigned char* buffer::get(size_t write_size)
 
 buffer& buffer::operator=(buffer const& buf)
 {
-	delete[] data_;
-	if (buf.size_) {
-		data_ = new unsigned char[buf.capacity_];
-		memcpy(data_, buf.pos_, buf.size_);
+	if (this != &buf) {
+		delete[] data_;
+		if (buf.size_) {
+			data_ = new unsigned char[buf.capacity_];
+			memcpy(data_, buf.pos_, buf.size_);
+		}
+		else {
+			data_ = nullptr;
+		}
+		size_ = buf.size_;
+		capacity_ = buf.capacity_;
+		pos_ = data_;
 	}
-	else {
-		data_ = nullptr;
-	}
-	size_ = buf.size_;
-	capacity_ = buf.capacity_;
-	pos_ = data_;
 
 	return *this;
 }
 
 buffer& buffer::operator=(buffer && buf)
 {
-	delete[] data_;
-	data_ = buf.data_;
-	buf.data_ = nullptr;
-	pos_ = buf.pos_;
-	buf.pos_ = nullptr;
-	size_ = buf.size_;
-	capacity_ = buf.capacity_;
+	if (this != &buf) {
+		delete[] data_;
+		data_ = buf.data_;
+		buf.data_ = nullptr;
+		pos_ = buf.pos_;
+		buf.pos_ = nullptr;
+		size_ = buf.size_;
+		capacity_ = buf.capacity_;
+	}
+
 	return *this;
 }
 
